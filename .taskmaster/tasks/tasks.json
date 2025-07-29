@@ -1,0 +1,139 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Architecture and Core Infrastructure",
+        "description": "Initialize the AI workout routine generator project with proper architecture, database setup, and core infrastructure components",
+        "details": "Create project structure with separate modules for AI/conversational engine, user management, workout tracking, and trainer personas. Set up database schemas for users, workouts, exercises, and chat history. Initialize Node.js/Express backend with TypeScript, React frontend, and choose appropriate database (PostgreSQL for relational data, Redis for caching). Implement basic authentication system with JWT tokens. Set up CI/CD pipeline and deployment infrastructure. Create environment configuration for development, staging, and production.",
+        "testStrategy": "Unit tests for core modules, integration tests for API endpoints, database connection tests, authentication flow tests, and deployment pipeline validation",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement User Profile System and Onboarding Flow",
+        "description": "Create comprehensive user profile creation with fitness assessment, goal setting, and injury tracking capabilities",
+        "details": "Build user registration and profile creation forms collecting: personal info (age, weight, height, biological sex), fitness background (experience level, training frequency, exercise preferences), injury assessment (current injuries with severity ratings, historical injuries, mobility limitations), and goal setting (strength, body composition, skill-based, health goals with priority ranking). Implement data validation, secure storage with encryption for sensitive health data, and progressive form completion with save/resume functionality. Create assessment algorithms to categorize users by experience level and limitations.",
+        "testStrategy": "Form validation tests, data encryption verification, user journey flow tests, assessment algorithm accuracy tests, and accessibility compliance testing",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Design and Implement Exercise Database with Metadata",
+        "description": "Create comprehensive exercise database with detailed metadata for AI-powered exercise selection and substitution",
+        "details": "Build exercise database with fields for: exercise name, targeted muscle groups (primary/secondary), movement patterns, equipment requirements, difficulty levels, form cues, common errors, safety considerations, and progression/regression options. Include metadata for AI matching: muscle group mappings, movement pattern classifications, equipment compatibility matrix, and injury contraindications. Implement search and filtering capabilities. Create seeding scripts with 200+ exercises covering all major movement patterns and equipment types. Include video demonstration links and detailed descriptions.",
+        "testStrategy": "Database integrity tests, search functionality tests, metadata consistency validation, exercise categorization accuracy tests, and performance benchmarks for query speed",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Develop AI Trainer Persona System",
+        "description": "Create 11 distinct virtual trainer personas with unique methodologies, personalities, and conversation styles based on proven fitness approaches",
+        "details": "Implement trainer persona system with carefully crafted prompts and personalities: Max (hypertrophy specialist based on RP principles), Coach Stone (strength fundamentals), Kelly (movement/mobility), Alex (powerlifting), Jordan (glute-focused), Kai (bodyweight), Morgan (functional fitness), Coach D (minimalist), Viktor (kettlebell), Jamie (band training), and Coach Atlas (Olympic lifting). Each persona needs distinct conversation style, exercise preferences, programming philosophy, and response patterns. Create persona matching algorithm based on user goals and preferences. Implement system prompts that embody training methodologies without copyright infringement.",
+        "testStrategy": "Persona consistency tests across conversations, matching algorithm accuracy tests, response style validation, methodology adherence verification, and user preference alignment testing",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Build Conversational AI Engine with Natural Language Processing",
+        "description": "Implement core conversational AI system for real-time workout modifications and natural language interactions",
+        "details": "Integrate GPT-4 or Claude API for conversational capabilities with context awareness of current workout, user history, and selected trainer persona. Implement natural language processing for exercise substitution requests, schedule modifications, and routine adjustments. Create context management system to maintain conversation history and workout state. Build intelligent exercise substitution engine using movement patterns, muscle groups, equipment availability, and user limitations. Implement sentiment analysis for user satisfaction tracking. Create failsafe responses for ambiguous requests and escalation to human review when needed.",
+        "testStrategy": "Conversation flow tests, context retention validation, exercise substitution accuracy tests, sentiment analysis calibration, API response time benchmarks, and edge case handling verification",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Create Workout Routine Generation and Progression System",
+        "description": "Develop AI-powered workout routine generation with progressive overload, periodization, and trainer-specific programming",
+        "details": "Build routine generation engine that considers user profile, trainer methodology, available equipment, and time constraints. Implement progressive overload algorithms with volume landmarks (MEV/MAV/MRV concepts), intensity progression, and deload scheduling. Create weekly/monthly periodization templates for each trainer persona. Include sets/reps/rest recommendations with RPE scales. Build routine validation system to ensure balanced muscle group distribution and appropriate volume. Implement schedule adaptation for missed workouts with consolidated routine generation and catch-up session planning.",
+        "testStrategy": "Routine generation accuracy tests, progression algorithm validation, periodization compliance checks, muscle group balance verification, and schedule adaptation logic testing",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Workout Tracking Interface with Visual Feedback",
+        "description": "Create comprehensive workout tracking system with muscle map visualization, progress logging, and real-time feedback",
+        "details": "Build workout tracking interface with exercise display, video demonstrations, set/rep logging, weight tracking, and RPE ratings. Implement interactive muscle map visualization showing targeted muscles during exercises with primary/secondary highlighting. Create daily muscle heat map showing volume and intensity distribution across muscle groups post-workout. Build rest timer with trainer-specific cues and form reminders. Include progress tracking with historical performance graphs, PR detection, and volume accumulation charts. Add notes functionality for each set and workout session.",
+        "testStrategy": "UI/UX testing for workout flow, muscle map accuracy validation, progress calculation verification, timer functionality tests, and data persistence testing",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop Export and Integration System",
+        "description": "Build comprehensive export functionality for workout routines in multiple formats with third-party integrations",
+        "details": "Implement export system supporting Google Sheets (direct API integration), CSV downloads, PDF generation with formatted layouts, and plain text for copy/paste. Create customizable export options: include/exclude descriptions, add tracking columns, trainer notes, alternative exercises, and custom date ranges. Build Google Sheets API integration for direct routine export. Generate QR codes linking to exercise videos. Implement calendar integration for workout scheduling and wearable device API connections (Apple Health, Fitbit). Create backup and data portability features for user data ownership.",
+        "testStrategy": "Export format validation, Google Sheets API integration tests, PDF generation quality checks, QR code functionality verification, and third-party API connection testing",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Create Avatar System and Gamification Features",
+        "description": "Implement avatar progression system with visual muscle development and gamification elements to enhance user engagement",
+        "details": "Build avatar creation system with customizable appearance (body type, skin tone, hair, facial features) starting with intentionally small/untrained physique. Implement visual progression system where avatar muscles develop based on actual workout consistency and focus areas. Create XP system with points for completed workouts, PR achievements, and consistency streaks. Build unlockable customization items (workout apparel, equipment accessories, special effects) earned through achievements. Implement milestone tracking (first pull-up, 100kg squat, 30-day streak) with visual celebrations. Create private profile system with optional sharing capabilities and transformation timeline display.",
+        "testStrategy": "Avatar rendering tests, progression algorithm accuracy, XP calculation verification, achievement trigger validation, and visual customization functionality testing",
+        "priority": "low",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Safety Features and Human Trainer Review System",
+        "description": "Build comprehensive safety system with medical disclaimers, injury prevention, and optional human trainer oversight for professional validation",
+        "details": "Implement mandatory medical disclaimer system with prominent display during onboarding, periodic reminders, and required acknowledgments. Create injury prevention algorithms with progressive overload safety limits and red flag detection for concerning user inputs (severe pain, medical conditions). Build form check reminder system with emphasis on safety cues and proper technique. Implement human trainer review mode with client management dashboard, routine approval/modification capabilities, progress tracking, communication tools, and billing integration preparation. Create escalation system for AI uncertainty cases and emergency contact information storage. Add conservative exercise recommendation defaults when AI confidence is low.",
+        "testStrategy": "Safety disclaimer compliance testing, injury prevention algorithm validation, human trainer workflow testing, escalation system verification, and liability protection measure assessment",
+        "priority": "high",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-29T13:41:18.392Z",
+      "updated": "2025-07-29T14:43:18.009Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
