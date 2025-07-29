@@ -1,0 +1,43 @@
+# Task ID: 1
+# Title: Setup Project Architecture and Core Infrastructure
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Initialize the AI workout routine generator project with proper architecture, database setup, and core infrastructure components
+# Details:
+Create project structure with separate modules for AI/conversational engine, user management, workout tracking, and trainer personas. Set up database schemas for users, workouts, exercises, and chat history. Initialize Node.js/Express backend with TypeScript, React frontend, and choose appropriate database (PostgreSQL for relational data, Redis for caching). Implement basic authentication system with JWT tokens. Set up CI/CD pipeline and deployment infrastructure. Create environment configuration for development, staging, and production.
+
+# Test Strategy:
+Unit tests for core modules, integration tests for API endpoints, database connection tests, authentication flow tests, and deployment pipeline validation
+
+# Subtasks:
+## 1. Initialize Next.js project structure with TypeScript [pending]
+### Dependencies: None
+### Description: Set up the base Next.js 14 project with TypeScript configuration, ESLint, and Prettier
+### Details:
+Configure Next.js 14 with App Router, set up TypeScript with strict mode, configure ESLint and Prettier for code consistency, set up git hooks with Husky for pre-commit checks
+
+## 2. Set up Supabase database and authentication [pending]
+### Dependencies: None
+### Description: Configure Supabase project with database schema and authentication system
+### Details:
+Create Supabase project, set up authentication with email/password, configure Row Level Security policies, create initial database tables for users, profiles, and sessions, set up environment variables for Supabase connection
+
+## 3. Create core application modules and folder structure [pending]
+### Dependencies: None
+### Description: Establish modular architecture for AI engine, user management, workout tracking, and trainer personas
+### Details:
+Create folder structure for: lib/ai (conversational engine), lib/auth (authentication logic), lib/database (Supabase client and queries), lib/workouts (routine generation), lib/trainers (persona definitions), components/ui (reusable components), set up barrel exports for clean imports
+
+## 4. Design and implement database schema [pending]
+### Dependencies: None
+### Description: Create comprehensive database schema for users, workouts, exercises, and chat history
+### Details:
+Design tables for: users (auth integration), profiles (fitness data), exercises (movement library), workouts (generated routines), workout_sessions (tracking), chat_history (conversations), trainer_preferences. Create migrations, indexes for performance, and foreign key relationships
+
+## 5. Set up environment configuration and deployment pipeline [pending]
+### Dependencies: None
+### Description: Configure environment variables, CI/CD pipeline, and prepare for deployment
+### Details:
+Create .env.example with all required variables, set up GitHub Actions for CI/CD, configure Vercel deployment settings, implement environment-specific configs for dev/staging/prod, set up error monitoring (Sentry), add basic health check endpoints
+

@@ -3,12 +3,7 @@
   "mcp": {
     "task-master-ai": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "--package=task-master-ai",
-        "task-master-ai"
-      ],
+      "command": ["npx", "-y", "--package=task-master-ai", "task-master-ai"],
       "enabled": true,
       "environment": {
         "ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_API_KEY_HERE",

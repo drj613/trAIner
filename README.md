@@ -1,115 +1,253 @@
-# AI Trainer - MVP Prototype
+# trAIner
 
-A Next.js application for AI-powered workout routine generation with conversational interface.
+AI-powered workout routine generator with conversational interface and personalized virtual trainers.
 
-## 🚀 Current Status
+## Overview
 
-✅ **Initial Scaffolding Complete**
-- Next.js 14 with TypeScript and Tailwind CSS
-- Fake authentication system with dummy users
-- Login page with demo credentials
-- Protected dashboard with "Hello World" interface
-- Responsive design with modern UI components
+trAIner is a fitness application that uses AI to create personalized workout routines through natural conversation. Users can interact with 11 different virtual trainer personas, each specializing in different fitness methodologies.
 
-## 🔑 Demo Login Credentials
+## Getting Started
 
-Use any of these credentials to log in:
+### Prerequisites
 
-- **Email**: `demo@example.com` | **Password**: `password`
-- **Email**: `test@test.com` | **Password**: `123456`
-- **Email**: `user@demo.com` | **Password**: `demo`
+- Node.js 18+
+- npm or yarn
+- OpenAI API key (for AI features)
+- Supabase account (for database)
 
-## 🛠️ Getting Started
+### Installation
 
-1. **Install dependencies**:
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/yourusername/trAIner.git
+   cd trAIner
+   ```
+
+2. Install dependencies:
+
    ```bash
    npm install
    ```
 
-2. **Start the development server**:
+3. Set up environment variables:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Configure your `.env.local` file:
+
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+5. Run the development server:
+
    ```bash
    npm run dev
    ```
 
-3. **Open your browser** and navigate to [http://localhost:3000](http://localhost:3000)
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-4. **Login** using one of the demo credentials above
+7. (Optional) Run tests to verify setup:
 
-## 📁 Project Structure
+   ```bash
+   npm test
+   ```
+
+### Demo Mode
+
+For testing without API keys, use these demo credentials:
+
+- Email: `demo@example.com` | Password: `password`
+- Email: `test@test.com` | Password: `123456`
+
+## Features
+
+- **Personalized Workouts**: AI generates custom workout routines based on your fitness level, goals, and available equipment
+- **Virtual Trainers**: Choose from 11 specialized trainers, each with unique training philosophies
+- **Natural Conversation**: Modify workouts through chat-based interactions
+- **Progress Tracking**: Log workouts and track your fitness journey
+- **Export Options**: Export routines to Google Sheets, PDF, or other formats
+- **Safety First**: Built-in injury prevention and form reminders
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express (planned)
+- **Database**: Supabase (PostgreSQL)
+- **AI**: OpenAI GPT-4 via Vercel AI SDK
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel
+
+## Project Structure
 
 ```
 src/
-├── app/
-│   ├── login/page.tsx          # Login page with fake auth
-│   ├── dashboard/page.tsx      # Protected dashboard
-│   ├── layout.tsx              # Root layout with AuthProvider
-│   └── page.tsx                # Home page (redirects to login/dashboard)
-├── contexts/
-│   └── AuthContext.tsx         # Authentication context with fake auth
-└── types/
-    └── auth.ts                 # TypeScript interfaces
+├── app/              # Next.js app directory
+├── components/       # Reusable React components
+├── contexts/         # React context providers
+├── lib/             # Utility functions and API clients
+├── types/           # TypeScript type definitions
+└── styles/          # Global styles
 ```
 
-## 🔧 Tech Stack
+## Development
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Authentication**: Fake auth with localStorage (for now)
-- **AI**: Vercel AI SDK (prepared, not yet implemented)
-- **Database**: Supabase (prepared, not yet implemented)
+### Testing
 
-## ✨ Features Implemented
+This project uses **Jest** and **React Testing Library** for comprehensive testing.
 
-- [x] Responsive login page with demo credentials
-- [x] Fake authentication system
-- [x] Protected routes (dashboard requires login)
-- [x] User session persistence with localStorage
-- [x] Clean, modern UI with Tailwind CSS
-- [x] Loading states and error handling
-- [x] Mobile-responsive design
+#### Running Tests
 
-## 🚧 Next Steps (MVP Phase)
+```bash
+# Run all tests once
+npm test
 
-1. **AI Integration** (Days 3-5)
-   - Setup Vercel AI SDK with OpenAI
-   - Create basic workout generation
-   - Implement "Max" trainer persona
+# Run tests in watch mode (recommended during development)
+npm run test:watch
 
-2. **Chat Interface** (Days 6-8)
-   - Build chat UI with streaming responses
-   - Add workout modification capabilities
-   - Implement conversation memory
+# Run tests with coverage report
+npm run test:coverage
+```
 
-3. **Export Features** (Days 9-10)
-   - Add workout export to markdown/JSON
-   - Implement copy-to-clipboard
-   - Polish UI and deploy to Vercel
+#### Test Structure
 
-## 🎯 MVP Success Criteria
+Tests are organized in the `src/__tests__/` directory, mirroring the source structure:
 
-- [x] User can sign up and log in (fake auth working)
-- [ ] Add Supabase integration
-- [ ] Users can create actual signup info and login
-- [ ] AI generates sensible workout plans
-- [ ] User can modify workouts through chat
-- [ ] Export functionality works
-- [ ] Deployed and accessible online
+```
+src/__tests__/
+├── app/                    # Page component tests
+│   └── auth/
+│       └── login.test.tsx
+├── contexts/               # Context provider tests
+│   └── SupabaseAuthContext.test.tsx
+└── lib/                    # Utility function tests
+    └── supabase/
+        └── client.test.ts
+```
 
-## 🔍 Testing the Current Build
+#### Testing Philosophy
 
-1. Visit http://localhost:3000
-2. You'll be redirected to the login page
-3. Use demo credentials: `demo@example.com` / `password`
-4. Click "Fill demo credentials" for quick access
-5. After login, you'll see the dashboard with placeholder content
-6. Logout button works and returns to login page
+- **Unit Tests**: Test individual components and functions in isolation
+- **Integration Tests**: Test component interactions and data flow
+- **Mocking**: Mock external dependencies (Supabase, Next.js router) for reliable tests
+- **Coverage**: Aim for high test coverage on critical paths (auth, core functionality)
 
-## 💡 Development Notes
+#### Writing Tests
 
-- Using fake authentication for rapid prototyping
-- All routes are client-side protected
-- Session persists across browser refreshes
-- Ready for real Supabase integration later
-- Prepared for AI integration with Vercel AI SDK
+Example test structure:
+
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import MyComponent from '@/components/MyComponent';
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    render(<MyComponent />);
+    expect(screen.getByText('Expected Text')).toBeInTheDocument();
+  });
+
+  it('handles user interactions', async () => {
+    const user = userEvent.setup();
+    render(<MyComponent />);
+    
+    await user.click(screen.getByRole('button'));
+    expect(screen.getByText('Updated Text')).toBeInTheDocument();
+  });
+});
+```
+
+#### Continuous Integration
+
+Tests run automatically on every push and pull request via GitHub Actions. The CI pipeline includes:
+
+- **Linting**: ESLint checks for code quality
+- **Type Checking**: TypeScript compilation
+- **Testing**: Full test suite execution
+- **Build**: Production build verification
+
+#### Database Testing
+
+For database-related tests, we use mocked Supabase clients to avoid hitting the real database:
+
+```typescript
+// Mock Supabase client
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: mockData, error: null }))
+        }))
+      })),
+    }))
+  }))
+}));
+```
+
+#### Test Coverage
+
+Current test coverage includes:
+
+- ✅ Authentication context and flows
+- ✅ Login/signup form interactions  
+- ✅ Supabase client configuration
+- ✅ Error handling and edge cases
+- 🔄 Component rendering and state management
+- 🔄 Database operations and queries
+- 🔄 API route handlers
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+### Code Quality
+
+#### Linting and Formatting
+
+```bash
+# Run ESLint
+npm run lint
+
+# Fix ESLint issues automatically
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Check formatting without changes
+npm run format:check
+```
+
+#### Pre-commit Hooks
+
+This project uses **Husky** and **lint-staged** for automated code quality checks:
+
+- **ESLint** runs on staged TypeScript/JavaScript files
+- **Prettier** formats staged files automatically
+- **TypeScript** compilation is checked
+
+These run automatically when you commit, ensuring consistent code quality.
+
+## Task Management
+
+This project uses Task Master AI for development tracking. View current tasks:
+
+```bash
+npx task-master-ai list
+```
+
+## Contributing
+
+Please read our contributing guidelines before submitting PRs.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

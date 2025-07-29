@@ -2,33 +2,44 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Dumbbell, LogOut, User, Activity, Target, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import {
+  Dumbbell,
+  LogOut,
+  User,
+  Activity,
+  Target,
+  TrendingUp,
+} from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
 
-  if (isLoading || !user) {
+  // Middleware handles auth redirects, but we still need to handle loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Dumbbell className="h-12 w-12 text-blue-600 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-xs text-gray-400 mt-2">
+            If this takes more than a few seconds, check the browser console for details
+          </p>
         </div>
       </div>
     );
   }
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  // This shouldn't happen as middleware redirects unauthenticated users
+  if (!user) {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/auth/login');
   };
 
   return (
@@ -39,13 +50,15 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Dumbbell className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-semibold text-gray-900">AI Trainer</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                AI Trainer
+              </h1>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center text-sm text-gray-700">
                 <User className="h-4 w-4 mr-2" />
-                {user.name}
+                {profile?.full_name || user.email}
               </div>
               <button
                 onClick={handleLogout}
@@ -64,7 +77,7 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user.name}! 👋
+            Welcome back, {profile?.full_name || 'there'}! 👋
           </h2>
           <p className="text-gray-600">
             Ready to crush your fitness goals today?
@@ -79,7 +92,9 @@ export default function DashboardPage() {
                 <Activity className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Workouts This Week</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Workouts This Week
+                </p>
                 <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
@@ -91,7 +106,9 @@ export default function DashboardPage() {
                 <Target className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Goals Achieved</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Goals Achieved
+                </p>
                 <p className="text-2xl font-bold text-gray-900">0</p>
               </div>
             </div>
@@ -144,9 +161,10 @@ export default function DashboardPage() {
               🎉 Congratulations!
             </h4>
             <p className="text-blue-700">
-              You've successfully logged into the AI Trainer app. This is the beginning of your 
-              personalized fitness journey. Soon you'll be able to generate workouts, chat with 
-              AI trainers, and track your progress!
+              You&apos;ve successfully logged into the AI Trainer app. This is
+              the beginning of your personalized fitness journey. Soon
+              you&apos;ll be able to generate workouts, chat with AI trainers,
+              and track your progress!
             </p>
           </div>
         </div>

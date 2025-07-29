@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Create Workout Routine Generation and Progression System
+# Status: pending
+# Dependencies: 5
+# Priority: medium
+# Description: Develop AI-powered workout routine generation with progressive overload, periodization, and trainer-specific programming
+# Details:
+Build routine generation engine that considers user profile, trainer methodology, available equipment, and time constraints. Implement progressive overload algorithms with volume landmarks (MEV/MAV/MRV concepts), intensity progression, and deload scheduling. Create weekly/monthly periodization templates for each trainer persona. Include sets/reps/rest recommendations with RPE scales. Build routine validation system to ensure balanced muscle group distribution and appropriate volume. Implement schedule adaptation for missed workouts with consolidated routine generation and catch-up session planning.
+
+# Test Strategy:
+Routine generation accuracy tests, progression algorithm validation, periodization compliance checks, muscle group balance verification, and schedule adaptation logic testing

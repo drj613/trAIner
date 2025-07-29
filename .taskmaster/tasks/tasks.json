@@ -10,7 +10,53 @@
         "priority": "high",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Next.js project structure with TypeScript",
+            "description": "Set up the base Next.js 14 project with TypeScript configuration, ESLint, and Prettier",
+            "details": "Configure Next.js 14 with App Router, set up TypeScript with strict mode, configure ESLint and Prettier for code consistency, set up git hooks with Husky for pre-commit checks",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 2,
+            "title": "Set up Supabase database and authentication",
+            "description": "Configure Supabase project with database schema and authentication system",
+            "details": "Create Supabase project, set up authentication with email/password, configure Row Level Security policies, create initial database tables for users, profiles, and sessions, set up environment variables for Supabase connection",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 3,
+            "title": "Create core application modules and folder structure",
+            "description": "Establish modular architecture for AI engine, user management, workout tracking, and trainer personas",
+            "details": "Create folder structure for: lib/ai (conversational engine), lib/auth (authentication logic), lib/database (Supabase client and queries), lib/workouts (routine generation), lib/trainers (persona definitions), components/ui (reusable components), set up barrel exports for clean imports",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 4,
+            "title": "Design and implement database schema",
+            "description": "Create comprehensive database schema for users, workouts, exercises, and chat history",
+            "details": "Design tables for: users (auth integration), profiles (fitness data), exercises (movement library), workouts (generated routines), workout_sessions (tracking), chat_history (conversations), trainer_preferences. Create migrations, indexes for performance, and foreign key relationships",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 5,
+            "title": "Set up environment configuration and deployment pipeline",
+            "description": "Configure environment variables, CI/CD pipeline, and prepare for deployment",
+            "details": "Create .env.example with all required variables, set up GitHub Actions for CI/CD, configure Vercel deployment settings, implement environment-specific configs for dev/staging/prod, set up error monitoring (Sentry), add basic health check endpoints",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 1
+          }
+        ]
       },
       {
         "id": 2,
@@ -132,7 +178,7 @@
     ],
     "metadata": {
       "created": "2025-07-29T13:41:18.392Z",
-      "updated": "2025-07-29T14:43:18.009Z",
+      "updated": "2025-07-29T20:34:30.645Z",
       "description": "Tasks for master context"
     }
   }
