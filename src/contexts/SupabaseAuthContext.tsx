@@ -106,6 +106,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, initialized]);
 
   const fetchProfile = async (userId: string) => {
@@ -121,7 +122,8 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
       );
 
-      const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+      const result = await Promise.race([profilePromise, timeoutPromise]);
+      const { data, error } = result as Awaited<typeof profilePromise>;
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -142,7 +144,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -156,7 +158,7 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });

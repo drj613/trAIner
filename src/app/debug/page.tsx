@@ -3,11 +3,13 @@
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
+import type { Session } from '@supabase/supabase-js';
 
 export default function DebugPage() {
   const { user, profile, loading, session } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [directSession, setDirectSession] = useState<any>(null);
+  const [directSession, setDirectSession] = useState<Session | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -98,10 +100,10 @@ export default function DebugPage() {
         <div>
           <h2 className="text-xl font-semibold mb-2">Navigation Links:</h2>
           <div className="space-x-4">
-            <a href="/" className="text-blue-600 hover:underline">Home</a>
-            <a href="/auth/login" className="text-blue-600 hover:underline">Login</a>
-            <a href="/auth/signup" className="text-blue-600 hover:underline">Signup</a>
-            <a href="/dashboard" className="text-blue-600 hover:underline">Dashboard</a>
+            <Link href="/" className="text-blue-600 hover:underline">Home</Link>
+            <Link href="/auth/login" className="text-blue-600 hover:underline">Login</Link>
+            <Link href="/auth/signup" className="text-blue-600 hover:underline">Signup</Link>
+            <Link href="/dashboard" className="text-blue-600 hover:underline">Dashboard</Link>
           </div>
         </div>
       </div>

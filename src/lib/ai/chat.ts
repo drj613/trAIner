@@ -20,8 +20,8 @@ export class ChatService {
   }
 
   async sendMessage(
-    messages: Message[],
-    trainerPersona?: string
+    _messages: Message[],
+    _trainerPersona?: string
   ): Promise<Message> {
     // TODO: Implement AI chat functionality
     // This will integrate with OpenAI/Anthropic API
@@ -29,8 +29,8 @@ export class ChatService {
   }
 
   async generateWorkoutPrompt(
-    userProfile: any,
-    preferences: any
+    _userProfile: Record<string, unknown>,
+    _preferences: Record<string, unknown>
   ): Promise<string> {
     // TODO: Generate workout based on user profile
     throw new Error('Workout generation not implemented yet');

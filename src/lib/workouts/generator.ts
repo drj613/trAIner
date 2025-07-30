@@ -1,5 +1,5 @@
 import { Database } from '@/types/database';
-import { WorkoutPlan, WorkoutPreferences } from './types';
+import { WorkoutPlan, WorkoutPreferences, Exercise } from './types';
 import { ChatService } from '@/lib/ai/chat';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -14,7 +14,7 @@ export class WorkoutGenerator {
   async generateWorkout(
     profile: Profile,
     preferences: WorkoutPreferences,
-    trainerPersona: string
+    _trainerPersona: string
   ): Promise<WorkoutPlan> {
     // TODO: Implement AI-powered workout generation
     // This will use the AI service to generate workouts based on:
@@ -56,8 +56,8 @@ export class WorkoutGenerator {
 
   async modifyWorkout(
     workout: WorkoutPlan,
-    modification: string,
-    profile: Profile
+    _modification: string,
+    _profile: Profile
   ): Promise<WorkoutPlan> {
     // TODO: Use AI to modify workout based on natural language input
     // Examples: "Make it harder", "Replace squats", "Add more arms"
@@ -66,9 +66,9 @@ export class WorkoutGenerator {
   }
 
   async substituteExercise(
-    exerciseName: string,
-    reason: string,
-    availableEquipment: string[]
+    _exerciseName: string,
+    _reason: string,
+    _availableEquipment: string[]
   ): Promise<Exercise> {
     // TODO: Find suitable exercise substitutions
     throw new Error('Not implemented');

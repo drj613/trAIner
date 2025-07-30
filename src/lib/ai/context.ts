@@ -9,7 +9,7 @@ export interface ConversationContext {
   currentWorkout?: Workout;
   recentWorkouts?: Workout[];
   trainerPersona: string;
-  conversationHistory: any[];
+  conversationHistory: Array<{ role: string; content: string; timestamp: string }>;
 }
 
 export class ContextManager {

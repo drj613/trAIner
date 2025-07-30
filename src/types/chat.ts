@@ -4,7 +4,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   trainerPersona?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ChatSession {
