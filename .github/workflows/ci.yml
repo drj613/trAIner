@@ -30,8 +30,11 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      - name: Run type check
+      - name: Run type check (main code)
         run: npx tsc --noEmit
+        
+      - name: Run type check (tests)
+        run: npx tsc --noEmit -p tsconfig.test.json
 
       - name: Run tests
         run: npm test
