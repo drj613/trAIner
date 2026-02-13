@@ -61,3 +61,8 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Local SQLite files
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal

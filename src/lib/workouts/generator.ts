@@ -1,8 +1,12 @@
-import { Database } from '@/types/database';
 import { WorkoutPlan, WorkoutPreferences, Exercise } from './types';
 import { ChatService } from '@/lib/ai/chat';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+interface Profile {
+  fitness_level?: string | null;
+  goals?: string[];
+  injuries?: string[];
+  equipment_access?: string[];
+}
 
 export class WorkoutGenerator {
   private chatService: ChatService;

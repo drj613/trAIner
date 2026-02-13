@@ -1,10 +1,15 @@
 # trAIner
 
-AI-powered workout routine generator with conversational interface and personalized virtual trainers.
+Prompt-to-routine workout tracker for local-first use.
 
 ## Overview
 
-trAIner is a fitness application that uses AI to create personalized workout routines through natural conversation. Users can interact with 11 different virtual trainer personas, each specializing in different fitness methodologies.
+trAIner is a non-invasive workflow for people using any LLM chatbot:
+
+1. Compile a high-quality prompt in-app (persona + constraints + export rules)
+2. Paste the prompt into your LLM of choice
+3. Copy JSON output back into trAIner
+4. Import and track lifts week-to-week (progressive overload)
 
 ## Getting Started
 
@@ -12,8 +17,7 @@ trAIner is a fitness application that uses AI to create personalized workout rou
 
 - Node.js 18+
 - npm or yarn
-- OpenAI API key (for AI features)
-- Supabase account (for database)
+- Local SQLite database (auto-created)
 
 ### Installation
 
@@ -36,12 +40,10 @@ trAIner is a fitness application that uses AI to create personalized workout rou
    cp .env.example .env.local
    ```
 
-4. Configure your `.env.local` file:
+4. Configure your `.env.local` file (optional):
 
    ```
-   OPENAI_API_KEY=your_openai_api_key
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
+   SQLITE_DB_PATH=./data/trainer.sqlite
    ```
 
 5. Run the development server:
@@ -58,30 +60,29 @@ trAIner is a fitness application that uses AI to create personalized workout rou
    npm test
    ```
 
-### Demo Mode
+### Local Mode
 
-For testing without API keys, use these demo credentials:
-
-- Email: `demo@example.com` | Password: `password`
-- Email: `test@test.com` | Password: `123456`
+- No account setup is required.
+- No hosted auth required.
+- Data is stored in a local SQLite file.
 
 ## Features
 
-- **Personalized Workouts**: AI generates custom workout routines based on your fitness level, goals, and available equipment
-- **Virtual Trainers**: Choose from 11 specialized trainers, each with unique training philosophies
-- **Natural Conversation**: Modify workouts through chat-based interactions
-- **Progress Tracking**: Log workouts and track your fitness journey
-- **Export Options**: Export routines to Google Sheets, PDF, or other formats
-- **Safety First**: Built-in injury prevention and form reminders
+- **Prompt Compiler**: Build a copy-ready prompt using persona guidance and output constraints
+- **LLM-Agnostic Workflow**: Works with ChatGPT, Claude, Gemini, etc.
+- **Strict JSON Import**: Validate and ingest routines against `ROUTINE_API_JSON_SPEC.md`
+- **Routine Viewer**: Browse imported routines by week/day/exercise
+- **Lift Logging**: Record set-level weight, reps, RPE, and notes
+- **Workout History**: Review recent logs to support progressive overload decisions
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Node.js, Express (planned)
-- **Database**: Supabase (PostgreSQL)
-- **AI**: OpenAI GPT-4 via Vercel AI SDK
-- **Authentication**: Supabase Auth
-- **Deployment**: Vercel
+- **Frontend**: Next.js, TypeScript, Tailwind CSS
+- **Backend**: Next.js route handlers
+- **Database**: SQLite (local file)
+- **AI**: External LLMs (prompt is compiled in-app; generation happens outside app)
+- **Authentication**: None (current local mode)
+- **Deployment**: Local-first development
 
 ## Project Structure
 
@@ -89,10 +90,8 @@ For testing without API keys, use these demo credentials:
 src/
 ├── app/              # Next.js app directory
 ├── components/       # Reusable React components
-├── contexts/         # React context providers
 ├── lib/             # Utility functions and API clients
-├── types/           # TypeScript type definitions
-└── styles/          # Global styles
+└── __tests__/       # Test suites
 ```
 
 ## Development
@@ -120,22 +119,23 @@ Tests are organized in the `src/__tests__/` directory, mirroring the source stru
 
 ```
 src/__tests__/
-├── app/                    # Page component tests
-│   └── auth/
-│       └── login.test.tsx
-├── contexts/               # Context provider tests
-│   └── SupabaseAuthContext.test.tsx
+├── app/                    # Page and flow tests
+│   ├── dashboard.test.tsx
+│   ├── prompts/page.test.tsx
+│   └── routines/
+│       ├── import.test.tsx
+│       └── page.test.tsx
 └── lib/                    # Utility function tests
-    └── supabase/
-        └── client.test.ts
+    └── routines/
+        └── validate.test.ts
 ```
 
 #### Testing Philosophy
 
 - **Unit Tests**: Test individual components and functions in isolation
 - **Integration Tests**: Test component interactions and data flow
-- **Mocking**: Mock external dependencies (Supabase, Next.js router) for reliable tests
-- **Coverage**: Aim for high test coverage on critical paths (auth, core functionality)
+- **Mocking**: Mock external dependencies (API calls, Next.js router) for reliable tests
+- **Coverage**: Focus on JSON validation, import flow, prompt compiler, and routine pages
 
 #### Writing Tests
 
@@ -173,40 +173,34 @@ Tests run automatically on every push and pull request via GitHub Actions. The C
 
 #### Database Testing
 
-For database-related tests, we use mocked Supabase clients to avoid hitting the real database:
+For database-related tests, mock API/data-layer boundaries to avoid touching local files:
 
 ```typescript
-// Mock Supabase client
-jest.mock('@/lib/supabase/client', () => ({
-  createClient: jest.fn(() => ({
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn(() => Promise.resolve({ data: mockData, error: null }))
-        }))
-      })),
-    }))
-  }))
-}));
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  json: async () => ({ ok: true, routines: [] }),
+});
 ```
 
 #### Test Coverage
 
 Current test coverage includes:
 
-- ✅ Authentication context and flows
-- ✅ Login/signup form interactions  
-- ✅ Supabase client configuration
+- ✅ Prompt compiler page rendering
+- ✅ Routine import flow and validation handling
+- ✅ Routine list/dashboard shell rendering
+- ✅ Routine schema validation
 - ✅ Error handling and edge cases
-- 🔄 Component rendering and state management
-- 🔄 Database operations and queries
-- 🔄 API route handlers
+- 🔄 API route integration tests
+- 🔄 SQLite repository-level tests
 
 ### Building for Production
 
 ```bash
 npm run build
 ```
+
+Note: current architecture is local-first SQLite. For hosted production, use a persistent database/storage strategy.
 
 ### Code Quality
 

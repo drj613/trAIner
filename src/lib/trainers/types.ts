@@ -15,5 +15,4 @@ export interface TrainerPersona {
     restPeriods: 'short' | 'moderate' | 'long';
   };
   conversationStyle: string;
-  catchPhrases?: string[];
 }

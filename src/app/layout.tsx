@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { SupabaseAuthProvider } from '@/contexts/SupabaseAuthContext';
 import './globals.css';
 
 const geistSans = Geist({
@@ -14,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Trainer - Your Personal Workout Companion',
+  title: 'trAIner - Prompt to Routine Tracker',
   description:
-    'AI-powered workout routine generator with personalized training',
+    'Compile prompts for your LLM, paste routine JSON, and track your lifts.',
 };
 
 export default function RootLayout({
@@ -29,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SupabaseAuthProvider>{children}</SupabaseAuthProvider>
+        {children}
       </body>
     </html>
   );

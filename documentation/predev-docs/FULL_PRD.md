@@ -1,5 +1,11 @@
 # Product Requirements Document: AI Workout Routine Generator
 
+> Status: Historical draft from the original monetized/productized concept.
+> Current implementation should follow:
+> - `documentation/predev-docs/MVP_PRD_ADDENDUM.md`
+> - `documentation/predev-docs/LLM_PROMPT_LIBRARY.md`
+> - `documentation/predev-docs/ROUTINE_API_JSON_SPEC.md`
+
 ## 1. Executive Summary
 
 ### Product Vision

@@ -1,49 +1,79 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
+const Database = require('better-sqlite3');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function resolveDbPath() {
+  const rawPath = process.env.SQLITE_DB_PATH || './data/trainer.sqlite';
+  return path.isAbsolute(rawPath) ? rawPath : path.join(process.cwd(), rawPath);
+}
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+function listMigrationFiles(migrationsDir) {
+  if (!fs.existsSync(migrationsDir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(migrationsDir)
+    .filter((file) => /^\d+_.*\.sql$/.test(file))
+    .sort((a, b) => a.localeCompare(b));
+}
 
-async function runMigration() {
+function runMigrations() {
   try {
-    console.log('🚀 Running database migration...');
-    
-    const migrationSQL = fs.readFileSync(
-      path.join(__dirname, '../src/lib/database/migrations/001_initial_schema.sql'),
-      'utf8'
+    const dbPath = resolveDbPath();
+    const migrationsDir = path.join(
+      process.cwd(),
+      'src',
+      'lib',
+      'database',
+      'migrations'
     );
-
-    // Split by semicolon and filter out empty statements
-    const statements = migrationSQL
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
-
-    console.log(`📝 Executing ${statements.length} SQL statements...`);
-
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i] + ';';
-      console.log(`   ${i + 1}/${statements.length}: ${statement.substring(0, 50)}...`);
-      
-      const { error } = await supabase.rpc('exec_sql', {
-        sql: statement
-      });
-
-      if (error) {
-        console.error(`❌ Error in statement ${i + 1}:`, error);
-        process.exit(1);
-      }
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
 
-    console.log('✅ Migration completed successfully!');
-    
+    const db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        name TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL
+      );
+    `);
+
+    const applied = new Set(
+      db.prepare('SELECT name FROM schema_migrations').all().map((row) => row.name)
+    );
+    const pending = listMigrationFiles(migrationsDir).filter((name) => !applied.has(name));
+
+    if (pending.length === 0) {
+      console.log('✅ No pending migrations');
+      db.close();
+      return;
+    }
+
+    const insertStmt = db.prepare(
+      'INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)'
+    );
+    const applyOne = db.transaction((name) => {
+      const sql = fs.readFileSync(path.join(migrationsDir, name), 'utf8');
+      db.exec(sql);
+      insertStmt.run(name, new Date().toISOString());
+    });
+
+    for (const name of pending) {
+      applyOne(name);
+      console.log(`✅ Applied migration: ${name}`);
+    }
+
+    db.close();
+    console.log(`✅ Database ready at: ${dbPath}`);
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);
   }
 }
 
-runMigration();
+runMigrations();

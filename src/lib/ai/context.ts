@@ -1,13 +1,20 @@
-import { Database } from '@/types/database';
+interface ContextProfile {
+  age?: number | null;
+  fitness_level?: string | null;
+  goals?: string[];
+  injuries?: string[];
+  equipment_access?: string[];
+}
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-type Workout = Database['public']['Tables']['workouts']['Row'];
+interface ContextWorkout {
+  title: string;
+}
 
 export interface ConversationContext {
   userId: string;
-  profile?: Profile;
-  currentWorkout?: Workout;
-  recentWorkouts?: Workout[];
+  profile?: ContextProfile;
+  currentWorkout?: ContextWorkout;
+  recentWorkouts?: ContextWorkout[];
   trainerPersona: string;
   conversationHistory: Array<{ role: string; content: string; timestamp: string }>;
 }
