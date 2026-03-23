@@ -220,27 +220,34 @@ npm run format
 npm run format:check
 ```
 
-#### Pre-commit Hooks
+#### Pre-commit Checks
 
-This project uses **Husky** and **lint-staged** for automated code quality checks:
+`lint-staged` is included and can be wired to your preferred git hook manager.
+If you do not use hooks locally, run quality checks manually before commits:
 
-- **ESLint** runs on staged TypeScript/JavaScript files
-- **Prettier** formats staged files automatically
-- **TypeScript** compilation is checked
-
-These run automatically when you commit, ensuring consistent code quality.
+```bash
+npm run lint
+npx tsc --noEmit
+npm test -- --runInBand
+```
 
 ## Task Management
 
-This project uses Task Master AI for development tracking. View current tasks:
+This project uses **Beads** for persistent issue tracking. Common commands:
 
 ```bash
-npx task-master-ai list
+bd ready
+bd create --title "..." --type task
+bd close <issue-id>
+bd sync
 ```
 
 ## Contributing
 
-Please read our contributing guidelines before submitting PRs.
+Open an issue first and keep changes aligned to:
+- `documentation/predev-docs/MVP_PRD_ADDENDUM.md`
+- `documentation/predev-docs/LLM_PROMPT_LIBRARY.md`
+- `documentation/predev-docs/ROUTINE_API_JSON_SPEC.md`
 
 ## License
 
