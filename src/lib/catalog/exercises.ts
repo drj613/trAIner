@@ -1,0 +1,87 @@
+export type ExerciseCatalogItem = {
+  id: string;
+  name: string;
+  aliases: string[];
+  equipment: string[];
+  movementPatterns: string[];
+  muscles: {
+    primary: string[];
+    secondary: string[];
+  };
+  tags: string[];
+};
+
+export const exerciseCatalog: ExerciseCatalogItem[] = [
+  {
+    id: "banded-face-pull",
+    name: "Banded Face Pulls",
+    aliases: ["face pulls", "band face pull", "banded face pull"],
+    equipment: ["resistance band"],
+    movementPatterns: ["horizontal pull"],
+    muscles: { primary: ["rear delts"], secondary: ["traps", "rotator cuff"] },
+    tags: ["warmup", "prehab", "shoulders"]
+  },
+  {
+    id: "arm-circles",
+    name: "Arm Circles",
+    aliases: ["shoulder circles"],
+    equipment: ["bodyweight"],
+    movementPatterns: ["mobility"],
+    muscles: { primary: ["shoulders"], secondary: [] },
+    tags: ["warmup", "mobility"]
+  },
+  {
+    id: "scap-pull-up",
+    name: "Scap Pull-Ups",
+    aliases: ["scapular pull ups", "scap pullups"],
+    equipment: ["pull-up bar"],
+    movementPatterns: ["vertical pull"],
+    muscles: { primary: ["scapular stabilizers"], secondary: ["lats"] },
+    tags: ["activation", "pull"]
+  },
+  {
+    id: "incline-plate-raise-complex",
+    name: "Incline Plate Raise Complex",
+    aliases: ["plate raise complex", "incline plate raise"],
+    equipment: ["plate", "bench"],
+    movementPatterns: ["shoulder flexion"],
+    muscles: { primary: ["front delts"], secondary: ["serratus anterior", "upper chest"] },
+    tags: ["activation", "shoulders"]
+  },
+  {
+    id: "pull-up",
+    name: "Pull-Up",
+    aliases: ["pull ups", "pullup", "strict pull-up"],
+    equipment: ["pull-up bar"],
+    movementPatterns: ["vertical pull"],
+    muscles: { primary: ["lats"], secondary: ["biceps", "upper back"] },
+    tags: ["strength", "bodyweight"]
+  },
+  {
+    id: "barbell-bench-press",
+    name: "Barbell Bench Press",
+    aliases: ["bench press", "flat bench"],
+    equipment: ["barbell", "bench"],
+    movementPatterns: ["horizontal press"],
+    muscles: { primary: ["chest"], secondary: ["triceps", "front delts"] },
+    tags: ["strength", "push"]
+  },
+  {
+    id: "barbell-back-squat",
+    name: "Barbell Back Squat",
+    aliases: ["back squat", "squat"],
+    equipment: ["barbell", "rack"],
+    movementPatterns: ["squat"],
+    muscles: { primary: ["quads", "glutes"], secondary: ["hamstrings", "core"] },
+    tags: ["strength", "lower"]
+  },
+  {
+    id: "burpee",
+    name: "Burpee",
+    aliases: ["burpees"],
+    equipment: ["bodyweight"],
+    movementPatterns: ["conditioning"],
+    muscles: { primary: ["full body"], secondary: ["chest", "quads"] },
+    tags: ["metcon", "conditioning"]
+  }
+];

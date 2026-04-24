@@ -11,30 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install mise tools
-        uses: jdx/mise-action@v3
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v4
         with:
           install: true
-
-      - name: Install dependencies
-        run: bun ci
-
-      - name: Run linter
-        run: bun run lint
-
-      - name: Run type check (main code)
-        run: bun x tsc --noEmit
-        
-      - name: Run type check (tests)
-        run: bun x tsc --noEmit -p tsconfig.test.json
-
-      - name: Run tests
-        run: bun run test -- --runInBand
-
-      - name: Run build
-        run: bun run build
-        env:
-          SQLITE_DB_PATH: ./data/ci.sqlite
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun x tsc --noEmit
+      - run: bun x tsc --noEmit -p tsconfig.test.json
+      - run: bun run test -- --runInBand
+      - run: bun run build

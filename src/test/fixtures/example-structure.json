@@ -1,0 +1,265 @@
+{
+  "program_name": "Adapted Power Look – 4-Day Split",
+  "day": 1,
+  "title": "Upper – Vertical Pull/Press + Arms",
+  "sections": [
+    {
+      "type": "warmup",
+      "name": "Warm-Up Circuit",
+      "exercise_groups": [
+        {
+          "type": "circuit",
+          "notes": "Perform exercises back-to-back with minimal rest within the group.",
+          "exercises": [
+            {
+              "name": "Banded Face Pulls",
+              "sets": 1,
+              "reps": "20",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": null,
+              "tempo_concentric": null,
+              "tempo_pause_top": null,
+              "notes": null,
+              "tags": {
+                "primary": ["rear delts", "traps"],
+                "secondary": ["rotator cuff"],
+                "incidental": [],
+                "modifiers": ["mobility", "stability", "prehab"]
+              }
+            },
+            {
+              "name": "Arm Circles",
+              "sets": 1,
+              "reps": "15",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": null,
+              "tempo_concentric": null,
+              "tempo_pause_top": null,
+              "notes": null,
+              "tags": {
+                "primary": ["shoulders"],
+                "secondary": [],
+                "incidental": [],
+                "modifiers": ["mobility", "warmup"]
+              }
+            },
+            {
+              "name": "Scap Pull-Ups",
+              "sets": 1,
+              "reps": "10",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": null,
+              "tempo_concentric": null,
+              "tempo_pause_top": null,
+              "notes": null,
+              "tags": {
+                "primary": ["scapular stabilizers"],
+                "secondary": ["lats"],
+                "incidental": ["biceps"],
+                "modifiers": ["stability", "activation"]
+              }
+            },
+            {
+              "name": "Incline Plate Raise Complex",
+              "sets": 1,
+              "reps": "8",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": null,
+              "tempo_concentric": null,
+              "tempo_pause_top": null,
+              "notes": null,
+              "tags": {
+                "primary": ["front delts", "serratus anterior"],
+                "secondary": ["upper chest"],
+                "incidental": [],
+                "modifiers": ["mobility", "activation"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "explosive",
+      "name": "Olympic Derivative",
+      "exercise_groups": [
+        {
+           "type": "single",
+           "notes": null,
+           "exercises": [
+            {
+              "name": "Push Press",
+              "sets": 5,
+              "reps": "3",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": null,
+              "tempo_pause_top": 0,
+              "notes": "@ ~80%, focus on bar speed and powerful drive",
+              "tags": {
+                "primary": ["delts", "triceps"],
+                "secondary": ["upper chest", "core"],
+                "incidental": ["glutes", "calves"],
+                "modifiers": ["explosive", "compound", "barbell"]
+              }
+            }
+           ]
+        }
+      ]
+    },
+    {
+      "type": "strength",
+      "name": "Strength Movement",
+      "exercise_groups": [
+        {
+          "type": "single",
+          "notes": null,
+          "exercises": [
+            {
+              "name": "Z-Press",
+              "sets": 4,
+              "reps": "5-6",
+              "tempo_eccentric": 3,
+              "tempo_pause_bottom": 1,
+              "tempo_concentric": null,
+              "tempo_pause_top": 0,
+              "notes": "Seated on floor, strict press to emphasize core and shoulder coordination",
+              "tags": {
+                "primary": ["delts", "triceps"],
+                "secondary": ["core", "upper chest"],
+                "incidental": ["lats"],
+                "modifiers": ["barbell", "stability", "core-intensive"]
+              }
+            }
+          ]
+        },
+        {
+          "type": "single",
+          "notes": null,
+          "exercises": [
+            {
+              "name": "Weighted Chin-Ups (wide grip)",
+              "sets": 4,
+              "reps": "6-8",
+              "tempo_eccentric": 2,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": 1,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["lats", "biceps"],
+                "secondary": ["forearms", "traps"],
+                "incidental": ["rear delts"],
+                "modifiers": ["bodyweight", "pull", "vertical"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "metcon",
+      "name": "Every 2:00 x 5 Rounds",
+      "exercise_groups": [
+        {
+          "type": "circuit",
+          "notes": "Perform all exercises in the group back-to-back within the 2:00 window.",
+          "exercises": [
+            {
+              "name": "Pull-Ups",
+              "sets": null,
+              "reps": "8",
+              "tempo_eccentric": 2,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": null,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["lats"],
+                "secondary": ["biceps"],
+                "incidental": ["core", "rear delts"],
+                "modifiers": ["bodyweight", "conditioning", "vertical pull"]
+              }
+            },
+            {
+              "name": "Dumbbell Thrusters",
+              "sets": null,
+              "reps": "10",
+              "tempo_eccentric": null,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": null,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["quads", "delts"],
+                "secondary": ["glutes", "triceps"],
+                "incidental": ["core"],
+                "modifiers": ["compound", "conditioning", "explosive"]
+              }
+            },
+            {
+              "name": "Banded Triceps Pushdowns",
+              "sets": null,
+              "reps": "10",
+              "tempo_eccentric": 2,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": 1,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["triceps"],
+                "secondary": [],
+                "incidental": [],
+                "modifiers": ["band", "pump", "isolation"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "hypertrophy",
+      "name": "Arm Hypertrophy Superset (3 Rounds)",
+      "exercise_groups": [
+        {
+          "type": "superset",
+          "notes": "Perform exercise 1 and 2 back-to-back with minimal rest before resting for the next round.",
+          "exercises": [
+            {
+              "name": "Incline DB Curls",
+              "sets": null,
+              "reps": "10-12",
+              "tempo_eccentric": 3,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": 1,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["biceps"],
+                "secondary": ["forearms"],
+                "incidental": [],
+                "modifiers": ["isolation", "dumbbell", "stretch-focused"]
+              }
+            },
+            {
+              "name": "Rope Overhead Extensions",
+              "sets": null,
+              "reps": "12-15",
+              "tempo_eccentric": 3,
+              "tempo_pause_bottom": 0,
+              "tempo_concentric": 1,
+              "tempo_pause_top": 0,
+              "notes": null,
+              "tags": {
+                "primary": ["triceps"],
+                "secondary": [],
+                "incidental": [],
+                "modifiers": ["cable", "isolation", "stretch-focused"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

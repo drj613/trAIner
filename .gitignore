@@ -70,3 +70,7 @@ data/*.sqlite-wal
 
 # Local git worktrees
 .worktrees/
+
+# Local agent/editor state
+.codex
+.pi/
