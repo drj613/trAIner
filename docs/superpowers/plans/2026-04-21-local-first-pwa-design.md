@@ -10,6 +10,12 @@
 
 **Scope Note:** This plan is strictly for the local-first application in this repository. Keep the implementation focused on one app and one codebase, with no parallel-product extraction work included here.
 
+## Current Execution Notes
+
+- 2026-04-24: The local-first reset has already implemented most v1 app surfaces in the current Bun-based layout.
+- 2026-04-24: Exercise catalog ingestion is implemented in the live `src/lib/catalog/*` layout rather than the older planned `src/lib/exercises/*` paths.
+- 2026-04-24: Plan commands are adapted to Bun during execution.
+
 ---
 
 ## Reuse Strategy
@@ -360,6 +366,8 @@ git commit -m "feat: add canonical IndexedDB storage for local-first data"
 
 ### Task 3: Bundle the exercise catalog and matching engine
 
+Execution note: completed against the current catalog layout using `scripts/build-exercise-catalog.mjs`, `scripts/catalog-local-overrides.json`, `src/lib/catalog/exercises.ts`, and `src/lib/catalog/match.test.ts`.
+
 **Files:**
 - Create: `scripts/build-exercise-catalog.mjs`
 - Create: `src/lib/exercises/types.ts`
@@ -369,7 +377,7 @@ git commit -m "feat: add canonical IndexedDB storage for local-first data"
 - Test: `src/__tests__/lib/exercises/match.test.ts`
 - Modify: `package.json`
 
-- [ ] **Step 1: Write a failing exercise matching test**
+- [x] **Step 1: Write a failing exercise matching test**
 
 ```ts
 import { matchExerciseName } from '@/lib/exercises/match';
@@ -388,12 +396,12 @@ describe('matchExerciseName', () => {
 });
 ```
 
-- [ ] **Step 2: Run the matcher test to verify the catalog is absent**
+- [x] **Step 2: Run the matcher test to verify the catalog is absent**
 
 Run: `npm test -- --runTestsByPath src/__tests__/lib/exercises/match.test.ts --runInBand`
 Expected: FAIL because the matching module and generated catalog do not exist yet.
 
-- [ ] **Step 3: Add the catalog generator and matcher**
+- [x] **Step 3: Add the catalog generator and matcher**
 
 ```js
 // scripts/build-exercise-catalog.mjs
@@ -445,7 +453,7 @@ export function matchExerciseName(name: string) {
 }
 ```
 
-- [ ] **Step 4: Generate the catalog and run the matcher test**
+- [x] **Step 4: Generate the catalog and run the matcher test**
 
 Run: `node scripts/build-exercise-catalog.mjs`
 Expected: `built <number> exercises`
@@ -453,7 +461,7 @@ Expected: `built <number> exercises`
 Run: `npm test -- --runTestsByPath src/__tests__/lib/exercises/match.test.ts --runInBand`
 Expected: PASS with exact and suggested matching covered.
 
-- [ ] **Step 5: Commit catalog ingestion**
+- [x] **Step 5: Commit catalog ingestion**
 
 ```bash
 git add package.json package-lock.json scripts/build-exercise-catalog.mjs src/lib/exercises/types.ts src/lib/exercises/catalog.ts src/lib/exercises/catalog.generated.json src/lib/exercises/match.ts src/__tests__/lib/exercises/match.test.ts

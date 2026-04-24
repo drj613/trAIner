@@ -29,3 +29,11 @@ bun run build
 - Runtime app data lives in IndexedDB
 - External LLMs are used through copy/paste prompts only
 - Backup and restore use local JSON files
+
+## Exercise Catalog
+
+The bundled catalog is generated from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) plus local aliases and additions in `scripts/catalog-local-overrides.json`.
+
+```bash
+bun run catalog:build
+```

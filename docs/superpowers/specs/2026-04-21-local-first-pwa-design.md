@@ -254,6 +254,8 @@ The exercise catalog should not be built manually from zero. A third-party exerc
 
 This ingestion and cleanup happens during development only. The user device makes no external requests to build or update the catalog in v1.
 
+Implementation note, 2026-04-24: the bundled catalog is generated from `yuhonas/free-exercise-db`'s combined `dist/exercises.json` file, then merged with local aliases and additions in `scripts/catalog-local-overrides.json`. Media and rich instruction payloads are omitted from the client bundle.
+
 ## Prompt Generation
 
 Prompt generation uses the saved profile plus selectable persona guidance and output instructions.
