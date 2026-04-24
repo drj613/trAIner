@@ -32,7 +32,7 @@ bun run build
 
 ## Exercise Catalog
 
-The bundled catalog is generated from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) plus local aliases and additions in `scripts/catalog-local-overrides.json`.
+The bundled catalog is generated from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) plus local aliases and additions in `scripts/catalog-local-overrides.json`. The generated data lives in `src/lib/catalog/exercises.generated.json`; `src/lib/catalog/exercises.ts` is a small typed wrapper used by the app.
 
 ```bash
 bun run catalog:build

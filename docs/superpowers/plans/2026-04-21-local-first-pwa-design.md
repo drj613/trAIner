@@ -13,7 +13,7 @@
 ## Current Execution Notes
 
 - 2026-04-24: The local-first reset has already implemented most v1 app surfaces in the current Bun-based layout.
-- 2026-04-24: Exercise catalog ingestion is implemented in the live `src/lib/catalog/*` layout rather than the older planned `src/lib/exercises/*` paths.
+- 2026-04-24: Exercise catalog ingestion is implemented in the live `src/lib/catalog/*` layout rather than the older planned `src/lib/exercises/*` paths. Generated data lives in `exercises.generated.json`; `exercises.ts` is a typed wrapper.
 - 2026-04-24: Plan commands are adapted to Bun during execution.
 
 ---
