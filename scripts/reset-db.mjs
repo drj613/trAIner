@@ -1,6 +1,6 @@
-const fs = require('node:fs');
-const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+import fs from 'node:fs';
+import path from 'node:path';
+import { runMigrations } from './migrate.mjs';
 
 function resolveDbPath() {
   const rawPath = process.env.SQLITE_DB_PATH || './data/trainer.sqlite';
@@ -10,7 +10,7 @@ function resolveDbPath() {
 function removeIfExists(filePath) {
   if (fs.existsSync(filePath)) {
     fs.rmSync(filePath, { force: true });
-    console.log(`🗑️  Removed ${filePath}`);
+    console.log(`Removed ${filePath}`);
   }
 }
 
@@ -19,15 +19,7 @@ function resetDb() {
   removeIfExists(dbPath);
   removeIfExists(`${dbPath}-wal`);
   removeIfExists(`${dbPath}-shm`);
-
-  const result = spawnSync('node', ['scripts/migrate.js'], {
-    stdio: 'inherit',
-    env: process.env,
-  });
-
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
+  runMigrations();
 }
 
 resetDb();

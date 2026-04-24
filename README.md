@@ -15,8 +15,8 @@ trAIner is a non-invasive workflow for people using any LLM chatbot:
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- `mise`
+- Bun 1.3.12 (installed via `mise`)
 - Local SQLite database (auto-created)
 
 ### Installation
@@ -31,7 +31,8 @@ trAIner is a non-invasive workflow for people using any LLM chatbot:
 2. Install dependencies:
 
    ```bash
-   npm install
+   mise install
+   bun install
    ```
 
 3. Set up environment variables:
@@ -49,7 +50,7 @@ trAIner is a non-invasive workflow for people using any LLM chatbot:
 5. Run the development server:
 
    ```bash
-   npm run dev
+   bun run dev
    ```
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser
@@ -57,7 +58,7 @@ trAIner is a non-invasive workflow for people using any LLM chatbot:
 7. (Optional) Run tests to verify setup:
 
    ```bash
-   npm test
+   bun run test
    ```
 
 ### Local Mode
@@ -104,13 +105,13 @@ This project uses **Jest** and **React Testing Library** for comprehensive testi
 
 ```bash
 # Run all tests once
-npm test
+bun run test
 
 # Run tests in watch mode (recommended during development)
-npm run test:watch
+bun run test:watch
 
 # Run tests with coverage report
-npm run test:coverage
+bun run test:coverage
 ```
 
 #### Test Structure
@@ -197,7 +198,7 @@ Current test coverage includes:
 ### Building for Production
 
 ```bash
-npm run build
+bun run build
 ```
 
 Note: current architecture is local-first SQLite. For hosted production, use a persistent database/storage strategy.
@@ -208,16 +209,16 @@ Note: current architecture is local-first SQLite. For hosted production, use a p
 
 ```bash
 # Run ESLint
-npm run lint
+bun run lint
 
 # Fix ESLint issues automatically
-npm run lint:fix
+bun run lint:fix
 
 # Format code with Prettier
-npm run format
+bun run format
 
 # Check formatting without changes
-npm run format:check
+bun run format:check
 ```
 
 #### Pre-commit Checks
@@ -226,9 +227,9 @@ npm run format:check
 If you do not use hooks locally, run quality checks manually before commits:
 
 ```bash
-npm run lint
-npx tsc --noEmit
-npm test -- --runInBand
+bun run lint
+bun x tsc --noEmit
+bun run test -- --runInBand
 ```
 
 ## Task Management

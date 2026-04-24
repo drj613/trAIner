@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type Database from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 
 const MIGRATIONS_DIR = path.join(
   process.cwd(),
@@ -21,7 +21,7 @@ function listMigrationFiles(): string[] {
     .sort((a, b) => a.localeCompare(b));
 }
 
-export function applySqlMigrations(db: Database.Database): void {
+export function applySqlMigrations(db: Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name TEXT PRIMARY KEY,
@@ -30,7 +30,7 @@ export function applySqlMigrations(db: Database.Database): void {
   `);
 
   const appliedRows = db
-    .prepare('SELECT name FROM schema_migrations')
+    .query('SELECT name FROM schema_migrations')
     .all() as Array<{ name: string }>;
   const applied = new Set(appliedRows.map((row) => row.name));
   const pending = listMigrationFiles().filter((file) => !applied.has(file));
@@ -39,7 +39,7 @@ export function applySqlMigrations(db: Database.Database): void {
     return;
   }
 
-  const insertMigration = db.prepare(
+  const insertMigration = db.query(
     'INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)'
   );
 

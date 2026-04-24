@@ -30,7 +30,7 @@ export async function createRoutine(doc: RoutineDocument): Promise<RoutineRecord
   const id = (doc.routine_id && doc.routine_id.trim()) || crypto.randomUUID();
 
   try {
-    db.prepare(
+    db.query(
       `INSERT INTO routines (id, schema_version, title, payload, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, doc.schema_version ?? '1.0', doc.title, JSON.stringify(doc), now, now);
@@ -47,7 +47,7 @@ export async function getRoutineById(
 ): Promise<RoutineRecord | null> {
   const db = getDb();
   const row = db
-    .prepare(
+    .query(
       `SELECT id, schema_version, title, payload, created_at, updated_at
        FROM routines
        WHERE id = ?`
@@ -60,7 +60,7 @@ export async function getRoutineById(
 export async function listRoutines(): Promise<RoutineRecord[]> {
   const db = getDb();
   const rows = db
-    .prepare(
+    .query(
       `SELECT id, schema_version, title, payload, created_at, updated_at
        FROM routines
        ORDER BY created_at DESC`

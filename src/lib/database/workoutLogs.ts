@@ -34,7 +34,7 @@ export async function createWorkoutLog(
   const id = crypto.randomUUID();
 
   try {
-    db.prepare(
+    db.query(
       `INSERT INTO routine_workout_logs (id, routine_id, workout_date, payload, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, routineId, date, JSON.stringify(payload), now, now);
@@ -44,7 +44,7 @@ export async function createWorkoutLog(
   }
 
   const row = db
-    .prepare(
+    .query(
       `SELECT id, routine_id, workout_date, payload, created_at, updated_at
        FROM routine_workout_logs
        WHERE id = ?`
@@ -59,7 +59,7 @@ export async function getWorkoutLogsByRoutine(
 ): Promise<RoutineWorkoutLog[]> {
   const db = getDb();
   const rows = db
-    .prepare(
+    .query(
       `SELECT id, routine_id, workout_date, payload, created_at, updated_at
        FROM routine_workout_logs
        WHERE routine_id = ?

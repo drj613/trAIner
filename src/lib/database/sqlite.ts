@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import { applySqlMigrations } from './migrations';
 
-let dbInstance: Database.Database | null = null;
+let dbInstance: Database | null = null;
 
 function getDbPath(): string {
   const explicitPath = process.env.SQLITE_DB_PATH?.trim();
@@ -22,7 +22,7 @@ function ensureDbDirectory(filePath: string): void {
   }
 }
 
-export function getDb(): Database.Database {
+export function getDb(): Database {
   if (dbInstance) {
     return dbInstance;
   }
@@ -30,8 +30,8 @@ export function getDb(): Database.Database {
   const dbPath = getDbPath();
   ensureDbDirectory(dbPath);
   dbInstance = new Database(dbPath);
-  dbInstance.pragma('journal_mode = WAL');
-  dbInstance.pragma('foreign_keys = ON');
+  dbInstance.exec('PRAGMA journal_mode = WAL;');
+  dbInstance.exec('PRAGMA foreign_keys = ON;');
   applySqlMigrations(dbInstance);
 
   return dbInstance;
@@ -40,7 +40,7 @@ export function getDb(): Database.Database {
 export function checkDatabaseHealth(): { ok: boolean; error?: string } {
   try {
     const db = getDb();
-    db.prepare('SELECT 1').get();
+    db.query('SELECT 1').get();
     return { ok: true };
   } catch (error) {
     return {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkDatabaseHealth } from '@/lib/database/sqlite';
+import packageJson from '../../../../package.json';
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'unknown',
-      version: process.env.npm_package_version || '1.0.0',
+      version: packageJson.version,
       checks: {
         database: 'unknown',
         memory: process.memoryUsage(),
