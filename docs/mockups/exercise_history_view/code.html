@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Exercise History View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@450;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#4d8eff",
+                        "tertiary-container": "#df7412",
+                        "on-error": "#690005",
+                        "outline": "#8c909f",
+                        "on-primary-fixed": "#001a42",
+                        "on-tertiary": "#502400",
+                        "surface-variant": "#32353c",
+                        "surface-container-highest": "#32353c",
+                        "on-surface-variant": "#c2c6d6",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "error-container": "#93000a",
+                        "on-background": "#e1e2ec",
+                        "on-surface": "#e1e2ec",
+                        "surface-container-lowest": "#0b0e15",
+                        "inverse-surface": "#e1e2ec",
+                        "surface-dim": "#10131a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#1d2027",
+                        "inverse-on-surface": "#2e3038",
+                        "tertiary-fixed": "#ffdcc6",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-primary": "#002e6a",
+                        "tertiary": "#ffb786",
+                        "primary": "#adc6ff",
+                        "surface": "#10131a",
+                        "surface-container-low": "#191b23",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-bright": "#363941",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#00285d",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#4edea3",
+                        "outline-variant": "#424754",
+                        "surface-container-high": "#272a31",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#311400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "cell-padding-y": "4px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "layout-margin": "12px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontFamily": {
+                        "data-tabular": [
+                            "ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"
+                        ],
+                        "body-compact": [
+                            "Inter"
+                        ],
+                        "code-label": [
+                            "ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"
+                        ],
+                        "heading-sm": [
+                            "Inter"
+                        ]
+                    },
+                    "fontSize": {
+                        "data-tabular": [
+                            "13px",
+                            {
+                                "lineHeight": "16px",
+                                "fontWeight": "450"
+                            }
+                        ],
+                        "body-compact": [
+                            "13px",
+                            {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "code-label": [
+                            "11px",
+                            {
+                                "lineHeight": "12px",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "heading-sm": [
+                            "14px",
+                            {
+                                "lineHeight": "20px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-2 h-10 bg-zinc-950 docked full-width top-0 border-b border-zinc-800">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 font-data-tabular text-data-tabular">terminal</span>
+<span class="font-mono font-bold text-blue-500 tracking-widest text-data-tabular">TRAINER_PRO_V1</span>
+</div>
+<button class="font-mono uppercase tracking-tighter text-xs text-blue-500 hover:bg-zinc-900 transition-colors active:bg-zinc-800 px-2 py-1 border border-zinc-800 rounded">
+            EXPORT
+        </button>
+</header>
+<!-- Main Workspace Area -->
+<main class="flex-1 flex flex-col relative w-full max-w-[1200px] mx-auto p-layout-margin gap-layout-margin pb-20 md:pb-layout-margin">
+<!-- Simulated underlying content (darkened/blurred to show drawer effect) -->
+<div class="absolute inset-0 bg-background/80 backdrop-blur-sm z-10"></div>
+<!-- The Drawer (Simulated as positioned at bottom) -->
+<div class="fixed bottom-0 left-0 right-0 z-20 md:relative md:w-full md:bottom-auto bg-surface-container border-t border-zinc-800 md:border md:rounded-DEFAULT shadow-2xl flex flex-col md:max-h-[600px] h-[663px] md:h-auto">
+<!-- Drawer Handle (Mobile) -->
+<div class="w-full h-unit flex justify-center items-center py-sm md:hidden">
+<div class="w-12 h-1 bg-outline-variant rounded-full"></div>
+</div>
+<!-- Drawer Header -->
+<div class="flex items-center justify-between px-layout-margin py-md border-b border-outline-variant bg-surface-container-high">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">history</span>
+<h2 class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wide">DB Bench - History</h2>
+</div>
+<button aria-label="Close drawer" class="text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Drawer Content (Scrollable) -->
+<div class="flex-1 overflow-y-auto bg-surface p-layout-margin flex flex-col gap-sm">
+<!-- Live/Today Section -->
+<div class="bg-surface-container-highest border border-primary-container rounded-DEFAULT overflow-hidden">
+<div class="px-cell-padding-x py-cell-padding-y bg-primary-container/10 border-b border-primary-container flex justify-between items-center">
+<span class="font-code-label text-code-label text-primary uppercase tracking-wider">Today (Live)</span>
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">fiber_manual_record</span>
+</div>
+<div class="p-cell-padding-x flex gap-sm flex-wrap items-center bg-surface-dim">
+<!-- Set Chips -->
+<div class="font-data-tabular text-data-tabular text-on-surface border border-outline-variant px-sm py-unit rounded-sm flex items-center gap-xs">
+<span class="text-on-surface-variant">1</span>
+<span>60x10</span>
+<span class="material-symbols-outlined text-secondary text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface border border-outline-variant px-sm py-unit rounded-sm flex items-center gap-xs">
+<span class="text-on-surface-variant">2</span>
+<span>60x10</span>
+<span class="material-symbols-outlined text-secondary text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface border border-primary px-sm py-unit rounded-sm flex items-center gap-xs bg-primary/5">
+<span class="text-primary">3</span>
+<span>60x8</span>
+<span class="material-symbols-outlined text-primary text-xs animate-pulse">edit</span>
+</div>
+</div>
+</div>
+<!-- History Table Data -->
+<div class="flex flex-col border border-outline-variant rounded-DEFAULT overflow-hidden bg-surface-container mt-sm">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-x-sm px-cell-padding-x py-cell-padding-y border-b border-outline-variant bg-surface-container-low">
+<div class="col-span-2 font-code-label text-code-label text-on-surface-variant uppercase">Date</div>
+<div class="col-span-7 font-code-label text-code-label text-on-surface-variant uppercase">Sets (Wt x Reps)</div>
+<div class="col-span-3 font-code-label text-code-label text-on-surface-variant uppercase text-right">Note</div>
+</div>
+<!-- Row 1 -->
+<div class="grid grid-cols-12 gap-x-sm px-cell-padding-x py-cell-padding-y border-b border-outline-variant hover:bg-surface-bright transition-colors items-center h-8">
+<div class="col-span-2 font-data-tabular text-data-tabular text-on-surface">2/4</div>
+<div class="col-span-7 font-data-tabular text-data-tabular text-on-surface flex gap-sm truncate">
+<span>60x10</span><span class="text-outline-variant">,</span>
+<span>60x10</span><span class="text-outline-variant">,</span>
+<span>60x10</span>
+</div>
+<div class="col-span-3 font-data-tabular text-data-tabular text-tertiary text-right truncate">
+                            -&gt; 65 next
+                        </div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-12 gap-x-sm px-cell-padding-x py-cell-padding-y border-b border-outline-variant hover:bg-surface-bright transition-colors items-center h-8">
+<div class="col-span-2 font-data-tabular text-data-tabular text-on-surface">1/28</div>
+<div class="col-span-7 font-data-tabular text-data-tabular text-on-surface flex gap-sm truncate">
+<span>55x10</span><span class="text-outline-variant">,</span>
+<span>55x10</span><span class="text-outline-variant">,</span>
+<span>55x10</span>
+</div>
+<div class="col-span-3 font-data-tabular text-data-tabular text-tertiary text-right truncate">
+                            -&gt; 60 next
+                        </div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-12 gap-x-sm px-cell-padding-x py-cell-padding-y border-b border-outline-variant hover:bg-surface-bright transition-colors items-center h-8">
+<div class="col-span-2 font-data-tabular text-data-tabular text-on-surface">1/21</div>
+<div class="col-span-7 font-data-tabular text-data-tabular text-on-surface flex gap-sm truncate">
+<span>50x10</span><span class="text-outline-variant">,</span>
+<span>55x10</span><span class="text-outline-variant">,</span>
+<span>55x10</span>
+</div>
+<div class="col-span-3 font-data-tabular text-data-tabular text-on-surface-variant text-right truncate">
+                            --
+                        </div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-12 gap-x-sm px-cell-padding-x py-cell-padding-y hover:bg-surface-bright transition-colors items-center h-8">
+<div class="col-span-2 font-data-tabular text-data-tabular text-on-surface">1/14</div>
+<div class="col-span-7 font-data-tabular text-data-tabular text-on-surface flex gap-sm truncate">
+<span>50x10</span><span class="text-outline-variant">,</span>
+<span>50x10</span><span class="text-outline-variant">,</span>
+<span>50x10</span>
+</div>
+<div class="col-span-3 font-data-tabular text-data-tabular text-on-surface-variant text-right truncate">
+                            --
+                        </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile only, suppressed contextually but shown here as shell requirement per instructions if destination, though drawer might overlap) -->
+<nav class="flex justify-around items-center w-full h-12 bg-zinc-950 fixed bottom-0 w-full z-50 border-t border-zinc-800 md:hidden">
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80" href="#">
+<span class="material-symbols-outlined text-xl">terminal</span>
+<span class="font-mono text-[10px] uppercase">PROMPT</span>
+</a>
+<a class="flex flex-col items-center justify-center border-l-2 border-blue-500 bg-zinc-900 text-blue-500 h-full w-full hover:bg-zinc-900 active:opacity-80" href="#">
+<span class="material-symbols-outlined text-xl">history</span>
+<span class="font-mono text-[10px] uppercase">HISTORY</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80" href="#">
+<span class="material-symbols-outlined text-xl">cloud_sync</span>
+<span class="font-mono text-[10px] uppercase">SYNC</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80" href="#">
+<span class="material-symbols-outlined text-xl">save</span>
+<span class="font-mono text-[10px] uppercase">SAVE</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DIFF_REVIEW: HYPER_V3 (PUSH_A)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@450;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#4d8eff",
+                        "tertiary-container": "#df7412",
+                        "on-error": "#690005",
+                        "outline": "#8c909f",
+                        "on-primary-fixed": "#001a42",
+                        "on-tertiary": "#502400",
+                        "surface-variant": "#32353c",
+                        "surface-container-highest": "#32353c",
+                        "on-surface-variant": "#c2c6d6",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "error-container": "#93000a",
+                        "on-background": "#e1e2ec",
+                        "on-surface": "#e1e2ec",
+                        "surface-container-lowest": "#0b0e15",
+                        "inverse-surface": "#e1e2ec",
+                        "surface-dim": "#10131a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#1d2027",
+                        "inverse-on-surface": "#2e3038",
+                        "tertiary-fixed": "#ffdcc6",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-primary": "#002e6a",
+                        "tertiary": "#ffb786",
+                        "primary": "#adc6ff",
+                        "surface": "#10131a",
+                        "surface-container-low": "#191b23",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-bright": "#363941",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#00285d",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#4edea3",
+                        "outline-variant": "#424754",
+                        "surface-container-high": "#272a31",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#311400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "cell-padding-y": "4px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "layout-margin": "12px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontFamily": {
+                        "data-tabular": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"],
+                        "body-compact": ["Inter", "sans-serif"],
+                        "code-label": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"],
+                        "heading-sm": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "data-tabular": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                        "body-compact": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "code-label": ["11px", {"lineHeight": "12px", "fontWeight": "500"}],
+                        "heading-sm": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for data tables */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #10131a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #32353c; 
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #424754; 
+        }
+        
+        .diff-row-deleted {
+            background-color: rgba(147, 0, 10, 0.15); /* error-container with opacity */
+            border-left: 2px solid #ffb4ab; /* error */
+        }
+        .diff-row-added {
+            background-color: rgba(0, 165, 114, 0.15); /* secondary-container with opacity */
+            border-left: 2px solid #4edea3; /* secondary */
+        }
+        .diff-row-unchanged {
+            border-left: 2px solid transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-compact text-body-compact selection:bg-primary-container selection:text-on-primary-container overflow-hidden">
+<!-- TopAppBar Semantic Shell -->
+<!-- Assuming context is transactional/sub-page (Reviewing changes), TopAppBar is kept for context, but BottomNav is suppressed -->
+<header class="flex justify-between items-center w-full px-2 h-10 bg-zinc-950 text-blue-500 font-mono uppercase tracking-tighter text-xs border-b border-zinc-800 flat no shadows shrink-0">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="font-mono font-bold text-blue-500 tracking-widest">TRAINER_PRO_V1</span>
+</div>
+<div class="flex items-center">
+<button class="flex items-center gap-xs text-zinc-500 hover:bg-zinc-900 transition-colors active:bg-zinc-800 px-2 py-1 border border-transparent">
+<span>EXPORT</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace Area -->
+<main class="flex-1 flex flex-col w-full max-w-7xl mx-auto overflow-hidden">
+<!-- Workspace Header Context -->
+<div class="px-layout-margin py-md border-b border-outline-variant flex flex-col md:flex-row md:justify-between md:items-end gap-sm shrink-0 bg-surface-container-low">
+<div>
+<h1 class="font-heading-sm text-heading-sm text-on-surface uppercase mb-xs tracking-wider">DIFF_REVIEW: HYPER_V3 (PUSH_A)</h1>
+<div class="flex items-center gap-sm mt-xs">
+<span class="font-code-label text-code-label text-error border border-error px-1 py-0.5 inline-block">[3 CHANGES DETECTED]</span>
+<span class="font-code-label text-code-label text-outline uppercase">Branch: master -&gt; experimental_push</span>
+</div>
+</div>
+<div class="flex items-center gap-sm font-data-tabular text-data-tabular">
+<span class="text-error flex items-center gap-xs"><span class="material-symbols-outlined text-[14px]">remove</span>2 deletions</span>
+<span class="text-secondary flex items-center gap-xs"><span class="material-symbols-outlined text-[14px]">add</span>2 additions</span>
+</div>
+</div>
+<!-- Diff Viewer Canvas -->
+<div class="flex-1 overflow-auto bg-surface-dim p-layout-margin">
+<!-- Bento-style Container for Diff -->
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT overflow-hidden flex flex-col shadow-sm max-w-5xl mx-auto">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-unit bg-surface-container-high border-b border-outline-variant px-cell-padding-x py-cell-padding-y sticky top-0 z-10 font-code-label text-code-label text-outline uppercase tracking-wider">
+<div class="col-span-1 text-center border-r border-outline-variant/30 pr-xs">L/R</div>
+<div class="col-span-5 border-r border-outline-variant/30 px-xs">HEAD (OLD)</div>
+<div class="col-span-1 text-center border-r border-outline-variant/30 px-xs">OP</div>
+<div class="col-span-5 pl-xs">WORKING_TREE (NEW)</div>
+</div>
+<!-- Diff Content Grid -->
+<div class="font-data-tabular text-data-tabular text-on-surface flex flex-col">
+<!-- Unchanged Context Row -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-unchanged hover:bg-surface-container-highest transition-colors items-center min-h-[32px]">
+<div class="col-span-1 text-outline text-center border-r border-outline-variant/30 pr-xs text-[10px]">1/1</div>
+<div class="col-span-5 text-on-surface-variant truncate px-xs border-r border-outline-variant/30">Barbell Bench Press 4x6-8</div>
+<div class="col-span-1 text-center px-xs border-r border-outline-variant/30 text-outline">
+<span class="material-symbols-outlined text-[14px] opacity-30">drag_handle</span>
+</div>
+<div class="col-span-5 text-on-surface-variant truncate pl-xs">Barbell Bench Press 4x6-8</div>
+</div>
+<!-- Deletion Block -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-deleted min-h-[32px] items-center">
+<div class="col-span-1 text-error text-center border-r border-error/30 pr-xs text-[10px]">2/-</div>
+<div class="col-span-5 text-error truncate px-xs border-r border-error/30 line-through decoration-error/50">DB Bench 3x8-10</div>
+<div class="col-span-1 text-center px-xs border-r border-error/30 text-error">
+<span class="material-symbols-outlined text-[14px]">remove</span>
+</div>
+<div class="col-span-5 text-outline truncate pl-xs italic opacity-50">-- removed --</div>
+</div>
+<!-- Addition Block -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-added min-h-[32px] items-center">
+<div class="col-span-1 text-secondary text-center border-r border-secondary/30 pr-xs text-[10px]">-/2</div>
+<div class="col-span-5 text-outline truncate px-xs border-r border-secondary/30 italic opacity-50">-- added --</div>
+<div class="col-span-1 text-center px-xs border-r border-secondary/30 text-secondary">
+<span class="material-symbols-outlined text-[14px]">add</span>
+</div>
+<div class="col-span-5 text-secondary truncate pl-xs font-medium">DB Flyes 3x12-15</div>
+</div>
+<!-- Unchanged Context Row -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-unchanged hover:bg-surface-container-highest transition-colors items-center min-h-[32px]">
+<div class="col-span-1 text-outline text-center border-r border-outline-variant/30 pr-xs text-[10px]">3/3</div>
+<div class="col-span-5 text-on-surface-variant truncate px-xs border-r border-outline-variant/30">Incline DB Press 3x8-12</div>
+<div class="col-span-1 text-center px-xs border-r border-outline-variant/30 text-outline">
+<span class="material-symbols-outlined text-[14px] opacity-30">drag_handle</span>
+</div>
+<div class="col-span-5 text-on-surface-variant truncate pl-xs">Incline DB Press 3x8-12</div>
+</div>
+<!-- Deletion Block -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-deleted min-h-[32px] items-center">
+<div class="col-span-1 text-error text-center border-r border-error/30 pr-xs text-[10px]">4/-</div>
+<div class="col-span-5 text-error truncate px-xs border-r border-error/30 line-through decoration-error/50">Weighted Pullup</div>
+<div class="col-span-1 text-center px-xs border-r border-error/30 text-error">
+<span class="material-symbols-outlined text-[14px]">remove</span>
+</div>
+<div class="col-span-5 text-outline truncate pl-xs italic opacity-50">-- removed --</div>
+</div>
+<!-- Addition Block -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-b border-outline-variant/50 diff-row-added min-h-[32px] items-center">
+<div class="col-span-1 text-secondary text-center border-r border-secondary/30 pr-xs text-[10px]">-/4</div>
+<div class="col-span-5 text-outline truncate px-xs border-r border-secondary/30 italic opacity-50">-- added --</div>
+<div class="col-span-1 text-center px-xs border-r border-secondary/30 text-secondary">
+<span class="material-symbols-outlined text-[14px]">add</span>
+</div>
+<div class="col-span-5 text-secondary truncate pl-xs font-medium">Cable Rows</div>
+</div>
+<!-- Unchanged Context Row -->
+<div class="grid grid-cols-12 gap-unit px-cell-padding-x py-xs border-outline-variant/50 diff-row-unchanged hover:bg-surface-container-highest transition-colors items-center min-h-[32px]">
+<div class="col-span-1 text-outline text-center border-r border-outline-variant/30 pr-xs text-[10px]">5/5</div>
+<div class="col-span-5 text-on-surface-variant truncate px-xs border-r border-outline-variant/30">Tricep Pushdown 3x12-15</div>
+<div class="col-span-1 text-center px-xs border-r border-outline-variant/30 text-outline">
+<span class="material-symbols-outlined text-[14px] opacity-30">drag_handle</span>
+</div>
+<div class="col-span-5 text-on-surface-variant truncate pl-xs">Tricep Pushdown 3x12-15</div>
+</div>
+</div>
+</div>
+<!-- Scope Selection Matrix -->
+<div class="mt-layout-margin max-w-5xl mx-auto flex flex-col gap-sm">
+<h2 class="font-code-label text-code-label text-outline uppercase tracking-wider border-b border-outline-variant pb-xs mb-xs">MERGE_SCOPE_TARGET</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Option 1: Today Only -->
+<label class="flex items-start gap-md p-md border border-outline-variant rounded-DEFAULT bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="pt-xs">
+<input checked="" class="bg-transparent border-outline text-primary focus:ring-1 focus:ring-primary focus:ring-offset-0 focus:border-primary h-4 w-4" name="merge_scope" type="radio" value="today"/>
+</div>
+<div class="flex flex-col gap-xs flex-1">
+<span class="font-data-tabular text-data-tabular text-on-surface group-hover:text-primary transition-colors uppercase">Apply to today only</span>
+<span class="font-code-label text-code-label text-on-surface-variant block">Mutates instance `ID_9284A`. Base template `HYPER_V3 (PUSH_A)` remains unaffected.</span>
+</div>
+</label>
+<!-- Option 2: Base Program -->
+<label class="flex items-start gap-md p-md border border-outline-variant rounded-DEFAULT bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="pt-xs">
+<input class="bg-transparent border-outline text-primary focus:ring-1 focus:ring-primary focus:ring-offset-0 focus:border-primary h-4 w-4" name="merge_scope" type="radio" value="base"/>
+</div>
+<div class="flex flex-col gap-xs flex-1">
+<span class="font-data-tabular text-data-tabular text-on-surface group-hover:text-primary transition-colors uppercase">Apply to base program</span>
+<span class="font-code-label text-code-label text-on-surface-variant block">Overwrites base template `HYPER_V3 (PUSH_A)`. Affects all future generated instances.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar (Transactional Context) -->
+<div class="p-layout-margin bg-surface-container-low border-t border-outline-variant flex justify-between items-center shrink-0">
+<button class="h-[28px] px-md border border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-code-label text-code-label uppercase tracking-wider transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">close</span>
+                DISCARD
+            </button>
+<button class="h-[28px] px-lg border border-transparent bg-primary text-on-primary hover:bg-primary-container font-code-label text-code-label uppercase tracking-wider transition-colors flex items-center justify-center gap-xs shadow-sm">
+<span class="material-symbols-outlined text-[14px]">commit</span>
+                COMMIT_CHANGES
+            </button>
+</div>
+</main>
+</body></html>

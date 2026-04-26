@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Today Workout - Workbench OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dim": "#10131a",
+                        "surface": "#10131a",
+                        "on-secondary-fixed-variant": "#005236",
+                        "outline-variant": "#424754",
+                        "on-secondary-fixed": "#002113",
+                        "tertiary-fixed": "#ffdcc6",
+                        "primary": "#adc6ff",
+                        "on-primary": "#002e6a",
+                        "tertiary-container": "#df7412",
+                        "inverse-on-surface": "#2e3038",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-tint": "#adc6ff",
+                        "primary-container": "#4d8eff",
+                        "on-tertiary": "#502400",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-secondary-container": "#00311f",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e1e2ec",
+                        "on-background": "#e1e2ec",
+                        "inverse-primary": "#005ac2",
+                        "surface-bright": "#363941",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-surface": "#e1e2ec",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "surface-container-low": "#191b23",
+                        "secondary-container": "#00a572",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary": "#ffb786",
+                        "surface-container-lowest": "#0b0e15",
+                        "surface-container": "#1d2027",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#00285d",
+                        "background": "#10131a",
+                        "on-secondary": "#003824",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-tertiary-container": "#461f00",
+                        "secondary": "#4edea3",
+                        "surface-variant": "#32353c",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#32353c",
+                        "on-tertiary-fixed": "#311400",
+                        "on-primary-fixed": "#001a42",
+                        "surface-container-high": "#272a31",
+                        "outline": "#8c909f"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        xs: "4px",
+                        md: "12px",
+                        lg: "16px",
+                        "cell-padding-x": "8px",
+                        sm: "8px",
+                        "cell-padding-y": "4px",
+                        unit: "4px",
+                        "layout-margin": "12px"
+                    },
+                    fontFamily: {
+                        "heading-sm": ["Inter", "sans-serif"],
+                        "data-tabular": ["Roboto Mono", "monospace"],
+                        "code-label": ["Roboto Mono", "monospace"],
+                        "body-compact": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        "heading-sm": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "data-tabular": ["13px", { lineHeight: "16px", fontWeight: "450" }],
+                        "code-label": ["11px", { lineHeight: "12px", fontWeight: "500" }],
+                        "body-compact": ["13px", { lineHeight: "18px", fontWeight: "400" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        /* Hide scrollbar for a cleaner look but allow scrolling */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #10131a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #32353c; 
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #424754; 
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen flex overflow-hidden font-body-compact text-body-compact">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-[#1a1a1a] docked h-screen border-r border-r-[#333333] flat no shadows flex flex-col w-64 hidden md:flex shrink-0">
+<!-- Header -->
+<div class="p-4 border-b border-[#333333] flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center border border-outline-variant overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">memory</span>
+</div>
+<div>
+<div class="text-blue-500 font-black font-code-label text-code-label">WORKBENCH_OS</div>
+<div class="text-[#888888] font-mono text-[11px] tracking-tight">v4.2.0-STABLE</div>
+</div>
+</div>
+<!-- Main Nav -->
+<div class="flex-1 py-2 overflow-y-auto">
+<a class="flex items-center px-4 py-2 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[18px]">terminal</span>
+<span class="font-mono text-[11px] tracking-tight">PROMPT_STUDIO</span>
+</a>
+<a class="flex items-center px-4 py-2 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[18px]">account_tree</span>
+<span class="font-mono text-[11px] tracking-tight">ROUTINE_MAP</span>
+</a>
+<!-- Active state for WORKOUT_LOG -->
+<a class="flex items-center px-4 py-2 transition-all duration-75 bg-[#252525] text-blue-500 border-l-2 border-blue-500" href="#">
+<span class="material-symbols-outlined mr-3 text-[18px]">edit_note</span>
+<span class="font-mono text-[11px] tracking-tight">WORKOUT_LOG</span>
+</a>
+<a class="flex items-center px-4 py-2 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[18px]">database</span>
+<span class="font-mono text-[11px] tracking-tight">HISTORY_DB</span>
+</a>
+<a class="flex items-center px-4 py-2 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[18px]">sd_storage</span>
+<span class="font-mono text-[11px] tracking-tight">STORAGE_MGR</span>
+</a>
+</div>
+<!-- CTA & Footer Nav -->
+<div class="p-4 border-t border-[#333333]">
+<button class="w-full mb-4 py-2 px-4 bg-primary-container text-on-primary-container font-mono text-[11px] tracking-tight flex justify-center items-center rounded-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined mr-2 text-[14px]">play_arrow</span>
+                INIT_SESSION
+            </button>
+<div class="space-y-1">
+<a class="flex items-center px-2 py-1.5 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[16px]">list_alt</span>
+<span class="font-mono text-[11px] tracking-tight">SYS_LOG</span>
+</a>
+<a class="flex items-center px-2 py-1.5 hover:bg-[#252525] hover:text-blue-400 transition-all duration-75 text-[#888888]" href="#">
+<span class="material-symbols-outlined mr-3 text-[16px]">menu_book</span>
+<span class="font-mono text-[11px] tracking-tight">RESOURCES</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 h-screen">
+<!-- TopAppBar (from JSON) -->
+<header class="bg-[#0a0a0a] docked full-width top-0 border-b border-b-[#333333] flat no shadows flex justify-between items-center px-3 py-1 w-full h-8 shrink-0">
+<!-- Brand / Nav Links -->
+<div class="flex items-center space-x-6 h-full">
+<div class="text-sm font-bold text-white tracking-widest flex items-center">
+                    METADATA_CORE_v1.0
+                </div>
+<nav class="flex h-full space-x-4">
+<!-- SESSION_LIVE is active based on context -->
+<a class="text-blue-500 border-b-2 border-blue-500 font-mono text-xs uppercase tracking-tighter flex items-center h-full cursor-crosshair active:bg-[#333333]" href="#">
+                        SESSION_LIVE
+                    </a>
+<a class="text-[#666666] font-mono text-xs uppercase tracking-tighter flex items-center h-full hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333]" href="#">
+                        SYNC_STATUS
+                    </a>
+<a class="text-[#666666] font-mono text-xs uppercase tracking-tighter flex items-center h-full hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333]" href="#">
+                        LOG_FREQ
+                    </a>
+</nav>
+</div>
+<!-- Search Bar (on_right) & Trailing Actions -->
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-2">
+<button class="text-[#666666] hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] p-1 rounded-sm">
+<span class="material-symbols-outlined text-[16px]">settings_ethernet</span>
+</button>
+<button class="text-[#666666] hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] p-1 rounded-sm">
+<span class="material-symbols-outlined text-[16px]">database</span>
+</button>
+<button class="text-[#666666] hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] p-1 rounded-sm">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+</button>
+</div>
+<div class="h-4 w-px bg-[#333333]"></div>
+<div class="flex space-x-2">
+<button class="text-[#666666] font-mono text-xs uppercase tracking-tighter hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] px-2 py-0.5 border border-[#333333] rounded-sm">
+                        COMMIT_LOG
+                    </button>
+<button class="text-blue-500 font-mono text-xs uppercase tracking-tighter hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] px-2 py-0.5 border border-blue-500 rounded-sm">
+                        EXPORT_JSON
+                    </button>
+</div>
+</div>
+</header>
+<!-- Workspace Canvas (2-Column Layout) -->
+<main class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-surface-dim p-layout-margin gap-layout-margin">
+<!-- LEFT COLUMN: Primary Workout Logger -->
+<section class="flex-1 flex flex-col bg-[#1a1a1a] border border-[#333333] rounded-sm overflow-hidden min-w-[320px]">
+<!-- Logger Header -->
+<div class="flex items-center justify-between p-3 border-b border-[#333333] bg-surface-container-low shrink-0">
+<div class="flex items-center space-x-4">
+<h1 class="font-heading-sm text-heading-sm text-on-surface">PULL_DAY_ALPHA</h1>
+<span class="px-2 py-0.5 border border-secondary-container text-secondary font-code-label text-code-label rounded-sm">IN_PROGRESS</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface-variant flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1 text-primary">timer</span>
+                        00:42:15
+                    </div>
+</div>
+<!-- Logger Content (Scrollable) -->
+<div class="flex-1 overflow-y-auto p-2 space-y-4">
+<!-- Exercise Module: Active -->
+<div class="border border-[#333333] rounded-sm bg-surface-container-lowest">
+<!-- Module Header -->
+<div class="flex items-center justify-between p-2 border-b border-[#333333] bg-[#252525] border-l-2 border-l-blue-500">
+<div class="font-code-label text-code-label text-primary">EX_01 : BARBELL_ROW</div>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[14px]">more_horiz</span>
+</button>
+</div>
+<!-- Grid Headers -->
+<div class="grid grid-cols-12 gap-1 px-2 py-1 border-b border-[#333333] font-code-label text-code-label text-on-surface-variant">
+<div class="col-span-1 text-center">SET</div>
+<div class="col-span-2">PREV</div>
+<div class="col-span-3 text-right">LBS</div>
+<div class="col-span-3 text-right">REPS</div>
+<div class="col-span-2 text-center">RPE</div>
+<div class="col-span-1 text-center"></div>
+</div>
+<!-- Data Rows -->
+<div class="px-2 py-1 group hover:bg-[#252525] border-b border-[#333333] border-l-2 border-l-transparent">
+<div class="grid grid-cols-12 gap-1 items-center font-data-tabular text-data-tabular h-[32px]">
+<div class="col-span-1 text-center text-outline-variant">1</div>
+<div class="col-span-2 text-outline-variant text-[11px]">-</div>
+<div class="col-span-3">
+<input class="w-full bg-transparent border-b border-[#333333] focus:border-blue-500 focus:outline-none text-right px-1 font-data-tabular text-on-surface py-0.5" type="text" value="135"/>
+</div>
+<div class="col-span-3">
+<input class="w-full bg-transparent border-b border-[#333333] focus:border-blue-500 focus:outline-none text-right px-1 font-data-tabular text-on-surface py-0.5" type="text" value="10"/>
+</div>
+<div class="col-span-2 text-center">
+<input class="w-full bg-transparent border-b border-[#333333] focus:border-blue-500 focus:outline-none text-center px-1 font-data-tabular text-on-surface py-0.5" type="text" value="7"/>
+</div>
+<div class="col-span-1 flex justify-center">
+<button class="w-5 h-5 flex items-center justify-center bg-secondary-container/20 text-secondary border border-secondary-container rounded-sm">
+<span class="material-symbols-outlined text-[12px] font-bold">check</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Active Row -->
+<div class="px-2 py-1 bg-[#252525] border-b border-[#333333] border-l-2 border-l-blue-500">
+<div class="grid grid-cols-12 gap-1 items-center font-data-tabular text-data-tabular h-[32px]">
+<div class="col-span-1 text-center text-primary">2</div>
+<div class="col-span-2 text-outline-variant text-[11px]">185x8</div>
+<div class="col-span-3">
+<input class="w-full bg-transparent border-b border-blue-500 focus:outline-none text-right px-1 font-data-tabular text-on-surface py-0.5" type="text" value="185"/>
+</div>
+<div class="col-span-3">
+<input class="w-full bg-transparent border-b border-blue-500 focus:outline-none text-right px-1 font-data-tabular text-on-surface py-0.5 placeholder-outline-variant" placeholder="-" type="text" value=""/>
+</div>
+<div class="col-span-2 text-center">
+<input class="w-full bg-transparent border-b border-blue-500 focus:outline-none text-center px-1 font-data-tabular text-on-surface py-0.5 placeholder-outline-variant" placeholder="@" type="text" value=""/>
+</div>
+<div class="col-span-1 flex justify-center">
+<button class="w-5 h-5 flex items-center justify-center border border-[#333333] text-outline-variant rounded-sm hover:border-blue-500 hover:text-blue-500">
+<span class="material-symbols-outlined text-[12px]">check</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add Set Action -->
+<div class="p-1">
+<button class="w-full py-1 text-center text-outline-variant hover:text-primary hover:bg-[#252525] font-code-label text-code-label transition-colors flex items-center justify-center rounded-sm">
+<span class="material-symbols-outlined text-[14px] mr-1">add</span> ADD_SET
+                            </button>
+</div>
+</div>
+<!-- Exercise Module: Inactive -->
+<div class="border border-[#333333] rounded-sm bg-surface-container-lowest opacity-70">
+<!-- Module Header -->
+<div class="flex items-center justify-between p-2 border-b border-[#333333] bg-surface-container-low">
+<div class="font-code-label text-code-label text-on-surface-variant">EX_02 : PULL_UP</div>
+<button class="text-outline-variant">
+<span class="material-symbols-outlined text-[14px]">more_horiz</span>
+</button>
+</div>
+<!-- Minimal Summary View -->
+<div class="p-2 font-data-tabular text-data-tabular text-outline-variant flex gap-2">
+<span class="px-1.5 py-0.5 border border-[#333333] rounded-sm">[BWx10]</span>
+<span class="px-1.5 py-0.5 border border-[#333333] rounded-sm">[BWx8]</span>
+<span class="px-1.5 py-0.5 border border-[#333333] rounded-sm">[+25x5]</span>
+</div>
+</div>
+</div>
+</section>
+<!-- RIGHT COLUMN: Persistent Live History -->
+<aside class="w-full lg:w-80 shrink-0 flex flex-col bg-[#1a1a1a] border border-[#333333] rounded-sm overflow-hidden">
+<!-- History Header -->
+<div class="p-3 border-b border-[#333333] bg-surface-container-low shrink-0 flex justify-between items-center">
+<div class="font-code-label text-code-label text-on-surface flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-2">history</span>
+                        QUERY_LOG: BARBELL_ROW
+                    </div>
+<button class="text-outline-variant hover:text-primary">
+<span class="material-symbols-outlined text-[14px]">filter_list</span>
+</button>
+</div>
+<!-- History Content -->
+<div class="flex-1 overflow-y-auto p-2 space-y-2">
+<!-- History Card 1 -->
+<div class="border border-[#333333] p-2 bg-surface-container-lowest rounded-sm">
+<div class="flex justify-between items-center mb-2">
+<div class="font-data-tabular text-data-tabular text-primary">2023-10-24</div>
+<div class="font-code-label text-[10px] text-outline-variant">VOL: 4,450</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant">
+<span>SET_01</span>
+<span>135 LBS x 10</span>
+</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface">
+<span>SET_02</span>
+<span>185 LBS x 8</span>
+</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface">
+<span>SET_03</span>
+<span>185 LBS x 7</span>
+</div>
+</div>
+</div>
+<!-- History Card 2 -->
+<div class="border border-[#333333] p-2 bg-surface-container-lowest rounded-sm">
+<div class="flex justify-between items-center mb-2">
+<div class="font-data-tabular text-data-tabular text-outline-variant">2023-10-17</div>
+<div class="font-code-label text-[10px] text-outline-variant">VOL: 4,200</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-data-tabular text-data-tabular text-outline-variant">
+<span>SET_01</span>
+<span>135 LBS x 10</span>
+</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-outline-variant">
+<span>SET_02</span>
+<span>175 LBS x 8</span>
+</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-outline-variant">
+<span>SET_03</span>
+<span>175 LBS x 8</span>
+</div>
+</div>
+</div>
+<!-- Data Visualization Snippet -->
+<div class="mt-4 p-2 border border-[#333333] rounded-sm bg-surface-container-lowest">
+<div class="font-code-label text-[10px] text-outline-variant mb-2 uppercase">Volume Trend</div>
+<div class="flex items-end h-16 gap-1">
+<div class="w-full bg-[#333333] rounded-t-sm" style="height: 60%"></div>
+<div class="w-full bg-[#333333] rounded-t-sm" style="height: 65%"></div>
+<div class="w-full bg-[#333333] rounded-t-sm" style="height: 70%"></div>
+<div class="w-full bg-[#333333] rounded-t-sm" style="height: 85%"></div>
+<div class="w-full bg-primary rounded-t-sm" style="height: 95%"></div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

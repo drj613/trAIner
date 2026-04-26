@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prompt Builder Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#32353c",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#e1e2ec",
+                        "on-primary-fixed": "#001a42",
+                        "surface-container-lowest": "#0b0e15",
+                        "on-tertiary": "#502400",
+                        "on-surface-variant": "#c2c6d6",
+                        "surface-tint": "#adc6ff",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#2e3038",
+                        "on-secondary": "#003824",
+                        "error-container": "#93000a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed": "#311400",
+                        "surface-dim": "#10131a",
+                        "primary": "#adc6ff",
+                        "surface-container-low": "#191b23",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#272a31",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-container": "#461f00",
+                        "tertiary": "#ffb786",
+                        "tertiary-container": "#df7412",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "primary-container": "#4d8eff",
+                        "surface": "#10131a",
+                        "on-error": "#690005",
+                        "on-background": "#e1e2ec",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-container": "#00285d",
+                        "outline": "#8c909f",
+                        "on-primary": "#002e6a",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "surface-variant": "#32353c",
+                        "on-primary-fixed-variant": "#004395",
+                        "inverse-surface": "#e1e2ec",
+                        "tertiary-fixed": "#ffdcc6",
+                        "secondary": "#4edea3",
+                        "surface-container": "#1d2027",
+                        "secondary-fixed": "#6ffbbe",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "on-secondary-fixed": "#002113",
+                        "surface-bright": "#363941",
+                        "outline-variant": "#424754"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "12px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "layout-margin": "12px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "cell-padding-y": "4px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontFamily": {
+                        "heading-sm": ["Inter", "sans-serif"],
+                        "body-compact": ["Inter", "sans-serif"],
+                        "data-tabular": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"],
+                        "code-label": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"]
+                    },
+                    "fontSize": {
+                        "heading-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-compact": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "data-tabular": ["13px", { "lineHeight": "16px", "fontWeight": "450" }],
+                        "code-label": ["11px", { "lineHeight": "12px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-compact min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar Shared Component -->
+<header class="bg-zinc-950 flex justify-between items-center w-full px-2 h-10 fixed top-0 border-b border-zinc-800 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500" style="font-variation-settings: 'FILL' 1; font-size: 18px;">terminal</span>
+<span class="font-mono font-bold text-blue-500 tracking-widest uppercase text-xs">TRAINER_PRO_V1</span>
+</div>
+<button class="font-mono uppercase tracking-tighter text-xs text-blue-500 hover:bg-zinc-900 transition-colors active:bg-zinc-800 px-2 py-1">
+            EXPORT
+        </button>
+</header>
+<!-- Main Workspace Canvas -->
+<main class="flex-1 overflow-y-auto pt-10 pb-12 p-md space-y-md">
+<!-- Document Meta Grid -->
+<section class="border border-outline-variant bg-surface-container-lowest flex flex-col">
+<div class="flex justify-between items-center border-b border-outline-variant bg-surface-container-low px-sm py-xs">
+<span class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wide">Configuration_State</span>
+<div class="flex items-center gap-1">
+<span class="h-2 w-2 rounded-full bg-secondary"></span>
+<span class="font-code-label text-code-label text-outline">LIVE</span>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-sm p-sm">
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-on-surface-variant uppercase">Model_Target</label>
+<select class="bg-transparent border-b border-outline-variant font-data-tabular text-data-tabular text-primary py-xs focus:border-primary focus:outline-none appearance-none cursor-pointer">
+<option class="bg-surface">GPT-4-Turbo-Preview</option>
+<option class="bg-surface">Claude-3-Opus-20240229</option>
+<option class="bg-surface">Llama-3-70b-Instruct</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-on-surface-variant uppercase">Response_Format</label>
+<select class="bg-transparent border-b border-outline-variant font-data-tabular text-data-tabular text-on-surface py-xs focus:border-primary focus:outline-none appearance-none cursor-pointer">
+<option class="bg-surface">JSON_Object</option>
+<option class="bg-surface">Text_Stream</option>
+</select>
+</div>
+<div class="flex flex-col gap-xs col-span-2">
+<label class="font-code-label text-code-label text-on-surface-variant uppercase">Template_ID</label>
+<input class="bg-transparent border-b border-outline-variant font-data-tabular text-data-tabular text-on-surface py-xs focus:border-primary focus:outline-none w-full" readonly="" type="text" value="pr_wkout_gen_v4.2"/>
+</div>
+</div>
+</section>
+<!-- System Persona -->
+<section class="border border-outline-variant bg-surface-container-lowest flex flex-col relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-unit bg-primary"></div>
+<div class="flex justify-between items-center border-b border-outline-variant bg-surface-container-low px-sm py-xs pl-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">psychology</span>
+<span class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wide">System_Persona</span>
+</div>
+<span class="font-code-label text-code-label text-outline">TOKENS: 42</span>
+</div>
+<textarea class="w-full bg-transparent p-sm pl-md font-data-tabular text-data-tabular text-primary-fixed min-h-[80px] focus:outline-none resize-y leading-relaxed border-none selection:bg-primary selection:text-on-primary">You are a high-level strength and conditioning architect. Your output must be purely structural, data-driven, and devoid of conversational padding. Prioritize periodization logic and precise mechanical loading parameters.</textarea>
+</section>
+<!-- Instruction Sequence Editor -->
+<section class="space-y-sm">
+<div class="flex justify-between items-end border-b border-outline-variant pb-xs">
+<span class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wide">Execution_Blocks</span>
+<button class="flex items-center gap-1 text-primary font-code-label text-code-label hover:text-primary-fixed transition-colors">
+<span class="material-symbols-outlined" style="font-size: 14px;">add_box</span>
+                    APPEND_BLOCK
+                </button>
+</div>
+<!-- Block Sequence Container -->
+<div class="space-y-xs">
+<!-- Block 1 -->
+<div class="border border-outline-variant bg-surface-container-lowest flex items-stretch">
+<div class="w-8 flex flex-col items-center justify-start border-r border-outline-variant bg-surface-container-low py-sm gap-2 cursor-grab hover:bg-surface-bright transition-colors">
+<span class="font-code-label text-code-label text-outline">01</span>
+<span class="material-symbols-outlined text-outline" style="font-size: 16px;">drag_indicator</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex justify-between items-center border-b border-outline-variant bg-surface-container-low px-sm py-xs">
+<span class="font-code-label text-code-label text-tertiary uppercase tracking-wider">Context_Inject</span>
+<button class="text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+</button>
+</div>
+<textarea class="w-full bg-transparent p-sm font-data-tabular text-data-tabular text-on-surface min-h-[60px] focus:outline-none resize-none border-none">The user profile indicates a 1RM back squat of 140kg and a current objective of muscular hypertrophy. They have a known asymmetry in left shoulder mobility.</textarea>
+</div>
+</div>
+<!-- Block 2 (Active/Focused state simulation) -->
+<div class="border border-primary bg-surface flex items-stretch relative">
+<div class="absolute -left-[1px] top-0 bottom-0 w-[2px] bg-primary"></div>
+<div class="w-8 flex flex-col items-center justify-start border-r border-outline-variant bg-surface-container-highest py-sm gap-2 cursor-grab">
+<span class="font-code-label text-code-label text-primary">02</span>
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">drag_indicator</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex justify-between items-center border-b border-outline-variant bg-surface-container-highest px-sm py-xs">
+<span class="font-code-label text-code-label text-secondary uppercase tracking-wider">Task_Directive</span>
+<button class="text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+</button>
+</div>
+<textarea class="w-full bg-transparent p-sm font-data-tabular text-data-tabular text-on-surface min-h-[60px] focus:outline-none resize-none border-none">Generate a 3-week undulating periodization mesocycle. Replace all overhead pressing movements with unilateral, strictly stabilized alternatives to accommodate the mobility deficit.</textarea>
+</div>
+</div>
+<!-- Block 3 -->
+<div class="border border-outline-variant bg-surface-container-lowest flex items-stretch opacity-80">
+<div class="w-8 flex flex-col items-center justify-start border-r border-outline-variant bg-surface-container-low py-sm gap-2 cursor-grab hover:bg-surface-bright transition-colors">
+<span class="font-code-label text-code-label text-outline">03</span>
+<span class="material-symbols-outlined text-outline" style="font-size: 16px;">drag_indicator</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex justify-between items-center border-b border-outline-variant bg-surface-container-low px-sm py-xs">
+<span class="font-code-label text-code-label text-error uppercase tracking-wider">Format_Constraint</span>
+<button class="text-outline hover:text-error transition-colors">
+<span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+</button>
+</div>
+<textarea class="w-full bg-transparent p-sm font-data-tabular text-data-tabular text-on-surface min-h-[60px] focus:outline-none resize-none border-none">The output MUST strictly adhere to the provided JSON schema. Ensure 'RPE' values are integers between 6 and 10.</textarea>
+</div>
+</div>
+</div>
+</section>
+<!-- Hyperparameters -->
+<section class="border border-outline-variant bg-surface-container-lowest p-sm space-y-md">
+<div class="flex items-center gap-2 border-b border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-size: 16px;">tune</span>
+<span class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wide">Hyperparameters</span>
+</div>
+<div class="grid grid-cols-2 gap-x-lg gap-y-md">
+<!-- Temp Slider -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<label class="font-code-label text-code-label text-on-surface-variant uppercase">Temperature</label>
+<span class="font-data-tabular text-data-tabular text-primary">0.20</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-none relative w-full mt-1">
+<div class="absolute top-0 left-0 h-full bg-primary w-[20%]"></div>
+<div class="absolute top-1/2 -translate-y-1/2 left-[20%] w-2 h-3 bg-on-surface border border-background -ml-1 cursor-ew-resize"></div>
+</div>
+</div>
+<!-- Top P Slider -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center">
+<label class="font-code-label text-code-label text-on-surface-variant uppercase">Top_P</label>
+<span class="font-data-tabular text-data-tabular text-primary">0.95</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-none relative w-full mt-1">
+<div class="absolute top-0 left-0 h-full bg-primary w-[95%]"></div>
+<div class="absolute top-1/2 -translate-y-1/2 left-[95%] w-2 h-3 bg-on-surface border border-background -ml-1 cursor-ew-resize"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom padding spacer for nav -->
+<div class="h-4"></div>
+</main>
+<!-- BottomNavBar Shared Component -->
+<nav class="bg-zinc-950 flex justify-around items-center w-full h-12 fixed bottom-0 z-50 border-t border-zinc-800 font-mono text-[10px] uppercase">
+<!-- PROMPT (Active State) -->
+<button class="flex flex-col items-center justify-center border-l-2 border-blue-500 bg-zinc-900 text-blue-500 h-full w-full">
+<span class="material-symbols-outlined" style="font-size: 20px;">terminal</span>
+<span>PROMPT</span>
+</button>
+<!-- HISTORY (Inactive State) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">history</span>
+<span>HISTORY</span>
+</button>
+<!-- ROUTINE (Inactive State) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">calendar_month</span>
+<span>ROUTINE</span>
+</button>
+<!-- SYNC (Inactive State) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">cloud_sync</span>
+<span>SYNC</span>
+</button>
+<!-- SAVE (Inactive State) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">save</span>
+<span>SAVE</span>
+</button>
+</nav>
+</body></html>

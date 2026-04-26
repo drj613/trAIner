@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Today Workout - Primary Tracker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@450;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 20px; /* Base size, adjustable via classes */
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Custom font families mapped from config */
+        .font-data-tabular { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", monospace; }
+        .font-body-compact { font-family: 'Inter', sans-serif; }
+        .font-code-label { font-family: ui-monospace, SFMono-Regular, "Roboto Mono", monospace; }
+        .font-heading-sm { font-family: 'Inter', sans-serif; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#4d8eff",
+                        "tertiary-container": "#df7412",
+                        "on-error": "#690005",
+                        "outline": "#8c909f",
+                        "on-primary-fixed": "#001a42",
+                        "on-tertiary": "#502400",
+                        "surface-variant": "#32353c",
+                        "surface-container-highest": "#32353c",
+                        "on-surface-variant": "#c2c6d6",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "error-container": "#93000a",
+                        "on-background": "#e1e2ec",
+                        "on-surface": "#e1e2ec",
+                        "surface-container-lowest": "#0b0e15",
+                        "inverse-surface": "#e1e2ec",
+                        "surface-dim": "#10131a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#1d2027",
+                        "inverse-on-surface": "#2e3038",
+                        "tertiary-fixed": "#ffdcc6",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-primary": "#002e6a",
+                        "tertiary": "#ffb786",
+                        "primary": "#adc6ff",
+                        "surface": "#10131a",
+                        "surface-container-low": "#191b23",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-bright": "#363941",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#00285d",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#4edea3",
+                        "outline-variant": "#424754",
+                        "surface-container-high": "#272a31",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#311400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "cell-padding-y": "4px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "layout-margin": "12px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontSize": {
+                        "data-tabular": ["13px", { "lineHeight": "16px", "fontWeight": "450" }],
+                        "body-compact": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "code-label": ["11px", { "lineHeight": "12px", "fontWeight": "500" }],
+                        "heading-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-screen flex flex-col font-body-compact text-body-compact overflow-hidden selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="bg-zinc-950 font-mono uppercase tracking-tighter text-xs docked full-width top-0 border-b border-zinc-800 flat no shadows flex justify-between items-center w-full px-2 h-10 shrink-0 z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 text-[16px]" style="font-variation-settings: 'FILL' 0;">terminal</span>
+<span class="font-mono font-bold text-blue-500 tracking-widest">TRAINER_PRO_V1</span>
+</div>
+<div class="flex items-center cursor-pointer hover:bg-zinc-900 transition-colors active:bg-zinc-800 px-2 py-1 rounded">
+<span class="text-blue-500 font-bold">EXPORT</span>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 overflow-y-auto pb-16 md:pb-0 flex flex-col relative">
+<!-- Sticky Tracker Header -->
+<div class="sticky top-0 z-10 bg-surface-container-high border-b border-outline-variant px-layout-margin py-sm flex justify-between items-baseline shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
+<h1 class="font-heading-sm text-heading-sm text-on-surface">PUSH_A - FEB 12</h1>
+<span class="font-data-tabular text-data-tabular text-outline">BW: 82.4kg</span>
+</div>
+<!-- Content Canvas -->
+<div class="p-layout-margin flex flex-col gap-md">
+<!-- Module: WARMUP -->
+<section class="flex flex-col border border-outline-variant bg-surface-container-low">
+<header class="px-sm py-xs border-b border-outline-variant bg-surface-container flex items-center justify-between">
+<span class="font-code-label text-code-label text-outline uppercase tracking-wider">[WARMUP]</span>
+</header>
+<div class="flex flex-col">
+<!-- Row -->
+<div class="flex flex-col sm:flex-row sm:items-stretch border-b border-outline-variant last:border-0 group">
+<div class="p-sm flex flex-col justify-center flex-1 border-b sm:border-b-0 sm:border-r border-outline-variant group-hover:bg-surface-variant transition-colors">
+<span class="font-body-compact text-body-compact text-on-surface font-semibold">Face Pulls</span>
+<span class="font-code-label text-code-label text-outline mt-xs">3x15</span>
+</div>
+<!-- Sets Grid -->
+<div class="flex overflow-x-auto no-scrollbar bg-surface-container">
+<div class="flex-shrink-0 min-w-[70px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-pointer hover:bg-surface-variant">
+                                15x15
+                            </div>
+<div class="flex-shrink-0 min-w-[70px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-pointer hover:bg-surface-variant">
+                                15x15
+                            </div>
+<div class="flex-shrink-0 min-w-[70px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-pointer hover:bg-surface-variant">
+                                15x15
+                            </div>
+<div class="flex-shrink-0 min-w-[70px] flex items-center justify-center px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-outline cursor-pointer hover:bg-surface-variant hover:text-on-surface">
+                                + SET
+                            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Module: STRENGTH SUPERSET -->
+<section class="flex flex-col border border-outline-variant bg-surface-container-low relative">
+<!-- Highlight Indicator (Level 2 concept) -->
+<div class="absolute left-0 top-0 bottom-0 w-[2px] bg-primary"></div>
+<header class="px-sm py-xs border-b border-outline-variant bg-surface-container flex items-center justify-between pl-[10px]">
+<span class="font-code-label text-code-label text-primary uppercase tracking-wider">[STRENGTH - SUPERSET]</span>
+<span class="font-code-label text-code-label text-outline">STRENGTH A</span>
+</header>
+<div class="flex flex-col">
+<!-- A1 Row -->
+<div class="flex flex-col lg:flex-row lg:items-stretch border-b border-outline-variant group">
+<div class="flex flex-1 border-b lg:border-b-0 lg:border-r border-outline-variant group-hover:bg-surface-variant transition-colors">
+<div class="w-8 flex items-center justify-center border-r border-outline-variant bg-surface-variant/50 font-code-label text-code-label text-outline shrink-0">
+                                A1
+                            </div>
+<div class="p-sm flex flex-col justify-center flex-1">
+<span class="font-body-compact text-body-compact text-on-surface font-semibold">DB Bench</span>
+<span class="font-code-label text-code-label text-outline mt-xs">3x8-10</span>
+</div>
+</div>
+<!-- A1 Sets -->
+<div class="flex overflow-x-auto no-scrollbar bg-surface-container">
+<div class="flex-shrink-0 min-w-[75px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-text hover:bg-surface-variant">
+                                60x10
+                            </div>
+<div class="flex-shrink-0 min-w-[75px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-text hover:bg-surface-variant">
+                                60x10
+                            </div>
+<div class="flex-shrink-0 min-w-[75px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-text hover:bg-surface-variant">
+                                60x8
+                            </div>
+<div class="flex-shrink-0 min-w-[75px] flex items-center justify-center px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-outline cursor-pointer hover:bg-surface-variant hover:text-on-surface">
+                                + SET
+                            </div>
+</div>
+</div>
+<!-- A2 Row -->
+<div class="flex flex-col lg:flex-row lg:items-stretch border-b border-outline-variant group">
+<div class="flex flex-1 border-b lg:border-b-0 lg:border-r border-outline-variant group-hover:bg-surface-variant transition-colors">
+<div class="w-8 flex items-center justify-center border-r border-outline-variant bg-surface-variant/50 font-code-label text-code-label text-outline shrink-0">
+                                A2
+                            </div>
+<div class="p-sm flex flex-col justify-center flex-1">
+<span class="font-body-compact text-body-compact text-on-surface font-semibold">Weighted Pullup</span>
+<span class="font-code-label text-code-label text-outline mt-xs">3x5</span>
+</div>
+</div>
+<!-- A2 Sets -->
+<div class="flex overflow-x-auto no-scrollbar bg-surface-container">
+<div class="flex-shrink-0 min-w-[85px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-text hover:bg-surface-variant">
+                                BW+10x5
+                            </div>
+<div class="flex-shrink-0 min-w-[85px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-secondary bg-secondary-container/10 cursor-text hover:bg-surface-variant">
+                                BW+10x5
+                            </div>
+<div class="flex-shrink-0 min-w-[85px] flex items-center justify-center border-r border-outline-variant px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-tertiary bg-tertiary-container/10 cursor-text hover:bg-surface-variant border-b-2 border-b-tertiary-container" title="RPE 9">
+                                BW+10x4
+                            </div>
+<div class="flex-shrink-0 min-w-[85px] flex items-center justify-center px-cell-padding-x py-cell-padding-y font-data-tabular text-data-tabular text-outline cursor-pointer hover:bg-surface-variant hover:text-on-surface">
+                                + SET
+                            </div>
+</div>
+</div>
+</div>
+<!-- Footer / Notes -->
+<div class="px-sm py-xs bg-surface-container flex items-center gap-2 border-t border-outline-variant">
+<span class="material-symbols-outlined text-[14px] text-outline">description</span>
+<span class="font-code-label text-code-label text-outline">Note: [RPE 9 on last set]</span>
+</div>
+<!-- Action Area -->
+<div class="p-xs bg-surface border-t border-outline-variant">
+<button class="w-full h-[28px] border border-primary text-primary font-code-label text-code-label flex items-center justify-center gap-1 hover:bg-primary/10 transition-colors active:bg-primary/20">
+<span class="material-symbols-outlined text-[14px]">psychiatry</span>
+                        MODIFY WITH AI
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-zinc-950 font-mono text-[10px] uppercase fixed bottom-0 w-full z-50 border-t border-zinc-800 flat no shadows flex justify-around items-center h-12 shrink-0">
+<!-- PROMPT (Active) -->
+<button class="flex flex-col items-center justify-center border-l-2 border-blue-500 bg-zinc-900 text-blue-500 h-full w-full active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-[20px] mb-[2px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span>PROMPT</span>
+</button>
+<!-- HISTORY (Inactive) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-[2px]">history</span>
+<span>HISTORY</span>
+</button>
+<!-- SYNC (Inactive) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-[2px]">cloud_sync</span>
+<span>SYNC</span>
+</button>
+<!-- SAVE (Inactive) -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-[2px]">save</span>
+<span>SAVE</span>
+</button>
+</nav>
+</body></html>

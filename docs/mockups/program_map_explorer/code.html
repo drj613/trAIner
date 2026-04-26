@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Routine Overview - Workbench OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dim": "#10131a",
+                        "surface": "#10131a",
+                        "on-secondary-fixed-variant": "#005236",
+                        "outline-variant": "#424754",
+                        "on-secondary-fixed": "#002113",
+                        "tertiary-fixed": "#ffdcc6",
+                        "primary": "#adc6ff",
+                        "on-primary": "#002e6a",
+                        "tertiary-container": "#df7412",
+                        "inverse-on-surface": "#2e3038",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-tint": "#adc6ff",
+                        "primary-container": "#4d8eff",
+                        "on-tertiary": "#502400",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-secondary-container": "#00311f",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e1e2ec",
+                        "on-background": "#e1e2ec",
+                        "inverse-primary": "#005ac2",
+                        "surface-bright": "#363941",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-surface": "#e1e2ec",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "surface-container-low": "#191b23",
+                        "secondary-container": "#00a572",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary": "#ffb786",
+                        "surface-container-lowest": "#0b0e15",
+                        "surface-container": "#1d2027",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#00285d",
+                        "background": "#10131a",
+                        "on-secondary": "#003824",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-tertiary-container": "#461f00",
+                        "secondary": "#4edea3",
+                        "surface-variant": "#32353c",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#32353c",
+                        "on-tertiary-fixed": "#311400",
+                        "on-primary-fixed": "#001a42",
+                        "surface-container-high": "#272a31",
+                        "outline": "#8c909f"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        xs: "4px",
+                        md: "12px",
+                        lg: "16px",
+                        "cell-padding-x": "8px",
+                        sm: "8px",
+                        "cell-padding-y": "4px",
+                        unit: "4px",
+                        "layout-margin": "12px"
+                    },
+                    fontFamily: {
+                        "heading-sm": ["Inter", "sans-serif"],
+                        "data-tabular": ["Roboto Mono", "monospace"],
+                        "code-label": ["Roboto Mono", "monospace"],
+                        "body-compact": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        "heading-sm": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "data-tabular": ["13px", { lineHeight: "16px", fontWeight: "450" }],
+                        "code-label": ["11px", { lineHeight: "12px", fontWeight: "500" }],
+                        "body-compact": ["13px", { lineHeight: "18px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for spreadsheet feel */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #10131a; }
+        ::-webkit-scrollbar-thumb { background: #32353c; border: 1px solid #10131a; }
+        ::-webkit-scrollbar-thumb:hover { background: #424754; }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen overflow-hidden flex font-body-compact text-body-compact selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="bg-surface flex flex-col w-64 h-screen border-r border-outline-variant z-20 flex-shrink-0">
+<!-- Header -->
+<div class="p-layout-margin border-b border-outline-variant flex items-center gap-sm">
+<div class="w-8 h-8 bg-surface-container-high rounded flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-sm">terminal</span>
+</div>
+<div>
+<div class="text-primary font-black font-code-label text-code-label uppercase">WORKBENCH_OS</div>
+<div class="text-on-surface-variant font-code-label text-code-label text-[9px] uppercase tracking-wider">v4.2.0-STABLE</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-sm flex flex-col gap-xs">
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 group cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-lg group-hover:text-primary">terminal</span>
+<span class="font-code-label text-code-label uppercase">PROMPT_STUDIO</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-sm px-layout-margin py-unit bg-surface-variant text-primary border-l-2 border-primary transition-all duration-75 cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-lg">account_tree</span>
+<span class="font-code-label text-code-label uppercase">ROUTINE_MAP</span>
+</a>
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 group cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-lg group-hover:text-primary">edit_note</span>
+<span class="font-code-label text-code-label uppercase">WORKOUT_LOG</span>
+</a>
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 group cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-lg group-hover:text-primary">database</span>
+<span class="font-code-label text-code-label uppercase">HISTORY_DB</span>
+</a>
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 group cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-lg group-hover:text-primary">sd_storage</span>
+<span class="font-code-label text-code-label uppercase">STORAGE_MGR</span>
+</a>
+</div>
+<!-- Footer / CTA -->
+<div class="border-t border-outline-variant p-sm flex flex-col gap-unit">
+<button class="w-full bg-primary text-on-primary font-code-label text-code-label uppercase py-unit border border-primary hover:bg-primary-container transition-colors flex items-center justify-center gap-unit cursor-crosshair mb-sm">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span> INIT_SESSION
+            </button>
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-sm">list_alt</span>
+<span class="font-code-label text-code-label uppercase">SYS_LOG</span>
+</a>
+<a class="flex items-center gap-sm px-layout-margin py-unit text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-all duration-75 cursor-crosshair" href="#">
+<span class="material-symbols-outlined text-sm">menu_book</span>
+<span class="font-code-label text-code-label uppercase">RESOURCES</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- TopAppBar -->
+<header class="bg-background flex justify-between items-center px-3 py-1 w-full h-8 border-b border-outline-variant z-10 flex-shrink-0">
+<!-- Left: Metadata/Brand -->
+<div class="flex items-center gap-sm">
+<span class="font-code-label text-code-label text-primary uppercase tracking-tighter">METADATA_CORE_v1.0</span>
+<div class="h-3 w-px bg-outline-variant"></div>
+<div class="flex gap-md">
+<a class="font-code-label text-code-label text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-tighter cursor-crosshair" href="#">SESSION_LIVE</a>
+<a class="font-code-label text-code-label text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-tighter cursor-crosshair" href="#">SYNC_STATUS</a>
+<a class="font-code-label text-code-label text-on-surface-variant hover:text-on-surface transition-colors uppercase tracking-tighter cursor-crosshair" href="#">LOG_FREQ</a>
+</div>
+</div>
+<!-- Right: Actions & Search (Implied layout) -->
+<div class="flex items-center gap-sm">
+<div class="flex items-center gap-1 border-r border-outline-variant pr-sm mr-sm hidden md:flex">
+<button class="text-on-surface-variant hover:text-on-surface cursor-crosshair p-1 flex items-center justify-center transition-colors hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">settings_ethernet</span></button>
+<button class="text-on-surface-variant hover:text-on-surface cursor-crosshair p-1 flex items-center justify-center transition-colors hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">database</span></button>
+<button class="text-on-surface-variant hover:text-on-surface cursor-crosshair p-1 flex items-center justify-center transition-colors hover:bg-surface-variant"><span class="material-symbols-outlined text-[14px]">terminal</span></button>
+</div>
+<button class="font-code-label text-code-label text-on-surface border border-outline-variant px-2 py-0.5 hover:bg-surface-variant transition-colors uppercase cursor-crosshair">COMMIT_LOG</button>
+<button class="font-code-label text-code-label bg-primary text-on-primary border border-primary px-2 py-0.5 hover:bg-primary-container transition-colors uppercase cursor-crosshair">EXPORT_JSON</button>
+<div class="w-6 h-6 bg-surface-variant border border-outline-variant ml-sm flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-[14px]">person</span>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 overflow-auto p-layout-margin flex flex-col gap-lg">
+<!-- Canvas Header -->
+<div class="flex justify-between items-end pb-sm border-b border-outline-variant">
+<div>
+<h1 class="font-heading-sm text-heading-sm text-on-surface uppercase mb-unit">PRG_HYPERTROPHY_BLOCK_A</h1>
+<div class="flex items-center gap-md font-code-label text-code-label text-on-surface-variant uppercase">
+<span class="flex items-center gap-unit"><span class="material-symbols-outlined text-[12px]">calendar_month</span> WK_01 - WK_04</span>
+<span>|</span>
+<span class="text-secondary">STATUS: ACTIVE</span>
+<span>|</span>
+<span>COMPLETION: 35%</span>
+</div>
+</div>
+<div class="flex gap-unit">
+<button class="h-6 px-2 border border-outline-variant bg-surface-variant text-on-surface flex items-center justify-center cursor-crosshair font-code-label text-code-label uppercase">
+<span class="material-symbols-outlined text-[14px] mr-1">grid_view</span> GANTT
+                    </button>
+<button class="h-6 px-2 border border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-variant flex items-center justify-center cursor-crosshair font-code-label text-code-label uppercase transition-colors">
+<span class="material-symbols-outlined text-[14px] mr-1">view_list</span> LIST
+                    </button>
+</div>
+</div>
+<!-- The Grid (Gantt style) -->
+<div class="flex-1 flex flex-col min-h-0 border border-outline-variant bg-outline-variant gap-[1px]">
+<!-- Day Headers Row -->
+<div class="grid grid-cols-7 gap-[1px] bg-outline-variant flex-shrink-0">
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant">MON</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant">TUE</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant">WED</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant">THU</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant">FRI</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant text-tertiary">SAT</div>
+<div class="bg-surface-container py-cell-padding-y text-center font-code-label text-code-label text-on-surface-variant uppercase tracking-widest border-b border-outline-variant text-tertiary">SUN</div>
+</div>
+<!-- Grid Body (Scrollable if needed, though designed to fit) -->
+<div class="grid grid-cols-7 grid-rows-4 gap-[1px] flex-1 bg-outline-variant">
+<!-- WEEK 1 (Completed/Past) -->
+<!-- D01 -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-secondary">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_01</span>
+<span class="font-code-label text-[9px] text-secondary border border-secondary px-1 rounded-sm uppercase">CMPL</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate">LOWER_A</div>
+<div class="mt-auto flex flex-col gap-[2px]">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>VOL</span><span class="text-on-surface">14.2K</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span class="text-on-surface">6</span></div>
+</div>
+<!-- Hover Popup -->
+<div class="absolute top-full left-0 mt-1 w-48 bg-surface-container-high border border-outline-variant p-2 z-50 hidden group-hover:flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+<div class="font-code-label text-code-label text-on-surface border-b border-outline-variant pb-1 mb-1">SESSION_METADATA</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant"><span class="text-on-surface truncate pr-2">BACK_SQUAT</span><span>4x8</span></div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant"><span class="text-on-surface truncate pr-2">RDL</span><span>3x10</span></div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant"><span class="text-on-surface truncate pr-2">LEG_PRESS</span><span>3x12</span></div>
+</div>
+</div>
+<!-- D02 -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-secondary">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_02</span>
+<span class="font-code-label text-[9px] text-secondary border border-secondary px-1 rounded-sm uppercase">CMPL</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate">UPPER_A</div>
+<div class="mt-auto flex flex-col gap-[2px]">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>VOL</span><span class="text-on-surface">9.8K</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span class="text-on-surface">7</span></div>
+</div>
+</div>
+<!-- D03 Rest -->
+<div class="bg-surface-container-lowest relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_03</span>
+<span class="font-code-label text-[9px] text-on-surface-variant uppercase">REST</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface-variant mb-xs truncate opacity-50">RECOVERY</div>
+</div>
+<!-- D04 Missed -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-error opacity-75">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_04</span>
+<span class="font-code-label text-[9px] text-error border border-error px-1 rounded-sm uppercase">SKIP</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate line-through decoration-error">LOWER_B</div>
+<div class="mt-auto flex flex-col gap-[2px] opacity-50">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>VOL</span><span>--</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span>--</span></div>
+</div>
+</div>
+<!-- D05 -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-secondary">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_05</span>
+<span class="font-code-label text-[9px] text-secondary border border-secondary px-1 rounded-sm uppercase">CMPL</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate">UPPER_B</div>
+<div class="mt-auto flex flex-col gap-[2px]">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>VOL</span><span class="text-on-surface">11.1K</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span class="text-on-surface">6</span></div>
+</div>
+</div>
+<!-- D06 -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-secondary">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-tertiary">D_06</span>
+<span class="font-code-label text-[9px] text-secondary border border-secondary px-1 rounded-sm uppercase">CMPL</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate">ARMS/CORE</div>
+<div class="mt-auto flex flex-col gap-[2px]">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>VOL</span><span class="text-on-surface">8.4K</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span class="text-on-surface">5</span></div>
+</div>
+</div>
+<!-- D07 Rest -->
+<div class="bg-surface-container-lowest relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-tertiary">D_07</span>
+<span class="font-code-label text-[9px] text-on-surface-variant uppercase">REST</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface-variant mb-xs truncate opacity-50">RECOVERY</div>
+</div>
+<!-- WEEK 2 (Current) -->
+<!-- D08 Today -->
+<div class="bg-surface-variant relative group hover:bg-surface-bright transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-primary shadow-[inset_0_0_0_1px_theme(colors.primary)]">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-primary">D_08</span>
+<span class="font-code-label text-[9px] text-primary border border-primary bg-primary/10 px-1 rounded-sm uppercase animate-pulse">LIVE</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate">LOWER_A</div>
+<div class="mt-auto flex flex-col gap-[2px]">
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>TRGT_VOL</span><span class="text-primary">14.5K</span></div>
+<div class="flex justify-between font-data-tabular text-[10px] text-on-surface-variant"><span>EXR</span><span class="text-primary">6</span></div>
+</div>
+<!-- Hover Popup -->
+<div class="absolute top-full left-0 mt-1 w-48 bg-surface-container-high border border-outline-variant p-2 z-50 hidden group-hover:flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+<div class="font-code-label text-code-label text-primary border-b border-outline-variant pb-1 mb-1">TARGET_DATA</div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant"><span class="text-on-surface truncate pr-2">BACK_SQUAT</span><span>4x8-10</span></div>
+<div class="flex justify-between font-data-tabular text-data-tabular text-on-surface-variant"><span class="text-on-surface truncate pr-2">RDL</span><span>3x10-12</span></div>
+</div>
+</div>
+<!-- D09 Future -->
+<div class="bg-surface relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col border-l-2 border-transparent">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_09</span>
+<span class="font-code-label text-[9px] text-on-surface-variant uppercase">PEND</span>
+</div>
+<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate opacity-70">UPPER_A</div>
+</div>
+<!-- D10 Rest -->
+<div class="bg-surface-container-lowest relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-code-label text-code-label text-on-surface-variant">D_10</span>
+<span class="font-code-label text-[9px] text-on-surface-variant uppercase">REST</span>
+</div>
+</div>
+<!-- Generate remaining future empty slots for visual consistency -->
+<script>
+                        for(let i=11; i<=28; i++) {
+                            let dayClass = (i%7===6 || i%7===0) ? 'text-tertiary' : 'text-on-surface-variant';
+                            let isRest = (i%7===3 || i%7===0);
+                            let bgClass = isRest ? 'bg-surface-container-lowest' : 'bg-surface';
+                            let typeStr = isRest ? '<span class="font-code-label text-[9px] text-on-surface-variant uppercase">REST</span>' : '<span class="font-code-label text-[9px] text-on-surface-variant uppercase opacity-50">PEND</span>';
+                            let bodyStr = isRest ? '' : '<div class="font-data-tabular text-data-tabular text-on-surface mb-xs truncate opacity-30">TBD_BLOCK</div>';
+
+                            document.write(`
+                            <div class="${bgClass} relative group hover:bg-surface-variant transition-colors cursor-crosshair p-cell-padding-x py-cell-padding-y flex flex-col">
+                                <div class="flex justify-between items-center mb-sm">
+                                    <span class="font-code-label text-code-label ${dayClass}">D_${i}</span>
+                                    ${typeStr}
+                                </div>
+                                ${bodyStr}
+                            </div>
+                            `);
+                        }
+                    </script>
+</div>
+</div>
+</main>
+</div>
+</body></html>

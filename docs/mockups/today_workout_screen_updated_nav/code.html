@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Today Workout Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#32353c",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-error-container": "#ffdad6",
+                        "on-surface": "#e1e2ec",
+                        "on-primary-fixed": "#001a42",
+                        "surface-container-lowest": "#0b0e15",
+                        "on-tertiary": "#502400",
+                        "on-surface-variant": "#c2c6d6",
+                        "surface-tint": "#adc6ff",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-on-surface": "#2e3038",
+                        "on-secondary": "#003824",
+                        "error-container": "#93000a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed": "#311400",
+                        "surface-dim": "#10131a",
+                        "primary": "#adc6ff",
+                        "surface-container-low": "#191b23",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#272a31",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-container": "#461f00",
+                        "tertiary": "#ffb786",
+                        "tertiary-container": "#df7412",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "primary-container": "#4d8eff",
+                        "surface": "#10131a",
+                        "on-error": "#690005",
+                        "on-background": "#e1e2ec",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-container": "#00285d",
+                        "outline": "#8c909f",
+                        "on-primary": "#002e6a",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "surface-variant": "#32353c",
+                        "on-primary-fixed-variant": "#004395",
+                        "inverse-surface": "#e1e2ec",
+                        "tertiary-fixed": "#ffdcc6",
+                        "secondary": "#4edea3",
+                        "surface-container": "#1d2027",
+                        "secondary-fixed": "#6ffbbe",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "on-secondary-fixed": "#002113",
+                        "surface-bright": "#363941",
+                        "outline-variant": "#424754"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "12px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "layout-margin": "12px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "cell-padding-y": "4px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontFamily": {
+                        "heading-sm": ["Inter"],
+                        "body-compact": ["Inter"],
+                        "data-tabular": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"],
+                        "code-label": ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"]
+                    },
+                    "fontSize": {
+                        "heading-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-compact": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "data-tabular": ["13px", { "lineHeight": "16px", "fontWeight": "450" }],
+                        "code-label": ["11px", { "lineHeight": "12px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Hide scrollbar for clean data rows */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-compact text-body-compact min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-zinc-950 border-b border-zinc-800 flex justify-between items-center w-full px-2 h-10 fixed top-0 z-50">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 text-[18px]">terminal</span>
+<span class="font-mono uppercase tracking-tighter text-xs text-blue-500 font-bold tracking-widest">TRAINER_PRO_V1</span>
+</div>
+<button class="font-mono uppercase tracking-tighter text-xs text-zinc-500 hover:bg-zinc-900 active:bg-zinc-800 transition-colors px-2 py-1 rounded">EXPORT</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 pt-10 pb-12 overflow-y-auto">
+<!-- Context Header -->
+<div class="px-sm py-sm border-b border-outline-variant bg-surface-container-lowest">
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-tight">PUSH_A</h1>
+<div class="font-data-tabular text-data-tabular text-outline mt-1 uppercase">FEB 12 // IN_PROGRESS</div>
+</div>
+<div class="font-data-tabular text-data-tabular text-secondary px-2 py-1 border border-secondary rounded flex items-center gap-1 bg-secondary/10">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary inline-block animate-pulse"></span>
+                    00:45:12
+                </div>
+</div>
+</div>
+<!-- Fluid Spreadsheet Workspace -->
+<div class="p-sm flex flex-col gap-sm">
+<!-- Module: WARMUP -->
+<div class="border border-outline-variant bg-surface-container-low rounded-DEFAULT overflow-hidden">
+<div class="px-cell-padding-x py-cell-padding-y border-b border-outline-variant bg-surface-container flex justify-between items-center cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-code-label text-code-label text-outline uppercase tracking-wider">WARMUP_SEQ</span>
+<span class="material-symbols-outlined text-outline text-[16px]">keyboard_arrow_up</span>
+</div>
+<div class="flex flex-col">
+<!-- Exercise Row -->
+<div class="flex flex-col border-b border-outline-variant last:border-b-0">
+<div class="px-cell-padding-x py-cell-padding-y flex justify-between items-center bg-surface-container-lowest">
+<span class="font-heading-sm text-heading-sm text-on-surface">FACE PULLS</span>
+<span class="font-data-tabular text-data-tabular text-outline">CABLE</span>
+</div>
+<div class="px-cell-padding-x py-cell-padding-y flex gap-xs overflow-x-auto no-scrollbar bg-surface-dim">
+<!-- Set Cells -->
+<div class="border border-secondary bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-secondary flex items-center justify-center min-w-[56px] cursor-pointer">15x15</div>
+<div class="border border-secondary bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-secondary flex items-center justify-center min-w-[56px] cursor-pointer">15x15</div>
+<div class="border border-outline-variant bg-surface px-2 py-1 font-data-tabular text-data-tabular text-outline flex items-center justify-center min-w-[56px] border-dashed cursor-pointer hover:border-primary hover:text-primary transition-colors">+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Module: STRENGTH -->
+<div class="border border-outline-variant bg-surface-container-low rounded-DEFAULT overflow-hidden">
+<div class="px-cell-padding-x py-cell-padding-y border-b border-outline-variant bg-surface-container flex justify-between items-center cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="font-code-label text-code-label text-outline uppercase tracking-wider">MAIN_STRENGTH</span>
+<span class="material-symbols-outlined text-outline text-[16px]">keyboard_arrow_up</span>
+</div>
+<div class="flex flex-col">
+<!-- Exercise Row: Active State -->
+<div class="flex flex-col border-b border-outline-variant border-l-2 border-l-primary bg-surface-container-highest">
+<div class="px-cell-padding-x py-cell-padding-y flex justify-between items-center">
+<span class="font-heading-sm text-heading-sm text-primary">DB BENCH PRESS</span>
+<span class="font-data-tabular text-data-tabular text-outline">FLAT</span>
+</div>
+<div class="px-cell-padding-x py-cell-padding-y flex gap-xs overflow-x-auto no-scrollbar bg-surface-dim">
+<!-- Set Cells -->
+<div class="border border-secondary bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-secondary flex items-center justify-center min-w-[56px] cursor-pointer">60x10</div>
+<div class="border border-secondary bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-secondary flex items-center justify-center min-w-[56px] cursor-pointer">65x8</div>
+<div class="border border-primary bg-surface-bright px-2 py-1 font-data-tabular text-data-tabular text-on-surface flex items-center justify-center min-w-[56px] cursor-pointer shadow-[0_0_0_1px_rgba(173,198,255,1)]">70x_</div>
+<div class="border border-outline-variant bg-surface px-2 py-1 font-data-tabular text-data-tabular text-outline flex items-center justify-center min-w-[56px] border-dashed cursor-pointer hover:border-primary hover:text-primary transition-colors">+</div>
+</div>
+</div>
+<!-- Exercise Row: Inactive -->
+<div class="flex flex-col border-b border-outline-variant last:border-b-0 border-l-2 border-l-transparent hover:bg-surface-container-high transition-colors">
+<div class="px-cell-padding-x py-cell-padding-y flex justify-between items-center bg-surface-container-lowest">
+<span class="font-heading-sm text-heading-sm text-on-surface">WEIGHTED PULLUP</span>
+<span class="font-data-tabular text-data-tabular text-outline">PRONATED</span>
+</div>
+<div class="px-cell-padding-x py-cell-padding-y flex gap-xs overflow-x-auto no-scrollbar bg-surface-dim">
+<!-- Set Cells -->
+<div class="border border-outline-variant bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-on-surface-variant flex items-center justify-center min-w-[56px] cursor-pointer hover:border-primary">BWx10</div>
+<div class="border border-outline-variant bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-on-surface-variant flex items-center justify-center min-w-[56px] cursor-pointer hover:border-primary">25x8</div>
+<div class="border border-outline-variant bg-surface-container px-2 py-1 font-data-tabular text-data-tabular text-on-surface-variant flex items-center justify-center min-w-[56px] cursor-pointer hover:border-primary">45x6</div>
+<div class="border border-outline-variant bg-surface px-2 py-1 font-data-tabular text-data-tabular text-outline flex items-center justify-center min-w-[56px] border-dashed cursor-pointer hover:border-primary hover:text-primary transition-colors">+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Detail: Raw Payload Preview -->
+<div class="mt-2 border border-outline-variant bg-[#050505] rounded-DEFAULT overflow-hidden">
+<div class="px-cell-padding-x py-1 border-b border-outline-variant bg-surface-container-lowest flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[12px]">code</span>
+<span class="font-code-label text-code-label text-outline uppercase">METADATA_STREAM</span>
+</div>
+<div class="p-2 font-data-tabular text-data-tabular text-on-surface-variant opacity-50 text-[10px] leading-tight break-all">
+                    {"id":"wk_09f2a","type":"PUSH_A","date":"2024-02-12T08:30:00Z","modules":[{"id":"w_1","n":"Face Pulls","s":[[15,15,1],[15,15,1]]},{"id":"s_1","n":"DB Bench","s":[[60,10,1],[65,8,1],[70,null,0]]}]}
+                </div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-zinc-950 fixed bottom-0 w-full z-50 border-t border-zinc-800 flex justify-around items-center h-12">
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[20px]">terminal</span>
+<span class="font-mono text-[10px] uppercase">PROMPT</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[20px]">history</span>
+<span class="font-mono text-[10px] uppercase">HISTORY</span>
+</a>
+<!-- ACTIVE TAB: ROUTINE -->
+<a class="flex flex-col items-center justify-center border-l-2 border-blue-500 bg-zinc-900 text-blue-500 h-full w-full active:opacity-80 transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[20px]" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="font-mono text-[10px] uppercase">ROUTINE</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[20px]">cloud_sync</span>
+<span class="font-mono text-[10px] uppercase">SYNC</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[20px]">save</span>
+<span class="font-mono text-[10px] uppercase">SAVE</span>
+</a>
+</nav>
+</body></html>

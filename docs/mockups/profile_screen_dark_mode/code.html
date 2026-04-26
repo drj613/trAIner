@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile Screen - Trainer Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@450;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#4d8eff",
+                        "tertiary-container": "#df7412",
+                        "on-error": "#690005",
+                        "outline": "#8c909f",
+                        "on-primary-fixed": "#001a42",
+                        "on-tertiary": "#502400",
+                        "surface-variant": "#32353c",
+                        "surface-container-highest": "#32353c",
+                        "on-surface-variant": "#c2c6d6",
+                        "background": "#10131a",
+                        "inverse-primary": "#005ac2",
+                        "error-container": "#93000a",
+                        "on-background": "#e1e2ec",
+                        "on-surface": "#e1e2ec",
+                        "surface-container-lowest": "#0b0e15",
+                        "inverse-surface": "#e1e2ec",
+                        "surface-dim": "#10131a",
+                        "secondary-container": "#00a572",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary": "#003824",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#1d2027",
+                        "inverse-on-surface": "#2e3038",
+                        "tertiary-fixed": "#ffdcc6",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-primary": "#002e6a",
+                        "tertiary": "#ffb786",
+                        "primary": "#adc6ff",
+                        "surface": "#10131a",
+                        "surface-container-low": "#191b23",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-bright": "#363941",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#00285d",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#4edea3",
+                        "outline-variant": "#424754",
+                        "surface-container-high": "#272a31",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#311400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "16px",
+                        "sm": "8px",
+                        "cell-padding-y": "4px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "layout-margin": "12px",
+                        "cell-padding-x": "8px"
+                    },
+                    "fontFamily": {
+                        "data-tabular": [
+                            "ui-monospace, SFMono-Regular, Roboto Mono, monospace"
+                        ],
+                        "body-compact": [
+                            "Inter"
+                        ],
+                        "code-label": [
+                            "ui-monospace, SFMono-Regular, Roboto Mono, monospace"
+                        ],
+                        "heading-sm": [
+                            "Inter"
+                        ]
+                    },
+                    "fontSize": {
+                        "data-tabular": [
+                            "13px",
+                            {
+                                "lineHeight": "16px",
+                                "fontWeight": "450"
+                            }
+                        ],
+                        "body-compact": [
+                            "13px",
+                            {
+                                "lineHeight": "18px",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "code-label": [
+                            "11px",
+                            {
+                                "lineHeight": "12px",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "heading-sm": [
+                            "14px",
+                            {
+                                "lineHeight": "20px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row">
+<!-- TopAppBar (Mobile) / Left Side Nav (Desktop Placeholder conceptually, adapting TopAppBar to act as top nav for all per instructions, though SideNav is hidden md. Following Shared Components strictly) -->
+<!-- TopAppBar -->
+<header class="bg-zinc-950 font-mono uppercase tracking-tighter text-xs docked full-width top-0 border-b border-zinc-800 flat no shadows flex justify-between items-center w-full px-2 h-10 sticky z-40 hidden md:flex">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#3b82f6] text-[18px]">terminal</span>
+<span class="font-mono font-bold text-[#3b82f6] tracking-widest">TRAINER_PRO_V1</span>
+</div>
+<button class="text-[#3b82f6] hover:bg-zinc-900 transition-colors active:bg-zinc-800 px-2 py-1 border border-transparent rounded-sm flex items-center gap-1">
+<span>EXPORT</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-16 md:pb-0 p-layout-margin md:p-lg flex flex-col gap-sm max-w-5xl mx-auto w-full">
+<header class="mb-sm border-b border-surface-container pb-xs flex justify-between items-end">
+<div>
+<h1 class="font-heading-sm text-heading-sm text-on-surface uppercase tracking-wider">USER_PROFILE</h1>
+<p class="font-data-tabular text-data-tabular text-outline-variant">ID: USR_78492 // SYNC_STATUS: <span class="text-secondary">OK</span></p>
+</div>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-sm items-start">
+<!-- BODY_STATS -->
+<section class="bg-[#10131a] border border-[#333] rounded-DEFAULT p-sm flex flex-col gap-xs hover:border-surface-variant transition-colors group">
+<div class="flex items-center gap-2 border-b border-[#333] pb-xs mb-xs">
+<span class="material-symbols-outlined text-outline-variant text-[16px]">monitor_weight</span>
+<h2 class="font-code-label text-code-label text-on-surface uppercase">BODY_STATS</h2>
+</div>
+<div class="grid grid-cols-3 gap-xs">
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-outline uppercase">WEIGHT</label>
+<div class="relative">
+<input class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-on-surface focus:border-[#3b82f6] focus:ring-0 transition-colors pr-6" type="text" value="82.4"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 font-data-tabular text-data-tabular text-outline-variant">kg</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-outline uppercase">HEIGHT</label>
+<div class="relative">
+<input class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-on-surface focus:border-[#3b82f6] focus:ring-0 transition-colors pr-6" type="text" value="180"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 font-data-tabular text-data-tabular text-outline-variant">cm</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-outline uppercase">BF%</label>
+<div class="relative">
+<input class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-on-surface focus:border-[#3b82f6] focus:ring-0 transition-colors pr-6" type="text" value="14.5"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 font-data-tabular text-data-tabular text-outline-variant">%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- TRAINING_HISTORY -->
+<section class="bg-[#10131a] border border-[#333] rounded-DEFAULT p-sm flex flex-col gap-xs hover:border-surface-variant transition-colors group">
+<div class="flex items-center gap-2 border-b border-[#333] pb-xs mb-xs">
+<span class="material-symbols-outlined text-outline-variant text-[16px]">history</span>
+<h2 class="font-code-label text-code-label text-on-surface uppercase">TRAINING_HISTORY</h2>
+</div>
+<div class="grid grid-cols-2 gap-xs">
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-outline uppercase">EXPERIENCE</label>
+<div class="relative">
+<input class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-on-surface focus:border-[#3b82f6] focus:ring-0 transition-colors pr-8" type="text" value="5"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 font-data-tabular text-data-tabular text-outline-variant">yrs</span>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-code-label text-code-label text-outline uppercase">VOL_BIAS</label>
+<select class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-on-surface focus:border-[#3b82f6] focus:ring-0 transition-colors appearance-none pr-8">
+<option class="bg-surface" selected="" value="high">High</option>
+<option class="bg-surface" value="medium">Medium</option>
+<option class="bg-surface" value="low">Low</option>
+</select>
+</div>
+</div>
+</section>
+<!-- GOALS -->
+<section class="bg-[#10131a] border border-[#333] rounded-DEFAULT p-sm flex flex-col gap-xs hover:border-surface-variant transition-colors group">
+<div class="flex items-center gap-2 border-b border-[#333] pb-xs mb-xs">
+<span class="material-symbols-outlined text-outline-variant text-[16px]">track_changes</span>
+<h2 class="font-code-label text-code-label text-on-surface uppercase">GOALS</h2>
+</div>
+<div class="flex flex-wrap gap-2">
+<div class="border border-[#3b82f6] text-[#3b82f6] font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 cursor-pointer bg-surface-container">
+<span>[Hypertrophy]</span>
+<span class="material-symbols-outlined text-[12px]">close</span>
+</div>
+<div class="border border-[#3b82f6] text-[#3b82f6] font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 cursor-pointer bg-surface-container">
+<span>[Joint_Health]</span>
+<span class="material-symbols-outlined text-[12px]">close</span>
+</div>
+<button class="border border-[#333] text-outline-variant font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 hover:border-[#3b82f6] hover:text-[#3b82f6] transition-colors border-dashed">
+<span class="material-symbols-outlined text-[12px]">add</span>
+<span>ADD_GOAL</span>
+</button>
+</div>
+</section>
+<!-- EQUIPMENT -->
+<section class="bg-[#10131a] border border-[#333] rounded-DEFAULT p-sm flex flex-col gap-xs hover:border-surface-variant transition-colors group">
+<div class="flex items-center gap-2 border-b border-[#333] pb-xs mb-xs">
+<span class="material-symbols-outlined text-outline-variant text-[16px]">fitness_center</span>
+<h2 class="font-code-label text-code-label text-on-surface uppercase">EQUIPMENT</h2>
+</div>
+<div class="flex flex-wrap gap-2">
+<div class="border border-secondary text-secondary font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 cursor-pointer bg-surface-container">
+<span>[Full_Gym]</span>
+<span class="material-symbols-outlined text-[12px]">close</span>
+</div>
+<div class="border border-secondary text-secondary font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 cursor-pointer bg-surface-container">
+<span>[Home_Rack]</span>
+<span class="material-symbols-outlined text-[12px]">close</span>
+</div>
+<button class="border border-[#333] text-outline-variant font-code-label text-code-label px-2 py-1 rounded-sm flex items-center gap-1 hover:border-secondary hover:text-secondary transition-colors border-dashed">
+<span class="material-symbols-outlined text-[12px]">add</span>
+<span>ADD_EQPT</span>
+</button>
+</div>
+</section>
+<!-- LIMITATIONS -->
+<section class="bg-[#10131a] border-l-2 border-l-error border-y border-r border-[#333] rounded-r-DEFAULT p-sm flex flex-col gap-xs hover:border-r-surface-variant transition-colors group md:col-span-2">
+<div class="flex items-center gap-2 border-b border-[#333] pb-xs mb-xs">
+<span class="material-symbols-outlined text-error text-[16px]">warning</span>
+<h2 class="font-code-label text-code-label text-error uppercase">LIMITATIONS</h2>
+</div>
+<textarea class="w-full bg-transparent border border-[#333] rounded-sm py-cell-padding-y px-cell-padding-x font-data-tabular text-data-tabular text-error focus:border-error focus:ring-0 transition-colors resize-none" rows="2">'Minor shoulder impingement - no overhead pressing'</textarea>
+</section>
+<div class="md:col-span-2 flex justify-end mt-sm">
+<button class="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-code-label text-code-label px-4 py-2 rounded-sm border border-transparent transition-colors uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">save</span>
+                    SAVE_PROFILE
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="bg-zinc-950 font-mono text-[10px] uppercase fixed bottom-0 w-full z-50 border-t border-zinc-800 flat no shadows flex justify-around items-center w-full h-12 md:hidden">
+<!-- Assuming none match perfectly, fallback to hiding or inactive, but typically bottom nav needs an active state if it's a primary screen. Profile isn't in JSON list directly, but let's assume it's a main screen and we must render it per rules if not excluded. None match, so all inactive. -->
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-1">terminal</span>
+<span>PROMPT</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-1">history</span>
+<span>HISTORY</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-1">cloud_sync</span>
+<span>SYNC</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 h-full w-full hover:bg-zinc-900 active:opacity-80 transition-colors">
+<span class="material-symbols-outlined text-[20px] mb-1">save</span>
+<span>SAVE</span>
+</button>
+</nav>
+</body></html>

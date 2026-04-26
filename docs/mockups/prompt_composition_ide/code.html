@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prompt Builder Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Roboto+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#10131a",
+                    "surface": "#10131a",
+                    "on-secondary-fixed-variant": "#005236",
+                    "outline-variant": "#424754",
+                    "on-secondary-fixed": "#002113",
+                    "tertiary-fixed": "#ffdcc6",
+                    "primary": "#adc6ff",
+                    "on-primary": "#002e6a",
+                    "tertiary-container": "#df7412",
+                    "inverse-on-surface": "#2e3038",
+                    "primary-fixed": "#d8e2ff",
+                    "surface-tint": "#adc6ff",
+                    "primary-container": "#4d8eff",
+                    "on-tertiary": "#502400",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-secondary-container": "#00311f",
+                    "on-surface-variant": "#c2c6d6",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e1e2ec",
+                    "on-background": "#e1e2ec",
+                    "inverse-primary": "#005ac2",
+                    "surface-bright": "#363941",
+                    "on-primary-fixed-variant": "#004395",
+                    "on-surface": "#e1e2ec",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container-low": "#191b23",
+                    "secondary-container": "#00a572",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#4edea3",
+                    "tertiary": "#ffb786",
+                    "surface-container-lowest": "#0b0e15",
+                    "surface-container": "#1d2027",
+                    "error-container": "#93000a",
+                    "on-primary-container": "#00285d",
+                    "background": "#10131a",
+                    "on-secondary": "#003824",
+                    "secondary-fixed": "#6ffbbe",
+                    "on-tertiary-container": "#461f00",
+                    "secondary": "#4edea3",
+                    "surface-variant": "#32353c",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-highest": "#32353c",
+                    "on-tertiary-fixed": "#311400",
+                    "on-primary-fixed": "#001a42",
+                    "surface-container-high": "#272a31",
+                    "outline": "#8c909f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "md": "12px",
+                    "lg": "16px",
+                    "cell-padding-x": "8px",
+                    "sm": "8px",
+                    "cell-padding-y": "4px",
+                    "unit": "4px",
+                    "layout-margin": "12px"
+            },
+            "fontFamily": {
+                    "heading-sm": [
+                            "Inter"
+                    ],
+                    "data-tabular": [
+                            "ui-monospace, SFMono-Regular, Roboto Mono, monospace"
+                    ],
+                    "code-label": [
+                            "ui-monospace, SFMono-Regular, Roboto Mono, monospace"
+                    ],
+                    "body-compact": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "heading-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "data-tabular": [
+                            "13px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "450"
+                            }
+                    ],
+                    "code-label": [
+                            "11px",
+                            {
+                                    "lineHeight": "12px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-compact": [
+                            "13px",
+                            {
+                                    "lineHeight": "18px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-compact text-body-compact h-screen overflow-hidden flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-3 py-1 w-full h-8 bg-[#0a0a0a] border-b border-[#333333] z-50 shrink-0">
+<div class="flex items-center gap-4">
+<span class="text-sm font-bold text-white tracking-widest font-heading-sm">METADATA_CORE_v1.0</span>
+<nav class="flex items-center gap-4">
+<a class="text-[#666666] font-code-label text-code-label uppercase tracking-tighter hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] px-2 py-1" href="#">SESSION_LIVE</a>
+<a class="text-blue-500 border-b-2 border-blue-500 font-code-label text-code-label uppercase tracking-tighter hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] px-2 py-1" href="#">SYNC_STATUS</a>
+<a class="text-[#666666] font-code-label text-code-label uppercase tracking-tighter hover:bg-[#252525] hover:text-white transition-colors cursor-crosshair active:bg-[#333333] px-2 py-1" href="#">LOG_FREQ</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center border border-[#333333] bg-[#1a1a1a] px-2 h-6">
+<span class="material-symbols-outlined text-[14px] text-outline mr-1">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-data-tabular font-data-tabular p-0 w-32 h-full text-[#888888] placeholder-[#555555]" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-[#888888] hover:text-white transition-colors" title="settings_ethernet"><span class="material-symbols-outlined text-[16px]">settings_ethernet</span></button>
+<button class="text-[#888888] hover:text-white transition-colors" title="database"><span class="material-symbols-outlined text-[16px]">database</span></button>
+<button class="text-[#888888] hover:text-white transition-colors" title="terminal"><span class="material-symbols-outlined text-[16px]">terminal</span></button>
+</div>
+<button class="font-code-label text-code-label border border-[#333333] hover:border-blue-500 px-2 py-0.5 text-blue-500 transition-colors uppercase">COMMIT_LOG</button>
+<button class="font-code-label text-code-label bg-blue-600 text-white px-2 py-0.5 hover:bg-blue-700 transition-colors uppercase">EXPORT_JSON</button>
+<div class="w-5 h-5 rounded-full bg-surface-variant border border-[#333333] flex items-center justify-center overflow-hidden ml-2">
+<img alt="USER_01_AVATAR" class="w-full h-full object-cover" data-alt="Small avatar image for user profile top right corner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtw3RF8YQVVHlaLSuxdIkwms7cK51eIYTVi6qBzb1yQ60vvuMTgtKq8KQYptrH6pujltc4dB84FYsP47eaNQMEaV3CCmF5zCLYA705w6Kq8IU2x9sc6DAb3XiXPwjI9zfIsrlN_0GdKe84ZPZZpFolUa-7a7BeBpFpmcKRVZW4OQW9vdWEpag-s79WneaN-UDUaCSnwaU8YzNiT2Zx9sSbcMWfKngqD2GW-JeHsrNn-56RO7iEHr0vu_VA50NGpKddBkHSIAi-sQ"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col w-64 h-full bg-[#1a1a1a] border-r border-[#333333] shrink-0 z-40">
+<div class="p-4 border-b border-[#333333]">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 bg-[#252525] border border-[#333333] flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-500 text-[18px]">dns</span>
+</div>
+<div>
+<h1 class="text-blue-500 font-black font-heading-sm text-heading-sm leading-tight tracking-tight">WORKBENCH_OS</h1>
+<p class="text-outline text-code-label font-code-label">v4.2.0-STABLE</p>
+</div>
+</div>
+<button class="w-full bg-[#252525] border border-[#333333] text-primary font-code-label text-code-label py-1 hover:border-blue-500 transition-colors uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                    INIT_SESSION
+                </button>
+</div>
+<nav class="flex-1 py-2 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-2 bg-[#252525] text-blue-500 border-l-2 border-blue-500 transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">PROMPT_STUDIO</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#888888] border-l-2 border-transparent transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">ROUTINE_MAP</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#888888] border-l-2 border-transparent transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">WORKOUT_LOG</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#888888] border-l-2 border-transparent transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[16px]">database</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">HISTORY_DB</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#888888] border-l-2 border-transparent transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[16px]">sd_storage</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">STORAGE_MGR</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-[#333333] py-2">
+<a class="flex items-center gap-3 px-4 py-1.5 text-[#888888] transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[14px]">list_alt</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">SYS_LOG</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-1.5 text-[#888888] transition-all duration-75 hover:bg-[#252525] hover:text-blue-400" href="#">
+<span class="material-symbols-outlined text-[14px]">menu_book</span>
+<span class="font-mono text-[11px] tracking-tight uppercase">RESOURCES</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 flex overflow-hidden bg-[#0a0a0a]">
+<!-- Left Pane: Personas Library -->
+<section class="w-72 flex flex-col border-r border-[#333333] shrink-0 bg-[#0f1115]">
+<header class="p-3 border-b border-[#333333] bg-[#14161a] flex justify-between items-center">
+<h2 class="font-code-label text-code-label text-on-surface-variant uppercase tracking-wider">Entity_Library</h2>
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px]">filter_list</span></button>
+</header>
+<div class="p-3 flex-1 overflow-y-auto space-y-2">
+<!-- Persona Card Active -->
+<div class="border border-blue-500 bg-[#1a1d24] p-2 cursor-pointer border-l-4">
+<div class="flex justify-between items-start mb-1">
+<span class="font-data-tabular text-data-tabular text-primary">PWR_LIFTER_01</span>
+<span class="text-[9px] font-mono bg-[#252525] px-1 text-secondary">ACTIVE</span>
+</div>
+<p class="text-[10px] text-outline font-mono mb-2">Focus: Strength, Low Reps</p>
+<div class="flex gap-1">
+<span class="text-[9px] font-mono border border-[#333333] px-1 text-on-surface-variant">ID: 8842</span>
+<span class="text-[9px] font-mono border border-[#333333] px-1 text-on-surface-variant">v2.1</span>
+</div>
+</div>
+<!-- Persona Card -->
+<div class="border border-[#333333] bg-[#14161a] p-2 cursor-pointer hover:border-outline-variant transition-colors border-l-4 border-l-transparent hover:border-l-outline-variant">
+<div class="flex justify-between items-start mb-1">
+<span class="font-data-tabular text-data-tabular text-on-surface">HYPERTROPHY_A</span>
+</div>
+<p class="text-[10px] text-outline font-mono mb-2">Focus: Volume, Isolation</p>
+<div class="flex gap-1">
+<span class="text-[9px] font-mono border border-[#333333] px-1 text-on-surface-variant">ID: 1093</span>
+</div>
+</div>
+<!-- Persona Card -->
+<div class="border border-[#333333] bg-[#14161a] p-2 cursor-pointer hover:border-outline-variant transition-colors border-l-4 border-l-transparent hover:border-l-outline-variant">
+<div class="flex justify-between items-start mb-1">
+<span class="font-data-tabular text-data-tabular text-on-surface">ENDURANCE_RUN</span>
+</div>
+<p class="text-[10px] text-outline font-mono mb-2">Focus: Stamina, Zone 2</p>
+<div class="flex gap-1">
+<span class="text-[9px] font-mono border border-[#333333] px-1 text-on-surface-variant">ID: 5521</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Middle Pane: Modular Editors -->
+<section class="flex-1 flex flex-col min-w-[400px] bg-[#0a0a0a]">
+<header class="p-3 border-b border-[#333333] bg-[#14161a] flex justify-between items-center">
+<h2 class="font-code-label text-code-label text-on-surface-variant uppercase tracking-wider">Prompt_Modules</h2>
+<div class="flex gap-2">
+<button class="text-[10px] font-mono border border-[#333333] px-2 py-0.5 hover:bg-[#252525] transition-colors">ADD_BLOCK</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Editor Block 1 -->
+<div class="border border-[#333333] bg-[#10131a] flex flex-col">
+<div class="flex justify-between items-center border-b border-[#252525] bg-[#151821] px-2 py-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-primary">person</span>
+<span class="font-code-label text-[10px] uppercase text-on-surface">Block_Profile</span>
+</div>
+<div class="flex gap-1">
+<button class="text-outline hover:text-white"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+<button class="text-outline hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+</div>
+<div class="p-2">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-data-tabular font-data-tabular text-[#d1d5db] resize-none h-24 p-0" spellcheck="false">Act as an elite powerlifting coach with 20 years of experience. Your tone is direct, scientific, and focused on progressive overload. Prioritize compound movements and specific RPE targets.</textarea>
+</div>
+</div>
+<!-- Editor Block 2 -->
+<div class="border border-[#333333] bg-[#10131a] flex flex-col">
+<div class="flex justify-between items-center border-b border-[#252525] bg-[#151821] px-2 py-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-secondary">fitness_center</span>
+<span class="font-code-label text-[10px] uppercase text-on-surface">Block_Routine</span>
+</div>
+<div class="flex gap-1">
+<button class="text-outline hover:text-white"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+<button class="text-outline hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+</div>
+<div class="p-2">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-data-tabular font-data-tabular text-[#d1d5db] resize-none h-32 p-0" spellcheck="false">Design a 4-day upper/lower split. 
+Day 1: Heavy Squat (Top single @ RPE 8, 3x5 backdowns), RDLs.
+Day 2: Heavy Bench (1x3 @ RPE 8.5), OHP.
+Day 3: Deadlift (3x3 @ 80%), Front Squat.
+Day 4: Volume Bench (5x5 @ 70%), Rows.</textarea>
+</div>
+</div>
+<!-- Editor Block 3 -->
+<div class="border border-[#333333] bg-[#10131a] flex flex-col">
+<div class="flex justify-between items-center border-b border-[#252525] bg-[#151821] px-2 py-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-error">warning</span>
+<span class="font-code-label text-[10px] uppercase text-on-surface">Block_Constraints</span>
+</div>
+<div class="flex gap-1">
+<button class="text-outline hover:text-white"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+<button class="text-outline hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</div>
+</div>
+<div class="p-2">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-data-tabular font-data-tabular text-[#d1d5db] resize-none h-16 p-0" spellcheck="false">Exclude all machine exercises. Maximum session duration is 75 minutes. Format output as a strict JSON structure.</textarea>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Live Preview -->
+<section class="w-96 flex flex-col border-l border-[#333333] bg-[#0d0f14] shrink-0">
+<header class="p-3 border-b border-[#333333] bg-[#14161a] flex justify-between items-center">
+<h2 class="font-code-label text-code-label text-secondary uppercase tracking-wider flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                        Compiled_Output
+                    </h2>
+<span class="text-[9px] font-mono text-outline">TOKENS: ~184</span>
+</header>
+<div class="flex-1 p-4 overflow-y-auto">
+<div class="border border-[#252525] bg-[#0a0a0a] h-full p-3 font-data-tabular text-data-tabular text-[#a0aabf] leading-relaxed relative group">
+                        Act as an elite powerlifting coach with 20 years of experience. Your tone is direct, scientific, and focused on progressive overload. Prioritize compound movements and specific RPE targets.
+
+Design a 4-day upper/lower split. 
+Day 1: Heavy Squat (Top single @ RPE 8, 3x5 backdowns), RDLs.
+Day 2: Heavy Bench (1x3 @ RPE 8.5), OHP.
+Day 3: Deadlift (3x3 @ 80%), Front Squat.
+Day 4: Volume Bench (5x5 @ 70%), Rows.
+
+Exclude all machine exercises. Maximum session duration is 75 minutes. Format output as a strict JSON structure.
+                        
+                        <button class="absolute top-2 right-2 bg-[#252525] border border-[#333333] text-on-surface p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:border-primary hover:text-primary" title="Copy Raw">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+</div>
+<div class="p-4 border-t border-[#333333] bg-[#14161a]">
+<button class="w-full bg-primary-container text-on-primary-container font-heading-sm text-heading-sm py-2 px-4 hover:bg-primary transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">send</span>
+                        EXECUTE_TEST_RUN
+                    </button>
+</div>
+</section>
+</main>
+</div>
+</body></html>
