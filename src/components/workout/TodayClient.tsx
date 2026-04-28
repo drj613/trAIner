@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle, Download, Plus } from "lucide-react";
+import { CheckCircle, Download, History, Plus } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
@@ -10,6 +10,8 @@ import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
+import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
+import { HistoryDrawer } from "./HistoryDrawer";
 
 function GroupRail({
   type,
@@ -72,11 +74,13 @@ function ExerciseRow({
   cells,
   onCellChange,
   onAddSet,
+  onOpenHistory,
 }: {
   exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
   cells: string[];
   onCellChange: (i: number, v: string) => void;
   onAddSet: () => void;
+  onOpenHistory: () => void;
 }) {
   const prescription = [
     exercise.sets ? `${exercise.sets}×` : "",
@@ -96,8 +100,20 @@ function ExerciseRow({
       }}
     >
       <div style={{ marginBottom: 6 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", marginBottom: 2 }}>
-          {exercise.name}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", flex: 1 }}>
+            {exercise.name}
+          </span>
+          <button
+            className="btn ghost"
+            onClick={onOpenHistory}
+            style={{ padding: "3px 6px", flexShrink: 0 }}
+            aria-label={`History for ${exercise.name}`}
+            title="History"
+            type="button"
+          >
+            <History size={13} aria-hidden />
+          </button>
         </div>
         {prescription && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
@@ -168,11 +184,13 @@ function SectionCard({
   cells,
   onCellChange,
   onAddSet,
+  onOpenHistory,
 }: {
   section: ProgramSection;
   cells: CellMap;
   onCellChange: (exId: string, i: number, v: string) => void;
   onAddSet: (exId: string) => void;
+  onOpenHistory: (exerciseName: string, exerciseId: string) => void;
 }) {
   const { cls, glyph } = sectionKind(section.type);
   return (
@@ -216,6 +234,7 @@ function SectionCard({
               cells={cells[ex.id] ?? [""]}
               onCellChange={(i, v) => onCellChange(ex.id, i, v)}
               onAddSet={() => onAddSet(ex.id)}
+              onOpenHistory={() => onOpenHistory(ex.name, ex.id)}
             />
           ))}
         </GroupRail>
@@ -255,6 +274,17 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [saved, setSaved] = useState(false);
   const saving = useRef(false);
+
+  const [historyDrawer, setHistoryDrawer] = useState<{
+    exerciseName: string;
+    rows: ExerciseSessionRow[];
+  } | null>(null);
+
+  async function openHistoryFor(exerciseName: string, exerciseId: string) {
+    const logs = await logRepo.listForProgram(program.id);
+    const rows = aggregateExerciseHistory(logs, exerciseId);
+    setHistoryDrawer({ exerciseName, rows });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -369,10 +399,19 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           cells={cells}
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
+          onOpenHistory={openHistoryFor}
         />
       ))}
 
       <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} />
+
+      {historyDrawer && (
+        <HistoryDrawer
+          exerciseName={historyDrawer.exerciseName}
+          rows={historyDrawer.rows}
+          onClose={() => setHistoryDrawer(null)}
+        />
+      )}
     </div>
   );
 }
