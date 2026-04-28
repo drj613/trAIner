@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { useEditableValue } from "@/lib/workout/useEditableValue";
 
 export type CellState = "empty" | "done" | "pr" | "miss" | "skip" | "pain" | "bw";
 
@@ -16,40 +17,29 @@ export function classifyCell(v: string): CellState {
 }
 
 type Props = {
+  id?: string;
   value: string;
   prescribed?: string;
   onChange: (v: string) => void;
+  onNext?: () => void;
   autoFocus?: boolean;
 };
 
-export function SetCell({ value, prescribed = "", onChange, autoFocus }: Props) {
+export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocus }: Props) {
   const ref = useRef<HTMLInputElement>(null);
-  const [v, setV] = useState(value);
-  const [editing, setEditing] = useState(false);
-
-  useEffect(() => setV(value), [value]);
-  useEffect(() => {
-    if (autoFocus && ref.current) {
-      ref.current.focus();
-      ref.current.select();
-    }
-  }, [autoFocus]);
+  const { draft: v, editing, setDraft: setV, startEditing, commit, revert } = useEditableValue(value, onChange);
 
   const state = classifyCell(v);
   const cls = ["cell", state, editing ? "editing" : ""].filter(Boolean).join(" ");
-
-  const commit = () => {
-    setEditing(false);
-    onChange(v);
-  };
 
   const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       ref.current?.blur();
+      setTimeout(() => onNext?.(), 0);
     }
     if (e.key === "Escape") {
-      setV(value);
+      revert();
       setTimeout(() => ref.current?.blur(), 0);
     }
   };
@@ -57,13 +47,15 @@ export function SetCell({ value, prescribed = "", onChange, autoFocus }: Props) 
   return (
     <input
       ref={ref}
+      id={id}
       className={cls}
       value={v}
       placeholder={prescribed || "—"}
       onChange={(e) => setV(e.target.value)}
-      onFocus={() => setEditing(true)}
+      onFocus={startEditing}
       onBlur={commit}
       onKeyDown={onKey}
+      autoFocus={autoFocus}
       style={{ width: 70, height: 30, fontSize: 13 }}
       aria-label={`Set value${prescribed ? ` (${prescribed})` : ""}`}
     />
