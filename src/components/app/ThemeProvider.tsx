@@ -25,16 +25,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function setTheme(theme: string) {
+  if (typeof window === "undefined") return;
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem(THEME_KEY, theme);
 }
 
 export function setDensity(density: "comfy" | "default" | "dense") {
+  if (typeof window === "undefined") return;
   document.documentElement.setAttribute("data-density", density);
   localStorage.setItem(DENSITY_KEY, density);
 }
 
 export function setMono(mono: "jetbrains" | "system") {
+  if (typeof window === "undefined") return;
   document.documentElement.setAttribute("data-mono", mono);
   localStorage.setItem(MONO_KEY, mono);
 }

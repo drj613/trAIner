@@ -53,7 +53,12 @@ export function SettingsClient() {
 
   async function uploadBackup(file?: File) {
     if (!file) return;
-    await restoreBackup(JSON.parse(await file.text()));
+    try {
+      const data = JSON.parse(await file.text());
+      await restoreBackup(data);
+    } catch {
+      alert("Failed to restore backup — invalid file format.");
+    }
   }
 
   return (
@@ -73,6 +78,8 @@ export function SettingsClient() {
           {THEMES.map((t) => (
             <button
               key={t}
+              type="button"
+              aria-pressed={theme === t}
               onClick={() => handleTheme(t)}
               style={{
                 padding: "4px 12px",
@@ -99,6 +106,8 @@ export function SettingsClient() {
           {DENSITIES.map(({ value, label }) => (
             <button
               key={value}
+              type="button"
+              aria-pressed={density === value}
               onClick={() => handleDensity(value)}
               style={{
                 padding: "4px 12px",
@@ -125,6 +134,8 @@ export function SettingsClient() {
           {(["jetbrains", "system"] as Mono[]).map((m) => (
             <button
               key={m}
+              type="button"
+              aria-pressed={mono === m}
               onClick={() => handleMono(m)}
               style={{
                 padding: "4px 12px",
