@@ -82,10 +82,6 @@ export const demoProgram: ProgramDocument = {
     }
   ],
   overrides: [],
-  import: {
-    rawJson: null,
-    warnings: []
-  },
   profileSnapshot: defaultProfile,
   createdAt: "2026-04-24T00:00:00.000Z",
   updatedAt: "2026-04-24T00:00:00.000Z"

@@ -6,7 +6,7 @@ describe("import parser", () => {
     const review = normalizePayload(example);
 
     expect(review.program.days).toHaveLength(1);
-    expect(review.program.import.rawJson).toEqual(example);
+    expect(review.program.import?.rawJson).toEqual(example);
     expect(review.program.days[0].sections.map((section) => section.type)).toEqual(
       expect.arrayContaining(["warmup", "strength", "metcon"])
     );

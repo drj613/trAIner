@@ -22,7 +22,7 @@ export type ProgramDocument = {
   active: boolean;
   days: ProgramDay[];
   overrides: ProgramOverride[];
-  import: {
+  import?: {
     rawJson: unknown;
     warnings: ImportWarning[];
   };
