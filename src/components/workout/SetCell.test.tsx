@@ -21,12 +21,13 @@ describe("SetCell render", () => {
     expect(screen.getByRole("textbox")).toHaveValue("65x10");
   });
 
-  it("calls onChange when the user types", async () => {
+  it("calls onChange after typing and blurring", async () => {
     const handleChange = jest.fn();
     const user = userEvent.setup();
     render(<SetCell value="" onChange={handleChange} />);
     await user.type(screen.getByRole("textbox"), "80x5");
-    expect(handleChange).toHaveBeenCalled();
+    await user.tab(); // triggers blur → onChange
+    expect(handleChange).toHaveBeenCalledWith("80x5");
   });
 
   it("reverts to original value on Escape", async () => {
