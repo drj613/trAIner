@@ -1,8 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { AliasDocument, BackupDocument, ProfileDocument, ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -26,6 +27,10 @@ export interface TrainerDb extends DBSchema {
   backups: {
     key: string;
     value: BackupDocument & { id: string };
+  };
+  metrics: {
+    key: string;
+    value: ExerciseMetricsDocument;
   };
 }
 
@@ -58,6 +63,10 @@ export function getDb() {
 
         if (!db.objectStoreNames.contains("backups")) {
           db.createObjectStore("backups", { keyPath: "id" });
+        }
+
+        if (!db.objectStoreNames.contains("metrics")) {
+          db.createObjectStore("metrics", { keyPath: "exerciseId" });
         }
       }
     }).then((db) => {
