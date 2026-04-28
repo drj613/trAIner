@@ -1,4 +1,4 @@
-import { buildWeekGrid, type WeekRow } from "./programGrid";
+import { buildWeekGrid } from "./programGrid";
 import type { ProgramDay } from "@/lib/programs/types";
 
 function makeDay(id: string, weekNumber: number, dayNumber: number, title: string): ProgramDay {
