@@ -1,17 +1,15 @@
 import type { ProgramDay, SectionType } from "./types";
-
-const KNOWN_SECTION_TYPES: SectionType[] = [
-  "warmup", "explosive", "strength", "power", "hypertrophy", "accessory",
-  "metcon", "cardio", "conditioning", "rehab", "mobility", "cooldown", "training",
-];
+import { SECTION_TYPES } from "./types";
 
 export function effectiveWeekNumber(day: ProgramDay): number {
   return day.weekNumber && day.weekNumber > 0 ? day.weekNumber : 1;
 }
 
 export function normalizeSectionType(raw: string): SectionType {
-  const lower = raw.toLowerCase().trim() as SectionType;
-  if (KNOWN_SECTION_TYPES.includes(lower)) return lower;
+  const lower = raw.toLowerCase().trim();
+  if ((SECTION_TYPES as readonly string[]).includes(lower)) {
+    return lower as SectionType;
+  }
   return "training";
 }
 

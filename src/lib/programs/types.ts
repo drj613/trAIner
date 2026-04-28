@@ -3,20 +3,13 @@ export type ID = string;
 
 export type ProgramScope = "base" | "week" | "day";
 
-export type SectionType =
-  | "warmup"
-  | "explosive"
-  | "strength"
-  | "power"
-  | "hypertrophy"
-  | "accessory"
-  | "metcon"
-  | "cardio"
-  | "conditioning"
-  | "rehab"
-  | "mobility"
-  | "cooldown"
-  | "training";
+export const SECTION_TYPES = [
+  "warmup", "explosive", "strength", "power", "hypertrophy",
+  "accessory", "metcon", "cardio", "conditioning", "rehab",
+  "mobility", "cooldown", "training",
+] as const;
+
+export type SectionType = (typeof SECTION_TYPES)[number];
 
 export type ProfileDocument = {
   id: "local-profile";
