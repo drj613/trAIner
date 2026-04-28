@@ -3,6 +3,21 @@ export type ID = string;
 
 export type ProgramScope = "base" | "week" | "day";
 
+export type SectionType =
+  | "warmup"
+  | "explosive"
+  | "strength"
+  | "power"
+  | "hypertrophy"
+  | "accessory"
+  | "metcon"
+  | "cardio"
+  | "conditioning"
+  | "rehab"
+  | "mobility"
+  | "cooldown"
+  | "training";
+
 export type ProfileDocument = {
   id: "local-profile";
   name: string;
@@ -41,7 +56,7 @@ export type ProgramDay = {
 
 export type ProgramSection = {
   id: ID;
-  type: string;
+  type: SectionType;
   name: string;
   groups: ProgramGroup[];
 };
