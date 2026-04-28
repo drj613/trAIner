@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Download, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle, Download, Plus } from "lucide-react";
+import { logRepo } from "@/lib/storage/logRepo";
+import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
@@ -197,92 +199,76 @@ function SectionCard({
   );
 }
 
-function WorkoutProgress({ cells }: { cells: CellMap }) {
-  let total = 0;
-  let done = 0;
+function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish: () => void; saved: boolean }) {
+  let total = 0, done = 0;
   for (const vals of Object.values(cells)) {
-    for (const v of vals) {
-      total++;
-      if (v) done++;
-    }
+    for (const v of vals) { total++; if (v) done++; }
   }
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   return (
-    <div
-      style={{
-        position: "sticky",
-        bottom: 0,
-        zIndex: 4,
-        background: "var(--bg-1)",
-        borderTop: "1px solid var(--line)",
-      }}
-    >
+    <div style={{ position: "sticky", bottom: 0, zIndex: 4, background: "var(--bg-1)", borderTop: "1px solid var(--line)" }}>
       <div style={{ height: 2, background: "var(--bg-3)", position: "relative" }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: `${pct}%`,
-            background: "var(--accent)",
-            transition: "width .3s",
-          }}
-        />
+        <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "var(--accent)", transition: "width .3s" }} />
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "8px 12px",
-          gap: 10,
-        }}
-      >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)" }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "8px 12px", gap: 10 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", flex: 1 }}>
           {done}/{total} <span style={{ color: "var(--fg-4)" }}>· {pct}%</span>
         </span>
+        <button
+          className={`btn ${pct === 100 ? "primary" : ""}`}
+          onClick={onFinish}
+          style={{ fontSize: 12 }}
+        >
+          {saved ? <><CheckCircle size={13} /> Saved</> : "Finish workout"}
+        </button>
       </div>
     </div>
   );
 }
 
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
-  const storageKey = `trainer-today-${program.id}-${day.id}`;
+  const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
+  const [saved, setSaved] = useState(false);
 
-  const [cells, setCells] = useState<CellMap>(() => {
-    if (typeof window === "undefined") return buildInitialCells(day);
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) return JSON.parse(saved) as CellMap;
-    } catch {
-      // ignore
-    }
-    return buildInitialCells(day);
-  });
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    logRepo
+      .getForDay(program.id, day.id, today)
+      .then((log) => {
+        if (!log) return;
+        const hydrated: CellMap = {};
+        for (const entry of log.entries) {
+          hydrated[entry.exerciseId] = hydrateFromLog(entry);
+        }
+        setCells((prev) => ({ ...prev, ...hydrated }));
+      })
+      .catch(() => undefined);
+  }, [program.id, day.id]);
 
-  const save = useCallback(
-    (next: CellMap) => {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-    },
-    [storageKey],
-  );
+  async function finishWorkout() {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = await logRepo.getForDay(program.id, day.id, today);
+    const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
+      exerciseId,
+      sets: serialiseSets(vals),
+    }));
+    await logRepo.save({
+      id: existing?.id ?? crypto.randomUUID(),
+      programId: program.id,
+      dayId: day.id,
+      performedAt: new Date().toISOString(),
+      entries,
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
 
   const handleCellChange = (exId: string, i: number, v: string) => {
-    setCells((prev) => {
-      const next = updateCell(prev, exId, i, v);
-      save(next);
-      return next;
-    });
+    setCells((prev) => updateCell(prev, exId, i, v));
   };
 
   const handleAddSet = (exId: string) => {
-    setCells((prev) => {
-      const next = addSet(prev, exId);
-      save(next);
-      return next;
-    });
+    setCells((prev) => addSet(prev, exId));
   };
 
   return (
@@ -336,7 +322,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         />
       ))}
 
-      <WorkoutProgress cells={cells} />
+      <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} />
     </div>
   );
 }
