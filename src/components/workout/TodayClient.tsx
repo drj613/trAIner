@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle, Download, Plus } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
+import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
@@ -289,6 +290,22 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         performedAt: new Date().toISOString(),
         entries,
       });
+
+      const allCells = Object.values(cells).flat();
+      const totalSets = allCells.length;
+      const completedSets = allCells.filter((v) => classifyCell(v) !== "empty").length;
+      const exerciseCount = Object.keys(cells).length;
+
+      await trackWorkoutEvent({
+        type: "workout_saved",
+        programId: program.id,
+        dayId: day.id,
+        performedAt: new Date().toISOString(),
+        exerciseCount,
+        totalSets,
+        completedSets,
+      });
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } finally {
