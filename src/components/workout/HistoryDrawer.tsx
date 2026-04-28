@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { ExerciseSessionRow } from "@/lib/workout/historyUtils";
 
 type Props = {
@@ -9,6 +10,14 @@ type Props = {
 };
 
 export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50 }}>
       <div
@@ -53,7 +62,7 @@ export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
                 <span>date</span><span>sets</span><span style={{ textAlign: "right" }}>vol</span>
               </div>
               {rows.map((row, i) => (
-                <div key={row.date} style={{
+                <div key={`${row.date}-${i}`} style={{
                   display: "grid", gridTemplateColumns: "64px 1fr 64px",
                   padding: "8px 16px", alignItems: "center",
                   borderBottom: i < rows.length - 1 ? "1px solid var(--line)" : "none",

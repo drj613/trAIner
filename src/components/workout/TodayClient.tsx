@@ -281,9 +281,13 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   } | null>(null);
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
-    const logs = await logRepo.listForProgram(program.id);
-    const rows = aggregateExerciseHistory(logs, exerciseId);
-    setHistoryDrawer({ exerciseName, rows });
+    try {
+      const logs = await logRepo.listForProgram(program.id);
+      const rows = aggregateExerciseHistory(logs, exerciseId);
+      setHistoryDrawer({ exerciseName, rows });
+    } catch (e) {
+      console.error("[history] failed to load exercise history", e);
+    }
   }
 
   useEffect(() => {
