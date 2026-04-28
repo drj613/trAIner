@@ -5,7 +5,7 @@ import { CheckCircle, Download, Plus } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
 import { useLocalData } from "@/components/app/LocalDataProvider";
-import { SetCell } from "./SetCell";
+import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
@@ -62,6 +62,10 @@ function GroupRail({
   );
 }
 
+function cellId(exId: string, i: number) {
+  return `cell-${exId}-${i}`;
+}
+
 function ExerciseRow({
   exercise,
   cells,
@@ -114,9 +118,29 @@ function ExerciseRow({
         )}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-        {cells.map((val, i) => (
-          <SetCell key={i} value={val} onChange={(v) => onCellChange(i, v)} />
-        ))}
+        {cells.map((val, i) => {
+          const prescribedStr = i === 0 ? [
+            exercise.sets ? `${exercise.sets}×` : "",
+            exercise.reps ?? "",
+            exercise.load ?? "",
+          ].filter(Boolean).join(" ") : "";
+          return (
+            <SetCell
+              key={i}
+              id={cellId(exercise.id, i)}
+              value={val}
+              prescribed={prescribedStr}
+              onChange={(v) => onCellChange(i, v)}
+              onNext={() => {
+                const nextEl = document.getElementById(cellId(exercise.id, i + 1));
+                if (nextEl) {
+                  (nextEl as HTMLInputElement).focus();
+                  (nextEl as HTMLInputElement).select();
+                }
+              }}
+            />
+          );
+        })}
         <button
           className="cell empty"
           onClick={onAddSet}
@@ -202,7 +226,7 @@ function SectionCard({
 function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish: () => void; saved: boolean }) {
   let total = 0, done = 0;
   for (const vals of Object.values(cells)) {
-    for (const v of vals) { total++; if (v) done++; }
+    for (const v of vals) { total++; if (classifyCell(v) !== "empty") done++; }
   }
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   return (
