@@ -6,6 +6,7 @@ import { profileRepo } from "./profileRepo";
 import { programRepo } from "./programRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
+import type { WorkoutLogDocument } from "@/lib/programs/types";
 
 describe("IndexedDB repositories", () => {
   beforeEach(async () => {
@@ -51,5 +52,63 @@ describe("IndexedDB repositories", () => {
     await expect(programRepo.list()).resolves.toHaveLength(1);
     await expect(logRepo.list()).resolves.toHaveLength(1);
     await expect(aliasRepo.list()).resolves.toHaveLength(1);
+  });
+});
+
+describe("logRepo.getForDay", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("returns undefined when no log exists for a day", async () => {
+    const result = await logRepo.getForDay("prog-x", "day-x", "2099-01-01");
+    expect(result).toBeUndefined();
+  });
+
+  it("returns the log matching programId + dayId + date prefix", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const log: WorkoutLogDocument = {
+      id: "log-match",
+      programId: "prog-1",
+      dayId: "day-1",
+      performedAt: `${today}T10:00:00.000Z`,
+      entries: [],
+    };
+    await logRepo.save(log);
+    const result = await logRepo.getForDay("prog-1", "day-1", today);
+    expect(result?.id).toBe("log-match");
+  });
+
+  it("does not return a log from a different date", async () => {
+    const log: WorkoutLogDocument = {
+      id: "log-old",
+      programId: "prog-1",
+      dayId: "day-1",
+      performedAt: "2020-01-01T10:00:00.000Z",
+      entries: [],
+    };
+    await logRepo.save(log);
+    const result = await logRepo.getForDay("prog-1", "day-1", "2099-12-31");
+    expect(result).toBeUndefined();
+  });
+
+  it("does not return a log from a different program", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const log: WorkoutLogDocument = {
+      id: "log-other-prog",
+      programId: "prog-other",
+      dayId: "day-1",
+      performedAt: `${today}T10:00:00.000Z`,
+      entries: [],
+    };
+    await logRepo.save(log);
+    const result = await logRepo.getForDay("prog-1", "day-1", today);
+    expect(result).toBeUndefined();
   });
 });
