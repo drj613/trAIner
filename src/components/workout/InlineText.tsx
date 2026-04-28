@@ -43,7 +43,12 @@ export function InlineText({ value, onChange, className, style, placeholder = "â
         className={className}
         style={{ cursor: "text", ...style }}
         onClick={startEditing}
-        onFocus={startEditing}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            startEditing();
+          }
+        }}
         tabIndex={0}
         role="button"
         aria-label={`Edit: ${value || placeholder}`}

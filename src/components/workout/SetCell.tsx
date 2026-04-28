@@ -27,6 +27,7 @@ type Props = {
 
 export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocus }: Props) {
   const ref = useRef<HTMLInputElement>(null);
+  const isReverting = useRef(false);
   const { draft: v, editing, setDraft: setV, startEditing, commit, revert } = useEditableValue(value, onChange);
 
   const state = classifyCell(v);
@@ -39,8 +40,12 @@ export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocu
       setTimeout(() => onNext?.(), 0);
     }
     if (e.key === "Escape") {
+      isReverting.current = true;
       revert();
-      setTimeout(() => ref.current?.blur(), 0);
+      setTimeout(() => {
+        ref.current?.blur();
+        isReverting.current = false;
+      }, 0);
     }
   };
 
@@ -53,7 +58,9 @@ export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocu
       placeholder={prescribed || "—"}
       onChange={(e) => setV(e.target.value)}
       onFocus={startEditing}
-      onBlur={commit}
+      onBlur={() => {
+        if (!isReverting.current) commit();
+      }}
       onKeyDown={onKey}
       autoFocus={autoFocus}
       style={{ width: 70, height: 30, fontSize: 13 }}
