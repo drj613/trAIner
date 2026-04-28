@@ -1,4 +1,5 @@
 import { matchExercise } from "@/lib/catalog/match";
+import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramSection } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 
@@ -83,7 +84,7 @@ function normalizeSection(section: ImportPayload, path: string, warnings: Import
 
   return {
     id: newId("section"),
-    type: stringFrom(section.type, "training"),
+    type: normalizeSectionType(stringFrom(section.type, "training")),
     name: stringFrom(section.name ?? section.type, "Training"),
     groups
   };
