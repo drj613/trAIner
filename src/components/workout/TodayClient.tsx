@@ -5,25 +5,8 @@ import { Download, Plus } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
-
-// Map section type → CSS class and glyph
-const sectionKind = (type: string): { cls: string; glyph: string } => {
-  const t = type.toLowerCase();
-  if (t.includes("warm")) return { cls: "sec-warmup", glyph: "◐" };
-  if (t.includes("explos")) return { cls: "sec-explosive", glyph: "◆" };
-  if (t.includes("strength") || t.includes("power")) return { cls: "sec-strength", glyph: "■" };
-  if (t.includes("metcon") || t.includes("cardio") || t.includes("cond")) return { cls: "sec-metcon", glyph: "◇" };
-  if (t.includes("hypert") || t.includes("accessory") || t.includes("isolation")) return { cls: "sec-hypertrophy", glyph: "●" };
-  if (t.includes("rehab") || t.includes("cool") || t.includes("mobil")) return { cls: "sec-rehab", glyph: "+" };
-  return { cls: "sec-default", glyph: "·" };
-};
-
-// Freeform cell state tracked per (exerciseId, setIndex)
-type CellMap = Record<string, string[]>;
-
-function exCellKey(exerciseId: string) {
-  return exerciseId;
-}
+import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
+import { sectionKind } from "@/lib/workout/sectionKind";
 
 function GroupRail({
   type,
@@ -203,7 +186,7 @@ function SectionCard({
             <ExerciseRow
               key={ex.id}
               exercise={ex}
-              cells={cells[exCellKey(ex.id)] ?? [""]}
+              cells={cells[ex.id] ?? [""]}
               onCellChange={(i, v) => onCellChange(ex.id, i, v)}
               onAddSet={() => onAddSet(ex.id)}
             />
@@ -261,19 +244,6 @@ function WorkoutProgress({ cells }: { cells: CellMap }) {
   );
 }
 
-function buildInitialCells(day: ProgramDay): CellMap {
-  const map: CellMap = {};
-  for (const section of day.sections) {
-    for (const group of section.groups) {
-      for (const ex of group.exercises) {
-        const setCount = ex.sets ?? 3;
-        map[exCellKey(ex.id)] = Array(setCount).fill("");
-      }
-    }
-  }
-  return map;
-}
-
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const storageKey = `trainer-today-${program.id}-${day.id}`;
 
@@ -301,8 +271,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
   const handleCellChange = (exId: string, i: number, v: string) => {
     setCells((prev) => {
-      const next = { ...prev, [exId]: [...(prev[exId] ?? [])] };
-      next[exId][i] = v;
+      const next = updateCell(prev, exId, i, v);
       save(next);
       return next;
     });
@@ -310,7 +279,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
   const handleAddSet = (exId: string) => {
     setCells((prev) => {
-      const next = { ...prev, [exId]: [...(prev[exId] ?? []), ""] };
+      const next = addSet(prev, exId);
       save(next);
       return next;
     });
