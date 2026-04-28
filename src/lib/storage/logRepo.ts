@@ -16,5 +16,12 @@ export const logRepo = {
 
   async save(log: WorkoutLogDocument) {
     await (await getDb()).put("logs", log);
-  }
+  },
+
+  async getForDay(programId: string, dayId: string, date: string): Promise<WorkoutLogDocument | undefined> {
+    const all = await (await getDb()).getAllFromIndex("logs", "by-day", dayId);
+    return all.find(
+      (l) => l.programId === programId && l.performedAt.startsWith(date),
+    );
+  },
 };
