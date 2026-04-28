@@ -68,3 +68,14 @@ describe("hydrateFromLog", () => {
     expect(hydrateFromLog(entry)).toEqual([""]);
   });
 });
+
+describe("round-trip: serialiseSets → hydrateFromLog", () => {
+  it("preserves sparse set positions", () => {
+    const cells = ["65x10", "", "60x8"];
+    const log: WorkoutLogEntry = {
+      exerciseId: "ex-1",
+      sets: serialiseSets(cells),
+    };
+    expect(hydrateFromLog(log)).toEqual(["65x10", "", "60x8"]);
+  });
+});

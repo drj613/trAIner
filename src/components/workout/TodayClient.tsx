@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle, Download, Plus } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
@@ -229,38 +229,47 @@ function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish:
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [saved, setSaved] = useState(false);
+  const saving = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
     const today = new Date().toISOString().slice(0, 10);
     logRepo
       .getForDay(program.id, day.id, today)
       .then((log) => {
-        if (!log) return;
+        if (cancelled || !log) return;
         const hydrated: CellMap = {};
         for (const entry of log.entries) {
           hydrated[entry.exerciseId] = hydrateFromLog(entry);
         }
         setCells((prev) => ({ ...prev, ...hydrated }));
       })
-      .catch(() => undefined);
+      .catch((e) => console.error("[logRepo] hydration failed", e));
+    return () => { cancelled = true; };
   }, [program.id, day.id]);
 
   async function finishWorkout() {
-    const today = new Date().toISOString().slice(0, 10);
-    const existing = await logRepo.getForDay(program.id, day.id, today);
-    const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
-      exerciseId,
-      sets: serialiseSets(vals),
-    }));
-    await logRepo.save({
-      id: existing?.id ?? crypto.randomUUID(),
-      programId: program.id,
-      dayId: day.id,
-      performedAt: new Date().toISOString(),
-      entries,
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const existing = await logRepo.getForDay(program.id, day.id, today);
+      const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
+        exerciseId,
+        sets: serialiseSets(vals),
+      }));
+      await logRepo.save({
+        id: existing?.id ?? crypto.randomUUID(),
+        programId: program.id,
+        dayId: day.id,
+        performedAt: new Date().toISOString(),
+        entries,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      saving.current = false;
+    }
   }
 
   const handleCellChange = (exId: string, i: number, v: string) => {

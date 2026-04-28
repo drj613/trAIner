@@ -38,10 +38,17 @@ export function serialiseSets(cells: string[]): WorkoutSetLog[] {
 /**
  * Convert a WorkoutLogEntry back to cell strings for display.
  * Returns [""] when the entry has no sets.
+ * Uses setNumber to restore sparse positions (e.g., set 2 skipped → empty string at index 1).
  */
 export function hydrateFromLog(entry: WorkoutLogEntry): string[] {
   if (!entry.sets || entry.sets.length === 0) return [""];
-  return entry.sets.map((s) =>
-    s.weight === undefined ? `BWx${s.reps}` : `${s.weight}x${s.reps}`,
-  );
+  const maxSet = Math.max(...entry.sets.map((s) => s.setNumber));
+  const out = Array<string>(maxSet).fill("");
+  for (const s of entry.sets) {
+    const cell = s.weight === undefined
+      ? (s.reps ? `BWx${s.reps}` : "")
+      : s.reps ? `${s.weight}x${s.reps}` : `${s.weight}`;
+    out[s.setNumber - 1] = cell;
+  }
+  return out;
 }

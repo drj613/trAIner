@@ -18,6 +18,9 @@ export const logRepo = {
     await (await getDb()).put("logs", log);
   },
 
+  // Dates are stored and compared in UTC. Users west of UTC may see today's
+  // workout listed under tomorrow's UTC date, but retrieval still works correctly
+  // because both the stored performedAt and the query date are UTC.
   async getForDay(programId: string, dayId: string, date: string): Promise<WorkoutLogDocument | undefined> {
     const all = await (await getDb()).getAllFromIndex("logs", "by-day", dayId);
     return all.find(
