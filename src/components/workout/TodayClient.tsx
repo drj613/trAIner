@@ -474,7 +474,12 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 }
 
 export function TodayClient() {
-  const { programs, loading, seedDemo } = useLocalData();
+  const { programs, loading, seedDemo, refresh } = useLocalData();
+
+  useEffect(() => {
+    refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const activeProgram = programs.find((p) => p.active) ?? programs[0];
   const day = activeProgram ? getRenderableDays(activeProgram)[0] : undefined;
 

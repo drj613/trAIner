@@ -62,7 +62,7 @@ export default function DiffPage() {
   }
 
   return (
-    <div style={{ height: "calc(100vh - 46px)", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "calc(100dvh - 78px)", display: "flex", flexDirection: "column" }}>
       {saveError && (
         <p style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "0 16px" }}>
           {saveError}

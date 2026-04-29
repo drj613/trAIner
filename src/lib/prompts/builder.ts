@@ -1,5 +1,11 @@
 import type { ProfileDocument, ProgramDay, ProgramDocument, ProgramScope } from "@/lib/programs/types";
 
+// TODO: Add periodization instructions — prompt should request multi-week programs
+// with progressive overload across weeks (e.g., increasing volume or intensity)
+// and deload weeks every 4-6 weeks. Currently we generate a single week and 4×
+// duplicate it, but the prompt should support true mesocycle structure.
+// See docs/research/program-analysis-research/01-volume-landmarks.md for volume
+// progression guidelines and 04-goal-signatures.md for goal-specific periodization.
 export function buildInitialProgramPrompt(profile: ProfileDocument) {
   return [
     "Create a structured workout program for this profile.",
