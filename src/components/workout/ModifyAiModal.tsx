@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 import { normalizePayload } from "@/lib/import/parser";
 import { remapExerciseIds } from "@/lib/workout/programDiff";
 import { useFocusTrap } from "@/lib/workout/useFocusTrap";
@@ -14,10 +14,49 @@ type Props = {
   onClose: () => void;
 };
 
+function buildPrompt(day: ProgramDay): string {
+  const lines: string[] = [
+    `Here is my current workout — "${day.title}":`,
+    "",
+  ];
+
+  for (const section of day.sections) {
+    lines.push(`${section.name} (${section.type}):`);
+    for (const group of section.groups) {
+      if (group.type !== "single") {
+        lines.push(`  [${group.type.toUpperCase()}]`);
+      }
+      for (const ex of group.exercises) {
+        const detail: string[] = [];
+        if (ex.sets) detail.push(`${ex.sets} sets`);
+        if (ex.reps) detail.push(`${ex.reps} reps`);
+        if (ex.load) detail.push(`@ ${ex.load}`);
+        if (ex.rest) detail.push(`rest ${ex.rest}`);
+        const suffix = detail.length ? ` (${detail.join(", ")})` : "";
+        lines.push(`  - ${ex.name}${suffix}`);
+        if (ex.notes) lines.push(`    note: ${ex.notes}`);
+      }
+    }
+    lines.push("");
+  }
+
+  lines.push(
+    "[Describe what you want to change here]",
+    "",
+    "Return ONLY a JSON object in this exact format — no explanation:",
+    "",
+    '{ "days": [{ "title": "...", "sections": [{ "type": "strength", "name": "...", "groups": [{ "type": "single", "exercises": [{ "name": "...", "sets": 3, "reps": "8-10", "load": "60kg", "rest": "90s" }] }] }] }] }',
+  );
+
+  return lines.join("\n");
+}
+
 export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
   const [json, setJson] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const trapRef = useFocusTrap(true);
+  const prompt = buildPrompt(currentDay);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -26,6 +65,13 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   function handleApply() {
     setError(null);
@@ -49,7 +95,6 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
         setError("No day found in the pasted JSON.");
         return;
       }
-      // Re-map parser-generated IDs back to original IDs so diffDays works correctly
       const remapped = remapExerciseIds(currentDay, {
         ...parsedDay,
         id: currentDay.id,
@@ -70,34 +115,93 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
         aria-modal="true"
         aria-label="Modify with AI"
         style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "85vh",
+          position: "absolute", bottom: 0, left: 0, right: 0, maxHeight: "90vh",
           background: "var(--bg-1)", borderRadius: "12px 12px 0 0",
           borderTop: "1px solid var(--line-2)", display: "flex",
-          flexDirection: "column", padding: 16, gap: 12,
+          flexDirection: "column",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, flex: 1, color: "var(--fg)" }}>Paste AI output</h2>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", padding: "14px 16px 12px", borderBottom: "1px solid var(--line)" }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, flex: 1, color: "var(--fg)" }}>Modify with AI</h2>
           <button type="button" className="btn ghost" onClick={onClose} style={{ padding: "4px 6px" }} aria-label="Close">
             <X size={15} aria-hidden />
           </button>
         </div>
-        <p style={{ margin: 0, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5 }}>
-          Paste the JSON returned by your AI assistant below to review and apply changes.
-        </p>
-        <textarea
-          value={json}
-          onChange={(e) => setJson(e.target.value)}
-          placeholder='{ "days": [ { "title": "...", "sections": [...] } ] }'
-          style={{
-            flex: 1, minHeight: 180, background: "var(--bg-3)",
-            border: "1px solid var(--line)", borderRadius: "var(--r)",
-            color: "var(--fg)", fontFamily: "var(--font-mono)",
-            fontSize: 11.5, padding: 10, resize: "none", outline: "none",
-          }}
-        />
-        {error && <p style={{ margin: 0, fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>{error}</p>}
-        <div style={{ display: "flex", gap: 8 }}>
+
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          {/* Step 1: Prompt */}
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--accent)",
+                textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600,
+              }}>
+                1 · Copy prompt
+              </span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                style={{
+                  marginLeft: "auto", display: "flex", alignItems: "center", gap: 5,
+                  padding: "3px 10px", borderRadius: 999, fontSize: 11,
+                  border: `1px solid ${copied ? "var(--good)" : "var(--line)"}`,
+                  background: copied ? "rgba(127,199,122,0.1)" : "transparent",
+                  color: copied ? "var(--good)" : "var(--fg-2)", cursor: "pointer",
+                  fontFamily: "var(--font-mono)", transition: "all .15s",
+                }}
+                aria-label="Copy prompt to clipboard"
+              >
+                {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <pre
+              style={{
+                margin: 0, padding: 10, borderRadius: "var(--r)",
+                background: "var(--bg-3)", border: "1px solid var(--line)",
+                fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)",
+                whiteSpace: "pre-wrap", wordBreak: "break-word",
+                maxHeight: 180, overflowY: "auto", lineHeight: 1.6,
+                userSelect: "text",
+              }}
+            >
+              {prompt}
+            </pre>
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--fg-4)", lineHeight: 1.4 }}>
+              Paste into Claude, ChatGPT, or any AI. Edit the last line to describe what you want changed.
+            </p>
+          </div>
+
+          {/* Step 2: JSON paste */}
+          <div style={{ padding: "12px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--accent)",
+              textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600,
+            }}>
+              2 · Paste the response
+            </span>
+            <textarea
+              value={json}
+              onChange={(e) => setJson(e.target.value)}
+              placeholder='{ "days": [ { "title": "...", "sections": [...] } ] }'
+              style={{
+                flex: 1, minHeight: 130, background: "var(--bg-3)",
+                border: "1px solid var(--line)", borderRadius: "var(--r)",
+                color: "var(--fg)", fontFamily: "var(--font-mono)",
+                fontSize: 11.5, padding: 10, resize: "none", outline: "none",
+              }}
+            />
+            {error && (
+              <p style={{ margin: 0, fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>
+                {error}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "10px 16px", borderTop: "1px solid var(--line)", display: "flex", gap: 8 }}>
           <button type="button" className="btn ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
           <button type="button" className="btn primary" onClick={handleApply} style={{ flex: 2 }} disabled={!json.trim()}>
             Review changes →
