@@ -58,12 +58,16 @@ export function diffDays(before: ProgramDay, after: ProgramDay): ExerciseDiff[] 
 
 /**
  * Re-maps exercise IDs in `parsed` to match IDs in `original` by exercise name.
- * Falls back to position within each group when names don't match.
  * This is needed because the parser generates fresh UUIDs — without re-mapping,
  * every exercise would appear as removed+added instead of modified.
+ *
+ * Only matches by name (case-insensitive, trimmed). If an exercise name is new,
+ * the parser-generated UUID is kept so it correctly appears as "added" in the diff.
+ * Positional fallback is intentionally omitted: if AI replaces Row with Pull-up
+ * at the same slot, we want "Row removed, Pull-up added", not "Row modified to Pull-up".
  */
 export function remapExerciseIds(original: ProgramDay, parsed: ProgramDay): ProgramDay {
-  // Build name -> id map from original
+  // Build name -> id map from original (name is the stable semantic key)
   const nameToId = new Map<string, string>();
   for (const section of original.sections) {
     for (const group of section.groups) {
@@ -73,24 +77,16 @@ export function remapExerciseIds(original: ProgramDay, parsed: ProgramDay): Prog
     }
   }
 
-  // Also build positional maps: sectionIndex -> groupIndex -> exerciseIndex -> id
-  const positionalIds: string[][][] = original.sections.map((s) =>
-    s.groups.map((g) => g.exercises.map((e) => e.id))
-  );
-
-  const remappedSections = parsed.sections.map((section, si) =>
+  const remappedSections = parsed.sections.map((section) =>
     ({
       ...section,
-      groups: section.groups.map((group, gi) =>
+      groups: section.groups.map((group) =>
         ({
           ...group,
-          exercises: group.exercises.map((ex, ei) => {
-            const byName = nameToId.get(ex.name.toLowerCase().trim());
-            if (byName) return { ...ex, id: byName };
-            // fallback: position
-            const posId = positionalIds[si]?.[gi]?.[ei];
-            if (posId) return { ...ex, id: posId };
-            return ex;
+          exercises: group.exercises.map((ex) => {
+            const originalId = nameToId.get(ex.name.toLowerCase().trim());
+            // Only remap when name matches — keeps added exercises with fresh UUIDs
+            return originalId ? { ...ex, id: originalId } : ex;
           }),
         })
       ),
