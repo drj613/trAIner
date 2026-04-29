@@ -74,3 +74,4 @@ data/*.sqlite-wal
 # Local agent/editor state
 .codex
 .pi/
+.claude/settings.local.json
