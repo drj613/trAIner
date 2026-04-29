@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { normalizePayload } from "@/lib/import/parser";
 import { remapExerciseIds } from "@/lib/workout/programDiff";
@@ -16,6 +16,14 @@ type Props = {
 export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
   const [json, setJson] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   function handleApply() {
     setError(null);

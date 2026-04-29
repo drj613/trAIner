@@ -12,6 +12,7 @@ export default function DiffPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [state, setState] = useState<{ original: ProgramDay; replacement: ProgramDay } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const data = loadPendingDiff();
@@ -25,25 +26,34 @@ export default function DiffPage() {
   const diffs = diffDays(state.original, state.replacement);
 
   async function handleAccept() {
-    const program = await programRepo.get(params.id);
-    if (!program) return;
-    await programRepo.save({
-      ...program,
-      overrides: [
-        ...program.overrides,
-        {
-          id: crypto.randomUUID(),
-          scope: "day" as const,
-          programId: program.id,
-          dayId: state!.original.id,
-          replacement: state!.replacement,
-          reason: "Modified with AI",
-          createdAt: new Date().toISOString(),
-        },
-      ],
-    });
-    clearPendingDiff();
-    router.replace(`/today`);
+    setSaveError(null);
+    try {
+      const program = await programRepo.get(params.id);
+      if (!program) {
+        setSaveError("Program not found — changes could not be saved.");
+        return;
+      }
+      await programRepo.save({
+        ...program,
+        overrides: [
+          ...program.overrides,
+          {
+            id: crypto.randomUUID(),
+            scope: "day" as const,
+            programId: program.id,
+            dayId: state!.original.id,
+            replacement: state!.replacement,
+            reason: "Modified with AI",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      });
+      clearPendingDiff();
+      router.replace(`/today`);
+    } catch (e) {
+      console.error("[diff] failed to save override", e);
+      setSaveError("Failed to save changes. Please try again.");
+    }
   }
 
   function handleDiscard() {
@@ -53,6 +63,11 @@ export default function DiffPage() {
 
   return (
     <div style={{ height: "calc(100vh - 46px)", display: "flex", flexDirection: "column" }}>
+      {saveError && (
+        <p style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "0 16px" }}>
+          {saveError}
+        </p>
+      )}
       <DiffReview diffs={diffs} replacement={state.replacement} onAccept={handleAccept} onDiscard={handleDiscard} />
     </div>
   );
