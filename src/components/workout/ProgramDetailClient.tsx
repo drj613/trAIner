@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Map } from "lucide-react";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import type { ProgramDocument } from "@/lib/programs/types";
 import { programRepo } from "@/lib/storage/programRepo";
@@ -28,6 +29,14 @@ export function ProgramDetailClient({ id }: { id: string }) {
         <div className="flex gap-2">
           <Link className="button secondary" href={`/programs/${id}/edit`}>
             Edit
+          </Link>
+          <Link
+            href={`/programs/${id}/map`}
+            className="btn"
+            style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
+          >
+            <Map size={14} aria-hidden />
+            Map
           </Link>
           <Link className="button" href={`/programs/${id}/log`}>
             Log
