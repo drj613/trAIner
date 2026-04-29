@@ -277,6 +277,7 @@ function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish:
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const router = useRouter();
@@ -316,6 +317,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   async function finishWorkout() {
     if (saving.current) return;
     saving.current = true;
+    setSaveError(null);
     try {
       const today = new Date().toISOString().slice(0, 10);
       const existing = await logRepo.getForDay(program.id, day.id, today);
@@ -348,6 +350,9 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      console.error("[finishWorkout] save failed", e);
+      setSaveError("Failed to save workout. Please try again.");
     } finally {
       saving.current = false;
     }
@@ -432,6 +437,11 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
       ))}
 
       <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} />
+      {saveError && (
+        <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "4px 12px", margin: 0 }}>
+          {saveError}
+        </p>
+      )}
 
       {historyDrawer && (
         <HistoryDrawer
