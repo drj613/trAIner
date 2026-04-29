@@ -15,6 +15,7 @@ import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout
 import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
+import { getRenderableDays } from "@/lib/programs/overrides";
 
 function GroupRail({
   type,
@@ -455,7 +456,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 export function TodayClient() {
   const { programs, loading, seedDemo } = useLocalData();
   const activeProgram = programs.find((p) => p.active) ?? programs[0];
-  const day = activeProgram?.days[0];
+  const day = activeProgram ? getRenderableDays(activeProgram)[0] : undefined;
 
   if (loading) {
     return (
