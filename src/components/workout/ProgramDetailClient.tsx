@@ -32,7 +32,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           </Link>
           <Link
             href={`/programs/${id}/map`}
-            className="btn"
+            className="button"
             style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
           >
             <Map size={14} aria-hidden />

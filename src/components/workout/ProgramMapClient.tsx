@@ -37,6 +37,7 @@ function DayCell({ day, programId }: { day: ProgramDay; programId: string }) {
   return (
     <Link
       href={`/programs/${programId}?day=${day.id}`}
+      aria-label={`Go to ${day.title} — ${day.sections.length} section${day.sections.length !== 1 ? "s" : ""}`}
       style={{
         display: "block", padding: "10px 12px", background: "var(--bg-2)",
         border: "1px solid var(--line)", borderRadius: "var(--r)", minHeight: 68,
@@ -70,16 +71,24 @@ function DayCell({ day, programId }: { day: ProgramDay; programId: string }) {
 export function ProgramMapClient({ programId }: { programId: string }) {
   const [program, setProgram] = useState<ProgramDocument | undefined>();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     programRepo.get(programId)
       .then(setProgram)
-      .catch(() => undefined)
+      .catch((e) => {
+        console.error("[programMap] failed to load program", e);
+        setError("Failed to load program. Please try again.");
+      })
       .finally(() => setLoading(false));
   }, [programId]);
 
   if (loading) {
     return <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading program map…</p>;
+  }
+
+  if (error) {
+    return <div className="panel"><p style={{ color: "var(--fg-error, red)" }}>{error}</p></div>;
   }
 
   if (!program) {
@@ -88,7 +97,7 @@ export function ProgramMapClient({ programId }: { programId: string }) {
 
   const renderableDays = getRenderableDays(program);
   const grid = buildWeekGrid(renderableDays);
-  const maxDaysInWeek = Math.max(...grid.map((w) => w.days.length), 1);
+  const maxDaysInWeek = grid.reduce((m, w) => Math.max(m, w.days.length), 1);
 
   return (
     <div>
