@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle, Download, History, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
@@ -12,6 +13,8 @@ import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/worko
 import { sectionKind } from "@/lib/workout/sectionKind";
 import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
 import { HistoryDrawer } from "./HistoryDrawer";
+import { ModifyAiModal } from "./ModifyAiModal";
+import { storePendingDiff } from "@/lib/workout/pendingDiff";
 
 function GroupRail({
   type,
@@ -274,6 +277,8 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [saved, setSaved] = useState(false);
   const saving = useRef(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const router = useRouter();
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
@@ -355,6 +360,12 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     setCells((prev) => addSet(prev, exId));
   };
 
+  function handleApplyReplacement(replacement: ProgramDay) {
+    storePendingDiff(program.id, day, replacement);
+    setAiModalOpen(false);
+    router.push(`/programs/${program.id}/diff`);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Day header */}
@@ -388,11 +399,23 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         >
           {day.title}
         </h1>
-        <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "4px 0 0", fontFamily: "var(--font-mono)" }}>
-          {day.sections.length} sections ·{" "}
-          {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
-          exercises
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: "var(--fg-3)", margin: 0, fontFamily: "var(--font-mono)", flex: 1 }}>
+            {day.sections.length} sections ·{" "}
+            {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
+            exercises
+          </p>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => setAiModalOpen(true)}
+            style={{ padding: "4px 8px", gap: 4, display: "flex", alignItems: "center" }}
+            aria-label="Modify with AI"
+            title="Modify with AI"
+          >
+            <Sparkles size={13} aria-hidden />
+          </button>
+        </div>
       </div>
 
       {/* Sections */}
@@ -414,6 +437,15 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           exerciseName={historyDrawer.exerciseName}
           rows={historyDrawer.rows}
           onClose={() => setHistoryDrawer(null)}
+        />
+      )}
+
+      {aiModalOpen && (
+        <ModifyAiModal
+          currentDay={day}
+          programId={program.id}
+          onApply={handleApplyReplacement}
+          onClose={() => setAiModalOpen(false)}
         />
       )}
     </div>
