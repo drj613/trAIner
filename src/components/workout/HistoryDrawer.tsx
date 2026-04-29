@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { ExerciseSessionRow } from "@/lib/workout/historyUtils";
+import { useFocusTrap } from "@/lib/workout/useFocusTrap";
 
 type Props = {
   exerciseName: string;
@@ -10,6 +11,8 @@ type Props = {
 };
 
 export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
+  const trapRef = useFocusTrap(true);
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -26,7 +29,9 @@ export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
         style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }}
       />
       <div
+        ref={trapRef as React.RefObject<HTMLDivElement>}
         role="dialog"
+        aria-modal="true"
         aria-label={`History for ${exerciseName}`}
         style={{
           position: "absolute", bottom: 0, left: 0, right: 0,

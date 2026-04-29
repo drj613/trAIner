@@ -8,8 +8,17 @@ export type PendingDiff = {
   replacement: ProgramDay;
 };
 
-export function storePendingDiff(programId: string, original: ProgramDay, replacement: ProgramDay) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ programId, original, replacement }));
+export function storePendingDiff(
+  programId: string,
+  original: ProgramDay,
+  replacement: ProgramDay
+): boolean {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ programId, original, replacement }));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function loadPendingDiff(): PendingDiff | null {

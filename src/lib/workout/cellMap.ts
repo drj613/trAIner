@@ -4,9 +4,9 @@ export type CellMap = Record<string, string[]>;
 
 export function buildInitialCells(day: ProgramDay): CellMap {
   const map: CellMap = {};
-  for (const section of day.sections) {
-    for (const group of section.groups) {
-      for (const ex of group.exercises) {
+  for (const section of day.sections ?? []) {
+    for (const group of section.groups ?? []) {
+      for (const ex of group.exercises ?? []) {
         map[ex.id] = Array(ex.sets ?? 3).fill("");
       }
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
@@ -15,6 +15,12 @@ import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout
 import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
+import { getRenderableDays } from "@/lib/programs/overrides";
+
+function localDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function GroupRail({
   type,
@@ -72,7 +78,7 @@ function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
 }
 
-function ExerciseRow({
+const ExerciseRow = memo(function ExerciseRow({
   exercise,
   cells,
   onCellChange,
@@ -180,7 +186,7 @@ function ExerciseRow({
       </div>
     </div>
   );
-}
+});
 
 function SectionCard({
   section,
@@ -276,6 +282,7 @@ function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish:
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const router = useRouter();
@@ -297,7 +304,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
   useEffect(() => {
     let cancelled = false;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateString();
     logRepo
       .getForDay(program.id, day.id, today)
       .then((log) => {
@@ -315,8 +322,9 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   async function finishWorkout() {
     if (saving.current) return;
     saving.current = true;
+    setSaveError(null);
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDateString();
       const existing = await logRepo.getForDay(program.id, day.id, today);
       const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
         exerciseId,
@@ -347,21 +355,29 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      console.error("[finishWorkout] save failed", e);
+      setSaveError("Failed to save workout. Please try again.");
     } finally {
       saving.current = false;
     }
   }
 
-  const handleCellChange = (exId: string, i: number, v: string) => {
+  const handleCellChange = useCallback((exId: string, i: number, v: string) => {
     setCells((prev) => updateCell(prev, exId, i, v));
-  };
+  }, []);
 
-  const handleAddSet = (exId: string) => {
+  const handleAddSet = useCallback((exId: string) => {
     setCells((prev) => addSet(prev, exId));
-  };
+  }, []);
 
   function handleApplyReplacement(replacement: ProgramDay) {
-    storePendingDiff(program.id, day, replacement);
+    const stored = storePendingDiff(program.id, day, replacement);
+    if (!stored) {
+      // SessionStorage unavailable — show error to user
+      alert("Unable to store changes temporarily. Please try again or check your browser settings.");
+      return;
+    }
     setAiModalOpen(false);
     router.push(`/programs/${program.id}/diff`);
   }
@@ -431,6 +447,11 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
       ))}
 
       <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} />
+      {saveError && (
+        <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "4px 12px", margin: 0 }}>
+          {saveError}
+        </p>
+      )}
 
       {historyDrawer && (
         <HistoryDrawer
@@ -455,7 +476,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 export function TodayClient() {
   const { programs, loading, seedDemo } = useLocalData();
   const activeProgram = programs.find((p) => p.active) ?? programs[0];
-  const day = activeProgram?.days[0];
+  const day = activeProgram ? getRenderableDays(activeProgram)[0] : undefined;
 
   if (loading) {
     return (
