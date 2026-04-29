@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ExerciseDiff } from "@/lib/workout/programDiff";
 import type { ProgramDay } from "@/lib/programs/types";
 
@@ -28,6 +29,13 @@ type Props = {
 };
 
 export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
+  const [accepting, setAccepting] = useState(false);
+
+  function handleAccept() {
+    setAccepting(true);
+    onAccept();
+  }
+
   if (diffs.length === 0) {
     return (
       <div style={{ padding: 24 }}>
@@ -85,9 +93,16 @@ export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
           );
         })}
       </div>
-      <div style={{ padding: 12, borderTop: "1px solid var(--line)", display: "flex", gap: 8 }}>
+      <div style={{ padding: 12, borderTop: "1px solid var(--line)", display: "flex", gap: 8, position: "relative" }}>
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}
+        >
+          {accepting ? "Applying changes to your workout" : ""}
+        </span>
         <button type="button" className="btn ghost" onClick={onDiscard} style={{ flex: 1 }}>Discard</button>
-        <button type="button" className="btn primary" onClick={onAccept} style={{ flex: 2 }}>Apply changes</button>
+        <button type="button" className="btn primary" onClick={handleAccept} style={{ flex: 2 }}>Apply changes</button>
       </div>
     </div>
   );
