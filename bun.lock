@@ -17,6 +17,7 @@
       },
       "devDependencies": {
         "@eslint/eslintrc": "^3",
+        "@playwright/test": "^1.59.1",
         "@tailwindcss/postcss": "^4",
         "@testing-library/jest-dom": "^6.6.4",
         "@testing-library/react": "^16.3.0",
@@ -282,6 +283,8 @@
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 
     "@playwright/browser-chromium": ["@playwright/browser-chromium@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" } }, "sha512-XDwr0qOrzLXAuBAzg4WO/xctVMb+ldJ54yz9KCpFu8G8MVJzUVFO6BvK1tBtBl4DIoFcoFRKHgUGZT+8wOC8BQ=="],
+
+    "@playwright/test": ["@playwright/test@1.59.1", "", { "dependencies": { "playwright": "1.59.1" }, "bin": { "playwright": "cli.js" } }, "sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg=="],
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
