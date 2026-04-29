@@ -372,7 +372,12 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   }, []);
 
   function handleApplyReplacement(replacement: ProgramDay) {
-    storePendingDiff(program.id, day, replacement);
+    const stored = storePendingDiff(program.id, day, replacement);
+    if (!stored) {
+      // SessionStorage unavailable — show error to user
+      alert("Unable to store changes temporarily. Please try again or check your browser settings.");
+      return;
+    }
     setAiModalOpen(false);
     router.push(`/programs/${program.id}/diff`);
   }
