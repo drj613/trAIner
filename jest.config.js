@@ -12,7 +12,7 @@ const customJestConfig = {
   },
   testEnvironment: "jsdom",
   collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts"],
-  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"]
+  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/", "<rootDir>/.worktrees/"]
 };
 
 module.exports = createJestConfig(customJestConfig);
