@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Browser } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { seedDemoIfNeeded, clearDb, waitForIdb } from "./helpers";
 
 // ---------------------------------------------------------------------------
@@ -19,10 +19,8 @@ test.describe("Workout logging", () => {
   test.describe.configure({ mode: "serial" });
 
   let sharedPage: Page;
-  let sharedBrowser: Browser;
 
   test.beforeAll(async ({ browser }) => {
-    sharedBrowser = browser;
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
     // Navigate first so IDB is accessible, then clear and re-seed
@@ -69,7 +67,7 @@ test.describe("Workout logging", () => {
   // 4. add-set button appends a new cell
   test("add-set button appends a new cell", async () => {
     const before = await sharedPage.locator('input[id^="cell-"]').count();
-    await sharedPage.locator('[aria-label="Add set"]').first().click();
+    await sharedPage.getByRole("button", { name: "Add set" }).first().click();
     const after = await sharedPage.locator('input[id^="cell-"]').count();
     expect(after).toBe(before + 1);
   });
@@ -113,7 +111,7 @@ test.describe("Workout logging — persistence", () => {
   // 7. persists added sets after reload
   test("persists added sets after reload", async ({ page }) => {
     // Add a set to first exercise
-    await page.locator('[aria-label="Add set"]').first().click();
+    await page.getByRole("button", { name: "Add set" }).first().click();
 
     // Find the new (last) cell for the first exercise
     // The new cell is appended — find it by filling the last input
@@ -129,8 +127,8 @@ test.describe("Workout logging — persistence", () => {
     await page.waitForSelector('input[id^="cell-"]', { timeout: 8000 });
     await waitForIdb(page);
 
-    // "55x10" should still be visible somewhere in the cells
-    await expect(page.locator('input[id^="cell-"][value="55x10"]')).toBeVisible();
+    // "55x10" should still be present in the last cell
+    await expect(page.locator('input[id^="cell-"]').last()).toHaveValue("55x10");
   });
 
   // 8. re-finish after reload shows only one session (no crash/duplicate error)
@@ -145,7 +143,7 @@ test.describe("Workout logging — persistence", () => {
     await page.getByRole("button", { name: /finish workout/i }).click();
     await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 2000 });
     // No app-level error message (exclude Next.js route announcer)
-    await expect(page.locator('p[role="alert"]')).not.toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: /\S/ })).not.toBeVisible();
   });
 
   // 9. empty finish saves without error
@@ -154,6 +152,6 @@ test.describe("Workout logging — persistence", () => {
     await page.getByRole("button", { name: /finish workout/i }).click();
     await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 2000 });
     // No app-level error message (exclude Next.js route announcer)
-    await expect(page.locator('p[role="alert"]')).not.toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: /\S/ })).not.toBeVisible();
   });
 });
