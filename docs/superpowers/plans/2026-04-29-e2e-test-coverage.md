@@ -181,9 +181,9 @@ Strategy: seed one program with at least a few exercises via import, navigate to
 
 **File:** `e2e/workspace.spec.ts`
 
-Strategy: navigate to `/workspace` once, run all tests in sequence. Reload mid-suite for persistence assertions.
+Strategy: navigate to `/settings` once, run all tests in sequence. Reload mid-suite for persistence assertions.
 
-> **Note:** Previously `settings.spec.ts` targeting `/settings`. Page renamed to Workspace in plan 05 — route is now `/workspace`, nav label is "Workspace".
+> **Note:** Route is `/settings` (nav label is "Workspace"). The `/workspace` rename was planned but not implemented — the actual route remains `/settings`.
 
 ### Tests
 
