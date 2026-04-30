@@ -100,3 +100,60 @@ export type AnalysisResult = {
   periodization: PeriodizationResult;
   warnings: Warning[];
 };
+
+export type DimensionDisplay = {
+  id: string;
+  label: string;
+  score: number;
+  grade: Grade;
+  status: "good" | "warn" | "bad";
+  note: string;
+};
+
+export type MuscleDisplay = {
+  group: string;
+  sets: number;
+  mev: number;
+  mavLo: number;
+  mavHi: number;
+  mrv: number;
+  status: "green" | "yellow" | "red";
+  flag?: string;
+};
+
+export type RatioDisplay = {
+  id: string;
+  label: string;
+  value: string;
+  verdict: "good" | "warn" | "bad";
+  target: string;
+  detail?: string;
+};
+
+export type SessionDisplay = {
+  day: string;
+  exercises: number;
+  sets: number;
+  durationMin: number;
+  status: "good" | "warn" | "bad";
+  flag?: string;
+};
+
+export type FindingDisplay = {
+  severity: "good" | "warn" | "bad" | "info";
+  area: string;
+  msg: string;
+};
+
+export type DisplayAnalysis = {
+  durationMs: number;
+  overall: { score: number; grade: string };
+  fingerprint: { primary: string; secondary: string | null; label: string; confidence: number };
+  dimensions: DimensionDisplay[];
+  muscles: MuscleDisplay[];
+  ratios: RatioDisplay[];
+  patterns: { covered: string[]; missing: string[] };
+  sessions: SessionDisplay[];
+  warnings: FindingDisplay[];
+  strengths: string[];
+};
