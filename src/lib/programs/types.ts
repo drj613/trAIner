@@ -20,6 +20,17 @@ export type ProfileDocument = {
   trainingAge: string;
   defaultDaysPerWeek: number;
   updatedAt: ISODate;
+  // Extended profile fields (optional so stored profiles without them still load)
+  body?: {
+    age?: string;
+    height?: string;
+    weight?: string;
+    bodyfat?: string;
+  };
+  history?: string[];
+  injuries?: string[];
+  schedule?: string[];
+  preferences?: string[];
 };
 
 export type ProgramDocument = {

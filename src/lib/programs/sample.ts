@@ -8,7 +8,12 @@ export const defaultProfile: ProfileDocument = {
   constraints: ["Prefer phone-friendly sessions"],
   trainingAge: "intermediate",
   defaultDaysPerWeek: 4,
-  updatedAt: "2026-04-24T00:00:00.000Z"
+  updatedAt: "2026-04-24T00:00:00.000Z",
+  body: { age: "—", height: "—", weight: "—", bodyfat: "—" },
+  history: ["intermediate lifter"],
+  injuries: [],
+  schedule: ["4 days/week", "60–75 min sessions"],
+  preferences: ["prefer free weights over machines"],
 };
 
 export const demoProgram: ProgramDocument = {
