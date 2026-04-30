@@ -20,6 +20,10 @@ export async function seedDemoIfNeeded(page: Page) {
  * Clear all IndexedDB databases so each test starts fresh.
  */
 export async function clearDb(page: Page) {
+  // indexedDB.databases() throws a SecurityError on about:blank; navigate first.
+  if (page.url() === "about:blank") {
+    await page.goto("/");
+  }
   await page.evaluate(async () => {
     const dbs = await indexedDB.databases?.();
     if (dbs) {
