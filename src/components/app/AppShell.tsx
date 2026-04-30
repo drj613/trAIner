@@ -25,7 +25,7 @@ const navItems = [
   { href: "/import", label: "Import", icon: FileInput },
   { href: "/prompts", label: "Prompts", icon: Wand2 },
   { href: "/profile", label: "Profile", icon: UserRound },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Workspace", icon: Settings },
 ];
 
 function NavDrawer({
