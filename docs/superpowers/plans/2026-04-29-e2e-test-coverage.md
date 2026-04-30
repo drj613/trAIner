@@ -15,11 +15,14 @@
 | `e2e/workout-logging.spec.ts` | Core logging loop + IndexedDB persistence | ~10 |
 | `e2e/exercise-history.spec.ts` | History drawer + session aggregation | ~6 |
 | `e2e/modify-ai.spec.ts` | *(expand existing)* Override persistence, stacked edits | +3 |
-| `e2e/program-import.spec.ts` | Import flow + program management | ~8 |
-| `e2e/settings.spec.ts` | Theme/density/font + localStorage persistence | ~7 |
+| `e2e/program-import.spec.ts` | Import wizard + resolution step + program management | ~9 |
+| `e2e/routines-index.spec.ts` | Routines list, activate/duplicate/delete, filter chips | ~8 |
+| `e2e/routine-builder.spec.ts` | 3-step new-routine wizard | ~6 |
+| `e2e/analysis-card.spec.ts` | Inline analysis card expand/tabs + LLM sheet | ~5 |
+| `e2e/workspace.spec.ts` | Theme/density/font + localStorage persistence | ~7 |
 | `e2e/navigation.spec.ts` | Shell nav, redirects, 404 handling | ~5 |
 
-Total: ~39 new tests (+ 3 expansions to existing file)
+Total: ~59 new tests (+ 3 expansions to existing file)
 
 ---
 
@@ -114,19 +117,77 @@ const IMPORT_JSON = JSON.stringify({
 - **day cell link navigates to program+day** — click a non-rest day cell, assert URL contains `?day=`
 - **invalid JSON shows parse error** — paste `"not json"` in import, click Review, assert error text visible
 - **non-object JSON shows type error** — paste `"[1,2,3]"`, click Review, assert error about "must be an object"
-- **imported program shows on Today screen after marking active** — if switching active program is supported via UI, verify Today shows the imported program's exercises
+- **imported program shows on Today screen after marking active** — verify Today shows the imported program's exercises after activating via routines index
+- **duplicate program name shows resolution step** — import the same JSON twice, assert resolution step appears with "Keep both" / "Replace" options; choose "Keep both", assert two entries on programs list
 
 ---
 
-## Domain 5: Settings + localStorage persistence
+## Domain 5: Routines index
 
-**File:** `e2e/settings.spec.ts`
+**File:** `e2e/routines-index.spec.ts`
 
-Strategy: navigate to `/settings` once, run all tests in sequence. Reload mid-suite for persistence assertions.
+Strategy: seed two programs (one active, one draft) in `beforeAll`, then chain tests. Mutation tests (activate/duplicate/delete) run last.
 
 ### Tests
 
-- **settings page renders theme, density, and font sections** — assert three section labels visible
+- **active program renders with active badge** — navigate to `/programs`, assert the active program card shows an "Active" badge
+- **stat tiles show days/week and length** — assert tiles like "4d/wk" and "8 wk" visible on the active card
+- **week strip renders day dots** — assert at least one day-dot element visible in the active card strip
+- **draft programs render as compact rows** — assert the draft program appears as a row (not the full active card)
+- **filter chip "Draft" shows only draft programs** — click the "Draft" chip, assert active card disappears, draft row remains
+- **filter chip "All" restores full list** — click "Draft" then "All", assert active card reappears
+- **3-dot menu opens on trigger click** — click the 3-dot menu on the draft row, assert menu with "Activate", "Duplicate", "Delete" items visible
+- **activate moves program to active card** *(persistence)* — activate the draft via menu, reload, assert it now renders as the active card
+- **duplicate adds a "Copy of …" row** *(persistence)* — duplicate a program via menu, reload, assert "Copy of" row present in the list
+- **delete removes the program** *(persistence)* — delete a program via menu, reload, assert program no longer in list
+
+---
+
+## Domain 6: Routine builder
+
+**File:** `e2e/routine-builder.spec.ts`
+
+Strategy: `clearDb` in `beforeAll`, navigate to `/programs/new`, chain the 3-step wizard tests.
+
+### Tests
+
+- **step 1 shows title and goal fields** — navigate to `/programs/new`, assert title input and goal selector visible
+- **cannot advance past step 1 with empty title** — click Next with empty title, assert validation error, URL still on step 1
+- **step 2 shows day-count and week-count controls** — enter title, advance, assert day/week inputs visible
+- **step 3 shows exercise picker entry point** — advance to step 3, assert "Add exercise" button visible
+- **exercise picker sheet opens on add click** — click "Add exercise", assert bottom sheet with search input appears
+- **search returns matching exercises** — type "Squat" in picker, assert at least one result row containing "Squat" visible
+- **selecting an exercise adds it to the day** — click a result row, assert exercise name appears in the day's exercise list
+
+---
+
+## Domain 7: Analysis card
+
+**File:** `e2e/analysis-card.spec.ts`
+
+Strategy: seed one program with at least a few exercises via import, navigate to its detail page, chain tests.
+
+### Tests
+
+- **analysis card renders collapsed with score badge** — navigate to `/programs/[id]`, assert score badge (a number 0–100) and grade letter visible
+- **clicking card header expands the body** — click the fingerprint label, assert volume bars section appears
+- **dimension chip switches active tab** — click the "Balance" chip, assert ratio rows (e.g. "Push : Pull") appear
+- **clicking "AI prompt" opens the LLM sheet** — expand card, click "AI prompt" button, assert bottom sheet with "Copy prompt" button visible
+- **LLM sheet closes on backdrop click** — click the backdrop, assert sheet disappears
+
+---
+
+## Domain 8: Workspace + localStorage persistence
+
+**File:** `e2e/workspace.spec.ts`
+
+Strategy: navigate to `/workspace` once, run all tests in sequence. Reload mid-suite for persistence assertions.
+
+> **Note:** Previously `settings.spec.ts` targeting `/settings`. Page renamed to Workspace in plan 05 — route is now `/workspace`, nav label is "Workspace".
+
+### Tests
+
+- **workspace page renders theme, density, and font sections** — assert three section labels visible
 - **clicking a theme applies data-theme attribute** — click "terminal" button, assert `document.documentElement.dataset.theme === "terminal"` via `page.evaluate()`
 - **theme persists after reload** *(persistence)* — click "terminal", `page.reload()`, assert `data-theme="terminal"` still set
 - **clicking density applies data-density attribute** — click "Dense", assert `data-density="dense"` via evaluate
@@ -136,7 +197,7 @@ Strategy: navigate to `/settings` once, run all tests in sequence. Reload mid-su
 
 ---
 
-## Domain 6: Navigation + shell
+## Domain 9: Navigation + shell
 
 **File:** `e2e/navigation.spec.ts`
 
@@ -145,10 +206,10 @@ Strategy: lightweight, no seeding needed for most. Start from `/today`.
 ### Tests
 
 - **root `/` redirects to `/today`** — `page.goto("/")`, assert URL is `/today`
-- **nav links reach correct routes** — iterate `["/today", "/history", "/library", "/programs", "/settings"]`, assert each renders without error (`h1` or main content visible)
+- **nav links reach correct routes** — iterate `["/today", "/history", "/library", "/programs", "/workspace", "/profile", "/prompts"]`, assert each renders without error (`h1` or main content visible)
 - **nav active state reflects current route** — navigate to `/history`, assert history nav item has active styling (aria-current or active class)
 - **unknown route shows 404 or redirects** — `page.goto("/does-not-exist")`, assert 404 page or redirect, no crash
-- **browser back works after navigation** — go to `/settings`, press back, assert URL is previous page
+- **browser back works after navigation** — go to `/workspace`, press back, assert URL is previous page
 
 ---
 
@@ -161,7 +222,18 @@ export async function waitForIdb(page: Page) {
 }
 
 /** Minimal valid import JSON for program tests */
-export const IMPORT_PROGRAM_JSON = JSON.stringify({ ... });
+export const IMPORT_PROGRAM_JSON = JSON.stringify({
+  program_name: "E2E Test Program",
+  days: [{
+    title: "Day 1",
+    sections: [{
+      type: "strength", name: "Strength",
+      groups: [{ type: "single", exercises: [
+        { name: "Squat", sets: 3, reps: "5", load: "100kg" }
+      ]}]
+    }]
+  }]
+});
 
 /** Read a data-attribute from documentElement */
 export async function getDocAttr(page: Page, attr: string): Promise<string | null> {
@@ -191,5 +263,8 @@ Implement in this order — each builds on infra from the previous:
 2. `exercise-history.spec.ts` — builds on logging infrastructure
 3. Expand `modify-ai.spec.ts` — adds persistence proof to existing tests
 4. `program-import.spec.ts` — independent, tests second major flow
-5. `settings.spec.ts` — simple, good coverage for localStorage
-6. `navigation.spec.ts` — cheapest, catch-all for routing
+5. `routines-index.spec.ts` — depends on import infra to seed programs
+6. `routine-builder.spec.ts` — independent new-program creation flow
+7. `analysis-card.spec.ts` — depends on a seeded program from import
+8. `workspace.spec.ts` — simple, good coverage for localStorage
+9. `navigation.spec.ts` — cheapest, catch-all for routing
