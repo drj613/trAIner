@@ -92,7 +92,7 @@ test.describe("Exercise history", () => {
 
     // Expect a row with today's date in ISO YYYY-MM-DD format
     const today = new Date().toISOString().slice(0, 10);
-    await expect(sharedPage.getByText(today)).toBeVisible({ timeout: 3000 });
+    await expect(sharedPage.getByRole("dialog").getByText(today)).toBeVisible({ timeout: 3000 });
 
     // close drawer
     await sharedPage.keyboard.press("Escape");
@@ -104,7 +104,7 @@ test.describe("Exercise history", () => {
     // State from test 5: first exercise (Banded Face Pulls) has 1 session with "80x5"
     // Open history drawer for first exercise and verify set label is visible
     await openHistoryDrawer(sharedPage);
-    await expect(sharedPage.getByText("80x5")).toBeVisible();
+    await expect(sharedPage.getByRole("dialog").getByText("80x5")).toBeVisible();
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
 
@@ -122,7 +122,7 @@ test.describe("Exercise history", () => {
     const historyButtons = sharedPage.getByRole("button", { name: /history for/i });
     await historyButtons.nth(1).click();
     await expect(sharedPage.getByRole("dialog")).toBeVisible();
-    await expect(sharedPage.getByText("85x3")).toBeVisible();
+    await expect(sharedPage.getByRole("dialog").getByText("85x3")).toBeVisible();
 
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
@@ -132,7 +132,9 @@ test.describe("Exercise history", () => {
   test("volume column shows calculated total", async () => {
     // Open history for first exercise (Banded Face Pulls: 80x5 = 400 volume)
     await openHistoryDrawer(sharedPage);
-    await expect(sharedPage.getByText("400")).toBeVisible();
+    await expect(
+      sharedPage.getByRole("dialog").getByText("400", { exact: true })
+    ).toBeVisible();
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
   });
