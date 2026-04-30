@@ -68,7 +68,7 @@ test.describe("Exercise history", () => {
   test('drawer shows "No history yet" before any workout is logged', async () => {
     await openHistoryDrawer(sharedPage);
     await expect(
-      sharedPage.getByText("No history yet for this exercise.")
+      sharedPage.getByRole("dialog").getByText("No history yet for this exercise.")
     ).toBeVisible();
     // close before logging tests
     await sharedPage.keyboard.press("Escape");
