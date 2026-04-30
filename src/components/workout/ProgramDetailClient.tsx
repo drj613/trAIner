@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Map } from "lucide-react";
+import { ChevronLeft, Map } from "lucide-react";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import type { ProgramDocument } from "@/lib/programs/types";
 import { programRepo } from "@/lib/storage/programRepo";
@@ -21,6 +21,22 @@ export function ProgramDetailClient({ id }: { id: string }) {
 
   return (
     <div className="stack">
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        <Link
+          href="/programs"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 3,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--fg-3)",
+            textDecoration: "none",
+          }}
+        >
+          <ChevronLeft size={12} /> Routines
+        </Link>
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{program.title}</h1>
