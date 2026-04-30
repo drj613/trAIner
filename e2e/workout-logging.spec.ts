@@ -131,8 +131,8 @@ test.describe("Workout logging — persistence", () => {
     await expect(page.locator('input[id^="cell-"]').last()).toHaveValue("55x10");
   });
 
-  // 8. re-finish after reload shows only one session (no crash/duplicate error)
-  test("re-finish after reload shows only one session", async ({ page }) => {
+  // 8. re-finish after reload does not error
+  test("re-finish after reload does not error", async ({ page }) => {
     await page.getByRole("button", { name: /finish workout/i }).click();
     await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 2000 });
 

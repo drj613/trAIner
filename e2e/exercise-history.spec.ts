@@ -59,7 +59,7 @@ test.describe("Exercise history", () => {
   // 3. history drawer closes on backdrop click
   test("history drawer closes on backdrop click", async () => {
     await openHistoryDrawer(sharedPage);
-    await sharedPage.getByTestId("history-drawer-backdrop").click();
+    await sharedPage.getByTestId("history-drawer-backdrop").click({ position: { x: 10, y: 10 } });
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
   });
 

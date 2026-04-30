@@ -23,6 +23,8 @@ test.describe("Navigation", () => {
     "/library",
     "/programs",
     "/settings",
+    "/profile",
+    "/prompts",
   ] as const;
 
   for (const route of routes) {
@@ -67,9 +69,9 @@ test.describe("Navigation", () => {
   // -------------------------------------------------------------------------
   test("unknown route does not crash the app", async ({ page }) => {
     await page.goto("/does-not-exist");
-    // Body should have visible content — Next.js 404 page is fine
-    const body = page.locator("body");
-    await expect(body).not.toBeEmpty();
+    // AppShell still renders (header + main) — if React throws an unhandled error
+    // the entire tree unmounts and this fails.
+    await expect(page.getByRole("main")).toBeVisible();
   });
 
   // -------------------------------------------------------------------------

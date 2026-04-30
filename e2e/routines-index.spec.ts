@@ -51,8 +51,8 @@ test.describe("Routines index", () => {
     await sharedPage.getByRole("button", { name: /save program/i }).click();
     await expect(sharedPage.getByText(/"Second Draft Program" saved/i)).toBeVisible();
 
-    // 3c. Write an archived program directly to IDB so the "archived" filter
-    //     has something to match (there is no Archive action in the UI).
+    // No archive UI exists, so write an archived program directly to IDB to make the filter chips testable.
+    // Must match ProgramDocument shape — update if src/lib/programs/types.ts changes.
     await sharedPage.evaluate(async () => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
         const req = indexedDB.open("trainer-local-first");
