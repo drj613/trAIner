@@ -37,9 +37,7 @@ test.describe("Program import", () => {
     await textarea.fill("not json");
     await sharedPage.getByRole("button", { name: /validate/i }).click();
     // Parser throws: "The pasted content is not valid JSON."
-    await expect(
-      sharedPage.getByText(/not valid json|parse error|invalid json|unexpected/i),
-    ).toBeVisible();
+    await expect(sharedPage.getByText(/not valid json/i)).toBeVisible();
   });
 
   // 3. non-object JSON shows type error
@@ -48,9 +46,7 @@ test.describe("Program import", () => {
     await textarea.fill("[1,2,3]");
     await sharedPage.getByRole("button", { name: /validate/i }).click();
     // Parser throws: "The pasted JSON must be an object."
-    await expect(
-      sharedPage.getByText(/must be an object|not valid json|parse error|unexpected/i),
-    ).toBeVisible();
+    await expect(sharedPage.getByText(/must be an object/i)).toBeVisible();
   });
 
   // 4. valid JSON parses and shows confirm step
@@ -65,7 +61,6 @@ test.describe("Program import", () => {
   // 5. save program persists to IndexedDB
   test("save program persists to IndexedDB", async () => {
     await sharedPage.getByRole("button", { name: /save program/i }).click();
-    await waitForIdb(sharedPage);
     // After saving, success message appears on the paste step
     await expect(
       sharedPage.getByText(/"E2E Test Program" saved/i),
