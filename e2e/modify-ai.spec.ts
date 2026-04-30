@@ -104,4 +104,59 @@ test.describe("Modify with AI", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
   });
+
+  test("AI override persists after page reload", async ({ page }) => {
+    // Full flow: paste AI_WORKOUT_JSON → review → apply → reload → assert title still visible
+    await page.getByRole("button", { name: /modify with ai/i }).click();
+    const dialog = page.getByRole("dialog", { name: /modify with ai/i });
+    await dialog.getByRole("textbox").fill(AI_WORKOUT_JSON);
+    await dialog.getByRole("button", { name: /review changes/i }).click();
+    await expect(page).toHaveURL(/\/programs\/.+\/diff/);
+    await page.getByRole("button", { name: /apply changes/i }).click();
+    await expect(page).toHaveURL(/\/today/);
+    await expect(page.getByText(/upper pull and press/i)).toBeVisible();
+    // Reload the page and confirm the override was persisted to IndexedDB
+    await page.reload();
+    await expect(page.getByText(/upper pull and press/i)).toBeVisible();
+  });
+
+  test("second AI edit stacks as additional override", async ({ page }) => {
+    // Accept first AI diff
+    await page.getByRole("button", { name: /modify with ai/i }).click();
+    const dialog = page.getByRole("dialog", { name: /modify with ai/i });
+    await dialog.getByRole("textbox").fill(AI_WORKOUT_JSON);
+    await dialog.getByRole("button", { name: /review changes/i }).click();
+    await expect(page).toHaveURL(/\/programs\/.+\/diff/);
+    await page.getByRole("button", { name: /apply changes/i }).click();
+    await expect(page).toHaveURL(/\/today/);
+    await expect(page.getByText(/upper pull and press/i)).toBeVisible();
+    // Open the modal again and apply a second distinct AI edit
+    const secondJson = JSON.stringify({
+      days: [{ title: "Strength Day", sections: [] }],
+    });
+    await page.getByRole("button", { name: /modify with ai/i }).click();
+    const dialog2 = page.getByRole("dialog", { name: /modify with ai/i });
+    await dialog2.getByRole("textbox").fill(secondJson);
+    await dialog2.getByRole("button", { name: /review changes/i }).click();
+    await expect(page).toHaveURL(/\/programs\/.+\/diff/);
+    await page.getByRole("button", { name: /apply changes/i }).click();
+    await expect(page).toHaveURL(/\/today/);
+    // The today screen should now show the second workout's title
+    await expect(page.getByText(/strength day/i)).toBeVisible();
+  });
+
+  test("copy button feedback shows 'Copied!' then resets", async ({ page, context }) => {
+    // Grant clipboard-write permission so navigator.clipboard.writeText() resolves
+    await context.grantPermissions(["clipboard-write"]);
+    await page.getByRole("button", { name: /modify with ai/i }).click();
+    const dialog = page.getByRole("dialog", { name: /modify with ai/i });
+    await expect(dialog).toBeVisible();
+    // Click the copy button
+    await dialog.getByRole("button", { name: /copy/i }).click();
+    // Button label should change to "Copied!" within 500ms
+    await expect(dialog.getByText(/copied/i)).toBeVisible({ timeout: 500 });
+    // After ~2 seconds the label should reset — wait 2.5s then assert it's gone
+    await page.waitForTimeout(2500);
+    await expect(dialog.getByText(/copied/i)).not.toBeVisible({ timeout: 4000 });
+  });
 });
