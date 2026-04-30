@@ -39,6 +39,13 @@ export type ProgramDocument = {
   description?: string;
   source: "import" | "manual" | "backup";
   active: boolean;
+  status?: "active" | "draft" | "archived";
+  daysPerWeek?: number;
+  lengthWeeks?: number;
+  lastRunAt?: ISODate | null;
+  streakWeeks?: number;
+  completion?: number;
+  origin?: string;
   days: ProgramDay[];
   overrides: ProgramOverride[];
   import?: {
