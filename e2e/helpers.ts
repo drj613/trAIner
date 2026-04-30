@@ -32,6 +32,30 @@ export async function clearDb(page: Page) {
   });
 }
 
+/** Wait for IndexedDB to flush by yielding to the event loop */
+export async function waitForIdb(page: Page) {
+  await page.evaluate(() => new Promise(r => setTimeout(r, 50)));
+}
+
+/** Minimal valid import JSON for program tests */
+export const IMPORT_PROGRAM_JSON = JSON.stringify({
+  program_name: "E2E Test Program",
+  days: [{
+    title: "Day 1",
+    sections: [{
+      type: "strength", name: "Strength",
+      groups: [{ type: "single", exercises: [
+        { name: "Squat", sets: 3, reps: "5", load: "100kg" }
+      ]}]
+    }]
+  }]
+});
+
+/** Read a data-attribute from documentElement */
+export async function getDocAttr(page: Page, attr: string): Promise<string | null> {
+  return page.evaluate((a) => document.documentElement.getAttribute(a), attr);
+}
+
 /** Valid AI-modified workout JSON for use in tests */
 export const AI_WORKOUT_JSON = JSON.stringify({
   days: [{
