@@ -1,0 +1,106 @@
+import { toDisplayAnalysis } from "./toDisplayAnalysis";
+import type { AnalysisResult } from "./types";
+
+const makeResult = (): AnalysisResult => ({
+  overall: { name: "Overall", score: 82, grade: "B" },
+  dimensions: {
+    volume:        { name: "Volume",        score: 91, grade: "A" },
+    session:       { name: "Structure",     score: 88, grade: "A" },
+    balance:       { name: "Balance",       score: 78, grade: "B" },
+    goalCoherence: { name: "Coherence",     score: 83, grade: "B" },
+    periodization: { name: "Periodization", score: 65, grade: "C" },
+  },
+  muscleVolumes: [{
+    muscle: "chest", effectiveSets: 6.5, severity: "green",
+    label: "Chest",
+    landmarks: { mv: 3, mev: 5, mavLow: 6, mavHigh: 16, mrv: 24 },
+  }],
+  sessions: [{
+    dayId: "d1", dayTitle: "Mon · Upper A",
+    exerciseCount: 7, totalSets: 22, estimatedMinutes: 56,
+    muscleSetCounts: {},
+    warnings: [],
+  }],
+  balance: {
+    pushPullRatio: 1.18, upperLowerRatio: 1.05,
+    quadHamRatio: 1.55, chestBackRatio: 0.46,
+    movementPatternsCovered: ["horizontal_push", "squat"],
+    movementPatternsMissing: ["hip_hinge"],
+    warnings: [],
+  },
+  goal: {
+    primary: "hypertrophy", secondary: "strength",
+    confidence: 0.88, fingerprint: "Hypertrophy-focused",
+  },
+  periodization: {
+    weeksDetected: 4, volumePattern: "increasing",
+    deloadDetected: false, warnings: [],
+  },
+  warnings: [{
+    severity: "yellow", dimension: "volume",
+    message: "Rear delts below MEV",
+  }],
+});
+
+describe("toDisplayAnalysis", () => {
+  it("maps overall score", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.overall.score).toBe(82);
+    expect(d.overall.grade).toBe("B");
+  });
+
+  it("maps fingerprint", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.fingerprint.primary).toBe("Hypertrophy");
+    expect(d.fingerprint.secondary).toBe("Strength");
+  });
+
+  it("produces 5 dimension entries", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.dimensions).toHaveLength(5);
+    expect(d.dimensions[0].id).toBe("volume");
+  });
+
+  it("maps muscle volumes with display fields", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.muscles[0].group).toBe("Chest");
+    expect(d.muscles[0].sets).toBe(6.5);
+    expect(d.muscles[0].mev).toBe(5);
+    expect(d.muscles[0].mavLo).toBe(6);
+    expect(d.muscles[0].mavHi).toBe(16);
+    expect(d.muscles[0].mrv).toBe(24);
+    expect(d.muscles[0].status).toBe("green");
+  });
+
+  it("maps balance ratios", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    const pp = d.ratios.find((r) => r.id === "push_pull");
+    expect(pp).toBeDefined();
+    expect(pp!.value).toMatch(/1\.18/);
+    expect(pp!.verdict).toBe("warn");
+  });
+
+  it("maps movement patterns", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.patterns.covered).toContain("horizontal_push");
+    expect(d.patterns.missing).toContain("hip_hinge");
+  });
+
+  it("maps sessions", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.sessions[0].day).toBe("Mon · Upper A");
+    expect(d.sessions[0].exercises).toBe(7);
+    expect(d.sessions[0].durationMin).toBe(56);
+  });
+
+  it("maps warnings with display severity", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.warnings[0].severity).toBe("warn");
+    expect(d.warnings[0].area).toBe("volume");
+  });
+
+  it("includes durationMs", () => {
+    const d = toDisplayAnalysis(makeResult(), 184);
+    expect(d.durationMs).toBe(184);
+  });
+});
