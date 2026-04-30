@@ -40,8 +40,7 @@ test.describe("Workspace settings", () => {
   // 3. Theme persists after reload
   test("theme persists after reload", async () => {
     await sharedPage.reload();
-    await sharedPage.waitForLoadState("networkidle");
-    expect(await getDocAttr(sharedPage, "data-theme")).toBe("terminal");
+    await expect(sharedPage.locator("html")).toHaveAttribute("data-theme", "terminal");
   });
 
   // 4. Clicking density applies data-density attribute
@@ -53,8 +52,7 @@ test.describe("Workspace settings", () => {
   // 5. Density persists after reload
   test("density persists after reload", async () => {
     await sharedPage.reload();
-    await sharedPage.waitForLoadState("networkidle");
-    expect(await getDocAttr(sharedPage, "data-density")).toBe("dense");
+    await expect(sharedPage.locator("html")).toHaveAttribute("data-density", "dense");
   });
 
   // 6. Clicking mono font applies data-mono attribute
@@ -66,7 +64,6 @@ test.describe("Workspace settings", () => {
   // 7. Mono font persists after reload
   test("mono font persists after reload", async () => {
     await sharedPage.reload();
-    await sharedPage.waitForLoadState("networkidle");
-    expect(await getDocAttr(sharedPage, "data-mono")).toBe("system");
+    await expect(sharedPage.locator("html")).toHaveAttribute("data-mono", "system");
   });
 });
