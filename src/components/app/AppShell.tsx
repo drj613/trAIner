@@ -19,7 +19,7 @@ import {
 
 const navItems = [
   { href: "/today", label: "Today", icon: CalendarDays },
-  { href: "/programs", label: "Programs", icon: Dumbbell },
+  { href: "/programs", label: "Routines", icon: Dumbbell },
   { href: "/history", label: "History", icon: History },
   { href: "/library", label: "Library", icon: Library },
   { href: "/import", label: "Import", icon: FileInput },

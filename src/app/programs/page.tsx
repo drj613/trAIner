@@ -1,5 +1,5 @@
-import { ProgramsClient } from "@/components/workout/ProgramsClient";
+import { RoutinesIndexClient } from "@/components/workout/RoutinesIndexClient";
 
 export default function ProgramsPage() {
-  return <ProgramsClient />;
+  return <RoutinesIndexClient />;
 }
