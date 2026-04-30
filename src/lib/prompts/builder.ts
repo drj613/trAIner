@@ -1,11 +1,48 @@
 import type { ProfileDocument, ProgramDay, ProgramDocument, ProgramScope } from "@/lib/programs/types";
 
-// TODO: Add periodization instructions — prompt should request multi-week programs
-// with progressive overload across weeks (e.g., increasing volume or intensity)
-// and deload weeks every 4-6 weeks. Currently we generate a single week and 4×
-// duplicate it, but the prompt should support true mesocycle structure.
-// See docs/research/program-analysis-research/01-volume-landmarks.md for volume
-// progression guidelines and 04-goal-signatures.md for goal-specific periodization.
+export function buildProfileBlock(profile: ProfileDocument): string {
+  const lines = [
+    "## Profile",
+    `Name: ${profile.name}`,
+    `Training age: ${profile.trainingAge ?? "unknown"}`,
+    `Days per week: ${profile.defaultDaysPerWeek ?? "unknown"}`,
+    `Goals: ${profile.goals.join(", ")}`,
+    `Equipment: ${profile.equipment.join(", ")}`,
+  ];
+  return lines.join("\n");
+}
+
+export function buildConstraintsBlock(profile: ProfileDocument): string {
+  if (!profile.constraints || profile.constraints.length === 0) return "";
+  const lines = ["## Constraints", ...profile.constraints.map((c) => `- ${c}`)];
+  return lines.join("\n");
+}
+
+export function buildRoutineBlock(program: ProgramDocument | undefined): string {
+  if (!program) return "";
+  const lines = [
+    "## Current Routine",
+    `Name: ${program.title}`,
+  ];
+  if (program.days && program.days.length > 0) {
+    lines.push(`Days: ${program.days.length}`);
+  }
+  return lines.join("\n");
+}
+
+export function buildSchemaBlock(): string {
+  return [
+    "## Output schema",
+    "Respond with valid JSON only. No markdown fences. No explanation.",
+    "The JSON must conform to the ProgramDocument schema.",
+  ].join("\n");
+}
+
+export function assemblePrompt(blocks: string[]): string {
+  return blocks.filter((b) => b.trim().length > 0).join("\n\n");
+}
+
+
 export function buildInitialProgramPrompt(profile: ProfileDocument) {
   return [
     "Create a structured workout program for this profile.",
