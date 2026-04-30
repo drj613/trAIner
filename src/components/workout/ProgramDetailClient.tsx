@@ -1,19 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Map } from "lucide-react";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import type { ProgramDocument } from "@/lib/programs/types";
 import { programRepo } from "@/lib/storage/programRepo";
 import { WorkoutView } from "./WorkoutView";
+import { analyzeProgram } from "@/lib/analysis/analyze";
+import { toDisplayAnalysis } from "@/lib/analysis/toDisplayAnalysis";
+import { RoutineAnalysisCard } from "@/components/analysis/RoutineAnalysisCard";
+import { LlmAnalysisSheet } from "@/components/analysis/LlmAnalysisSheet";
 
 export function ProgramDetailClient({ id }: { id: string }) {
   const [program, setProgram] = useState<ProgramDocument | undefined>();
+  const [promptOpen, setPromptOpen] = useState(false);
 
   useEffect(() => {
     programRepo.get(id).then(setProgram).catch(() => undefined);
   }, [id]);
+
+  const displayAnalysis = useMemo(() => {
+    if (!program) return null;
+    const start = performance.now();
+    const result = analyzeProgram(program);
+    const durationMs = Math.round(performance.now() - start);
+    return toDisplayAnalysis(result, durationMs);
+  }, [program]);
 
   if (!program) return <p className="muted">Program not found locally.</p>;
 
@@ -59,6 +72,21 @@ export function ProgramDetailClient({ id }: { id: string }) {
           </Link>
         </div>
       </div>
+      {displayAnalysis && (
+        <>
+          <RoutineAnalysisCard
+            analysis={displayAnalysis}
+            onOpenPrompt={() => setPromptOpen(true)}
+          />
+          <LlmAnalysisSheet
+            open={promptOpen}
+            onClose={() => setPromptOpen(false)}
+            analysis={displayAnalysis}
+            programTitle={program.title}
+          />
+        </>
+      )}
+
       {days.map((day) => (
         <WorkoutView key={day.id} program={program} day={day} />
       ))}
