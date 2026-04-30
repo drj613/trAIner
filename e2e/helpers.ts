@@ -31,6 +31,7 @@ export async function clearDb(page: Page) {
         const req = indexedDB.deleteDatabase(db.name!);
         req.onsuccess = () => res();
         req.onerror = () => rej(req.error);
+        req.onblocked = () => res();
       })));
     }
   });

@@ -120,7 +120,7 @@ test.describe("Modify with AI", () => {
     await expect(page.getByText(/upper pull and press/i)).toBeVisible();
   });
 
-  test("second AI edit stacks as additional override", async ({ page }) => {
+  test("second AI edit replaces the visible workout", async ({ page }) => {
     // Accept first AI diff
     await page.getByRole("button", { name: /modify with ai/i }).click();
     const dialog = page.getByRole("dialog", { name: /modify with ai/i });
