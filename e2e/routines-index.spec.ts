@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { clearDb, seedDemoIfNeeded, waitForIdb, IMPORT_PROGRAM_JSON } from "./helpers";
+import { clearDb, seedDemoIfNeeded, IMPORT_PROGRAM_JSON } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Routines index suite — serial mode so tests chain: read tests → mutation tests
@@ -38,6 +38,49 @@ test.describe("Routines index", () => {
     await sharedPage.getByRole("button", { name: /save program/i }).click();
     await expect(sharedPage.getByText(/"E2E Test Program" saved/i)).toBeVisible();
 
+    // 3b. Import a second draft program "Second Draft Program" so filter tests
+    //     are non-trivial: "archived" chip should hide both drafts; "all" shows them.
+    const secondProgramJson = JSON.stringify({
+      program_name: "Second Draft Program",
+      days: [{ title: "Day 1", sections: [] }],
+    });
+    await sharedPage.goto("/import");
+    await sharedPage.locator("textarea").fill(secondProgramJson);
+    await sharedPage.getByRole("button", { name: /validate/i }).click();
+    await expect(sharedPage.getByText(/1 day\(s\)/i)).toBeVisible();
+    await sharedPage.getByRole("button", { name: /save program/i }).click();
+    await expect(sharedPage.getByText(/"Second Draft Program" saved/i)).toBeVisible();
+
+    // 3c. Write an archived program directly to IDB so the "archived" filter
+    //     has something to match (there is no Archive action in the UI).
+    await sharedPage.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const req = indexedDB.open("trainer-local-first");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const now = new Date().toISOString();
+      const archivedProgram = {
+        id: "archived-test-program",
+        title: "Archived Program",
+        description: "",
+        days: [{ id: "d1", title: "Day 1", weekNumber: 1, sections: [] }],
+        active: false,
+        status: "archived",
+        createdAt: now,
+        updatedAt: now,
+        lastRunAt: null,
+        streakWeeks: 0,
+        completion: 0,
+      };
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction("programs", "readwrite");
+        const req2 = tx.objectStore("programs").put(archivedProgram);
+        req2.onsuccess = () => resolve();
+        req2.onerror = () => reject(req2.error);
+      });
+    });
+
     // 4. Navigate to /programs and activate the demo program via 3-dot menu
     //    so tests see an active card with stat tiles and WeekStrip.
     //    AppShell also has aria-label="Open menu" (nav hamburger) at index 0;
@@ -45,12 +88,24 @@ test.describe("Routines index", () => {
     await sharedPage.goto("/programs");
     // Wait for rows to render
     await expect(rowMenuBtns(sharedPage).nth(1)).toBeVisible({ timeout: 8000 });
-    // Open first program row menu (index 1, skipping AppShell nav button at index 0)
-    await rowMenuBtns(sharedPage).nth(1).click();
+    // Find the demo program row ("Local First Demo") and activate it
+    const menuBtnsSetup = rowMenuBtns(sharedPage);
+    const totalSetup = await menuBtnsSetup.count();
+    let demoMenuIdx = -1;
+    for (let i = 1; i < totalSetup; i++) {
+      const rowContainer = menuBtnsSetup.nth(i).locator("..");
+      const text = await rowContainer.textContent().catch(() => "");
+      if (text?.includes("Local First Demo")) {
+        demoMenuIdx = i;
+        break;
+      }
+    }
+    if (demoMenuIdx < 0) throw new Error("Could not find 'Local First Demo' menu button in setup");
+    await menuBtnsSetup.nth(demoMenuIdx).click();
     await expect(sharedPage.getByText("Activate")).toBeVisible({ timeout: 5000 });
     await sharedPage.getByRole("button", { name: "Activate" }).click();
-    // router.refresh() doesn't re-trigger LocalDataProvider — do a full reload
-    await waitForIdb(sharedPage);
+    // Wait for menu to close (signals the handler ran), then reload
+    await expect(sharedPage.getByRole("button", { name: "Activate" })).not.toBeVisible({ timeout: 3000 });
     await sharedPage.reload();
     // Wait for ACTIVE badge (now that IDB has been re-read on mount)
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
@@ -90,25 +145,31 @@ test.describe("Routines index", () => {
   // 4. Draft programs render as compact rows with "not started" subtitle
   test("draft programs render as compact rows", async () => {
     // RoutineRow subtitle: "{dpw}d/wk · {lw}w · not started" for draft programs
-    await expect(sharedPage.getByText(/not started/i)).toBeVisible();
+    // Multiple draft rows may be present — assert at least the first one is visible.
+    await expect(sharedPage.getByText(/not started/i).first()).toBeVisible();
   });
 
-  // 5. Filter chip "draft" shows only draft programs in the Other section
-  test('filter chip "draft" shows only draft programs', async () => {
+  // 5. Filter chip "archived" hides draft programs and shows only archived ones
+  test('filter chip "archived" hides drafts and shows archived programs', async () => {
     // The chip renders: {k} <span>·{count}</span> — match by prefix
-    await sharedPage.getByRole("button", { name: /^draft/ }).click();
-    // The draft filter should show the "E2E Test Program" (which is draft)
-    await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
+    await sharedPage.getByRole("button", { name: /^archived/ }).click();
+    // Draft programs must NOT be visible when the archived filter is active
+    await expect(sharedPage.getByText("E2E Test Program")).not.toBeVisible();
+    await expect(sharedPage.getByText("Second Draft Program")).not.toBeVisible();
+    // The archived program must BE visible
+    await expect(sharedPage.getByText("Archived Program")).toBeVisible();
     // The active card (with ACTIVE badge) is always rendered regardless of filter
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible();
-    // Confirm the archived ·0 chip still shows (filter UI is visible)
-    await expect(sharedPage.getByRole("button", { name: /^archived/ })).toBeVisible();
   });
 
-  // 6. Filter chip "all" restores full list
+  // 6. Filter chip "all" restores full list (drafts + archived all visible)
   test('filter chip "all" restores full list', async () => {
     await sharedPage.getByRole("button", { name: /^all/ }).click();
-    // ACTIVE badge should reappear
+    // All non-active programs should be visible again
+    await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
+    await expect(sharedPage.getByText("Second Draft Program")).toBeVisible();
+    await expect(sharedPage.getByText("Archived Program")).toBeVisible();
+    // ACTIVE badge still present
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible();
   });
 
@@ -135,10 +196,8 @@ test.describe("Routines index", () => {
     await sharedPage.goto("/programs");
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
 
-    // Find the "Open menu" button for the "E2E Test Program" row.
-    // After setup, there are 2 draft rows: "Local First Demo" and "E2E Test Program".
-    // Row buttons start at index 1 (AppShell at 0).
-    // We need to find E2E Test Program's menu button specifically.
+    // Find the "Open menu" button for the "E2E Test Program" row specifically.
+    // Row buttons start at index 1 (AppShell hamburger is at index 0).
     const menuBtns = rowMenuBtns(sharedPage);
     const totalMenuBtns = await menuBtns.count();
 
@@ -153,18 +212,14 @@ test.describe("Routines index", () => {
       }
     }
 
-    // If we found the specific row, use it; otherwise use last row button
-    if (e2eMenuIdx >= 0) {
-      await menuBtns.nth(e2eMenuIdx).click();
-    } else {
-      await menuBtns.nth(totalMenuBtns - 1).click();
-    }
+    if (e2eMenuIdx < 0) throw new Error("Could not find 'E2E Test Program' menu button");
 
+    await menuBtns.nth(e2eMenuIdx).click();
     await expect(sharedPage.getByText("Activate")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Activate" }).click();
 
-    // Confirm persistence after reload
-    await waitForIdb(sharedPage);
+    // Wait for menu to close (signals the handler ran), then reload
+    await expect(sharedPage.getByRole("button", { name: "Activate" })).not.toBeVisible({ timeout: 3000 });
     await sharedPage.reload();
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
@@ -172,9 +227,22 @@ test.describe("Routines index", () => {
 
   // 9. Duplicate adds a "Copy of …" row
   test("duplicate adds a Copy of row", async () => {
-    // After test 8: "E2E Test Program" is active; "Local First Demo" is in Other list.
-    // Index 1 is the first (and only) program row menu.
-    await rowMenuBtns(sharedPage).nth(1).click();
+    // After test 8: "E2E Test Program" is active; "Local First Demo", "Second Draft Program",
+    // and "Archived Program" are in the Other list. Find "Local First Demo" by row text.
+    const menuBtns9 = rowMenuBtns(sharedPage);
+    const total9 = await menuBtns9.count();
+    let demoIdx9 = -1;
+    for (let i = 1; i < total9; i++) {
+      const rowContainer = menuBtns9.nth(i).locator("..");
+      const text = await rowContainer.textContent().catch(() => "");
+      if (text?.includes("Local First Demo")) {
+        demoIdx9 = i;
+        break;
+      }
+    }
+    if (demoIdx9 < 0) throw new Error("Could not find 'Local First Demo' menu button in test 9");
+
+    await menuBtns9.nth(demoIdx9).click();
     await expect(sharedPage.getByText("Duplicate")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Duplicate" }).click();
 
@@ -211,8 +279,9 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("Delete")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Delete" }).click();
 
-    // Wait for IDB and reload
-    await waitForIdb(sharedPage);
+    // Wait for the Delete button to disappear (menu closed = handler ran), then reload.
+    // router.refresh() doesn't re-trigger LocalDataProvider so we rely on a full reload.
+    await expect(sharedPage.getByRole("button", { name: "Delete" })).not.toBeVisible({ timeout: 3000 });
     await sharedPage.reload();
 
     // "Copy of …" should no longer be visible
