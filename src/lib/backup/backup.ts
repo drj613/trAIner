@@ -3,6 +3,7 @@ import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { logRepo } from "@/lib/storage/logRepo";
 import { profileRepo } from "@/lib/storage/profileRepo";
 import { programRepo } from "@/lib/storage/programRepo";
+import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 
 export async function exportBackup(): Promise<BackupDocument> {
   return {
@@ -32,4 +33,12 @@ export async function restoreBackup(backup: BackupDocument) {
       })
     )
   );
+}
+
+export async function resetWorkspace(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => { resetDbConnection(); resolve(); };
+    req.onerror = () => reject(req.error);
+  });
 }
