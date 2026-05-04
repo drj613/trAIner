@@ -171,8 +171,11 @@ function PersonaCard({
       >
         {persona.name}
       </div>
-      <div className="tx-mono text-[10px] muted leading-snug mb-2">
+      <div className="tx-mono text-[10px] muted leading-snug mb-1">
         {persona.style}
+      </div>
+      <div className="text-[10px] muted leading-snug mb-2">
+        {persona.description}
       </div>
       <div className="flex flex-wrap gap-1">
         {persona.tags.map((tag) => (
