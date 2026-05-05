@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>trAIner</title>
+    <script>
+      // GitHub Pages SPA redirect: encode the path and redirect to /
+      var l = window.location;
+      l.replace(
+        l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") +
+        l.pathname.split("/").slice(0, 1).join("/") +
+        "/?p=" + encodeURIComponent(l.pathname + l.search) +
+        "&h=" + l.hash.slice(1)
+      );
+    </script>
+  </head>
+</html>

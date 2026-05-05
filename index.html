@@ -12,6 +12,21 @@
       rel="stylesheet"
     />
     <title>trAIner</title>
+    <script>
+      // Restore path encoded by 404.html (GitHub Pages SPA routing)
+      (function () {
+        var q = window.location.search;
+        if (q && q.indexOf("?p=") === 0) {
+          var decoded = decodeURIComponent(q.slice(3).replace(/&h=.*$/, ""));
+          var hash = q.match(/&h=(.*)$/);
+          window.history.replaceState(
+            null,
+            null,
+            decoded + (hash ? "#" + hash[1] : "")
+          );
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
