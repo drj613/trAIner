@@ -71,11 +71,11 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
   return (
     <div>
       <div style={{ display: "flex", gap: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", marginBottom: 6, paddingLeft: 86, textTransform: "uppercase" }}>
-        <span>MEV</span>
+        <span>MEV (Minimum Effective Volume)</span>
         <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <span style={{ width: 12, height: 5, background: "var(--good)", opacity: 0.22, display: "inline-block" }} /> MAV
+          <span style={{ width: 12, height: 5, background: "var(--good)", opacity: 0.22, display: "inline-block" }} /> MAV (Maximum Adaptive Volume)
         </span>
-        <span>MRV</span>
+        <span>MRV (Maximum Recoverable Volume)</span>
       </div>
       {muscles.map((m) => (
         <div key={m.group} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -91,6 +91,9 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
       ))}
       <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", paddingLeft: 86 }}>
         weekly effective sets · primary 1.0 · secondary 0.5 · incidental 0.25
+      </div>
+      <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
+        Ideally your sets land in the MAV band — above MEV to drive growth, below MRV to stay recoverable. Consistently under MEV means not enough stimulus; consistently over MRV risks accumulating fatigue faster than you can adapt.
       </div>
     </div>
   );
