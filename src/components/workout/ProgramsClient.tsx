@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 
@@ -17,7 +17,7 @@ export function ProgramsClient() {
           <p className="muted">Saved locally in IndexedDB.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/programs/new" className="button">
+          <Link to="/programs/new" className="button">
             <Plus size={14} /> New
           </Link>
           <button type="button" className="button secondary" onClick={seedDemo}>
@@ -27,14 +27,14 @@ export function ProgramsClient() {
       </div>
       {programs.length === 0 && (
         <Link
-          href="/programs/new"
+          to="/programs/new"
           className="panel flex items-center justify-center gap-2 py-6 border-dashed muted"
         >
           <Plus size={16} /> Build a routine from scratch
         </Link>
       )}
       {programs.map((program) => (
-        <Link key={program.id} href={`/programs/${program.id}`} className="panel stack">
+        <Link key={program.id} to={`/programs/${program.id}`} className="panel stack">
           <h2 className="text-lg font-bold">{program.title}</h2>
           <p className="muted">
             {program.days.length} day(s) · {program.overrides.length} override(s)

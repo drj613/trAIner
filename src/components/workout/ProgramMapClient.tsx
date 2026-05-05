@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { programRepo } from "@/lib/storage/programRepo";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { buildWeekGrid } from "@/lib/workout/programGrid";
@@ -36,7 +36,7 @@ function DayCell({ day, programId }: { day: ProgramDay; programId: string }) {
 
   return (
     <Link
-      href={`/programs/${programId}?day=${day.id}`}
+      to={`/programs/${programId}?day=${day.id}`}
       aria-label={`Go to ${day.title} — ${day.sections.length} section${day.sections.length !== 1 ? "s" : ""}`}
       style={{
         display: "block", padding: "10px 12px", background: "var(--bg-2)",

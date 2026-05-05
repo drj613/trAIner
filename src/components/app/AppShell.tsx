@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import {
   CalendarDays,
@@ -112,7 +111,7 @@ function NavDrawer({
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 onClick={onClose}
                 style={{
                   width: "100%",
@@ -213,7 +212,7 @@ function Toolbar({ onOpenNav }: { onOpenNav: () => void }) {
 }
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (

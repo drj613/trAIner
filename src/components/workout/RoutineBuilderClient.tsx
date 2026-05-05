@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, ChevronRight, Trash2, X } from "lucide-react";
 import { programRepo } from "@/lib/storage/programRepo";
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
@@ -386,7 +386,7 @@ function DayEditorStep({
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function RoutineBuilderClient() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [step, setStep] = useState<"setup" | "days" | "edit">("setup");
   const [draft, setDraft] = useState<Draft>({ name: "", description: "", days: [] });
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
@@ -454,7 +454,7 @@ export function RoutineBuilderClient() {
     try {
       const program = draftToProgram(draft);
       await programRepo.save(program);
-      router.push(`/programs/${program.id}`);
+      navigate(`/programs/${program.id}`);
     } finally {
       setSaving(false);
     }
@@ -465,7 +465,7 @@ export function RoutineBuilderClient() {
   return (
     <div className="flex flex-col" style={{ minHeight: "100dvh" }}>
       <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
-        <button type="button" onClick={() => router.push("/programs")} className="muted text-xl">←</button>
+        <button type="button" onClick={() => navigate("/programs")} className="muted text-xl">←</button>
         <h1 className="font-bold text-base flex-1">{draft.name || "New routine"}</h1>
       </div>
 

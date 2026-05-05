@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
@@ -285,7 +285,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
@@ -379,7 +379,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
       return;
     }
     setAiModalOpen(false);
-    router.push(`/programs/${program.id}/diff`);
+    navigate(`/programs/${program.id}/diff`);
   }
 
   return (

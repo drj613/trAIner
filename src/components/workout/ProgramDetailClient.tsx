@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { ChevronLeft, Map } from "lucide-react";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import type { ProgramDocument } from "@/lib/programs/types";
@@ -36,7 +36,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
     <div className="stack">
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
         <Link
-          href="/programs"
+          to="/programs"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -56,18 +56,18 @@ export function ProgramDetailClient({ id }: { id: string }) {
           <p className="muted">{days.length} rendered day(s)</p>
         </div>
         <div className="flex gap-2">
-          <Link className="button secondary" href={`/programs/${id}/edit`}>
+          <Link className="button secondary" to={`/programs/${id}/edit`}>
             Edit
           </Link>
           <Link
-            href={`/programs/${id}/map`}
+            to={`/programs/${id}/map`}
             className="button"
             style={{ display: "inline-flex", gap: 6, alignItems: "center" }}
           >
             <Map size={14} aria-hidden />
             Map
           </Link>
-          <Link className="button" href={`/programs/${id}/log`}>
+          <Link className="button" to={`/programs/${id}/log`}>
             Log
           </Link>
         </div>

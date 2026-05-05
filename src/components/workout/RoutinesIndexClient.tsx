@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "react-router-dom";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { programRepo } from "@/lib/storage/programRepo";
 import { programStatus, programDaysPerWeek, programLengthWeeks } from "@/lib/programs/routineMeta";
@@ -433,8 +432,8 @@ function RoutineRow({
 }
 
 export function RoutinesIndexClient() {
-  const { programs, loading } = useLocalData();
-  const router = useRouter();
+  const { programs, loading, refresh } = useLocalData();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
 
   if (loading) return <p className="muted">Loading routines…</p>;
@@ -447,7 +446,7 @@ export function RoutinesIndexClient() {
   async function handleActivate(id: string) {
     try {
       await programRepo.activate(id);
-      router.refresh();
+      await refresh();
     } catch (err) {
       console.error("Failed to activate routine", err);
     }
@@ -456,7 +455,7 @@ export function RoutinesIndexClient() {
   async function handleDuplicate(id: string) {
     try {
       const copy = await programRepo.duplicate(id);
-      router.push(`/programs/${copy.id}`);
+      navigate(`/programs/${copy.id}`);
     } catch (err) {
       console.error("Failed to duplicate routine", err);
     }
@@ -466,7 +465,7 @@ export function RoutinesIndexClient() {
     if (!confirm("Delete this routine?")) return;
     try {
       await programRepo.remove(id);
-      router.refresh();
+      await refresh();
     } catch (err) {
       console.error("Failed to delete routine", err);
     }
@@ -497,7 +496,7 @@ export function RoutinesIndexClient() {
             {programs.filter((p) => programStatus(p) === "draft").length} draft
           </div>
         </div>
-        <Link href="/programs/new" className="button" style={{ padding: "5px 10px", fontSize: 11.5 }}>
+        <Link to="/programs/new" className="button" style={{ padding: "5px 10px", fontSize: 11.5 }}>
           + New
         </Link>
       </div>
@@ -506,8 +505,8 @@ export function RoutinesIndexClient() {
         <div style={{ padding: "10px 10px 0" }}>
           <ActiveCard
             program={active}
-            onOpen={() => router.push(`/programs/${active.id}`)}
-            onRun={() => router.push("/today")}
+            onOpen={() => navigate(`/programs/${active.id}`)}
+            onRun={() => navigate("/today")}
           />
         </div>
       )}
@@ -569,7 +568,7 @@ export function RoutinesIndexClient() {
               No {filter === "all" ? "other" : filter} routines
             </div>
             <Link
-              href="/programs/new"
+              to="/programs/new"
               style={{ color: "var(--accent)", fontFamily: "inherit", fontSize: 12 }}
             >
               Build a new one
@@ -580,7 +579,7 @@ export function RoutinesIndexClient() {
             <RoutineRow
               key={p.id}
               program={p}
-              onOpen={() => router.push(`/programs/${p.id}`)}
+              onOpen={() => navigate(`/programs/${p.id}`)}
               onActivate={() => { void handleActivate(p.id); }}
               onDuplicate={() => { void handleDuplicate(p.id); }}
               onDelete={() => { void handleDelete(p.id); }}
