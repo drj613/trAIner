@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { ProgramDetailClient } from "./ProgramDetailClient";
 
 jest.mock("@/lib/storage/programRepo", () => ({
@@ -32,11 +33,9 @@ jest.mock("@/lib/analysis/analyze", () => ({
   }),
 }));
 
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
-
 describe("ProgramDetailClient analysis integration", () => {
   it("shows analysis card after program loads", async () => {
-    render(<ProgramDetailClient id="p1" />);
+    render(<MemoryRouter><ProgramDetailClient id="p1" /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText(/Analysis/)).toBeInTheDocument();
     });

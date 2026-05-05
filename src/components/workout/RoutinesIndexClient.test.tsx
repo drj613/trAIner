@@ -1,4 +1,5 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { RoutinesIndexClient } from "./RoutinesIndexClient";
 import { programRepo } from "@/lib/storage/programRepo";
 
@@ -26,13 +27,8 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
       },
     ],
     loading: false,
+    refresh: jest.fn().mockResolvedValue(undefined),
   }),
-}));
-
-const mockPush = jest.fn();
-const mockRefresh = jest.fn();
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 
 jest.mock("@/lib/storage/programRepo", () => ({
@@ -49,25 +45,25 @@ beforeEach(() => {
 
 describe("RoutinesIndexClient", () => {
   it("shows active routine pinned at top with ACTIVE badge", () => {
-    render(<RoutinesIndexClient />);
+    render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     expect(screen.getByText("ACTIVE")).toBeInTheDocument();
     expect(screen.getByText("Upper/Lower v3")).toBeInTheDocument();
   });
 
   it("shows stat tiles for active routine", () => {
-    render(<RoutinesIndexClient />);
+    render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     expect(screen.getByText("DAYS/WK")).toBeInTheDocument();
     expect(screen.getByText("STREAK")).toBeInTheDocument();
     expect(screen.getByText("DONE")).toBeInTheDocument();
   });
 
   it("shows compact rows for non-active routines", () => {
-    render(<RoutinesIndexClient />);
+    render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     expect(screen.getByText("Power Look Draft")).toBeInTheDocument();
   });
 
   it("filter chip hides archived when 'draft' selected", async () => {
-    render(<RoutinesIndexClient />);
+    render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     fireEvent.click(screen.getByText(/^draft/i));
     await waitFor(() => {
       expect(screen.queryByText("Old Program")).not.toBeInTheDocument();
@@ -75,7 +71,7 @@ describe("RoutinesIndexClient", () => {
   });
 
   it("clicking Duplicate in the row menu calls programRepo.duplicate and navigates", async () => {
-    render(<RoutinesIndexClient />);
+    render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     // Open the menu for "Power Look Draft" (p2)
     const menuButtons = screen.getAllByRole("button", { name: /open menu/i });
     fireEvent.click(menuButtons[0]); // first row = p2 (p1 is in active card, not in rows)

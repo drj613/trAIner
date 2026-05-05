@@ -3,10 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { ModifyAiModal } from "./ModifyAiModal";
 import type { ProgramDay } from "@/lib/programs/types";
 
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
-}));
-
 const mockDay: ProgramDay = {
   id: "day-1",
   dayNumber: 1,

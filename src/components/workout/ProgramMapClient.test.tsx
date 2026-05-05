@@ -1,24 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import type { ProgramDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
-
-jest.mock("next/link", () => {
-  return function MockLink({
-    href,
-    children,
-    ...props
-  }: {
-    href: string;
-    children: React.ReactNode;
-    [key: string]: unknown;
-  }) {
-    return (
-      <a href={href} {...props}>
-        {children}
-      </a>
-    );
-  };
-});
 
 jest.mock("@/lib/storage/programRepo", () => ({
   programRepo: {
@@ -79,13 +62,13 @@ describe("ProgramMapClient", () => {
 
   it("shows loading state initially", () => {
     mockProgramRepo.get.mockReturnValue(new Promise(() => {}));
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     expect(screen.getByText(/loading program map/i)).toBeInTheDocument();
   });
 
   it("renders program title and week grid when loaded", async () => {
     mockProgramRepo.get.mockResolvedValue(mockProgram);
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText("Test Program")).toBeInTheDocument();
     });
@@ -95,7 +78,7 @@ describe("ProgramMapClient", () => {
 
   it("shows rest label for days with no sections", async () => {
     mockProgramRepo.get.mockResolvedValue(mockProgram);
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText(/^rest$/i)).toBeInTheDocument();
     });
@@ -104,7 +87,7 @@ describe("ProgramMapClient", () => {
   it("shows error state when programRepo throws", async () => {
     jest.spyOn(console, "error").mockImplementation(() => {});
     mockProgramRepo.get.mockRejectedValue(new Error("DB error"));
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText(/failed to load program/i)).toBeInTheDocument();
     });
@@ -112,7 +95,7 @@ describe("ProgramMapClient", () => {
 
   it("shows not found state when program is undefined", async () => {
     mockProgramRepo.get.mockResolvedValue(undefined);
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     await waitFor(() => {
       expect(screen.getByText(/program not found/i)).toBeInTheDocument();
     });
@@ -120,7 +103,7 @@ describe("ProgramMapClient", () => {
 
   it("renders accessible links for non-rest days", async () => {
     mockProgramRepo.get.mockResolvedValue(mockProgram);
-    render(<ProgramMapClient programId="prog-1" />);
+    render(<MemoryRouter><ProgramMapClient programId="prog-1" /></MemoryRouter>);
     await waitFor(() => {
       const link = screen.getByRole("link", { name: /Go to Day 1/i });
       expect(link).toBeInTheDocument();
