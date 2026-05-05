@@ -474,7 +474,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 }
 
 export function TodayClient() {
-  const { programs, loading, seedDemo, refresh } = useLocalData();
+  const { programs, loading, refresh } = useLocalData();
 
   useEffect(() => {
     refresh();
@@ -496,11 +496,8 @@ export function TodayClient() {
       <div className="panel stack">
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Today</h1>
         <p style={{ color: "var(--fg-3)" }}>
-          Import a program or seed the demo to start logging locally.
+          Import a program to start logging workouts.
         </p>
-        <button className="button" onClick={seedDemo}>
-          <Download size={18} aria-hidden /> Seed demo program
-        </button>
       </div>
     );
   }

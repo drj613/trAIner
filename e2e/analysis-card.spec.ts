@@ -18,14 +18,15 @@ test.describe("RoutineAnalysisCard", () => {
     await sharedPage.goto("/today");
     await clearDb(sharedPage);
 
-    // 2. Seed demo program via UI
+    // 2. Import a program via UI
     await seedDemoIfNeeded(sharedPage);
 
-    // 3. Navigate directly to the demo program detail page.
-    //    Demo program has a stable static id: "demo-program" (src/lib/programs/sample.ts)
-    await sharedPage.goto("/programs/demo-program");
-    // Wait for the program title to confirm the page has loaded
-    await expect(sharedPage.getByRole("heading", { name: /local first demo/i })).toBeVisible({
+    // 3. Navigate to the programs list and open the first program.
+    await sharedPage.goto("/programs");
+    const firstProgramLink = sharedPage.locator('a[href^="/programs/"]').first();
+    await firstProgramLink.click();
+    // Wait for the program detail page to load
+    await expect(sharedPage.getByRole("heading")).toBeVisible({
       timeout: 10000,
     });
   });

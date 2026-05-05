@@ -1,15 +1,18 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Seed the demo program via UI if no program is loaded yet.
+ * Import a program via the /import UI if no program is loaded yet.
  * Returns when the Today screen shows workout content.
  */
 export async function seedDemoIfNeeded(page: Page) {
   await page.goto("/today");
-  const seedBtn = page.getByRole("button", { name: /seed demo program/i });
-  if (await seedBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await seedBtn.click();
-    // Wait for workout content to appear
+  const hasNoProgram = await page.getByText(/import a program/i).isVisible({ timeout: 3000 }).catch(() => false);
+  if (hasNoProgram) {
+    await page.goto("/import");
+    await page.locator("textarea").fill(IMPORT_PROGRAM_JSON);
+    await page.getByRole("button", { name: /validate/i }).click();
+    await page.getByRole("button", { name: /save program/i }).click();
+    await page.goto("/today");
     await page.waitForSelector('[data-testid="today-workout"], .panel h1, button[aria-label*="History"]', {
       timeout: 8000,
     });

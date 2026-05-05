@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 
 export function ProgramsClient() {
-  const { programs, loading, seedDemo } = useLocalData();
+  const { programs, loading } = useLocalData();
 
   if (loading) return <p className="muted">Loading programs...</p>;
 
@@ -20,9 +20,6 @@ export function ProgramsClient() {
           <Link to="/programs/new" className="button">
             <Plus size={14} /> New
           </Link>
-          <button type="button" className="button secondary" onClick={seedDemo}>
-            Seed Demo
-          </button>
         </div>
       </div>
       {programs.length === 0 && (

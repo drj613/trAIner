@@ -7,11 +7,11 @@ test.describe("Today screen", () => {
     await page.goto("/today");
   });
 
-  test("shows seed prompt when no program exists", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /seed demo program/i })).toBeVisible();
+  test("shows import prompt when no program exists", async ({ page }) => {
+    await expect(page.getByText(/import a program/i)).toBeVisible();
   });
 
-  test("shows workout after seeding demo", async ({ page }) => {
+  test("shows workout after importing a program", async ({ page }) => {
     await seedDemoIfNeeded(page);
     // Should show at least one exercise history button (meaning exercises rendered)
     await expect(page.getByRole("button", { name: /history for/i }).first()).toBeVisible();
@@ -28,7 +28,7 @@ test.describe("Today screen", () => {
     await expect(page.getByRole("button", { name: /finish workout/i })).toBeVisible();
   });
 
-  test("sparkles button is present after seeding", async ({ page }) => {
+  test("sparkles button is present after importing a program", async ({ page }) => {
     await seedDemoIfNeeded(page);
     await expect(page.getByRole("button", { name: /modify with ai/i })).toBeVisible();
   });
