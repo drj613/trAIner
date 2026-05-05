@@ -1,4 +1,4 @@
-import type { ProfileDocument, ProgramDay, ProgramDocument, ProgramScope } from "@/lib/programs/types";
+import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
 
 export function buildProfileBlock(profile: ProfileDocument): string {
   const lines = [
@@ -31,40 +31,58 @@ export function buildRoutineBlock(program: ProgramDocument | undefined): string 
 }
 
 export function buildSchemaBlock(): string {
+  const skeleton = {
+    title: "Program Name",
+    days: [
+      {
+        day: 1,
+        title: "Day Name",
+        sections: [
+          {
+            name: "Section Name",
+            type: "strength",
+            groups: [
+              {
+                type: "single",
+                exercises: [
+                  {
+                    name: "Exercise Name",
+                    sets: 3,
+                    reps: "5-8",
+                    load: "optional — e.g. '80% 1RM' or '60 kg'",
+                    rest: "optional — e.g. '90s'",
+                    notes: "optional",
+                    tags: {
+                      primary: ["quads"],
+                      secondary: ["glutes"],
+                      incidental: [],
+                      modifiers: []
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
   return [
     "## Output schema",
-    "Respond with valid JSON only. No markdown fences. No explanation.",
-    "The JSON must conform to the ProgramDocument schema.",
+    "Respond with valid JSON only. No markdown fences. No explanation outside JSON.",
+    "You MUST use the exact field names shown below. Do not rename or restructure the hierarchy.",
+    "  - Top level: `title`, `days` — never use `sessions`, `weeks`, `blocks`, or any other name",
+    "  - Each day: `day` (number), `title`, `sections`",
+    "  - Each section: `name`, `type`, `groups`",
+    "  - Each group: `type`, `exercises`",
+    `Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training`,
+    `Valid group types: single, superset, circuit, giant-set`,
+    "Structural skeleton (all real content should replace the placeholder strings):",
+    JSON.stringify(skeleton, null, 2),
   ].join("\n");
 }
 
 export function assemblePrompt(blocks: string[]): string {
   return blocks.filter((b) => b.trim().length > 0).join("\n\n");
-}
-
-
-export function buildInitialProgramPrompt(profile: ProfileDocument) {
-  return [
-    "Create a structured workout program for this profile.",
-    "",
-    "Profile:",
-    JSON.stringify(profile, null, 2),
-    "",
-    "Return only JSON. Use a top-level program_name and days array. Each day must include title, sections, exercise_groups, and exercises.",
-    "Preserve sections such as warmup, explosive, strength, metcon, hypertrophy, circuit, and superset when appropriate."
-  ].join("\n");
-}
-
-export function buildModificationPrompt(program: ProgramDocument, scope: ProgramScope, current: ProgramDocument | ProgramDay | ProgramDay[]) {
-  return [
-    `Modify the selected ${scope} scope for this workout program.`,
-    "Return a full JSON replacement for only the selected scope.",
-    "Do not explain the changes outside JSON.",
-    "",
-    "Program context:",
-    JSON.stringify({ id: program.id, title: program.title }, null, 2),
-    "",
-    "Current JSON:",
-    JSON.stringify(current, null, 2)
-  ].join("\n");
 }
