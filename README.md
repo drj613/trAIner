@@ -10,7 +10,7 @@ bun install
 bun run dev
 ```
 
-Open <http://localhost:3000/today>.
+Open <http://localhost:5173/today>.
 
 ## Quality Gates
 
@@ -32,8 +32,28 @@ bun run build
 
 ## Exercise Catalog
 
-The bundled catalog is generated from [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) plus local aliases and additions in `scripts/catalog-local-overrides.json`. The generated data lives in `src/lib/catalog/exercises.generated.json`; `src/lib/catalog/exercises.ts` is a small typed wrapper used by the app.
+The bundled catalog merges three sources:
+
+- [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) — fetched at build time
+- [wger](https://github.com/wger-project/wger) fixture snapshot (`scripts/sources/wger-snapshot.json`)
+- [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb) snapshot via RapidAPI (`scripts/sources/exercisedb-snapshot.json`)
+
+Local aliases and additions live in `scripts/catalog-local-overrides.json`. The generated output is `src/lib/catalog/exercises.generated.json`; `src/lib/catalog/exercises.ts` is a small typed wrapper used by the app.
+
+### Rebuild the catalog
 
 ```bash
 bun run catalog:build
 ```
+
+### Refresh a snapshot (one-time, requires network)
+
+```bash
+# wger — no credentials needed
+bun run catalog:ingest:wger
+
+# ExerciseDB — requires a RapidAPI key
+RAPIDAPI_KEY=<your-key> bun run catalog:ingest:exercisedb
+```
+
+Commit the updated snapshot file(s) and re-run `catalog:build`.

@@ -6,24 +6,35 @@ import { DEFAULT_SETS } from "./thresholds";
 const CATALOG_TO_CANONICAL: Record<string, MuscleGroup> = {
   "chest":                "chest",
   "upper chest":          "chest",
+  "pectorals":            "chest",
   "lats":                 "lats",
   "middle back":          "upper_back",
+  "mid back":             "upper_back",
   "upper back":           "upper_back",
   "traps":                "upper_back",
+  "rhomboids":            "upper_back",
   "lower back":           "lower_back",
   "front delts":          "front_delts",
   "shoulders":            "side_delts",
+  "side delts":           "side_delts",
   "rear delts":           "rear_delts",
   "biceps":               "biceps",
+  "brachialis":           "biceps",
   "triceps":              "triceps",
   "forearms":             "forearms",
   "quadriceps":           "quads",
   "quads":                "quads",
   "hamstrings":           "hamstrings",
   "glutes":               "glutes",
+  "glute medius":         "glutes",
+  "hips":                 "glutes",
   "calves":               "calves",
+  "soleus":               "calves",
   "abdominals":           "core",
+  "abs":                  "core",
   "core":                 "core",
+  "obliques":             "core",
+  "hip flexors":          "core",
   "adductors":            "adductors",
   "abductors":            "abductors",
   "rotator cuff":         "rotator_cuff",
@@ -76,7 +87,7 @@ export function isCompound(exercise: ProgramExercise, catalogItem?: ExerciseCata
 
 export type MovementCategory = "push" | "pull" | "legs" | "other";
 
-const PUSH_PATTERNS = new Set(["horizontal press", "push", "shoulder flexion"]);
+const PUSH_PATTERNS = new Set(["horizontal press", "push", "shoulder flexion", "overhead"]);
 const PULL_PATTERNS = new Set(["horizontal pull", "vertical pull", "pull"]);
 const LEG_PATTERNS = new Set(["squat"]);
 
@@ -107,6 +118,7 @@ export function detectMovementPatterns(
   if (patterns.includes("horizontal pull")) found.push("horizontal_pull");
   if (patterns.includes("vertical pull")) found.push("vertical_pull");
   if (patterns.includes("squat")) found.push("squat");
+  if (patterns.some((p) => p === "hinge" || p === "hip extension" || p === "hip hinge")) found.push("hip_hinge");
 
   if (
     (patterns.includes("push") && primaryMuscles.some((m) => m.includes("delt") || m.includes("shoulder"))) ||

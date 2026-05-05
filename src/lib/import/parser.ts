@@ -104,7 +104,7 @@ function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarn
 }
 
 function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[]): ProgramExercise {
-  const name = stringFrom(exercise.name, "Unnamed Exercise");
+  const name = stringFrom(exercise.name, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
   const match = matchExercise(name, aliases);
   const tags = isRecord(exercise.tags)
     ? {

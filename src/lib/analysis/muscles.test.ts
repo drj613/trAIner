@@ -12,11 +12,21 @@ describe("mapMuscle", () => {
   it("maps catalog labels to canonical groups", () => {
     expect(mapMuscle("chest")).toBe("chest");
     expect(mapMuscle("upper chest")).toBe("chest");
+    expect(mapMuscle("pectorals")).toBe("chest");
     expect(mapMuscle("middle back")).toBe("upper_back");
+    expect(mapMuscle("mid back")).toBe("upper_back");
     expect(mapMuscle("traps")).toBe("upper_back");
+    expect(mapMuscle("rhomboids")).toBe("upper_back");
     expect(mapMuscle("quadriceps")).toBe("quads");
     expect(mapMuscle("quads")).toBe("quads");
     expect(mapMuscle("abdominals")).toBe("core");
+    expect(mapMuscle("abs")).toBe("core");
+    expect(mapMuscle("obliques")).toBe("core");
+    expect(mapMuscle("hip flexors")).toBe("core");
+    expect(mapMuscle("glute medius")).toBe("glutes");
+    expect(mapMuscle("side delts")).toBe("side_delts");
+    expect(mapMuscle("brachialis")).toBe("biceps");
+    expect(mapMuscle("soleus")).toBe("calves");
     expect(mapMuscle("scapular stabilizers")).toBe("rotator_cuff");
   });
 

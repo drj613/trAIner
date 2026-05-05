@@ -1,0 +1,248 @@
+[
+  {
+    "id": "3-4-sit-up",
+    "name": "3/4 Sit-up",
+    "aliases": [],
+    "equipment": [
+      "bodyweight"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors",
+        "lower back"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "45-side-bend",
+    "name": "45° Side Bend",
+    "aliases": [],
+    "equipment": [
+      "bodyweight"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "obliques"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "air-bike",
+    "name": "Air Bike",
+    "aliases": [],
+    "equipment": [
+      "bodyweight"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "alternate-heel-touchers",
+    "name": "Alternate Heel Touchers",
+    "aliases": [],
+    "equipment": [
+      "bodyweight"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "obliques"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "alternate-lateral-pulldown",
+    "name": "Alternate Lateral Pulldown",
+    "aliases": [],
+    "equipment": [
+      "cable"
+    ],
+    "movementPatterns": [
+      "back",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "lats"
+      ],
+      "secondary": [
+        "biceps",
+        "rhomboids"
+      ]
+    },
+    "tags": [
+      "back",
+      "strength"
+    ]
+  },
+  {
+    "id": "assisted-chest-dip-kneeling",
+    "name": "Assisted Chest Dip (kneeling)",
+    "aliases": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "chest",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "pectorals"
+      ],
+      "secondary": [
+        "triceps",
+        "shoulders"
+      ]
+    },
+    "tags": [
+      "chest",
+      "strength"
+    ]
+  },
+  {
+    "id": "assisted-hanging-knee-raise-with-throw-down",
+    "name": "Assisted Hanging Knee Raise With Throw Down",
+    "aliases": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors",
+        "lower back"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "assisted-hanging-knee-raise",
+    "name": "Assisted Hanging Knee Raise",
+    "aliases": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "assisted-lying-leg-raise-with-lateral-throw-down",
+    "name": "Assisted Lying Leg Raise With Lateral Throw Down",
+    "aliases": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors",
+        "obliques"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  },
+  {
+    "id": "assisted-lying-leg-raise-with-throw-down",
+    "name": "Assisted Lying Leg Raise With Throw Down",
+    "aliases": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "waist",
+      "strength"
+    ],
+    "muscles": {
+      "primary": [
+        "abs"
+      ],
+      "secondary": [
+        "hip flexors",
+        "quadriceps"
+      ]
+    },
+    "tags": [
+      "waist",
+      "strength"
+    ]
+  }
+]

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "catalog:build": "bun scripts/build-exercise-catalog.mjs",
+    "catalog:ingest:exercisedb": "bun scripts/ingest/ingest-exercisedb.mjs",
+    "catalog:ingest:wger": "bun scripts/ingest/ingest-wger.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
