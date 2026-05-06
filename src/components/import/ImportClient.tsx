@@ -20,7 +20,7 @@ export function ImportClient() {
   const [review, setReview] = useState<ImportReview | undefined>();
   const [parseError, setParseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  // keyed by rawName → canonicalId (for ResolutionStep compat)
+  // keyed by path → canonicalId
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
   // rawNames of no-suggestion exercises the user chose to skip
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
@@ -79,8 +79,8 @@ export function ImportClient() {
     }
   }
 
-  function handleResolutionChange(rawName: string, canonicalId: string) {
-    setResolutions((prev) => ({ ...prev, [rawName]: canonicalId }));
+  function handleResolutionChange(path: string, canonicalId: string) {
+    setResolutions((prev) => ({ ...prev, [path]: canonicalId }));
   }
 
   function handleSkip(rawName: string) {
@@ -102,10 +102,10 @@ export function ImportClient() {
     try {
       // Build path-keyed resolutions for applyResolutions
       const resolutionList = unresolvedItems
-        .filter((item) => resolutions[item.rawName])
+        .filter((item) => resolutions[item.path])
         .map((item) => ({
           path: item.path,
-          canonicalId: resolutions[item.rawName],
+          canonicalId: resolutions[item.path],
         }));
 
       const resolvedProgram =
@@ -115,12 +115,14 @@ export function ImportClient() {
 
       // Save aliases for resolved exercises (not skipped ones)
       await Promise.all(
-        Object.entries(resolutions).map(([rawName, canonicalId]) =>
-          aliasRepo.save({
-            alias: rawName,
-            canonicalExerciseId: canonicalId,
-          }),
-        ),
+        unresolvedItems
+          .filter((item) => resolutions[item.path])
+          .map((item) =>
+            aliasRepo.save({
+              alias: item.rawName,
+              canonicalExerciseId: resolutions[item.path],
+            }),
+          ),
       );
 
       await programRepo.save(resolvedProgram);
@@ -181,7 +183,7 @@ export function ImportClient() {
           <div className="stack">
             <p className="tx-up text-xs">No matches found</p>
             {itemsWithoutSuggestions.map((item) => (
-              <div key={item.rawName} className="panel flex items-center justify-between gap-2">
+              <div key={item.path} className="panel flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs muted tx-mono">imported</p>
                   <p className="text-sm font-semibold">{item.rawName}</p>
@@ -221,11 +223,8 @@ export function ImportClient() {
           resolutions={resolutions}
           onChange={handleResolutionChange}
           onBack={() => setStep("paste")}
-          onNext={() => {
-            if (allNoSuggestionHandled) {
-              setStep("confirm");
-            }
-          }}
+          onNext={() => setStep("confirm")}
+          disabledExtra={!allNoSuggestionHandled}
         />
       </div>
     );

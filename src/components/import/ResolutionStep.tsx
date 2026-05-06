@@ -2,10 +2,11 @@ import type { ResolutionItem } from "@/lib/import/resolution";
 
 type Props = {
   items: ResolutionItem[];
-  resolutions: Record<string, string>; // rawName → chosen canonicalId
-  onChange: (rawName: string, canonicalId: string) => void;
+  resolutions: Record<string, string>; // path → chosen canonicalId
+  onChange: (path: string, canonicalId: string) => void;
   onBack: () => void;
   onNext: () => void;
+  disabledExtra?: boolean;
 };
 
 export function ResolutionStep({
@@ -14,8 +15,9 @@ export function ResolutionStep({
   onChange,
   onBack,
   onNext,
+  disabledExtra = false,
 }: Props) {
-  const resolved = items.filter((item) => resolutions[item.rawName]);
+  const resolved = items.filter((item) => resolutions[item.path]);
   const remaining = items.length - resolved.length;
   const progress = items.length > 0 ? (resolved.length / items.length) * 100 : 100;
 
@@ -49,7 +51,7 @@ export function ResolutionStep({
 
       {/* Per-exercise resolution */}
       {items.map((item) => (
-        <div key={item.rawName} className="panel stack">
+        <div key={item.path} className="panel stack">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-xs muted tx-mono">imported</p>
@@ -60,15 +62,15 @@ export function ResolutionStep({
               <p
                 className="text-sm font-semibold"
                 style={{
-                  color: resolutions[item.rawName]
+                  color: resolutions[item.path]
                     ? "var(--accent)"
                     : "var(--fg-4, #888)",
                 }}
               >
-                {resolutions[item.rawName]
+                {resolutions[item.path]
                   ? item.suggestions.find(
-                      (s) => s.exerciseId === resolutions[item.rawName],
-                    )?.name ?? resolutions[item.rawName]
+                      (s) => s.exerciseId === resolutions[item.path],
+                    )?.name ?? resolutions[item.path]
                   : "—"}
               </p>
             </div>
@@ -83,26 +85,26 @@ export function ResolutionStep({
                 className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
                 style={{
                   background:
-                    resolutions[item.rawName] === s.exerciseId
+                    resolutions[item.path] === s.exerciseId
                       ? "var(--accent-soft)"
                       : "var(--bg-2)",
                   borderColor:
-                    resolutions[item.rawName] === s.exerciseId
+                    resolutions[item.path] === s.exerciseId
                       ? "var(--accent)"
                       : "var(--line)",
                 }}
-                onClick={() => onChange(item.rawName, s.exerciseId)}
+                onClick={() => onChange(item.path, s.exerciseId)}
               >
                 <span
                   className="font-mono text-[11px] shrink-0"
                   style={{
                     color:
-                      resolutions[item.rawName] === s.exerciseId
+                      resolutions[item.path] === s.exerciseId
                         ? "var(--accent)"
                         : "var(--fg-3)",
                   }}
                 >
-                  {resolutions[item.rawName] === s.exerciseId ? "✓" : "○"}
+                  {resolutions[item.path] === s.exerciseId ? "✓" : "○"}
                 </span>
                 <span className="flex-1">{s.name}</span>
               </button>
@@ -119,7 +121,7 @@ export function ResolutionStep({
         <button
           type="button"
           className="button flex-1"
-          disabled={remaining > 0}
+          disabled={remaining > 0 || disabledExtra}
           onClick={onNext}
         >
           Review import →
