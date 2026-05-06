@@ -16,7 +16,7 @@ import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 type BlockKey = "profile" | "routine" | "constraints" | "schema";
 
 export function PromptBuilderClient() {
-  const { profile, programs } = useLocalData();
+  const { profile, programs, loading } = useLocalData();
   const program = programs[0];
 
   const [selectedIds, setSelectedIds] = useState<string[]>(["rp"]);
@@ -60,7 +60,7 @@ export function PromptBuilderClient() {
 
   return (
     <div className="stack">
-      {!profile && (
+      {!profile && !loading && (
         <div
           role="alert"
           style={{

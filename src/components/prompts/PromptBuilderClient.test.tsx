@@ -7,7 +7,7 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
     profile: undefined,
     programs: [],
     loading: false,
-    error: undefined,
+    error: null,
     refresh: jest.fn().mockResolvedValue(undefined),
   }),
 }));
