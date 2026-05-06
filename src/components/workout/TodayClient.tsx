@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
@@ -493,7 +493,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 }
 
 export function TodayClient() {
-  const { programs, loading, refresh } = useLocalData();
+  const { programs, profile, loading, refresh } = useLocalData();
   const [resolvedDay, setResolvedDay] = useState<import("@/lib/programs/types").ProgramDay | undefined>(undefined);
   const [dayResolving, setDayResolving] = useState(true);
 
@@ -569,24 +569,62 @@ export function TodayClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, activeProgram?.id]);
 
+  const banner = !profile && !loading ? (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 14px",
+        marginBottom: 14,
+        background: "var(--accent-soft)",
+        border: "1px solid var(--accent)",
+        borderRadius: "var(--r, 6px)",
+        fontSize: 13,
+        color: "var(--fg)",
+      }}
+    >
+      <span style={{ flex: 1 }}>
+        Welcome to trAIner — set up your Profile so the app can tailor your workouts.
+      </span>
+      <Link
+        to="/profile"
+        style={{ color: "var(--accent)", fontWeight: 600, whiteSpace: "nowrap", textDecoration: "none" }}
+      >
+        Go to Profile →
+      </Link>
+    </div>
+  ) : null;
+
   if (loading || dayResolving) {
     return (
-      <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-        Loading…
-      </p>
+      <>
+        {banner}
+        <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+          Loading…
+        </p>
+      </>
     );
   }
 
   if (!activeProgram || !resolvedDay) {
     return (
-      <div className="panel stack">
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Today</h1>
-        <p style={{ color: "var(--fg-3)" }}>
-          Import a program to start logging workouts.
-        </p>
-      </div>
+      <>
+        {banner}
+        <div className="panel stack">
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Today</h1>
+          <p style={{ color: "var(--fg-3)" }}>
+            Import a program to start logging workouts.
+          </p>
+        </div>
+      </>
     );
   }
 
-  return <TodayWorkout program={activeProgram} day={resolvedDay} />;
+  return (
+    <>
+      {banner}
+      <TodayWorkout program={activeProgram} day={resolvedDay} />
+    </>
+  );
 }
