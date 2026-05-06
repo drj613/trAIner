@@ -78,21 +78,22 @@ function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: I
 }
 
 function normalizeSection(section: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
+  const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases, userExercises)
+    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases, userExercises, sectionType)
   );
 
   return {
     id: newId("section"),
-    type: normalizeSectionType(stringFrom(section.type, "training")),
+    type: sectionType,
     name: stringFrom(section.name ?? section.type, "Training"),
     groups
   };
 }
 
-function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramGroup {
+function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases, userExercises)
+    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases, userExercises, sectionType)
   );
 
   return {
@@ -103,7 +104,7 @@ function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarn
   };
 }
 
-function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramExercise {
+function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramExercise {
   const name = stringFrom(exercise.name, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
   const match = matchExercise(name, aliases, userExercises);
   const tags = isRecord(exercise.tags)
@@ -120,7 +121,8 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
       path,
       message: `${name} was imported without a catalog match.`,
       rawName: name,
-      suggestions: match.suggestions
+      suggestions: match.suggestions,
+      sectionType,
     });
   }
 

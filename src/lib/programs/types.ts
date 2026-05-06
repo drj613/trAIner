@@ -152,6 +152,7 @@ export type ImportWarning = {
   rawName?: string;
   message: string;
   suggestions?: ExerciseSuggestion[];
+  sectionType?: string;
 };
 
 export type ExerciseSuggestion = {

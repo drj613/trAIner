@@ -1,4 +1,9 @@
-import { extractUnresolvedExercises, applyResolutions } from "./resolution";
+import {
+  extractUnresolvedExercises,
+  applyResolutions,
+  buildInitialResolutions,
+  CUSTOM_ID,
+} from "./resolution";
 import type { ImportWarning, ProgramDocument } from "@/lib/programs/types";
 
 const warnings: ImportWarning[] = [
@@ -202,5 +207,134 @@ describe("applyResolutions", () => {
     const patched = applyResolutions(program, resolutions);
     expect(patched.days[0].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("bench_press");
     expect(patched.days[0].sections[1].groups[0].exercises[0].canonicalExerciseId).toBe("overhead_press");
+  });
+});
+
+describe("CUSTOM_ID sentinel", () => {
+  it("applyResolutions skips exercises resolved to CUSTOM_ID (no canonicalExerciseId set)", () => {
+    const program = makeProgram("Incline Treadmill Walk");
+    const resolutions = [
+      { path: "days.1.sections.0.groups.0.exercises.0", canonicalId: CUSTOM_ID },
+    ];
+    const patched = applyResolutions(program, resolutions);
+    expect(
+      patched.days[0].sections[0].groups[0].exercises[0].canonicalExerciseId,
+    ).toBeUndefined();
+  });
+});
+
+describe("buildInitialResolutions", () => {
+  it("pre-selects the top suggestion when score >= 0.65", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "Bench Press",
+        sectionType: "strength",
+        suggestions: [
+          { exerciseId: "barbell-bench-press", name: "Barbell Bench Press", score: 0.67 },
+          { exerciseId: "dumbbell-bench-press", name: "Dumbbell Bench Press", score: 0.50 },
+        ],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBe("barbell-bench-press");
+  });
+
+  it("does NOT pre-select when top score < 0.65", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "Med Ball Chest Pass",
+        sectionType: "explosive",
+        suggestions: [
+          { exerciseId: "medicine-ball-chest-pass", name: "Medicine Ball Chest Pass", score: 0.60 },
+        ],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBeUndefined();
+  });
+
+  it("sets CUSTOM_ID for warmup section items regardless of suggestions", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "Wrist CARs",
+        sectionType: "warmup",
+        suggestions: [
+          { exerciseId: "hip-cars", name: "Hip CARs", score: 0.33 },
+        ],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBe(CUSTOM_ID);
+  });
+
+  it("sets CUSTOM_ID for cooldown section items", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "Dead Hang",
+        sectionType: "cooldown",
+        suggestions: [],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBe(CUSTOM_ID);
+  });
+
+  it("sets CUSTOM_ID for items with no suggestions", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "SkiErg",
+        sectionType: "metcon",
+        suggestions: [],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBe(CUSTOM_ID);
+  });
+
+  it("leaves items with moderate scores (< 0.65) and non-auto-custom sections unresolved", () => {
+    const items = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        rawName: "Row Erg",
+        sectionType: "conditioning",
+        suggestions: [{ exerciseId: "row", name: "Row", score: 0.50 }],
+      },
+    ];
+    const result = buildInitialResolutions(items);
+    expect(result["days.1.sections.0.groups.0.exercises.0"]).toBeUndefined();
+  });
+});
+
+describe("extractUnresolvedExercises with sectionType", () => {
+  it("carries sectionType from warning into ResolutionItem", () => {
+    const warningsWithType: ImportWarning[] = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        message: "Wrist CARs was imported without a catalog match.",
+        rawName: "Wrist CARs",
+        suggestions: [],
+        sectionType: "warmup",
+      },
+    ];
+    const items = extractUnresolvedExercises(warningsWithType);
+    expect(items[0].sectionType).toBe("warmup");
+  });
+
+  it("defaults sectionType to 'strength' when warning has no sectionType", () => {
+    const warningsWithoutType: ImportWarning[] = [
+      {
+        path: "days.1.sections.0.groups.0.exercises.0",
+        message: "Old Exercise was imported without a catalog match.",
+        rawName: "Old Exercise",
+        suggestions: [],
+      },
+    ];
+    const items = extractUnresolvedExercises(warningsWithoutType);
+    expect(items[0].sectionType).toBe("strength");
   });
 });

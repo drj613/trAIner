@@ -8,9 +8,15 @@ import type {
   ProgramExercise,
 } from "@/lib/programs/types";
 
+export const CUSTOM_ID = "__custom__";
+
+const AUTO_CUSTOM_SECTION_TYPES = new Set(["warmup", "cooldown"]);
+const AUTO_RESOLVE_THRESHOLD = 0.65;
+
 export type ResolutionItem = {
   path: string;
   rawName: string;
+  sectionType: string;
   suggestions: ExerciseSuggestion[];
 };
 
@@ -25,14 +31,32 @@ export function extractUnresolvedExercises(
   const items: ResolutionItem[] = [];
   for (const w of warnings) {
     const rawName = w.rawName ?? w.message.split(" was imported")[0];
-    // Only include exercise-import warnings (identified by rawName or message pattern)
     const isExerciseWarning =
       w.rawName !== undefined ||
       /^.+ was imported without a catalog match\.$/.test(w.message);
     if (!isExerciseWarning) continue;
-    items.push({ path: w.path, rawName, suggestions: w.suggestions ?? [] });
+    items.push({
+      path: w.path,
+      rawName,
+      sectionType: w.sectionType ?? "strength",
+      suggestions: w.suggestions ?? [],
+    });
   }
   return items;
+}
+
+export function buildInitialResolutions(
+  items: ResolutionItem[],
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const item of items) {
+    if (AUTO_CUSTOM_SECTION_TYPES.has(item.sectionType) || item.suggestions.length === 0) {
+      result[item.path] = CUSTOM_ID;
+    } else if (item.suggestions[0].score >= AUTO_RESOLVE_THRESHOLD) {
+      result[item.path] = item.suggestions[0].exerciseId;
+    }
+  }
+  return result;
 }
 
 export function applyResolutions(
@@ -44,7 +68,7 @@ export function applyResolutions(
   function patchExercise(ex: ProgramExercise, path: string): ProgramExercise {
     if (ex.canonicalExerciseId) return ex;
     const id = resMap.get(path);
-    if (!id) return ex;
+    if (!id || id === CUSTOM_ID) return ex;
     return { ...ex, canonicalExerciseId: id };
   }
 
