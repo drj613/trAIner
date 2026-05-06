@@ -24,18 +24,26 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   async function refresh() {
     setLoading(true);
     setError(null);
-    const [storedProfile, storedPrograms] = await Promise.all([profileRepo.get(), programRepo.list()]);
-    setProfile(storedProfile);
-    setPrograms(storedPrograms);
-    setLoading(false);
+    try {
+      const [storedProfile, storedPrograms] = await Promise.all([profileRepo.get(), programRepo.list()]);
+      setProfile(storedProfile);
+      setPrograms(storedPrograms);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    refresh().catch((err) => {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      setLoading(false);
-    });
+    refresh();
   }, []);
+
+  if (error) return (
+    <div style={{ padding: "2rem", color: "red" }}>
+      Failed to load app data: {error.message}
+    </div>
+  );
 
   return (
     <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh }}>

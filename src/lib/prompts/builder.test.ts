@@ -26,15 +26,10 @@ describe("buildProfileBlock", () => {
     expect(block).toContain("Full gym");
     expect(block).toContain("Home bands");
   });
-  it("includes constraints when present (C4)", () => {
+  it("does not include constraints (handled by buildConstraintsBlock)", () => {
     const block = buildProfileBlock(profile);
-    expect(block).toContain("Injuries & Constraints");
-    expect(block).toContain("Avoid full wrist pronation");
-    expect(block).toContain("Max 75 min sessions");
-  });
-  it("omits constraints section when constraints list is empty (C4)", () => {
-    const block = buildProfileBlock({ ...profile, constraints: [] });
     expect(block).not.toContain("Injuries & Constraints");
+    expect(block).not.toContain("Avoid full wrist pronation");
   });
 });
 

@@ -9,10 +9,6 @@ export function buildProfileBlock(profile: ProfileDocument): string {
     `Goals: ${profile.goals.join(", ")}`,
     `Equipment: ${profile.equipment.join(", ")}`,
   ];
-  if (profile.constraints && profile.constraints.length > 0) {
-    lines.push("## Injuries & Constraints");
-    for (const c of profile.constraints) lines.push(`- ${c}`);
-  }
   return lines.join("\n");
 }
 
