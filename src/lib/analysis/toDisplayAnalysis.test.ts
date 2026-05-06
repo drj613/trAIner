@@ -98,4 +98,16 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(makeResult(), 184);
     expect(d.durationMs).toBe(184);
   });
+
+  it("flags muscles above MRV as above_mrv and below MEV as below_mev", () => {
+    const r = makeResult();
+    // Patch in a muscle above MRV (mrv=24 for chest, so 25 sets)
+    const aboveMrv = { muscle: "chest" as const, effectiveSets: 25, severity: "red" as const, label: "Excessive", landmarks: { mv: 3, mev: 5, mavLow: 6, mavHigh: 16, mrv: 24 } };
+    // Below MEV (4 sets, mev=5)
+    const belowMev = { muscle: "lats" as const, effectiveSets: 4, severity: "yellow" as const, label: "Below MEV", landmarks: { mv: 5, mev: 7, mavLow: 10, mavHigh: 20, mrv: 30 } };
+    const result = { ...r, muscleVolumes: [aboveMrv, belowMev] };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.muscles[0].flag).toBe("above_mrv");
+    expect(d.muscles[1].flag).toBe("below_mev");
+  });
 });

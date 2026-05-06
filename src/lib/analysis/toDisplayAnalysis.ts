@@ -26,6 +26,7 @@ function capitalize(s: string): string {
 
 function formatRatio(n: number | null): string {
   if (n === null) return "—";
+  if (isNaN(n)) return "—";
   if (!isFinite(n)) return "∞ : 1";
   return `${n.toFixed(2)} : 1`;
 }
