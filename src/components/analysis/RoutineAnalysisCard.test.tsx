@@ -4,12 +4,11 @@ import { RoutineAnalysisCard } from "./RoutineAnalysisCard";
 const mockAnalysis = {
   durationMs: 184,
   overall: { score: 82, grade: "B" },
-  fingerprint: { primary: "Hypertrophy", secondary: "Strength", label: "Hypertrophy-focused upper/lower split", confidence: 0.88 },
+  fingerprint: { primary: "Hypertrophy", secondary: "Strength", label: "Hypertrophy-focused upper/lower split" },
   dimensions: [
     { id: "volume", label: "Volume", score: 91, grade: "A", status: "good" as const, note: "8/10 in MAV" },
     { id: "balance", label: "Balance", score: 78, grade: "B", status: "warn" as const, note: "Push-dominant" },
     { id: "structure", label: "Structure", score: 88, grade: "A", status: "good" as const, note: "38-62 min" },
-    { id: "coherence", label: "Coherence", score: 83, grade: "B", status: "good" as const, note: "Rep dist ok" },
     { id: "periodization", label: "Periodization", score: 65, grade: "C", status: "warn" as const, note: "No deload" },
   ],
   muscles: [
