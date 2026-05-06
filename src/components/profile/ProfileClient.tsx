@@ -238,6 +238,8 @@ export function ProfileClient() {
   const [heatmapCells, setHeatmapCells] = useState<HeatmapCell[][] | null>(null);
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [draft, setDraft] = useState<ProfileDocument | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     logRepo.list().then((logs) => {
@@ -290,8 +292,15 @@ export function ProfileClient() {
 
     const saveNewProfile = async () => {
       if (!draft) return;
-      await profileRepo.save({ ...draft, updatedAt: new Date().toISOString() });
-      await refresh();
+      setSaving(true);
+      setSaveError(null);
+      try {
+        await profileRepo.save({ ...draft, updatedAt: new Date().toISOString() });
+        await refresh();
+      } catch {
+        setSaveError("Failed to save profile. Please try again.");
+        setSaving(false);
+      }
     };
 
     return (
@@ -301,12 +310,16 @@ export function ProfileClient() {
           <button
             type="button"
             className="button"
+            disabled={saving}
             style={{ padding: "4px 14px", fontSize: 12 }}
             onClick={() => void saveNewProfile()}
           >
-            Save profile
+            {saving ? "Saving…" : "Save profile"}
           </button>
         </div>
+        {saveError && (
+          <p style={{ color: "var(--bad)", fontSize: 12, margin: 0 }}>{saveError}</p>
+        )}
 
         <div className="panel">
           <p className="tx-up mb-2">Name</p>
