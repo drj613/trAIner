@@ -1,5 +1,14 @@
-import { mapMuscle, parseRepRange, repMidpoint, isCompound } from "./muscles";
+import {
+  mapMuscle,
+  mapMuscleFull,
+  parseRepRange,
+  repMidpoint,
+  isCompound,
+  classifyMovement,
+  detectMovementPatterns,
+} from "./muscles";
 import type { ProgramExercise } from "@/lib/programs/types";
+import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 
 const makeExercise = (overrides: Partial<ProgramExercise> = {}): ProgramExercise => ({
   id: "test",
@@ -82,5 +91,102 @@ describe("isCompound", () => {
 
   it("infers compound from 2+ primary muscles", () => {
     expect(isCompound(makeExercise({ tags: { primary: ["chest", "triceps"], secondary: [], incidental: [], modifiers: [] } }))).toBe(true);
+  });
+});
+
+// M7 — serratus anterior maps to upper_back, not rotator_cuff
+describe("mapMuscle — M7 serratus anterior fix", () => {
+  it("maps serratus anterior to upper_back", () => {
+    expect(mapMuscle("serratus anterior")).toBe("upper_back");
+  });
+
+  it("does not map serratus anterior to rotator_cuff", () => {
+    expect(mapMuscle("serratus anterior")).not.toBe("rotator_cuff");
+  });
+});
+
+// H12 — mapMuscleFull returns multiple muscles for "full body"
+describe("mapMuscleFull — H12 full body expansion", () => {
+  it("returns multiple muscle groups for full body", () => {
+    const result = mapMuscleFull("full body");
+    expect(result.length).toBeGreaterThan(1);
+    expect(result).toContain("quads");
+    expect(result).toContain("lats");
+    expect(result).toContain("glutes");
+    expect(result).toContain("core");
+  });
+
+  it("returns a single-element array for normal muscle labels", () => {
+    expect(mapMuscleFull("chest")).toEqual(["chest"]);
+    expect(mapMuscleFull("hamstrings")).toEqual(["hamstrings"]);
+  });
+
+  it("returns empty array for unknown labels", () => {
+    expect(mapMuscleFull("unknown thing")).toEqual([]);
+  });
+});
+
+// H17 — classifyMovement returns "legs" for hip hinge patterns
+describe("classifyMovement — H17 hinge patterns", () => {
+  const makeCatalogItem = (movementPatterns: string[]): ExerciseCatalogItem =>
+    ({ id: "test", name: "Test", movementPatterns, tags: [], primaryMuscles: [], secondaryMuscles: [] } as any);
+
+  it('returns "legs" for hinge pattern', () => {
+    expect(classifyMovement(makeCatalogItem(["hinge"]))).toBe("legs");
+  });
+
+  it('returns "legs" for hip hinge pattern', () => {
+    expect(classifyMovement(makeCatalogItem(["hip hinge"]))).toBe("legs");
+  });
+
+  it('returns "legs" for hip extension pattern', () => {
+    expect(classifyMovement(makeCatalogItem(["hip extension"]))).toBe("legs");
+  });
+
+  it('still returns "legs" for squat pattern', () => {
+    expect(classifyMovement(makeCatalogItem(["squat"]))).toBe("legs");
+  });
+
+  it('returns "other" for unrecognized patterns', () => {
+    expect(classifyMovement(makeCatalogItem(["balance"]))).toBe("other");
+  });
+});
+
+// H2 — detectMovementPatterns fallback when catalogItem is undefined
+describe("detectMovementPatterns — H2 fallback", () => {
+  it("detects horizontal_push from chest primary muscle when no catalog item", () => {
+    const exercise = makeExercise({ tags: { primary: ["chest"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("horizontal_push");
+  });
+
+  it("detects hip_hinge from hamstring primary muscle when no catalog item", () => {
+    const exercise = makeExercise({ tags: { primary: ["hamstrings"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("hip_hinge");
+  });
+
+  it("detects squat from quad primary muscle when no catalog item", () => {
+    const exercise = makeExercise({ tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("squat");
+  });
+
+  it("detects vertical_push from delt primary muscle when no catalog item", () => {
+    const exercise = makeExercise({ tags: { primary: ["front delts"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("vertical_push");
+  });
+
+  it("detects horizontal_pull from lats primary muscle when no catalog item", () => {
+    const exercise = makeExercise({ tags: { primary: ["lats"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("horizontal_pull");
+  });
+
+  it("returns empty array for exercises with no recognizable primary muscles", () => {
+    const exercise = makeExercise({ tags: { primary: ["neck"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toEqual([]);
   });
 });

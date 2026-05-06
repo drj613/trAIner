@@ -12,6 +12,7 @@ import {
 export function analyzeBalance(days: ProgramDay[]): BalanceResult {
   let pushSets = 0;
   let pullSets = 0;
+  let legSets = 0;
   let upperSets = 0;
   let lowerSets = 0;
   let quadSets = 0;
@@ -40,16 +41,38 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
 
           if (category === "push") pushSets += sets;
           if (category === "pull") pullSets += sets;
+          if (category === "legs") legSets += sets;
 
+          // C10: dedup per-exercise so multiple primary muscles mapping to the
+          // same bucket don't double-count sets
+          const creditedBuckets = new Set<string>();
           for (const label of exercise.tags.primary) {
             const muscle = mapMuscle(label);
             if (!muscle) continue;
-            if (upper.includes(muscle)) upperSets += sets;
-            if (lower.includes(muscle)) lowerSets += sets;
-            if (muscle === "quads") quadSets += sets;
-            if (muscle === "hamstrings") hamSets += sets;
-            if (muscle === "chest") chestSets += sets;
-            if (muscle === "lats" || muscle === "upper_back") backSets += sets;
+            if (upper.includes(muscle) && !creditedBuckets.has("upper")) {
+              upperSets += sets;
+              creditedBuckets.add("upper");
+            }
+            if (lower.includes(muscle) && !creditedBuckets.has("lower")) {
+              lowerSets += sets;
+              creditedBuckets.add("lower");
+            }
+            if (muscle === "quads" && !creditedBuckets.has("quads")) {
+              quadSets += sets;
+              creditedBuckets.add("quads");
+            }
+            if (muscle === "hamstrings" && !creditedBuckets.has("hamstrings")) {
+              hamSets += sets;
+              creditedBuckets.add("hamstrings");
+            }
+            if (muscle === "chest" && !creditedBuckets.has("chest")) {
+              chestSets += sets;
+              creditedBuckets.add("chest");
+            }
+            if ((muscle === "lats" || muscle === "upper_back") && !creditedBuckets.has("back")) {
+              backSets += sets;
+              creditedBuckets.add("back");
+            }
           }
 
           for (const pattern of detectMovementPatterns(catalogItem, exercise)) {

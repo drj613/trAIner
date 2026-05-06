@@ -1,10 +1,16 @@
 import { exportBackup, restoreBackup, resetWorkspace } from "./backup";
 import { resetDbConnection } from "@/lib/storage/appDb";
 
+const mockClear = jest.fn().mockResolvedValue(undefined);
+const mockGetDb = jest.fn().mockResolvedValue({
+  clear: mockClear,
+});
+
 // Must be hoisted before imports in Jest
 jest.mock("@/lib/storage/appDb", () => ({
   DB_NAME: "trainer-local-first",
   resetDbConnection: jest.fn(),
+  getDb: () => mockGetDb(),
 }));
 
 jest.mock("@/lib/storage/profileRepo", () => ({
@@ -32,6 +38,7 @@ jest.mock("@/lib/storage/aliasRepo", () => ({
   aliasRepo: {
     list: jest.fn().mockResolvedValue([]),
     save: jest.fn().mockResolvedValue(undefined),
+    saveWithId: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -46,11 +53,45 @@ describe("exportBackup", () => {
   });
 });
 
-describe("restoreBackup", () => {
+describe("restoreBackup — C7 validation", () => {
+  it("throws when backup is null", async () => {
+    await expect(restoreBackup(null)).rejects.toThrow("Invalid backup: expected an object.");
+  });
+
+  it("throws when backup is a primitive", async () => {
+    await expect(restoreBackup("not-an-object")).rejects.toThrow("Invalid backup: expected an object.");
+  });
+
   it("throws on unsupported version", async () => {
     await expect(
-      restoreBackup({ version: 99 } as never)
-    ).rejects.toThrow("Unsupported backup version.");
+      restoreBackup({ version: 99, programs: [], logs: [], aliases: [] })
+    ).rejects.toThrow("Unsupported backup version");
+  });
+
+  it("throws when programs is not an array", async () => {
+    await expect(
+      restoreBackup({ version: 1, programs: "not-an-array", logs: [], aliases: [] })
+    ).rejects.toThrow("'programs' must be an array");
+  });
+
+  it("throws when logs is not an array", async () => {
+    await expect(
+      restoreBackup({ version: 1, programs: [], logs: null, aliases: [] })
+    ).rejects.toThrow("'logs' must be an array");
+  });
+
+  it("throws when aliases is not an array", async () => {
+    await expect(
+      restoreBackup({ version: 1, programs: [], logs: [], aliases: undefined })
+    ).rejects.toThrow("'aliases' must be an array");
+  });
+
+  it("does not call getDb when validation fails", async () => {
+    mockGetDb.mockClear();
+    await expect(
+      restoreBackup({ version: 2, programs: [], logs: [], aliases: [] })
+    ).rejects.toThrow();
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 });
 

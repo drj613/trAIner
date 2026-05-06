@@ -3,7 +3,7 @@ import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { logRepo } from "@/lib/storage/logRepo";
 import { profileRepo } from "@/lib/storage/profileRepo";
 import { programRepo } from "@/lib/storage/programRepo";
-import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
+import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
 
 export async function exportBackup(): Promise<BackupDocument> {
   return {
@@ -16,20 +16,47 @@ export async function exportBackup(): Promise<BackupDocument> {
   };
 }
 
-export async function restoreBackup(backup: BackupDocument) {
-  if (backup.version !== 1) {
-    throw new Error("Unsupported backup version.");
+export async function restoreBackup(backup: unknown): Promise<void> {
+  // C7: Validate structure before touching the database
+  if (backup === null || typeof backup !== "object") {
+    throw new Error("Invalid backup: expected an object.");
+  }
+  const doc = backup as Record<string, unknown>;
+  if (doc["version"] !== 1) {
+    throw new Error(`Unsupported backup version: ${doc["version"]}. Expected 1.`);
+  }
+  if (!Array.isArray(doc["programs"])) {
+    throw new Error("Invalid backup: 'programs' must be an array.");
+  }
+  if (!Array.isArray(doc["logs"])) {
+    throw new Error("Invalid backup: 'logs' must be an array.");
+  }
+  if (!Array.isArray(doc["aliases"])) {
+    throw new Error("Invalid backup: 'aliases' must be an array.");
   }
 
-  if (backup.profile) await profileRepo.save(backup.profile);
-  await Promise.all(backup.programs.map((program) => programRepo.save(program)));
-  await Promise.all(backup.logs.map((log) => logRepo.save(log)));
+  const b = backup as BackupDocument;
+
+  // C6: Clear all stores before writing to avoid additive restore
+  const db = await getDb();
+  await Promise.all([
+    db.clear("programs"),
+    db.clear("logs"),
+    db.clear("aliases"),
+    db.clear("profile"),
+  ]);
+
+  if (b.profile) await profileRepo.save(b.profile);
+  await Promise.all(b.programs.map((program) => programRepo.save(program)));
+  await Promise.all(b.logs.map((log) => logRepo.save(log)));
   await Promise.all(
-    backup.aliases.map((alias) =>
-      aliasRepo.save({
+    b.aliases.map((alias) =>
+      aliasRepo.saveWithId({
+        id: alias.id,
         alias: alias.alias,
+        normalizedAlias: alias.normalizedAlias,
         canonicalExerciseId: alias.canonicalExerciseId,
-        createdAt: alias.createdAt
+        createdAt: alias.createdAt,
       })
     )
   );

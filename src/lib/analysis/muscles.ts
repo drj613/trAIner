@@ -39,9 +39,8 @@ const CATALOG_TO_CANONICAL: Record<string, MuscleGroup> = {
   "abductors":            "abductors",
   "rotator cuff":         "rotator_cuff",
   "scapular stabilizers": "rotator_cuff",
-  "serratus anterior":    "rotator_cuff",
+  "serratus anterior":    "upper_back",
   "neck":                 "neck",
-  "full body":            "core",
 };
 
 const catalogIndex = new Map<string, ExerciseCatalogItem>(
@@ -50,6 +49,15 @@ const catalogIndex = new Map<string, ExerciseCatalogItem>(
 
 export function mapMuscle(label: string): MuscleGroup | undefined {
   return CATALOG_TO_CANONICAL[label.toLowerCase()];
+}
+
+const FULL_BODY_MUSCLES: MuscleGroup[] = ["quads", "glutes", "hamstrings", "lats", "upper_back", "core"];
+
+export function mapMuscleFull(label: string): MuscleGroup[] {
+  const lower = label.toLowerCase();
+  if (lower === "full body") return FULL_BODY_MUSCLES;
+  const single = CATALOG_TO_CANONICAL[lower];
+  return single ? [single] : [];
 }
 
 export function lookupCatalogExercise(exercise: ProgramExercise): ExerciseCatalogItem | undefined {
@@ -90,6 +98,7 @@ export type MovementCategory = "push" | "pull" | "legs" | "other";
 const PUSH_PATTERNS = new Set(["horizontal press", "push", "shoulder flexion", "overhead"]);
 const PULL_PATTERNS = new Set(["horizontal pull", "vertical pull", "pull"]);
 const LEG_PATTERNS = new Set(["squat"]);
+const HINGE_PATTERNS = new Set(["hinge", "hip hinge", "hip extension"]);
 
 export function classifyMovement(catalogItem: ExerciseCatalogItem | undefined): MovementCategory {
   if (!catalogItem) return "other";
@@ -97,6 +106,7 @@ export function classifyMovement(catalogItem: ExerciseCatalogItem | undefined): 
   if (patterns.some((p) => PUSH_PATTERNS.has(p))) return "push";
   if (patterns.some((p) => PULL_PATTERNS.has(p))) return "pull";
   if (patterns.some((p) => LEG_PATTERNS.has(p))) return "legs";
+  if (patterns.some((p) => HINGE_PATTERNS.has(p))) return "legs";
   return "other";
 }
 
@@ -110,8 +120,20 @@ export function detectMovementPatterns(
   exercise: ProgramExercise,
 ): CoreMovementPattern[] {
   const found: CoreMovementPattern[] = [];
-  const patterns = catalogItem?.movementPatterns ?? [];
-  const tags = catalogItem?.tags ?? [];
+
+  // H2: Fallback when no catalog item — use primary muscle keywords
+  if (!catalogItem) {
+    const primary = exercise.tags.primary.map((m) => m.toLowerCase());
+    if (primary.some((m) => m.includes("chest") || m.includes("tricep"))) found.push("horizontal_push");
+    if (primary.some((m) => m.includes("lat") || m.includes("back") || m.includes("bicep"))) found.push("horizontal_pull");
+    if (primary.some((m) => m.includes("delt") || m.includes("shoulder"))) found.push("vertical_push");
+    if (primary.some((m) => m.includes("hamstring") || m.includes("glute"))) found.push("hip_hinge");
+    if (primary.some((m) => m.includes("quad"))) found.push("squat");
+    return [...new Set(found)];
+  }
+
+  const patterns = catalogItem.movementPatterns;
+  const tags = catalogItem.tags;
   const primaryMuscles = exercise.tags.primary.map((m) => m.toLowerCase());
 
   if (patterns.includes("horizontal press")) found.push("horizontal_push");

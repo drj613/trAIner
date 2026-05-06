@@ -28,17 +28,24 @@ export const programRepo = {
   },
 
   async activate(id: string): Promise<void> {
-    const all = await this.list();
+    const db = await getDb();
+    const tx = db.transaction("programs", "readwrite");
+    const store = tx.objectStore("programs");
+    const all = await store.getAll();
     const target = all.find((p) => p.id === id);
-    if (!target) throw new Error(`Program ${id} not found`);
+    if (!target) {
+      // Let transaction auto-commit (nothing was written), then throw
+      await tx.done;
+      throw new Error(`Program ${id} not found`);
+    }
     const now = new Date().toISOString();
     await Promise.all(
       all.map((p) => {
         if (p.id === id) {
-          return this.save({ ...p, active: true, status: "active", updatedAt: now });
+          return store.put({ ...p, active: true, status: "active", updatedAt: now });
         }
         // only change status for non-archived programs (don't un-archive)
-        return this.save({
+        return store.put({
           ...p,
           active: false,
           status: p.status === "archived" ? "archived" : "draft",
@@ -46,6 +53,7 @@ export const programRepo = {
         });
       })
     );
+    await tx.done;
   },
 
   async duplicate(id: string): Promise<ProgramDocument> {

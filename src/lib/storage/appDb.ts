@@ -40,33 +40,25 @@ let dbInstance: IDBPDatabase<TrainerDb> | undefined;
 export function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains("profile")) {
+      upgrade(db, oldVersion) {
+        // v0 → v1: create all initial stores
+        if (oldVersion < 1) {
           db.createObjectStore("profile", { keyPath: "id" });
-        }
-
-        if (!db.objectStoreNames.contains("programs")) {
           db.createObjectStore("programs", { keyPath: "id" });
-        }
-
-        if (!db.objectStoreNames.contains("logs")) {
-          const store = db.createObjectStore("logs", { keyPath: "id" });
-          store.createIndex("by-program", "programId");
-          store.createIndex("by-day", "dayId");
-        }
-
-        if (!db.objectStoreNames.contains("aliases")) {
-          const store = db.createObjectStore("aliases", { keyPath: "id" });
-          store.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
-          store.createIndex("by-exercise", "canonicalExerciseId");
-        }
-
-        if (!db.objectStoreNames.contains("backups")) {
+          const logs = db.createObjectStore("logs", { keyPath: "id" });
+          logs.createIndex("by-program", "programId");
+          logs.createIndex("by-day", "dayId");
+          const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+          aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+          aliases.createIndex("by-exercise", "canonicalExerciseId");
           db.createObjectStore("backups", { keyPath: "id" });
         }
 
-        if (!db.objectStoreNames.contains("metrics")) {
-          db.createObjectStore("metrics", { keyPath: "exerciseId" });
+        // v1 → v2: add metrics store
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains("metrics")) {
+            db.createObjectStore("metrics", { keyPath: "exerciseId" });
+          }
         }
       }
     }).then((db) => {

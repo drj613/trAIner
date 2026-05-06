@@ -15,9 +15,14 @@ export const aliasRepo = {
     const normalizedAlias = normalizeExerciseName(alias.alias);
     await (await getDb()).put("aliases", {
       ...alias,
-      id: normalizedAlias,
+      id: crypto.randomUUID(),
       normalizedAlias,
       createdAt: alias.createdAt ?? new Date().toISOString()
     });
-  }
+  },
+
+  /** Used during backup restore to preserve original ids and normalizedAlias values. */
+  async saveWithId(alias: AliasDocument) {
+    await (await getDb()).put("aliases", alias);
+  },
 };
