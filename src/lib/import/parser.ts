@@ -119,6 +119,7 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
     warnings.push({
       path,
       message: `${name} was imported without a catalog match.`,
+      rawName: name,
       suggestions: match.suggestions
     });
   }
@@ -162,11 +163,19 @@ function stringArray(value: unknown): string[] {
 }
 
 function stringFrom(value: unknown, fallback: string) {
-  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  }
+  return fallback;
 }
 
 function optionalString(value: unknown) {
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  return undefined;
 }
 
 function numberFrom(value: unknown, fallback: number) {

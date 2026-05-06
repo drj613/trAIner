@@ -19,12 +19,31 @@ export function ImportClient() {
   const [json, setJson] = useState("");
   const [review, setReview] = useState<ImportReview | undefined>();
   const [parseError, setParseError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // keyed by rawName → canonicalId (for ResolutionStep compat)
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
+  // rawNames of no-suggestion exercises the user chose to skip
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const unresolvedItems = useMemo<ResolutionItem[]>(
     () => (review ? extractUnresolvedExercises(review.warnings) : []),
     [review],
+  );
+
+  const itemsWithSuggestions = useMemo(
+    () => unresolvedItems.filter((i) => i.suggestions.length > 0),
+    [unresolvedItems],
+  );
+
+  const itemsWithoutSuggestions = useMemo(
+    () => unresolvedItems.filter((i) => i.suggestions.length === 0),
+    [unresolvedItems],
+  );
+
+  const allNoSuggestionHandled = useMemo(
+    () => itemsWithoutSuggestions.every((i) => skipped.has(i.rawName)),
+    [itemsWithoutSuggestions, skipped],
   );
 
   const exerciseCount = useMemo(
@@ -42,12 +61,14 @@ export function ImportClient() {
     [review],
   );
 
-  function handleValidate() {
+  async function handleValidate() {
     setParseError(null);
     try {
-      const result = parseProgramJson(json);
+      const aliases = await aliasRepo.list();
+      const result = parseProgramJson(json, undefined, aliases);
       setReview(result);
       setResolutions({});
+      setSkipped(new Set());
       if (extractUnresolvedExercises(result.warnings).length > 0) {
         setStep("resolve");
       } else {
@@ -62,35 +83,58 @@ export function ImportClient() {
     setResolutions((prev) => ({ ...prev, [rawName]: canonicalId }));
   }
 
+  function handleSkip(rawName: string) {
+    setSkipped((prev) => new Set([...prev, rawName]));
+  }
+
+  function handleUnskip(rawName: string) {
+    setSkipped((prev) => {
+      const next = new Set(prev);
+      next.delete(rawName);
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!review) return;
+    setSaveError(null);
 
-    const resolvedProgram =
-      Object.keys(resolutions).length > 0
-        ? applyResolutions(
-            review.program,
-            Object.entries(resolutions).map(([rawName, canonicalId]) => ({
-              rawName,
-              canonicalId,
-            })),
-          )
-        : review.program;
+    try {
+      // Build path-keyed resolutions for applyResolutions
+      const resolutionList = unresolvedItems
+        .filter((item) => resolutions[item.rawName])
+        .map((item) => ({
+          path: item.path,
+          canonicalId: resolutions[item.rawName],
+        }));
 
-    await Promise.all(
-      Object.entries(resolutions).map(([rawName, canonicalId]) =>
-        aliasRepo.save({
-          alias: rawName,
-          canonicalExerciseId: canonicalId,
-        }),
-      ),
-    );
+      const resolvedProgram =
+        resolutionList.length > 0
+          ? applyResolutions(review.program, resolutionList)
+          : review.program;
 
-    await programRepo.save(resolvedProgram);
-    setSavedMessage(`"${resolvedProgram.title}" saved.`);
-    setStep("paste");
-    setJson("");
-    setReview(undefined);
-    setResolutions({});
+      // Save aliases for resolved exercises (not skipped ones)
+      await Promise.all(
+        Object.entries(resolutions).map(([rawName, canonicalId]) =>
+          aliasRepo.save({
+            alias: rawName,
+            canonicalExerciseId: canonicalId,
+          }),
+        ),
+      );
+
+      await programRepo.save(resolvedProgram);
+      setSavedMessage(`"${resolvedProgram.title}" saved.`);
+      setStep("paste");
+      setJson("");
+      setReview(undefined);
+      setResolutions({});
+      setSkipped(new Set());
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save program.",
+      );
+    }
   }
 
   if (step === "paste") {
@@ -120,7 +164,7 @@ export function ImportClient() {
           type="button"
           className="button"
           disabled={!json.trim()}
-          onClick={handleValidate}
+          onClick={() => void handleValidate()}
         >
           Validate →
         </button>
@@ -132,12 +176,56 @@ export function ImportClient() {
     return (
       <div className="stack">
         <h1 className="text-2xl font-bold">Resolve exercises</h1>
+
+        {itemsWithoutSuggestions.length > 0 && (
+          <div className="stack">
+            <p className="tx-up text-xs">No matches found</p>
+            {itemsWithoutSuggestions.map((item) => (
+              <div key={item.rawName} className="panel flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs muted tx-mono">imported</p>
+                  <p className="text-sm font-semibold">{item.rawName}</p>
+                  <p className="text-xs muted">No catalog matches found.</p>
+                </div>
+                {skipped.has(item.rawName) ? (
+                  <button
+                    type="button"
+                    className="button secondary"
+                    style={{ fontSize: "0.75rem" }}
+                    onClick={() => handleUnskip(item.rawName)}
+                  >
+                    Undo skip
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="button secondary"
+                    style={{ fontSize: "0.75rem" }}
+                    onClick={() => handleSkip(item.rawName)}
+                  >
+                    Skip
+                  </button>
+                )}
+              </div>
+            ))}
+            {!allNoSuggestionHandled && (
+              <p className="text-xs" style={{ color: "var(--warn, #e6b664)" }}>
+                Skip all unmatched exercises to continue.
+              </p>
+            )}
+          </div>
+        )}
+
         <ResolutionStep
-          items={unresolvedItems}
+          items={itemsWithSuggestions}
           resolutions={resolutions}
           onChange={handleResolutionChange}
           onBack={() => setStep("paste")}
-          onNext={() => setStep("confirm")}
+          onNext={() => {
+            if (allNoSuggestionHandled) {
+              setStep("confirm");
+            }
+          }}
         />
       </div>
     );
@@ -160,6 +248,11 @@ export function ImportClient() {
               {Object.keys(resolutions).length} exercise(s) resolved
             </p>
           )}
+          {skipped.size > 0 && (
+            <p className="text-sm muted">
+              {skipped.size} exercise(s) skipped (no catalog match)
+            </p>
+          )}
           {remainingWarnings.length > 0 && (
             <div>
               <p className="tx-up text-xs mb-1">Warnings</p>
@@ -171,6 +264,11 @@ export function ImportClient() {
             </div>
           )}
         </section>
+        {saveError && (
+          <p className="text-sm" style={{ color: "var(--bad, red)" }}>
+            {saveError}
+          </p>
+        )}
         <div className="flex gap-2">
           <button
             type="button"
@@ -181,7 +279,7 @@ export function ImportClient() {
           >
             ← Back
           </button>
-          <button type="button" className="button flex-1" onClick={handleSave}>
+          <button type="button" className="button flex-1" onClick={() => void handleSave()}>
             <Save size={14} /> Save program
           </button>
         </div>

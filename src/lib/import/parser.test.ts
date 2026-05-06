@@ -30,4 +30,68 @@ describe("import parser", () => {
     expect(review.program.days[0].sections[0].groups[0].exercises[0].name).toBe("Moon Lunge");
     expect(review.warnings[0].message).toContain("Moon Lunge");
   });
+
+  it("carries rawName on unmatched exercise warnings", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Test",
+        sections: [
+          {
+            type: "strength",
+            exercise_groups: [{ exercises: [{ name: "Moon Lunge", sets: 3, reps: "10" }] }]
+          }
+        ]
+      })
+    );
+
+    expect(review.warnings[0].rawName).toBe("Moon Lunge");
+  });
+
+  it("trims whitespace from string fields (program title)", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        program_name: "  Padded Title  ",
+        sections: [
+          {
+            type: "strength",
+            exercise_groups: [{ exercises: [{ name: "Squat", sets: 3 }] }]
+          }
+        ]
+      })
+    );
+
+    expect(review.program.title).toBe("Padded Title");
+  });
+
+  it("trims whitespace from exercise name", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Test",
+        sections: [
+          {
+            type: "strength",
+            exercise_groups: [{ exercises: [{ name: "  Squat  ", sets: 3 }] }]
+          }
+        ]
+      })
+    );
+
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].name).toBe("Squat");
+  });
+
+  it("trims whitespace from optional string fields (notes)", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Test",
+        sections: [
+          {
+            type: "strength",
+            exercise_groups: [{ exercises: [{ name: "Squat", notes: "  focus on depth  " }] }]
+          }
+        ]
+      })
+    );
+
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].notes).toBe("focus on depth");
+  });
 });
