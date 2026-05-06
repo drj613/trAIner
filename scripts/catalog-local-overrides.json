@@ -412,5 +412,13 @@
     "movementPatterns": ["flexibility"],
     "muscles": { "primary": ["glutes", "hips"], "secondary": ["hip flexors"] },
     "tags": ["mobility", "cooldown", "flexibility"]
+  },
+  {
+    "id": "lateral-raise-machine",
+    "aliases": ["machine lateral raise"]
+  },
+  {
+    "id": "slam-medicine-ball",
+    "aliases": ["medicine ball slam"]
   }
 ]

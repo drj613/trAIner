@@ -23512,7 +23512,8 @@
     "id": "lateral-raise-machine",
     "name": "Lateral Raise – Machine",
     "aliases": [
-      "lateral raise machine"
+      "lateral raise machine",
+      "machine lateral raise"
     ],
     "equipment": [],
     "movementPatterns": [],
@@ -40161,7 +40162,8 @@
     "id": "slam-medicine-ball",
     "name": "Slam – Medicine Ball",
     "aliases": [
-      "slam medicine ball"
+      "slam medicine ball",
+      "medicine ball slam"
     ],
     "equipment": [],
     "movementPatterns": [],

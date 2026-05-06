@@ -40,4 +40,18 @@ describe("exercise catalog", () => {
       item: { id: "dumbbell-bench-press" }
     });
   });
+
+  it("matches 'Machine Lateral Raise' to its catalog entry", () => {
+    expect(matchExercise("Machine Lateral Raise")).toMatchObject({
+      kind: "matched",
+      item: { id: "lateral-raise-machine" },
+    });
+  });
+
+  it("matches 'Medicine Ball Slam' to its catalog entry", () => {
+    expect(matchExercise("Medicine Ball Slam")).toMatchObject({
+      kind: "matched",
+      item: { id: "slam-medicine-ball" },
+    });
+  });
 });
