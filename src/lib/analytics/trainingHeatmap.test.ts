@@ -50,6 +50,51 @@ describe("buildHeatmapCells", () => {
   });
 });
 
+describe("intensity banding — H6 + H7", () => {
+  it("returns neutral band (2) for logged cells when fewer than 5 sessions (H6)", () => {
+    // Only 1 session — not enough for percentile banding
+    const cells = buildHeatmapCells([makeLog("2026-04-28")], "2026-04-29");
+    const loggedCell = cells[cells.length - 1][1]; // Tuesday of last week
+    expect(loggedCell.intensity).toBe(2);
+  });
+
+  it("all logged cells still have intensity > 0 with fewer than 5 sessions (H6)", () => {
+    const cells = buildHeatmapCells([makeLog("2026-04-28")], "2026-04-29");
+    const loggedCell = cells[cells.length - 1][1];
+    expect(loggedCell.intensity).toBeGreaterThan(0);
+  });
+
+  it("empty cells remain intensity 0 regardless of session count (H6)", () => {
+    // Use 5 sessions so banding is active, but check an empty cell
+    const dates = ["2026-04-28", "2026-04-27", "2026-04-26", "2026-04-25", "2026-04-24"];
+    const cells = buildHeatmapCells(dates.map(makeLog), "2026-04-29");
+    // The first cell in the grid (far past) is empty
+    expect(cells[0][0].intensity).toBe(0);
+  });
+
+  it("bodyweight exercises (no weight) use 70kg nominal (H7)", () => {
+    const bwLog: WorkoutLogDocument = {
+      id: "bw1",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-04-28T10:00:00Z",
+      entries: [
+        {
+          exerciseId: "pullup",
+          sets: [
+            { setNumber: 1, reps: 10 }, // weight undefined → 70kg nominal
+            { setNumber: 2, reps: 10 },
+          ],
+        },
+      ],
+    };
+    const cells = buildHeatmapCells([bwLog], "2026-04-29");
+    // Volume should be > 0 because nominal weight is applied
+    const loggedCell = cells[cells.length - 1][1];
+    expect(loggedCell.intensity).toBeGreaterThan(0);
+  });
+});
+
 describe("computeHeatmapStats", () => {
   it("streak is 0 with no sessions", () => {
     const cells = buildHeatmapCells([], "2026-04-29");

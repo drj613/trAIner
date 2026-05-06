@@ -9,6 +9,7 @@ type LocalDataContextValue = {
   programs: ProgramDocument[];
   profile: ProfileDocument | undefined;
   loading: boolean;
+  error: Error | null;
   refresh: () => Promise<void>;
 };
 
@@ -18,9 +19,11 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   const [programs, setPrograms] = useState<ProgramDocument[]>([]);
   const [profile, setProfile] = useState<ProfileDocument | undefined>();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   async function refresh() {
     setLoading(true);
+    setError(null);
     const [storedProfile, storedPrograms] = await Promise.all([profileRepo.get(), programRepo.list()]);
     setProfile(storedProfile);
     setPrograms(storedPrograms);
@@ -28,11 +31,14 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   }
 
   useEffect(() => {
-    refresh().catch(() => setLoading(false));
+    refresh().catch((err) => {
+      setError(err instanceof Error ? err : new Error(String(err)));
+      setLoading(false);
+    });
   }, []);
 
   return (
-    <LocalDataContext.Provider value={{ programs, profile, loading, refresh }}>
+    <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh }}>
       {children}
     </LocalDataContext.Provider>
   );

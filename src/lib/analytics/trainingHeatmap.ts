@@ -39,20 +39,23 @@ export function buildHeatmapCells(
     let vol = 0;
     for (const entry of log.entries) {
       for (const s of entry.sets) {
-        vol += (s.weight ?? 0) * (s.reps ?? 1);
+        const effectiveWeight = s.weight ?? 70; // 70kg nominal for bodyweight exercises
+        vol += effectiveWeight * (s.reps ?? 1);
       }
     }
     volumeByDate.set(date, (volumeByDate.get(date) ?? 0) + vol);
   }
 
-  // percentile thresholds for intensity bands
+  // percentile thresholds for intensity bands — require at least 5 sessions
   const allVols = [...volumeByDate.values()].filter((v) => v > 0).sort((a, b) => a - b);
+  const hasEnoughData = allVols.length >= 5;
   const p33 = allVols[Math.floor(allVols.length * 0.33)] ?? 1;
   const p66 = allVols[Math.floor(allVols.length * 0.66)] ?? 2;
   const p90 = allVols[Math.floor(allVols.length * 0.9)] ?? 3;
 
   function intensityFor(vol: number): 0 | 1 | 2 | 3 | 4 {
     if (vol === 0) return 0;
+    if (!hasEnoughData) return 2; // neutral band — not enough data for percentile comparison
     if (vol < p33) return 1;
     if (vol < p66) return 2;
     if (vol < p90) return 3;

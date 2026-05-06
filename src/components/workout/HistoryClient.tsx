@@ -51,7 +51,7 @@ function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
     for (const entry of log.entries) {
       const key = entry.canonicalExerciseId ?? entry.exerciseId;
       if (!byExercise.has(key)) {
-        byExercise.set(key, { name: entry.exerciseId, sessions: [] });
+        byExercise.set(key, { name: entry.exerciseName ?? entry.exerciseId, sessions: [] });
       }
       byExercise.get(key)!.sessions.push({ date, sets: entry.sets });
     }
