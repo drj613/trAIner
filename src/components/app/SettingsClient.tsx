@@ -73,6 +73,7 @@ export function SettingsClient() {
   );
   const [snapshotting, setSnapshotting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [wiping, setWiping] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -221,6 +222,8 @@ export function SettingsClient() {
         </p>
         <button
           type="button"
+          aria-expanded={resetOpen}
+          aria-controls="reset-confirm-panel"
           onClick={() => setResetOpen((o) => !o)}
           style={{
             display: "block",
@@ -240,6 +243,7 @@ export function SettingsClient() {
         </button>
         {resetOpen && (
           <div
+            id="reset-confirm-panel"
             style={{
               marginTop: 8,
               padding: "12px 14px",
@@ -255,9 +259,15 @@ export function SettingsClient() {
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
+                disabled={wiping}
                 onClick={async () => {
-                  await resetWorkspace();
-                  window.location.reload();
+                  setWiping(true);
+                  try {
+                    await resetWorkspace();
+                    window.location.reload();
+                  } catch {
+                    setWiping(false);
+                  }
                 }}
                 style={{
                   padding: "7px 14px",
@@ -267,10 +277,11 @@ export function SettingsClient() {
                   borderRadius: "var(--r, 6px)",
                   fontWeight: 600,
                   fontSize: 12,
-                  cursor: "pointer",
+                  cursor: wiping ? "not-allowed" : "pointer",
+                  opacity: wiping ? 0.7 : 1,
                 }}
               >
-                Yes, wipe everything
+                {wiping ? "Wiping…" : "Yes, wipe everything"}
               </button>
               <button
                 type="button"

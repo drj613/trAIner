@@ -26,6 +26,16 @@ jest.mock("@/components/app/ThemeProvider", () => ({
 }));
 
 describe("SettingsClient — reset workspace", () => {
+  let originalLocation: typeof window.location;
+
+  beforeEach(() => {
+    originalLocation = window.location;
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "location", { value: originalLocation, writable: true });
+  });
+
   it("shows the reset button but not the confirmation panel by default", () => {
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     expect(screen.getByRole("button", { name: /reset workspace/i })).toBeInTheDocument();
@@ -33,10 +43,12 @@ describe("SettingsClient — reset workspace", () => {
   });
 
   it("reveals confirmation panel on first click without wiping", () => {
+    const { resetWorkspace } = require("@/lib/backup/backup");
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     expect(screen.getByRole("button", { name: /yes, wipe everything/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+    expect(resetWorkspace).not.toHaveBeenCalled();
   });
 
   it("collapses the panel when Cancel is clicked", () => {
@@ -57,6 +69,7 @@ describe("SettingsClient — reset workspace", () => {
 
     await waitFor(() => {
       expect(resetWorkspace).toHaveBeenCalled();
+      expect(reloadMock).toHaveBeenCalled();
     });
   });
 });
