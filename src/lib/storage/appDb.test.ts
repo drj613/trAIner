@@ -4,6 +4,7 @@ import { aliasRepo } from "./aliasRepo";
 import { logRepo } from "./logRepo";
 import { profileRepo } from "./profileRepo";
 import { programRepo } from "./programRepo";
+import { userExerciseRepo } from "./userExerciseRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
@@ -27,7 +28,7 @@ describe("IndexedDB repositories", () => {
     await expect(programRepo.listActive()).resolves.toHaveLength(1);
   });
 
-  it("exports and restores profile, programs, logs, and aliases", async () => {
+  it("exports and restores profile, programs, logs, aliases, and userExercises", async () => {
     await profileRepo.save(defaultProfile);
     await programRepo.save(demoProgram);
     await aliasRepo.save({ alias: "Strict Pullup", canonicalExerciseId: "pull-up" });
@@ -38,11 +39,14 @@ describe("IndexedDB repositories", () => {
       performedAt: new Date().toISOString(),
       entries: []
     });
+    const savedExercise = await userExerciseRepo.save("Banded Pull-Apart");
 
     const backup = await exportBackup();
     expect(backup.programs).toHaveLength(1);
     expect(backup.aliases).toHaveLength(1);
     expect(backup.logs).toHaveLength(1);
+    expect(backup.userExercises).toHaveLength(1);
+    expect(backup.userExercises?.[0].id).toBe(savedExercise.id);
 
     resetDbConnection();
     await deleteDB(DB_NAME);
@@ -52,6 +56,25 @@ describe("IndexedDB repositories", () => {
     await expect(programRepo.list()).resolves.toHaveLength(1);
     await expect(logRepo.list()).resolves.toHaveLength(1);
     await expect(aliasRepo.list()).resolves.toHaveLength(1);
+    const restoredExercises = await userExerciseRepo.list();
+    expect(restoredExercises).toHaveLength(1);
+    expect(restoredExercises[0].id).toBe(savedExercise.id);
+    expect(restoredExercises[0].name).toBe("Banded Pull-Apart");
+  });
+
+  it("restores a backup with no userExercises field (backward compatibility)", async () => {
+    await programRepo.save(demoProgram);
+    const backup = await exportBackup();
+    // Simulate an old backup that lacks the userExercises field
+    const oldBackup = { ...backup, userExercises: undefined };
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(oldBackup);
+
+    await expect(programRepo.list()).resolves.toHaveLength(1);
+    await expect(userExerciseRepo.list()).resolves.toHaveLength(0);
   });
 });
 

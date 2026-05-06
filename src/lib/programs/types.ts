@@ -168,6 +168,7 @@ export type BackupDocument = {
   programs: ProgramDocument[];
   logs: WorkoutLogDocument[];
   aliases: AliasDocument[];
+  userExercises?: UserExerciseDocument[];
 };
 
 export const emptyTags = (): ProgramExercise["tags"] => ({

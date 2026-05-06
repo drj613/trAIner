@@ -42,6 +42,13 @@ jest.mock("@/lib/storage/aliasRepo", () => ({
   },
 }));
 
+jest.mock("@/lib/storage/userExerciseRepo", () => ({
+  userExerciseRepo: {
+    list: jest.fn().mockResolvedValue([]),
+    save: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe("exportBackup", () => {
   it("returns a backup document with version 1", async () => {
     const backup = await exportBackup();
@@ -50,6 +57,7 @@ describe("exportBackup", () => {
     expect(Array.isArray(backup.programs)).toBe(true);
     expect(Array.isArray(backup.logs)).toBe(true);
     expect(Array.isArray(backup.aliases)).toBe(true);
+    expect(Array.isArray(backup.userExercises)).toBe(true);
   });
 });
 
