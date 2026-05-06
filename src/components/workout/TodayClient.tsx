@@ -571,6 +571,7 @@ export function TodayClient() {
 
   const banner = !profile && !loading ? (
     <div
+      role="status"
       style={{
         display: "flex",
         alignItems: "center",
