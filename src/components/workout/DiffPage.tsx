@@ -10,6 +10,7 @@ export function DiffPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [state, setState] = useState<{ original: ProgramDay; replacement: ProgramDay } | null>(null);
+  const [scope, setScope] = useState<"day" | "week">("day");
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export function DiffPage() {
     if (!data) { navigate(`/programs/${id}`, { replace: true }); return; }
     if (data.programId !== id) { navigate(`/programs/${id}`, { replace: true }); return; }
     setState({ original: data.original, replacement: data.replacement });
+    setScope(data.scope ?? "day");
   }, [id, navigate]);
 
   if (!state) return <p style={{ color: "var(--fg-3)", padding: 16, fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading diff…</p>;
@@ -31,20 +33,29 @@ export function DiffPage() {
         setSaveError("Program not found — changes could not be saved.");
         return;
       }
+      const override =
+        scope === "week"
+          ? {
+              id: crypto.randomUUID(),
+              scope: "week" as const,
+              programId: program.id,
+              weekNumber: state!.original.weekNumber,
+              replacement: state!.replacement,
+              reason: "Modified with AI",
+              createdAt: new Date().toISOString(),
+            }
+          : {
+              id: crypto.randomUUID(),
+              scope: "day" as const,
+              programId: program.id,
+              dayId: state!.original.id,
+              replacement: state!.replacement,
+              reason: "Modified with AI",
+              createdAt: new Date().toISOString(),
+            };
       await programRepo.save({
         ...program,
-        overrides: [
-          ...program.overrides,
-          {
-            id: crypto.randomUUID(),
-            scope: "day" as const,
-            programId: program.id,
-            dayId: state!.original.id,
-            replacement: state!.replacement,
-            reason: "Modified with AI",
-            createdAt: new Date().toISOString(),
-          },
-        ],
+        overrides: [...program.overrides, override],
       });
       clearPendingDiff();
       navigate("/today", { replace: true });
@@ -66,6 +77,56 @@ export function DiffPage() {
           {saveError}
         </p>
       )}
+
+      {/* C3: scope picker */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          padding: "10px 16px 8px",
+          borderBottom: "1px solid var(--line)",
+          background: "var(--bg-1)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--fg-3)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            alignSelf: "center",
+            marginRight: 4,
+          }}
+        >
+          Apply to
+        </span>
+        {(["day", "week"] as const).map((s) => (
+          <label
+            key={s}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: scope === s ? "var(--fg)" : "var(--fg-3)",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="radio"
+              name="diff-scope"
+              value={s}
+              checked={scope === s}
+              onChange={() => setScope(s)}
+              style={{ accentColor: "var(--accent)" }}
+            />
+            {s === "day" ? "This day" : "Entire week"}
+          </label>
+        ))}
+      </div>
+
       <DiffReview diffs={diffs} replacement={state.replacement} onAccept={handleAccept} onDiscard={handleDiscard} />
     </div>
   );

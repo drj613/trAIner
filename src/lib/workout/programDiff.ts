@@ -29,7 +29,9 @@ function exercisesEqual(a: ProgramExercise, b: ProgramExercise): boolean {
     a.reps === b.reps &&
     a.load === b.load &&
     a.rest === b.rest &&
-    a.notes === b.notes
+    a.notes === b.notes &&
+    a.tempo === b.tempo &&
+    JSON.stringify(a.tags) === JSON.stringify(b.tags)
   );
 }
 
@@ -67,12 +69,25 @@ export function diffDays(before: ProgramDay, after: ProgramDay): ExerciseDiff[] 
  * at the same slot, we want "Row removed, Pull-up added", not "Row modified to Pull-up".
  */
 export function remapExerciseIds(original: ProgramDay, parsed: ProgramDay): ProgramDay {
-  // Build name -> id map from original (name is the stable semantic key)
-  const nameToId = new Map<string, string>();
+  // Build sectionId:name -> id map from original to avoid collisions when
+  // two exercises in different sections share the same name (H9).
+  // Falls back to a global name lookup if the section id doesn't match,
+  // so the remapping still works when the AI rearranges sections.
+  const sectionNameToId = new Map<string, string>(); // "${sectionId}:${name}" -> id
+  const globalNameToId = new Map<string, string>();  // fallback: name -> id
+
   for (const section of original.sections) {
     for (const group of section.groups) {
       for (const ex of group.exercises) {
-        nameToId.set(ex.name.toLowerCase().trim(), ex.id);
+        const key = `${section.id}:${ex.name.toLowerCase().trim()}`;
+        sectionNameToId.set(key, ex.id);
+        // Only set global entry if name is unique (first occurrence wins)
+        if (!globalNameToId.has(ex.name.toLowerCase().trim())) {
+          globalNameToId.set(ex.name.toLowerCase().trim(), ex.id);
+        } else {
+          // Mark as ambiguous so we don't fall back to the wrong id
+          globalNameToId.set(ex.name.toLowerCase().trim(), "");
+        }
       }
     }
   }
@@ -84,9 +99,16 @@ export function remapExerciseIds(original: ProgramDay, parsed: ProgramDay): Prog
         ({
           ...group,
           exercises: group.exercises.map((ex) => {
-            const originalId = nameToId.get(ex.name.toLowerCase().trim());
-            // Only remap when name matches — keeps added exercises with fresh UUIDs
-            return originalId ? { ...ex, id: originalId } : ex;
+            const nameLower = ex.name.toLowerCase().trim();
+            // Try section-scoped key first
+            const sectionKey = `${section.id}:${nameLower}`;
+            const sectionId = sectionNameToId.get(sectionKey);
+            if (sectionId) return { ...ex, id: sectionId };
+            // Fall back to global only if the name is unambiguous
+            const globalId = globalNameToId.get(nameLower);
+            if (globalId) return { ...ex, id: globalId };
+            // No match or ambiguous — keep fresh UUID (it's a new or renamed exercise)
+            return ex;
           }),
         })
       ),

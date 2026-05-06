@@ -6,15 +6,29 @@ export type PendingDiff = {
   programId: string;
   original: ProgramDay;
   replacement: ProgramDay;
+  scope: "week" | "day";
+  weekNumber?: number;
+  dayId?: string;
 };
 
 export function storePendingDiff(
   programId: string,
   original: ProgramDay,
-  replacement: ProgramDay
+  replacement: ProgramDay,
+  scope: "week" | "day" = "day",
+  weekNumber?: number,
+  dayId?: string
 ): boolean {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ programId, original, replacement }));
+    const payload: PendingDiff = {
+      programId,
+      original,
+      replacement,
+      scope,
+      weekNumber,
+      dayId: dayId ?? original.id,
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;
   } catch {
     return false;

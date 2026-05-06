@@ -17,14 +17,23 @@ describe("parseCellToSet", () => {
       setNumber: 1, weight: 52.5, reps: 6,
     });
   });
-  it("returns null for empty string", () => {
-    expect(parseCellToSet("", 1)).toBeNull();
+  it("returns rawCell for empty string", () => {
+    expect(parseCellToSet("", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "" });
   });
-  it("returns null for skip", () => {
-    expect(parseCellToSet("skip", 1)).toBeNull();
+  it("returns rawCell for skip (lowercase)", () => {
+    expect(parseCellToSet("skip", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "skip" });
   });
-  it("returns null for pain", () => {
-    expect(parseCellToSet("pain", 1)).toBeNull();
+  it("returns rawCell for pain (lowercase)", () => {
+    expect(parseCellToSet("pain", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "pain" });
+  });
+  it("returns rawCell for Skip (case-insensitive)", () => {
+    expect(parseCellToSet("Skip", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "Skip" });
+  });
+  it("returns rawCell for PAIN (case-insensitive)", () => {
+    expect(parseCellToSet("PAIN", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "PAIN" });
+  });
+  it("returns rawCell for unrecognized string INVALID", () => {
+    expect(parseCellToSet("INVALID", 1)).toEqual<WorkoutSetLog>({ setNumber: 1, rawCell: "INVALID" });
   });
   it("strips PR marker from +70x9", () => {
     expect(parseCellToSet("+70x9", 1)).toEqual<WorkoutSetLog>({
@@ -41,7 +50,14 @@ describe("serialiseSets", () => {
     expect(result[1]).toEqual({ setNumber: 3, weight: 60, reps: 8 });
   });
   it("returns empty array for all-empty cells", () => {
+    // Empty strings are skipped entirely (not stored with rawCell)
     expect(serialiseSets(["", "", ""])).toEqual([]);
+  });
+  it("includes rawCell for unrecognized non-empty strings", () => {
+    const result = serialiseSets(["65x10", "INVALID", ""]);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ setNumber: 1, weight: 65, reps: 10 });
+    expect(result[1]).toEqual({ setNumber: 2, rawCell: "INVALID" });
   });
 });
 
@@ -66,6 +82,20 @@ describe("hydrateFromLog", () => {
   it("returns array of empty strings when sets is empty", () => {
     const entry: WorkoutLogEntry = { exerciseId: "ex-1", sets: [] };
     expect(hydrateFromLog(entry)).toEqual([""]);
+  });
+  it("pads to prescribedSets when log has fewer sets", () => {
+    const entry: WorkoutLogEntry = {
+      exerciseId: "ex-1",
+      sets: [{ setNumber: 1, weight: 65, reps: 10 }],
+    };
+    expect(hydrateFromLog(entry, 3)).toEqual(["65x10", "", ""]);
+  });
+  it("preserves rawCell values on hydration", () => {
+    const entry: WorkoutLogEntry = {
+      exerciseId: "ex-1",
+      sets: [{ setNumber: 1, rawCell: "Skip" }],
+    };
+    expect(hydrateFromLog(entry)).toEqual(["Skip"]);
   });
 });
 

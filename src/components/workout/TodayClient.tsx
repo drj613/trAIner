@@ -305,13 +305,22 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   useEffect(() => {
     let cancelled = false;
     const today = localDateString();
+    // Build prescribedSets lookup for H5 padding
+    const prescribedSetsMap = new Map<string, number>();
+    for (const section of day.sections) {
+      for (const group of section.groups) {
+        for (const ex of group.exercises) {
+          prescribedSetsMap.set(ex.id, ex.sets ?? 1);
+        }
+      }
+    }
     logRepo
       .getForDay(program.id, day.id, today)
       .then((log) => {
         if (cancelled || !log) return;
         const hydrated: CellMap = {};
         for (const entry of log.entries) {
-          hydrated[entry.exerciseId] = hydrateFromLog(entry);
+          hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
         }
         setCells((prev) => ({ ...prev, ...hydrated }));
       })
@@ -326,8 +335,18 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     try {
       const today = localDateString();
       const existing = await logRepo.getForDay(program.id, day.id, today);
+      // Build a flat lookup of exerciseId -> name for H3
+      const exerciseNameMap = new Map<string, string>();
+      for (const section of day.sections) {
+        for (const group of section.groups) {
+          for (const ex of group.exercises) {
+            exerciseNameMap.set(ex.id, ex.name);
+          }
+        }
+      }
       const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
         exerciseId,
+        exerciseName: exerciseNameMap.get(exerciseId),
         sets: serialiseSets(vals),
       }));
       await logRepo.save({
@@ -475,15 +494,71 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
 export function TodayClient() {
   const { programs, loading, refresh } = useLocalData();
+  const [resolvedDay, setResolvedDay] = useState<import("@/lib/programs/types").ProgramDay | undefined>(undefined);
+  const [dayResolving, setDayResolving] = useState(true);
 
   useEffect(() => {
     refresh();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const activeProgram = programs.find((p) => p.active) ?? programs[0];
-  const day = activeProgram ? getRenderableDays(activeProgram)[0] : undefined;
 
-  if (loading) {
+  const activeProgram = programs.find((p) => p.active) ?? programs[0];
+
+  useEffect(() => {
+    if (loading) return;
+    if (!activeProgram) {
+      setResolvedDay(undefined);
+      setDayResolving(false);
+      return;
+    }
+
+    const days = getRenderableDays(activeProgram);
+    if (days.length === 0) {
+      setResolvedDay(undefined);
+      setDayResolving(false);
+      return;
+    }
+
+    setDayResolving(true);
+    const today = localDateString();
+
+    logRepo
+      .listForProgram(activeProgram.id)
+      .then((logs) => {
+        // Check if there is already a log for today
+        const todayLog = logs.find((l) => l.performedAt.slice(0, 10) === today);
+        if (todayLog) {
+          const todayDay = days.find((d) => d.id === todayLog.dayId);
+          setResolvedDay(todayDay ?? days[0]);
+          return;
+        }
+
+        // Find the most recently logged day and advance to the next one
+        if (logs.length > 0) {
+          const sorted = [...logs].sort(
+            (a, b) => b.performedAt.localeCompare(a.performedAt)
+          );
+          const lastDayId = sorted[0].dayId;
+          const lastIndex = days.findIndex((d) => d.id === lastDayId);
+          if (lastIndex !== -1) {
+            const nextIndex = (lastIndex + 1) % days.length;
+            setResolvedDay(days[nextIndex]);
+            return;
+          }
+        }
+
+        // No logs at all — show day 0
+        setResolvedDay(days[0]);
+      })
+      .catch((e) => {
+        console.error("[TodayClient] day resolution failed", e);
+        setResolvedDay(days[0]);
+      })
+      .finally(() => setDayResolving(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, activeProgram?.id]);
+
+  if (loading || dayResolving) {
     return (
       <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
         Loading…
@@ -491,7 +566,7 @@ export function TodayClient() {
     );
   }
 
-  if (!activeProgram || !day) {
+  if (!activeProgram || !resolvedDay) {
     return (
       <div className="panel stack">
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Today</h1>
@@ -502,5 +577,5 @@ export function TodayClient() {
     );
   }
 
-  return <TodayWorkout program={activeProgram} day={day} />;
+  return <TodayWorkout program={activeProgram} day={resolvedDay} />;
 }
