@@ -79,15 +79,40 @@ Once the user saves a profile for the first time, `LocalDataProvider.refresh()` 
 
 ---
 
+## Profile Page — Reset Button
+
+**Purpose:** Development/testing convenience. Allows wiping all app data back to a clean state without navigating to Workspace settings.
+
+**Location:** Bottom of `ProfileClient`, below all profile cards. Shown for both new and existing users (it's useful regardless of profile state).
+
+**Behavior — two-step confirmation:**
+1. First click reveals an inline danger panel below the button (the button itself does not immediately act)
+2. The panel shows a warning message and a second explicit "Yes, wipe everything" button
+3. Clicking the second button calls the existing `resetWorkspace()` from `src/lib/backup/backup.ts` and reloads the page
+4. Clicking anywhere else (or a "Cancel" link in the panel) collapses the panel without acting
+
+This two-step reveal pattern is more intentional than a single `confirm()` dialog and consistent with the app's in-page UI style.
+
+**Styling:**
+- First button: danger color (`var(--bad)`), labeled "Reset workspace"
+- Expanded panel: red-tinted background, border in danger color
+- Warning text: "This will permanently delete all programs, logs, profile data, and aliases. There is no undo."
+- Confirm button inside panel: solid red, labeled "Yes, wipe everything"
+- Cancel: plain text link or ghost button
+
+**Note:** `resetWorkspace()` already exists and is used by `SettingsClient`. No new logic needed — just a new call site.
+
+---
+
 ## Files Affected
 
 | File | Change |
 |---|---|
 | `src/components/workout/TodayClient.tsx` | Add banner when `!profile && !loading` |
 | `src/components/prompts/PromptBuilderClient.tsx` | Add inline warning when `!profile` |
-| `src/components/profile/ProfileClient.tsx` | Replace dead-end message with editable empty state |
+| `src/components/profile/ProfileClient.tsx` | Replace dead-end message with editable empty state; add reset button at bottom |
 
-No changes to `LocalDataProvider`, `profileRepo`, `appDb`, or `sample.ts`.
+No changes to `LocalDataProvider`, `profileRepo`, `appDb`, `sample.ts`, or `backup.ts`.
 
 ---
 
@@ -96,3 +121,4 @@ No changes to `LocalDataProvider`, `profileRepo`, `appDb`, or `sample.ts`.
 - Fresh IndexedDB (clear site data): Today banner appears, Prompts warning appears, Profile page shows editable form
 - After saving profile: both nudges disappear, Profile page switches to normal view
 - Existing users (profile already saved): no nudges shown, Profile page unchanged
+- Reset button: first click expands panel, second click wipes data and reloads; cancel collapses without acting
