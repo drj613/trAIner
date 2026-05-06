@@ -72,6 +72,7 @@ export function SettingsClient() {
     () => readAttr("data-mono", "jetbrains") as Mono
   );
   const [snapshotting, setSnapshotting] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -116,12 +117,6 @@ export function SettingsClient() {
     }
   }
 
-  async function handleReset() {
-    if (!confirm("Wipe all local data? This cannot be undone.")) return;
-    await resetWorkspace();
-    window.location.reload();
-  }
-
   const sizeLabel = stats
     ? stats.sizeKB >= 1024 ? `${(stats.sizeKB / 1024).toFixed(2)} MB` : `${stats.sizeKB} KB`
     : "…";
@@ -162,7 +157,6 @@ export function SettingsClient() {
           <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0])} />
         </ActionRow>
         <ActionRow label={snapshotting ? "Saving…" : "Snapshot current state"} sub={snapshotSub} onClick={handleSnapshot} />
-        <ActionRow label="Reset workspace" sub="Wipe all local data" variant="danger" onClick={handleReset} />
       </div>
 
       {/* Local-first blurb */}
@@ -210,6 +204,86 @@ export function SettingsClient() {
           ))}
         </div>
       </section>
+
+      {/* Danger zone */}
+      <div style={{ marginTop: 32 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--bad, #ef9a9a)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            margin: "0 0 12px",
+          }}
+        >
+          Danger
+        </p>
+        <button
+          type="button"
+          onClick={() => setResetOpen((o) => !o)}
+          style={{
+            display: "block",
+            width: "100%",
+            padding: "10px 16px",
+            background: "var(--bad, #ef5350)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "var(--r, 6px)",
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          Reset workspace
+        </button>
+        {resetOpen && (
+          <div
+            style={{
+              marginTop: 8,
+              padding: "12px 14px",
+              background: "color-mix(in srgb, var(--bad, #ef5350) 8%, var(--bg-2))",
+              border: "1px solid var(--bad, #ef5350)",
+              borderRadius: "var(--r, 6px)",
+            }}
+          >
+            <p style={{ fontSize: 13, color: "var(--fg)", marginBottom: 12, lineHeight: 1.5 }}>
+              This will permanently delete all programs, logs, profile data, and aliases.
+              This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  await resetWorkspace();
+                  window.location.reload();
+                }}
+                style={{
+                  padding: "7px 14px",
+                  background: "var(--bad, #ef5350)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "var(--r, 6px)",
+                  fontWeight: 600,
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Yes, wipe everything
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                style={{ fontSize: 12, padding: "7px 12px" }}
+                onClick={() => setResetOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
