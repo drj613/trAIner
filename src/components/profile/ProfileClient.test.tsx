@@ -39,7 +39,12 @@ describe("ProfileClient — no profile", () => {
     fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
     await waitFor(() => {
       expect(profileRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "Alex", id: "local-profile" })
+        expect.objectContaining({
+          name: "Alex",
+          id: "local-profile",
+          updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+          defaultDaysPerWeek: 4,
+        })
       );
       expect(mockRefresh).toHaveBeenCalled();
     });

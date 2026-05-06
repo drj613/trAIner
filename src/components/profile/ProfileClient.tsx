@@ -257,8 +257,6 @@ export function ProfileClient() {
         equipment: [],
         constraints: [],
         injuries: [],
-        history: [],
-        schedule: [],
         preferences: [],
         trainingAge: "",
         defaultDaysPerWeek: 4,
@@ -290,11 +288,11 @@ export function ProfileClient() {
   if (isCreating) {
     if (!draft) return null;
 
-    async function saveNewProfile() {
+    const saveNewProfile = async () => {
       if (!draft) return;
       await profileRepo.save({ ...draft, updatedAt: new Date().toISOString() });
       await refresh();
-    }
+    };
 
     return (
       <div className="stack">
