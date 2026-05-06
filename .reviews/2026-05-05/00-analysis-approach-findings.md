@@ -13,6 +13,8 @@ The analysis framework borrows the correct vocabulary — MEV/MAV/MRV, per-muscl
 
 The problem is that **all thresholds, scoring weights, and scoring logic are calibrated for hypertrophy/RP science and applied universally**. When the same framework is applied to a powerlifter, an Olympic lifter, or a CrossFit athlete, it does not just give a lower score — it gives wrong guidance that may lead a real user to modify a well-designed program in a harmful direction.
 
+**Target user (decided 2026-05-06):** A single user who mixes training styles — hypertrophy, powerlifting, Olympic lifting, powerbuilding — and cares about having well-structured programs for each. The system must serve all these styles correctly, not just score them lower. Where making the analysis multi-goal-aware would reduce complexity (e.g. by removing universal rules that are only valid for one style), that reduction is acceptable.
+
 The findings below are grouped by the type of failure, not by reviewer.
 
 ---
@@ -55,17 +57,20 @@ All 19 muscle groups have a single set of `{ mv, mev, mavLow, mavHigh, mrv }` va
 
 ---
 
-## 3. No Intensity Tracking of Any Kind — MISLEADING
+## 3. No Intensity Tracking of Any Kind — **DECISION MADE**
 
 The analysis has zero representation of intensity — no %1RM, no RPE/RIR field, no rep-max notation. Set count is the only variable in every dimension.
 
-**Consequences:**
+**Consequences (still relevant):**
 - 3×5 at 90% 1RM and 3×15 pump sets contribute identical "effective sets" to quads.
 - Accumulation blocks (high volume, 70–80%, RPE 6–8) and realization/peaking blocks (low volume, 90%+, RPE 9–10) are indistinguishable.
 - Technique work (50–60%, 5+ reps, focus on bar path) looks identical to true max effort.
 - Progressive overload across weeks — 3×10 → 3×8 → 3×5 — shows as "decreasing volume" with no recognition of increasing intensity.
 
-The `ProgramExercise` type has a `load?: string` field that the LLM is instructed to populate (e.g. "80% 1RM"), but it is never read by any analysis module. The data is available in principle.
+**Decision (2026-05-06):** Read the `load` field. The `ProgramExercise.load?: string` field is populated by the LLM but never consumed by any analysis module. It will be parsed to extract intensity signals — %1RM values, RPE/RIR notation, and rep-max notation (e.g. "5RM", "3 @ RPE 9"). Because LLM output is inconsistent, the parser must be fuzzy and tolerant: extract what it can, treat unrecognised values as absent (not as errors). Parsed intensity feeds into:
+- Deload/peak week classification (finding 1)
+- Periodization style detection (finding 4)
+- Training style fingerprint (TBD — finding 9 / style classification discussion)
 
 ---
 
@@ -125,17 +130,17 @@ exercises: { greenMin: 4, greenMax: 8, yellowMax: 10 }
 
 ---
 
-## 8. Push:Pull Accounting Is Broken for Posterior-Chain Programs
+## 8. Push:Pull Accounting Is Broken for Posterior-Chain Programs — **RESOLVED**
 
 `src/lib/analysis/muscles.ts:94–101`
 
-The `classifyMovement` function routes hinge movements (deadlift, RDL, good morning) to `"other"`, not `"pull"`. See also technical finding H17.
+~~The `classifyMovement` function routes hinge movements (deadlift, RDL, good morning) to `"other"`, not `"pull"`. See also technical finding H17.~~
 
-The fitness-domain consequence: a posterior-chain-heavy powerlifting program (squat + bench + deadlift with rows as accessories) has all its deadlift/RDL volume excluded from the pull count. The push:pull ratio skews toward push-dominant, and the system warns to add more pulling work to a program that has substantial posterior-chain stimulus.
+Fixed in technical batch (H17): `classifyMovement` now returns `"legs"` for hinge patterns ("hinge", "hip hinge", "hip extension"). Deadlifts and RDLs correctly contribute to the legs bucket rather than being invisible to balance accounting. The push:pull ratio for posterior-chain-heavy programs is no longer artificially skewed push-dominant.
 
 ---
 
-## 9. Movement Pattern Requirements Should Be Goal-Conditional
+## 9. Movement Pattern Display Should Be Neutral, Not Prescriptive — **DECISION MADE**
 
 `src/lib/analysis/balance.ts:126–142`
 
@@ -145,7 +150,23 @@ Missing any of the six core movement patterns (horizontal push, horizontal pull,
 
 **OL competition prep:** OL athletes do not typically program horizontal pressing. They correctly avoid it in peak weeks. The system flags this as RED missing movement patterns.
 
-**Fix shape:** Movement pattern requirements should be conditional on `goal.primary`. When `goal.primary === "olympic_weightlifting"`, horizontal push/pull should not be required. When `goal.primary === "strength"`, missing a vertical pull pattern should be a yellow note, not a red warning.
+**Decision:** Severity design language (red/yellow/green) is reserved exclusively for MEV/MAV/MRV volume analysis. Movement pattern coverage is displayed neutrally — present/absent, no score impact, no severity coloring. This lets the user see what patterns their program covers without the system prescribing what a complete program must include.
+
+**Style fingerprint and goal-conditional scoring (decided 2026-05-06):**
+
+The fingerprint carries a detected training style: "Strength / Powerlifting", "Hypertrophy", "Olympic Lifting", "Powerbuilding", or "Mixed / General". Detection is based on a weighted combination of:
+- Section type composition (`ProgramSection.type`)
+- Compound/isolation exercise ratio
+- Rep range distribution across the program
+- Parsed intensity signals from `exercise.load` (once tier 2 load parser exists)
+
+Each style is scored 0–1; the highest becomes the primary label, the second-highest the secondary. If no style scores above a confidence threshold (~0.5), the primary label is "Mixed / General". The style is **overridable** — the user can set an explicit style on a program, which bypasses inference entirely.
+
+The detected/overridden style feeds volume landmark selection (tier 3):
+- **Strength / Powerlifting / OL:** strength-oriented thresholds for compound/competition movements; hypertrophy thresholds for accessory muscles. Competition lifts (squat, bench, deadlift, snatch, C&J variants) are identified from the exercise catalog and evaluated against strength landmarks; all other exercises use hypertrophy landmarks.
+- **Hypertrophy:** current RP-derived landmarks for all muscles.
+- **Powerbuilding:** same split as strength — compound movements use strength thresholds, accessories use hypertrophy thresholds. Distinct from pure strength only in that isolation accessories are expected and not penalised.
+- **Mixed / General:** hypertrophy thresholds, but muscles with `effectiveSets === 0` are never penalised (they show as "Not trained", no score impact).
 
 ---
 
@@ -159,11 +180,9 @@ Missing any of the six core movement patterns (horizontal push, horizontal pull,
 
 The snatch is simultaneously a hip hinge, vertical pull, overhead squat, and vertical push at different phases. None of this is captured.
 
-### `accessory` section type scores 0 for OL goal inference
+### `accessory` section type scores 0 for OL goal inference — **MOOT**
 
-`src/lib/analysis/thresholds.ts:70`
-
-`GOAL_SECTION_WEIGHTS["olympic_weightlifting"]`: `{ explosive: 1.0, power: 0.9, strength: 0.7, mobility: 0.5 }`. The `accessory` type scores 0. Snatch balance, jerk balance, pause squats, and position drills — all commonly placed in an `accessory` section — contribute nothing to OL goal confidence.
+Goal inference and goal coherence scoring have been removed entirely. `GOAL_SECTION_WEIGHTS` no longer exists. This sub-finding no longer applies.
 
 ### Front squat catalog entry has empty `movementPatterns` and `tags`
 
@@ -171,42 +190,27 @@ The snatch is simultaneously a hip hinge, vertical pull, overhead squat, and ver
 
 ---
 
-## 11. Goal Inference Has Structural Gaps
+## 11. Goal Inference Has Structural Gaps — **RESOLVED**
 
-### No `powerlifting` archetype
-`src/lib/analysis/goals.ts:6–9` and `types.ts`
+`src/lib/analysis/goals.ts`, `src/lib/analysis/types.ts`
 
-The six archetypes are: `hypertrophy, strength, olympic_weightlifting, general_fitness, crossfit, rehab`. There is no `powerlifting` archetype. Competition-focused programs score against `strength`, which has different thresholds (compound ratio target 0.85–0.95, `GOAL_COMPOUND_RATIO[strength].min`) and no requirement to verify the presence of squat, bench, and deadlift.
+~~Goal coherence was a 15%-weight scoring dimension that inferred a training archetype (hypertrophy, strength, OL, etc.) from section types and compound/isolation ratios, then penalized programs that did not score strongly against any single archetype.~~
 
-### No `powerbuilding` archetype
-Powerbuilding (deliberate blend of strength and hypertrophy) is an extremely common self-directed training goal. The system has no archetype for it. A well-designed powerbuilding program will show low goal confidence because it blends signals that look incoherent to the classifier.
+The entire goal inference and goal coherence system has been removed. `goals.ts` is deleted. `GoalArchetype`, `GoalSignature`, `AnalysisResult.goal`, and `AnalysisResult.dimensions.goalCoherence` no longer exist. `GOAL_SECTION_WEIGHTS`, `GOAL_COMPOUND_RATIO`, and `GOAL_REP_RANGES` are removed from `thresholds.ts`. Scoring weights are now 4-dimensional: `{ volume: 0.353, session: 0.235, balance: 0.294, periodization: 0.118 }`.
 
-### `GOAL_COMPOUND_RATIO[strength]` is too high
-`src/lib/analysis/thresholds.ts:77`
-
-`{ min: 0.85, max: 0.95 }`. Most powerlifting programs include significant accessory work; the realistic compound ratio is 0.70–0.85. Programs within the actual powerlifting norm are penalized.
-
-### Confidence formula is a mathematical artifact
-`src/lib/analysis/goals.ts:24`
-
-```ts
-const confidence = primaryScore / (primaryScore + secondaryScore || 1);
-```
-
-When `secondaryScore = 0` and `primaryScore > 0`, this simplifies to `primaryScore / primaryScore = 1.0`. A program with a single exercise faintly matching one archetype returns 100% confidence. This feeds the overall score at 15% weight.
-
-### Goal coherence penalizes intentional blending
-A deliberately balanced powerbuilding program scores low goal coherence because the confidence formula interprets balanced signal as ambiguity. The system has no concept of "coherent blending" — only "dominant archetype."
+The archetypal gaps (no powerlifting archetype, no powerbuilding archetype, broken confidence formula) are all moot.
 
 ---
 
-## 12. Volume Scoring Penalizes Skipping Optional Muscles
+## 12. Volume Scoring Penalizes Skipping Optional Muscles — **DECISION MADE**
 
 `src/lib/analysis/score.ts:23`
 
 `scoreVolumeDimension` includes almost every muscle (16 of 19 have `mev > 0`) even when not trained. Programs that legitimately skip direct forearm, adductor, abductor, or calf work take red marks dragging down the volume score.
 
 For a powerbuilder or powerlifter: skipping forearms and adductors is not a programming error. For a CrossFit athlete: the volume model has no concept of conditioning-based fatigue management that justifies fewer isolation sets.
+
+**Decision (2026-05-06):** Keep the current filter logic (`effectiveSets > 0 || landmarks.mev > 0`) — muscles with MEV thresholds are still considered relevant. However, muscles with `effectiveSets === 0` are displayed as **"Not trained"** (neutral, no severity color) rather than "Below maintenance" (red). The volume *score* still accounts for them (a powerlifter who does zero biceps work still takes a modest volume hit), but the UI no longer presents zero-set muscles as errors. The display change alone is meaningful because the current red "Below maintenance" label on untrained optional muscles reads as an actionable problem when it is a deliberate programming choice.
 
 ---
 
@@ -215,14 +219,17 @@ For a powerbuilder or powerlifter: skipping forearms and adductors is not a prog
 `src/lib/analysis/thresholds.ts:49–55`
 
 ```ts
+// Original (removed)
 volume: 0.30, session: 0.20, balance: 0.25, goalCoherence: 0.15, periodization: 0.10
+
+// Current (goalCoherence dimension removed)
+volume: 0.353, session: 0.235, balance: 0.294, periodization: 0.118
 ```
 
-Volume (30%) and balance (25%) together = 55% of total score. Both dimensions heavily penalize non-hypertrophy programming:
-- Volume: RP-derived muscle landmarks → penalizes powerlifting and OL
-- Balance: universal movement pattern requirements → penalizes sport-specific prep
-
-Periodization (10%) is too low to meaningfully reward multi-week structured programs.
+With goal coherence removed, the 15% weight was redistributed proportionally across the remaining four dimensions. Volume and balance together still represent ~65% of total score — the underlying calibration problem (both penalize non-hypertrophy programming) is unchanged. The remaining issues are:
+- Volume: RP-derived muscle landmarks → still penalizes powerlifting and OL
+- Balance: movement pattern display is now neutral (no severity, no score impact) — this dimension's remaining weight now reflects compound/isolation ratio and push:pull balance only
+- Periodization weight increased from 10% to 11.8%, a marginal improvement
 
 ---
 
@@ -234,32 +241,38 @@ Periodization (10%) is too low to meaningfully reward multi-week structured prog
 | Six core movement patterns | Sound | Standard FMS framework |
 | Push:pull thresholds (warnMax 1.5:1) | Sound | Correct for shoulder health |
 | Rep range bins (≤5 heavy, ≤12 moderate) | Acceptable | Slightly outdated (meta-analysis supports broader ranges) |
-| Single set of volume landmarks for all goals | Misleading | RP hypertrophy values applied universally |
-| Deload detection from set count | Misleading | Inverts OL/strength peak weeks |
-| No intensity tracking | Misleading | Renders periodization analysis near-useless for strength sports |
+| Single set of volume landmarks for all goals | Misleading | RP hypertrophy values applied universally — goal-conditional landmarks needed |
+| Deload detection from set count | Misleading | Inverts OL/strength peak weeks — fix via load field + reps heuristic (finding 1, open) |
+| No intensity tracking | Decided | Read `load` field with fuzzy parser; feeds deload/peak/periodization detection |
 | Frequency analysis absent | Misleading | Bro split = PPL in this system (for hypertrophy users) |
 | Session set caps | Questionable | Flag normal Sheiko/Smolov/CrossFit sessions |
 | Single-week program penalty | Questionable | Penalizes the most common real-world use pattern |
-| Goal archetype coverage | Questionable | Missing powerlifting, powerbuilding |
-| Movement pattern requirements unconditional | Questionable | Wrong for OL/strength-sport prep |
-| OL movement pattern detection | Misleading | Snatch/clean/jerk invisible to the system |
-| Peak week detection | Misleading | Max-intensity singles labeled "deload" |
-| Goal coherence = confidence | Questionable | Penalizes intentional blending |
+| Goal archetype coverage | Resolved | Goal inference removed entirely |
+| Movement pattern requirements unconditional | Resolved | Patterns now displayed neutrally — covered/absent, no severity, no score impact |
+| OL movement pattern detection | Misleading | Snatch/clean/jerk invisible to the system (still relevant for neutral display) |
+| Peak week detection | Misleading | Max-intensity singles labeled "deload" — fix pending finding 1 decision |
+| Goal coherence = confidence | Resolved | Goal coherence dimension removed |
+| Volume: zero-set muscles displayed as errors | Decided | Muscles with effectiveSets === 0 now display as "Not trained" (neutral), not "Below maintenance" |
 
 ---
 
 ## Recommended Resolution Paths
 
-**Short path (add disclaimers, fix the most dangerous outputs):**
-1. Add a visible banner: "This analysis is calibrated for general/hypertrophy training. Strength-sport programs will score lower by design."
-2. Fix front squat catalog entry — `movementPatterns: ["squat"]`, `tags: ["compound"]` — one data line, removes false RED for OL athletes.
-3. Suppress movement-pattern requirements when `goal.primary === "olympic_weightlifting"` or `"strength"`.
-4. Fix deload detection to exclude final weeks with a high proportion of 1-rep sets (classify as "peak week" instead).
-5. Fix single-week program penalty — normal usage should not score -30.
+**Decided scope (2026-05-06):** The system must serve all training styles correctly. The full path is the target. Items below are ordered by dependency — earlier items unblock later ones.
 
-**Full path (make analysis goal-aware):**
-1. Add `powerlifting` and `powerbuilding` archetypes.
-2. Introduce goal-conditional volume landmarks — separate `thresholds` sets per archetype family (hypertrophy, strength/OL, general).
-3. Add frequency analysis — per-muscle distinct-day count — as a new dimension or sub-score.
-4. Add intensity tracking — read the `load` field, classify exercises by rep-range-derived intensity zone, track zone distribution across weeks.
-5. Expand periodization detection to recognize block structure, conjugate, and DUP by pattern-matching across the intensity × volume matrix.
+**Tier 1 — No-dependency fixes (implement now):**
+1. Fix front squat catalog entry — `movementPatterns: ["squat"]`, `tags: ["compound"]` — one data line.
+2. Fix movement pattern warnings in `balance.ts:155–166` — remove severity pushes; patterns are already tracked in `movementPatternsCovered`/`movementPatternsMissing` and displayed neutrally in the UI. *(Decision already made, code not yet updated.)*
+3. Fix `score.ts:56` single-week `-30` penalty — the warning message is already informative; the score penalty is disproportionate.
+4. Display muscles with `effectiveSets === 0` as "Not trained" (neutral) in `toDisplayAnalysis.ts` rather than inheriting the "Below maintenance" red label.
+
+**Tier 2 — Requires fuzzy load parser (blocks finding 1 and periodization work):**
+5. Write a `parseLoad(s: string)` utility that extracts: `{ pct1rm?: number, rpe?: number, rir?: number, repMax?: number }` from free-text LLM output. Tolerant — unknown formats return `{}`.
+6. Fix deload/peak week detection in `periodization.ts` using parsed load + reps: classify a week as "peak" if average intensity is high (≥85% 1RM / ≤ RPE 8 by exclusion / rep-max ≤ 3) and volume drops ≥30%. Suppress "no deload" warning in this case.
+
+**Tier 3 — Full goal-aware analysis (requires style detection first):**
+7. Detect training style from section types, compound/isolation ratio, rep range distribution, and parsed load. Score each candidate style 0–1; primary = highest, secondary = second-highest, fallback = "Mixed / General" if top < 0.5.
+8. Add user-overridable style field on program — when set, bypasses inference entirely.
+9. Introduce goal-conditional volume landmark application (see finding 9): competition/compound movements evaluated against strength thresholds when style is strength/OL/powerbuilding; all other exercises use hypertrophy thresholds.
+10. Add frequency analysis — per-muscle distinct-day count — as a sub-score or informational note.
+11. Expand periodization detection to recognize block structure, conjugate, and DUP from the intensity × volume matrix (enabled by tier 2 load parser).

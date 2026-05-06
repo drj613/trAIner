@@ -2,6 +2,40 @@
 
 trAIner is a local-first workout PWA for one person on one device. It turns routines from human trainers or external LLMs into structured, editable, loggable workouts that work offline after install.
 
+## Using the App
+
+### Getting started
+
+1. Open the app and go to **Prompts** — copy the prompt template and paste it into any external LLM (ChatGPT, Claude, etc.).
+2. Describe your goals, schedule, and available equipment. The LLM returns a JSON workout program.
+3. Go to **Import**, paste the JSON, and step through exercise resolution. The app maps exercises to its built-in catalog and flags any it can't match so you can pick alternatives.
+4. Your program appears under **Routines**. Browse days, edit sets/reps, and reorder exercises inline.
+
+### Logging a workout
+
+- Go to **Today** to see the routine scheduled for the current day.
+- Tap any set to log reps and weight. The app tracks your history across sessions.
+- **History** shows a full log of past workouts. **Profile** shows a training heatmap and per-muscle volume breakdown.
+
+### Your data stays on your device
+
+trAIner stores everything — programs, logs, and settings — in your browser's IndexedDB. **Nothing is sent to any server.** There are no accounts, no cloud sync, and no telemetry.
+
+### How not to lose your progress
+
+Because everything is local, a few things can erase your data:
+
+| Action | Risk |
+|---|---|
+| Clearing browser site data / cookies | **Wipes all data** |
+| Using a different browser or profile | Data is not shared across browsers |
+| Private/incognito mode | Data is lost when the window closes |
+| Reinstalling or resetting the browser | **Wipes all data** |
+
+**Back up regularly.** Go to **Workspace** → *Export full workspace* to download a `.json` file. Keep it somewhere safe (cloud storage, email to yourself, etc.). To move to a new device or browser, use *Import workspace* on the new side.
+
+You can also take in-app **snapshots** (Workspace → *Snapshot current state*) as quick checkpoints stored alongside your data — but these are in IndexedDB too, so they are not a substitute for exporting a file.
+
 ## Local Workflow
 
 ```bash
