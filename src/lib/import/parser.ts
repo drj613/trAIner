@@ -1,6 +1,6 @@
 import { matchExercise } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
-import type { AliasDocument, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramSection } from "@/lib/programs/types";
+import type { AliasDocument, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 
 type ImportPayload = Record<string, unknown>;
@@ -10,7 +10,7 @@ export type ImportReview = {
   warnings: ImportWarning[];
 };
 
-export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = []): ImportReview {
+export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
   let payload: unknown;
   try {
     payload = JSON.parse(input);
@@ -22,13 +22,13 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
     throw new Error("The pasted JSON must be an object.");
   }
 
-  return normalizePayload(payload, profileSnapshot, aliases);
+  return normalizePayload(payload, profileSnapshot, aliases, userExercises);
 }
 
-export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = []): ImportReview {
+export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
   const warnings: ImportWarning[] = [];
   const now = new Date().toISOString();
-  const days = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases));
+  const days = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
 
   if (days.length === 0) {
     throw new Error("No day or sections were found in the pasted JSON.");
@@ -63,9 +63,9 @@ function detectDays(payload: ImportPayload): ImportPayload[] {
   return [];
 }
 
-function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: ImportWarning[], aliases: AliasDocument[]): ProgramDay {
+function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramDay {
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, `days.${fallbackDayNumber}.sections.${index}`, warnings, aliases)
+    normalizeSection(section, `days.${fallbackDayNumber}.sections.${index}`, warnings, aliases, userExercises)
   );
 
   return {
@@ -77,9 +77,9 @@ function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: I
   };
 }
 
-function normalizeSection(section: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[]): ProgramSection {
+function normalizeSection(section: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases)
+    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases, userExercises)
   );
 
   return {
@@ -90,9 +90,9 @@ function normalizeSection(section: ImportPayload, path: string, warnings: Import
   };
 }
 
-function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[]): ProgramGroup {
+function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases)
+    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases, userExercises)
   );
 
   return {
@@ -103,9 +103,9 @@ function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarn
   };
 }
 
-function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[]): ProgramExercise {
+function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramExercise {
   const name = stringFrom(exercise.name, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
-  const match = matchExercise(name, aliases);
+  const match = matchExercise(name, aliases, userExercises);
   const tags = isRecord(exercise.tags)
     ? {
         primary: stringArray(exercise.tags.primary),

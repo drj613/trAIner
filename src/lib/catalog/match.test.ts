@@ -55,3 +55,41 @@ describe("exercise catalog", () => {
     });
   });
 });
+
+describe("user exercise matching", () => {
+  const userExercises = [
+    { id: "user-abc123", name: "Copenhagen Plank", createdAt: "2026-05-06T00:00:00Z" },
+  ];
+  const userAliases = [
+    {
+      id: "alias-1",
+      alias: "Copenhagen Side Plank",
+      normalizedAlias: "copenhagen side plank",
+      canonicalExerciseId: "user-abc123",
+      createdAt: "2026-05-06T00:00:00Z",
+    },
+  ];
+
+  it("resolves a user exercise via a saved alias", () => {
+    const result = matchExercise("Copenhagen Side Plank", userAliases, userExercises);
+    expect(result).toMatchObject({
+      kind: "matched",
+      item: { id: "user-abc123", name: "Copenhagen Plank" },
+      via: "user-alias",
+    });
+  });
+
+  it("resolves a user exercise by exact normalized name when no alias exists", () => {
+    const result = matchExercise("Copenhagen Plank", [], userExercises);
+    expect(result).toMatchObject({
+      kind: "matched",
+      item: { id: "user-abc123", name: "Copenhagen Plank" },
+      via: "user-exercise",
+    });
+  });
+
+  it("returns unmatched when user exercises are empty and no catalog match", () => {
+    const result = matchExercise("Copenhagen Side Plank", [], []);
+    expect(result.kind).toBe("unmatched");
+  });
+});
