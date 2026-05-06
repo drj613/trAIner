@@ -521,40 +521,51 @@ export function TodayClient() {
 
     setDayResolving(true);
     const today = localDateString();
+    let cancelled = false;
 
     logRepo
       .listForProgram(activeProgram.id)
       .then((logs) => {
+        if (cancelled) return;
+
         // Check if there is already a log for today
         const todayLog = logs.find((l) => l.performedAt.slice(0, 10) === today);
         if (todayLog) {
           const todayDay = days.find((d) => d.id === todayLog.dayId);
           setResolvedDay(todayDay ?? days[0]);
+          setDayResolving(false);
           return;
         }
 
-        // Find the most recently logged day and advance to the next one
+        // Find the most recently logged day and advance to the next one,
+        // walking back through sorted logs to handle cases where the last
+        // logged day was removed from the program after editing.
         if (logs.length > 0) {
-          const sorted = [...logs].sort(
+          const sortedLogs = [...logs].sort(
             (a, b) => b.performedAt.localeCompare(a.performedAt)
           );
-          const lastDayId = sorted[0].dayId;
-          const lastIndex = days.findIndex((d) => d.id === lastDayId);
-          if (lastIndex !== -1) {
-            const nextIndex = (lastIndex + 1) % days.length;
-            setResolvedDay(days[nextIndex]);
+          const dayIds = new Set(days.map((d) => d.id));
+          const validLog = sortedLogs.find((log) => dayIds.has(log.dayId));
+          if (validLog) {
+            const idx = days.findIndex((d) => d.id === validLog.dayId);
+            setResolvedDay(days[(idx + 1) % days.length]);
+            setDayResolving(false);
             return;
           }
         }
 
-        // No logs at all — show day 0
+        // No valid previous day found (no logs, or last day was removed from program) — start at day 0
         setResolvedDay(days[0]);
+        setDayResolving(false);
       })
       .catch((e) => {
+        if (cancelled) return;
         console.error("[TodayClient] day resolution failed", e);
         setResolvedDay(days[0]);
-      })
-      .finally(() => setDayResolving(false));
+        setDayResolving(false);
+      });
+
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, activeProgram?.id]);
 

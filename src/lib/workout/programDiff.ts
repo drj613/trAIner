@@ -22,6 +22,16 @@ function flatExercises(day: ProgramDay): Map<string, ProgramExercise> {
   return map;
 }
 
+function tagsEqual(a: ProgramExercise["tags"], b: ProgramExercise["tags"]): boolean {
+  const sortedJoin = (arr: string[]) => [...arr].sort().join(",");
+  return (
+    sortedJoin(a.primary) === sortedJoin(b.primary) &&
+    sortedJoin(a.secondary) === sortedJoin(b.secondary) &&
+    sortedJoin(a.incidental) === sortedJoin(b.incidental) &&
+    sortedJoin(a.modifiers) === sortedJoin(b.modifiers)
+  );
+}
+
 function exercisesEqual(a: ProgramExercise, b: ProgramExercise): boolean {
   return (
     a.name === b.name &&
@@ -31,7 +41,7 @@ function exercisesEqual(a: ProgramExercise, b: ProgramExercise): boolean {
     a.rest === b.rest &&
     a.notes === b.notes &&
     a.tempo === b.tempo &&
-    JSON.stringify(a.tags) === JSON.stringify(b.tags)
+    tagsEqual(a.tags, b.tags)
   );
 }
 

@@ -101,30 +101,40 @@ export function DiffPage() {
         >
           Apply to
         </span>
-        {(["day", "week"] as const).map((s) => (
-          <label
-            key={s}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: scope === s ? "var(--fg)" : "var(--fg-3)",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="radio"
-              name="diff-scope"
-              value={s}
-              checked={scope === s}
-              onChange={() => setScope(s)}
-              style={{ accentColor: "var(--accent)" }}
-            />
-            {s === "day" ? "This day" : "Entire week"}
-          </label>
-        ))}
+        {(["day", "week"] as const).map((s) => {
+          const weekDisabled = s === "week" && !state?.original.weekNumber;
+          return (
+            <label
+              key={s}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                color: scope === s ? "var(--fg)" : "var(--fg-3)",
+                cursor: weekDisabled ? "not-allowed" : "pointer",
+                opacity: weekDisabled ? 0.5 : 1,
+              }}
+            >
+              <input
+                type="radio"
+                name="diff-scope"
+                value={s}
+                checked={scope === s}
+                disabled={weekDisabled}
+                onChange={() => setScope(s)}
+                style={{ accentColor: "var(--accent)" }}
+              />
+              {s === "day" ? "This day" : "Entire week"}
+              {weekDisabled && (
+                <span style={{ fontSize: 10, color: "var(--fg-4)" }}>
+                  (not available — day has no week number)
+                </span>
+              )}
+            </label>
+          );
+        })}
       </div>
 
       <DiffReview diffs={diffs} replacement={state.replacement} onAccept={handleAccept} onDiscard={handleDiscard} />

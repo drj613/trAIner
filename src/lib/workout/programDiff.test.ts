@@ -146,6 +146,43 @@ describe("H8: diffDays detects tempo and tags differences", () => {
   });
 });
 
+// Tag comparison is order-insensitive: same tags in different array order must NOT produce a diff
+describe("tag comparison is order-insensitive", () => {
+  const makeTagDay = (tags: { primary: string[]; secondary: string[]; incidental: string[]; modifiers: string[] }): ProgramDay => ({
+    id: "d1", dayNumber: 1, title: "Day",
+    sections: [{
+      id: "s1", type: "strength", name: "Strength",
+      groups: [{
+        id: "g1", type: "single",
+        exercises: [{
+          id: "e1", name: "Bench Press", sets: 3, reps: "10",
+          tags,
+        }],
+      }],
+    }],
+  });
+
+  it("does not report modified when primary tags are reordered", () => {
+    const a = makeTagDay({ primary: ["chest", "triceps"], secondary: [], incidental: [], modifiers: [] });
+    const b = makeTagDay({ primary: ["triceps", "chest"], secondary: [], incidental: [], modifiers: [] });
+    expect(diffDays(a, b)).toHaveLength(0);
+  });
+
+  it("does not report modified when secondary tags are reordered", () => {
+    const a = makeTagDay({ primary: ["chest"], secondary: ["front-delt", "core"], incidental: [], modifiers: [] });
+    const b = makeTagDay({ primary: ["chest"], secondary: ["core", "front-delt"], incidental: [], modifiers: [] });
+    expect(diffDays(a, b)).toHaveLength(0);
+  });
+
+  it("still reports modified when tag contents actually differ", () => {
+    const a = makeTagDay({ primary: ["chest", "triceps"], secondary: [], incidental: [], modifiers: [] });
+    const b = makeTagDay({ primary: ["chest", "biceps"], secondary: [], incidental: [], modifiers: [] });
+    const diffs = diffDays(a, b);
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0].type).toBe("modified");
+  });
+});
+
 // H9: remapExerciseIds must not collide when two sections have an exercise with the same name
 describe("H9: remapExerciseIds handles same-name exercises in different sections", () => {
   const makeTwoSectionDay = (): ProgramDay => ({
