@@ -1,9 +1,21 @@
 import type { BackupDocument } from "@/lib/programs/types";
-import { aliasRepo } from "@/lib/storage/aliasRepo";
-import { logRepo } from "@/lib/storage/logRepo";
 import { profileRepo } from "@/lib/storage/profileRepo";
 import { programRepo } from "@/lib/storage/programRepo";
+import { logRepo } from "@/lib/storage/logRepo";
+import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
+
+// Fix 2: Deep validation helpers
+function isArrayOfObjects(val: unknown): val is Record<string, unknown>[] {
+  return (
+    Array.isArray(val) &&
+    val.every((e) => e !== null && typeof e === "object" && !Array.isArray(e))
+  );
+}
+
+function hasIds(arr: Record<string, unknown>[]): boolean {
+  return arr.every((e) => typeof e["id"] === "string");
+}
 
 export async function exportBackup(): Promise<BackupDocument> {
   return {
@@ -25,41 +37,46 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   if (doc["version"] !== 1) {
     throw new Error(`Unsupported backup version: ${doc["version"]}. Expected 1.`);
   }
-  if (!Array.isArray(doc["programs"])) {
-    throw new Error("Invalid backup: 'programs' must be an array.");
+
+  // Fix 2: Deep array validation — elements must be non-null objects
+  if (!isArrayOfObjects(doc["programs"])) {
+    throw new Error("Invalid backup: 'programs' must be an array of objects.");
   }
-  if (!Array.isArray(doc["logs"])) {
-    throw new Error("Invalid backup: 'logs' must be an array.");
+  if (!hasIds(doc["programs"])) {
+    throw new Error("Invalid backup: 'programs' entries must have string ids.");
   }
-  if (!Array.isArray(doc["aliases"])) {
-    throw new Error("Invalid backup: 'aliases' must be an array.");
+
+  if (!isArrayOfObjects(doc["logs"])) {
+    throw new Error("Invalid backup: 'logs' must be an array of objects.");
+  }
+  if (!hasIds(doc["logs"])) {
+    throw new Error("Invalid backup: 'logs' entries must have string ids.");
+  }
+
+  if (!isArrayOfObjects(doc["aliases"])) {
+    throw new Error("Invalid backup: 'aliases' must be an array of objects.");
+  }
+  if (!hasIds(doc["aliases"])) {
+    throw new Error("Invalid backup: 'aliases' entries must have string ids.");
   }
 
   const b = backup as BackupDocument;
 
-  // C6: Clear all stores before writing to avoid additive restore
+  // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  await Promise.all([
-    db.clear("programs"),
-    db.clear("logs"),
-    db.clear("aliases"),
-    db.clear("profile"),
-  ]);
+  const tx = db.transaction(["profile", "programs", "logs", "aliases"], "readwrite");
 
-  if (b.profile) await profileRepo.save(b.profile);
-  await Promise.all(b.programs.map((program) => programRepo.save(program)));
-  await Promise.all(b.logs.map((log) => logRepo.save(log)));
-  await Promise.all(
-    b.aliases.map((alias) =>
-      aliasRepo.saveWithId({
-        id: alias.id,
-        alias: alias.alias,
-        normalizedAlias: alias.normalizedAlias,
-        canonicalExerciseId: alias.canonicalExerciseId,
-        createdAt: alias.createdAt,
-      })
-    )
-  );
+  tx.objectStore("profile").clear();
+  tx.objectStore("programs").clear();
+  tx.objectStore("logs").clear();
+  tx.objectStore("aliases").clear();
+
+  if (b.profile) tx.objectStore("profile").put(b.profile);
+  for (const p of b.programs) tx.objectStore("programs").put(p);
+  for (const l of b.logs) tx.objectStore("logs").put(l);
+  for (const a of b.aliases) tx.objectStore("aliases").put(a);
+
+  await tx.done;
 }
 
 export async function resetWorkspace(): Promise<void> {

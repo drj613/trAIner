@@ -22,7 +22,8 @@ export const aliasRepo = {
   },
 
   /** Used during backup restore to preserve original ids and normalizedAlias values. */
-  async saveWithId(alias: AliasDocument) {
+  async putRaw(alias: AliasDocument): Promise<void> {
+    if (!alias.id) throw new Error("Cannot restore alias without id");
     await (await getDb()).put("aliases", alias);
   },
 };

@@ -38,7 +38,7 @@ jest.mock("@/lib/storage/aliasRepo", () => ({
   aliasRepo: {
     list: jest.fn().mockResolvedValue([]),
     save: jest.fn().mockResolvedValue(undefined),
-    saveWithId: jest.fn().mockResolvedValue(undefined),
+    putRaw: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
