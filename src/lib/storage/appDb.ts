@@ -1,9 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { AliasDocument, BackupDocument, ProfileDocument, ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import type { AliasDocument, BackupDocument, ProfileDocument, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -32,6 +32,10 @@ export interface TrainerDb extends DBSchema {
     key: string;
     value: ExerciseMetricsDocument;
   };
+  userExercises: {
+    key: string;
+    value: UserExerciseDocument;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<TrainerDb>> | undefined;
@@ -58,6 +62,13 @@ export function getDb() {
         if (oldVersion < 2) {
           if (!db.objectStoreNames.contains("metrics")) {
             db.createObjectStore("metrics", { keyPath: "exerciseId" });
+          }
+        }
+
+        // v2 → v3: add userExercises store
+        if (oldVersion < 3) {
+          if (!db.objectStoreNames.contains("userExercises")) {
+            db.createObjectStore("userExercises", { keyPath: "id" });
           }
         }
       }

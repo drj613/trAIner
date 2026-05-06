@@ -141,6 +141,12 @@ export type AliasDocument = {
   createdAt: ISODate;
 };
 
+export type UserExerciseDocument = {
+  id: ID;
+  name: string;
+  createdAt: ISODate;
+};
+
 export type ImportWarning = {
   path: string;
   rawName?: string;
