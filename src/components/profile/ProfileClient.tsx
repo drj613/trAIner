@@ -246,6 +246,27 @@ export function ProfileClient() {
     });
   }, []);
 
+  const isCreating = !loading && !profile;
+
+  useEffect(() => {
+    if (isCreating) {
+      setDraft({
+        id: "local-profile",
+        name: "",
+        goals: [],
+        equipment: [],
+        constraints: [],
+        injuries: [],
+        history: [],
+        schedule: [],
+        preferences: [],
+        trainingAge: "",
+        defaultDaysPerWeek: 4,
+        updatedAt: "",
+      });
+    }
+  }, [isCreating]);
+
   function startEdit(section: EditingSection) {
     setDraft({ ...profile! });
     setEditingSection(section);
@@ -265,7 +286,96 @@ export function ProfileClient() {
   }
 
   if (loading) return <p className="muted">Loading profile…</p>;
-  if (!profile) return <p className="muted text-sm">No profile found. Import a program to create one.</p>;
+
+  if (isCreating) {
+    if (!draft) return null;
+
+    async function saveNewProfile() {
+      if (!draft) return;
+      await profileRepo.save({ ...draft, updatedAt: new Date().toISOString() });
+      await refresh();
+    }
+
+    return (
+      <div className="stack">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Set up your Profile</h2>
+          <button
+            type="button"
+            className="button"
+            style={{ padding: "4px 14px", fontSize: 12 }}
+            onClick={() => void saveNewProfile()}
+          >
+            Save profile
+          </button>
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Name</p>
+          <input
+            className="input w-full"
+            style={{ fontSize: 13, padding: "5px 9px" }}
+            placeholder="Your name"
+            autoFocus
+            value={draft.name}
+            onChange={(e) => setDraft((d) => d && { ...d, name: e.target.value })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Goals</p>
+          <EditableChips
+            items={draft.goals}
+            onChange={(goals) => setDraft((d) => d && { ...d, goals })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Equipment access</p>
+          <EditableChips
+            items={draft.equipment}
+            onChange={(equipment) => setDraft((d) => d && { ...d, equipment })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Injuries / limitations</p>
+          <EditableChips
+            items={draft.injuries ?? []}
+            onChange={(injuries) => setDraft((d) => d && { ...d, injuries })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Training age</p>
+          <input
+            className="input w-full"
+            style={{ fontSize: 12, padding: "3px 7px" }}
+            placeholder="e.g. 3 years, intermediate"
+            value={draft.trainingAge}
+            onChange={(e) => setDraft((d) => d && { ...d, trainingAge: e.target.value })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Default days / week</p>
+          <input
+            type="number"
+            min={1}
+            max={7}
+            className="input w-full"
+            style={{ fontSize: 12, padding: "3px 7px" }}
+            value={draft.defaultDaysPerWeek}
+            onChange={(e) =>
+              setDraft((d) => d && { ...d, defaultDaysPerWeek: Number(e.target.value) })
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) return null;
 
   const body = profile.body ?? {};
   const bodyHasData = Object.values(body).some((v) => v && v !== "—");
