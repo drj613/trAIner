@@ -73,7 +73,7 @@ export function PromptBuilderClient() {
             lineHeight: 1.5,
           }}
         >
-          No profile found. The prompt below won't include your goals, equipment, or constraints —
+          No profile found. The prompt below won&apos;t include your goals, equipment, or constraints —
           fill out your{" "}
           <Link to="/profile" style={{ color: "var(--accent)", fontWeight: 600 }}>
             Profile

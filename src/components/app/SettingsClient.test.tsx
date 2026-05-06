@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
+import { resetWorkspace } from "@/lib/backup/backup";
 
 jest.mock("@/lib/backup/backup", () => ({
   exportBackup: jest.fn().mockResolvedValue({ exportedAt: "2026-05-06T00:00:00.000Z", programs: [], logs: [], aliases: [] }),
@@ -43,7 +44,6 @@ describe("SettingsClient — reset workspace", () => {
   });
 
   it("reveals confirmation panel on first click without wiping", () => {
-    const { resetWorkspace } = require("@/lib/backup/backup");
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     expect(screen.getByRole("button", { name: /yes, wipe everything/i })).toBeInTheDocument();
@@ -59,7 +59,6 @@ describe("SettingsClient — reset workspace", () => {
   });
 
   it("calls resetWorkspace when the confirm button is clicked", async () => {
-    const { resetWorkspace } = require("@/lib/backup/backup");
     const reloadMock = jest.fn();
     Object.defineProperty(window, "location", { value: { reload: reloadMock }, writable: true });
 
