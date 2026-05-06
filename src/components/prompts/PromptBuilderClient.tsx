@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
@@ -59,6 +60,27 @@ export function PromptBuilderClient() {
 
   return (
     <div className="stack">
+      {!profile && (
+        <div
+          role="alert"
+          style={{
+            padding: "10px 14px",
+            background: "color-mix(in srgb, var(--warn, #e6b664) 12%, var(--bg-2))",
+            border: "1px solid var(--warn, #e6b664)",
+            borderRadius: "var(--r, 6px)",
+            fontSize: 13,
+            color: "var(--fg)",
+            lineHeight: 1.5,
+          }}
+        >
+          No profile found. The prompt below won't include your goals, equipment, or constraints —
+          fill out your{" "}
+          <Link to="/profile" style={{ color: "var(--accent)", fontWeight: 600 }}>
+            Profile
+          </Link>{" "}
+          first for a useful result.
+        </div>
+      )}
       <section>
         <p className="tx-up mb-2">Coach personas · select &amp; combine</p>
         <div className="grid grid-cols-2 gap-2">
