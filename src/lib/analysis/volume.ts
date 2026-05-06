@@ -2,7 +2,7 @@ import type { ProgramDay } from "@/lib/programs/types";
 import type { MuscleGroup, MuscleVolumeResult, Severity } from "./types";
 import { ALL_MUSCLE_GROUPS } from "./types";
 import { VOLUME_LANDMARKS } from "./thresholds";
-import { mapMuscleFull, getEffectiveSets } from "./muscles";
+import { mapMuscleExpanded, getEffectiveSets } from "./muscles";
 
 export function countWeeklyVolume(
   days: ProgramDay[],
@@ -34,7 +34,7 @@ function addMuscleVolume(
   weight: number,
 ): void {
   for (const label of muscles) {
-    const canonicals = mapMuscleFull(label);
+    const canonicals = mapMuscleExpanded(label);
     for (const canonical of canonicals) {
       volumes.set(canonical, (volumes.get(canonical) ?? 0) + sets * weight);
     }

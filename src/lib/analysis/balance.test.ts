@@ -98,6 +98,18 @@ describe("analyzeBalance", () => {
     expect(result.chestBackRatio).toBeCloseTo(1.0, 1);
   });
 
+  // Fix 2 — "full body" primary muscle expands to upper + lower buckets via mapMuscleExpanded
+  it("Fix 2: exercise tagged 'full body' contributes to both upper and lower body counters", () => {
+    const day = makeDay([
+      { id: "e1", name: "Burpees", sets: 4, primary: ["full body"] },
+    ]);
+    const result = analyzeBalance([day]);
+    // upperLowerRatio should be finite and non-zero (both buckets credited)
+    expect(result.upperLowerRatio).not.toBeNull();
+    expect(result.upperLowerRatio).not.toBe(Infinity);
+    expect(result.upperLowerRatio).toBeCloseTo(1.0, 1);
+  });
+
   // H17 — hip hinge exercises (catalog-based) count as legs, not "other"
   it("H17: hip_hinge catalog pattern contributes to legSets (classifyMovement returns legs)", () => {
     // Simulate a catalog-linked exercise with hinge movementPattern

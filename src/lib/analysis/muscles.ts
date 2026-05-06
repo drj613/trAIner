@@ -53,7 +53,7 @@ export function mapMuscle(label: string): MuscleGroup | undefined {
 
 const FULL_BODY_MUSCLES: MuscleGroup[] = ["quads", "glutes", "hamstrings", "lats", "upper_back", "core"];
 
-export function mapMuscleFull(label: string): MuscleGroup[] {
+export function mapMuscleExpanded(label: string): MuscleGroup[] {
   const lower = label.toLowerCase();
   if (lower === "full body") return FULL_BODY_MUSCLES;
   const single = CATALOG_TO_CANONICAL[lower];
@@ -121,14 +121,22 @@ export function detectMovementPatterns(
 ): CoreMovementPattern[] {
   const found: CoreMovementPattern[] = [];
 
-  // H2: Fallback when no catalog item — use primary muscle keywords
+  // H2: Fallback when no catalog item — use exact-set matching on primary muscle labels
   if (!catalogItem) {
     const primary = exercise.tags.primary.map((m) => m.toLowerCase());
-    if (primary.some((m) => m.includes("chest") || m.includes("tricep"))) found.push("horizontal_push");
-    if (primary.some((m) => m.includes("lat") || m.includes("back") || m.includes("bicep"))) found.push("horizontal_pull");
-    if (primary.some((m) => m.includes("delt") || m.includes("shoulder"))) found.push("vertical_push");
-    if (primary.some((m) => m.includes("hamstring") || m.includes("glute"))) found.push("hip_hinge");
-    if (primary.some((m) => m.includes("quad"))) found.push("squat");
+    const HORIZONTAL_PUSH_MUSCLES = new Set(["chest", "pectorals", "upper chest", "triceps"]);
+    const HORIZONTAL_PULL_MUSCLES = new Set(["lats", "upper back", "middle back", "mid back", "biceps", "rhomboids", "rear delts"]);
+    const VERTICAL_PUSH_MUSCLES = new Set(["front delts", "shoulders", "side delts"]);
+    const VERTICAL_PULL_MUSCLES = new Set(["lats", "upper back"]);
+    const HIP_HINGE_MUSCLES = new Set(["hamstrings", "glutes", "lower back"]);
+    const SQUAT_MUSCLES = new Set(["quadriceps", "quads"]);
+
+    if (primary.some((m) => HORIZONTAL_PUSH_MUSCLES.has(m))) found.push("horizontal_push");
+    if (primary.some((m) => HORIZONTAL_PULL_MUSCLES.has(m))) found.push("horizontal_pull");
+    if (primary.some((m) => VERTICAL_PUSH_MUSCLES.has(m))) found.push("vertical_push");
+    if (primary.some((m) => VERTICAL_PULL_MUSCLES.has(m))) found.push("vertical_pull");
+    if (primary.some((m) => HIP_HINGE_MUSCLES.has(m))) found.push("hip_hinge");
+    if (primary.some((m) => SQUAT_MUSCLES.has(m))) found.push("squat");
     return [...new Set(found)];
   }
 

@@ -2,7 +2,7 @@ import type { ProgramDay } from "@/lib/programs/types";
 import type { BalanceResult, MuscleGroup, Warning } from "./types";
 import { BALANCE_TARGETS, CORE_MOVEMENT_PATTERNS } from "./thresholds";
 import {
-  mapMuscle,
+  mapMuscleExpanded,
   getEffectiveSets,
   lookupCatalogExercise,
   classifyMovement,
@@ -44,34 +44,36 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
           if (category === "legs") legSets += sets;
 
           // C10: dedup per-exercise so multiple primary muscles mapping to the
-          // same bucket don't double-count sets
+          // same bucket don't double-count sets. mapMuscleExpanded handles "full body"
+          // by expanding it to multiple canonical muscles.
           const creditedBuckets = new Set<string>();
           for (const label of exercise.tags.primary) {
-            const muscle = mapMuscle(label);
-            if (!muscle) continue;
-            if (upper.includes(muscle) && !creditedBuckets.has("upper")) {
-              upperSets += sets;
-              creditedBuckets.add("upper");
-            }
-            if (lower.includes(muscle) && !creditedBuckets.has("lower")) {
-              lowerSets += sets;
-              creditedBuckets.add("lower");
-            }
-            if (muscle === "quads" && !creditedBuckets.has("quads")) {
-              quadSets += sets;
-              creditedBuckets.add("quads");
-            }
-            if (muscle === "hamstrings" && !creditedBuckets.has("hamstrings")) {
-              hamSets += sets;
-              creditedBuckets.add("hamstrings");
-            }
-            if (muscle === "chest" && !creditedBuckets.has("chest")) {
-              chestSets += sets;
-              creditedBuckets.add("chest");
-            }
-            if ((muscle === "lats" || muscle === "upper_back") && !creditedBuckets.has("back")) {
-              backSets += sets;
-              creditedBuckets.add("back");
+            const muscles = mapMuscleExpanded(label);
+            for (const muscle of muscles) {
+              if (upper.includes(muscle) && !creditedBuckets.has("upper")) {
+                upperSets += sets;
+                creditedBuckets.add("upper");
+              }
+              if (lower.includes(muscle) && !creditedBuckets.has("lower")) {
+                lowerSets += sets;
+                creditedBuckets.add("lower");
+              }
+              if (muscle === "quads" && !creditedBuckets.has("quads")) {
+                quadSets += sets;
+                creditedBuckets.add("quads");
+              }
+              if (muscle === "hamstrings" && !creditedBuckets.has("hamstrings")) {
+                hamSets += sets;
+                creditedBuckets.add("hamstrings");
+              }
+              if (muscle === "chest" && !creditedBuckets.has("chest")) {
+                chestSets += sets;
+                creditedBuckets.add("chest");
+              }
+              if ((muscle === "lats" || muscle === "upper_back") && !creditedBuckets.has("back")) {
+                backSets += sets;
+                creditedBuckets.add("back");
+              }
             }
           }
 

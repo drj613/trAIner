@@ -1,6 +1,6 @@
 import {
   mapMuscle,
-  mapMuscleFull,
+  mapMuscleExpanded,
   parseRepRange,
   repMidpoint,
   isCompound,
@@ -105,10 +105,10 @@ describe("mapMuscle — M7 serratus anterior fix", () => {
   });
 });
 
-// H12 — mapMuscleFull returns multiple muscles for "full body"
-describe("mapMuscleFull — H12 full body expansion", () => {
+// H12 — mapMuscleExpanded returns multiple muscles for "full body"
+describe("mapMuscleExpanded — H12 full body expansion", () => {
   it("returns multiple muscle groups for full body", () => {
-    const result = mapMuscleFull("full body");
+    const result = mapMuscleExpanded("full body");
     expect(result.length).toBeGreaterThan(1);
     expect(result).toContain("quads");
     expect(result).toContain("lats");
@@ -117,12 +117,12 @@ describe("mapMuscleFull — H12 full body expansion", () => {
   });
 
   it("returns a single-element array for normal muscle labels", () => {
-    expect(mapMuscleFull("chest")).toEqual(["chest"]);
-    expect(mapMuscleFull("hamstrings")).toEqual(["hamstrings"]);
+    expect(mapMuscleExpanded("chest")).toEqual(["chest"]);
+    expect(mapMuscleExpanded("hamstrings")).toEqual(["hamstrings"]);
   });
 
   it("returns empty array for unknown labels", () => {
-    expect(mapMuscleFull("unknown thing")).toEqual([]);
+    expect(mapMuscleExpanded("unknown thing")).toEqual([]);
   });
 });
 
@@ -186,6 +186,29 @@ describe("detectMovementPatterns — H2 fallback", () => {
 
   it("returns empty array for exercises with no recognizable primary muscles", () => {
     const exercise = makeExercise({ tags: { primary: ["neck"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toEqual([]);
+  });
+
+  // Fix 1 — exact-set matching: rear delts should be horizontal_pull, not vertical_push
+  it("detects horizontal_pull (not vertical_push) from rear delts primary muscle", () => {
+    const exercise = makeExercise({ tags: { primary: ["rear delts"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("horizontal_pull");
+    expect(result).not.toContain("vertical_push");
+  });
+
+  // Fix 1 — lats should produce both horizontal_pull and vertical_pull
+  it("detects both horizontal_pull and vertical_pull from lats primary muscle", () => {
+    const exercise = makeExercise({ tags: { primary: ["lats"], secondary: [], incidental: [], modifiers: [] } });
+    const result = detectMovementPatterns(undefined, exercise);
+    expect(result).toContain("horizontal_pull");
+    expect(result).toContain("vertical_pull");
+  });
+
+  // Fix 1 — "lateral" should NOT be matched (no false positive from substring)
+  it("does not detect any pattern from lateral (no substring false positive)", () => {
+    const exercise = makeExercise({ tags: { primary: ["lateral"], secondary: [], incidental: [], modifiers: [] } });
     const result = detectMovementPatterns(undefined, exercise);
     expect(result).toEqual([]);
   });
