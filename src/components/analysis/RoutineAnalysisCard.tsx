@@ -198,7 +198,7 @@ function FindingsPanel({ warnings, strengths }: { warnings: DisplayAnalysis["war
   );
 }
 
-type Tab = "volume" | "balance" | "sessions" | "findings" | "structure" | "coherence" | "periodization";
+type Tab = "volume" | "balance" | "sessions" | "findings" | "structure" | "periodization";
 
 export function RoutineAnalysisCard({
   analysis,
@@ -283,7 +283,7 @@ export function RoutineAnalysisCard({
             {tab === "volume" && <VolumeBars muscles={analysis.muscles} />}
             {tab === "balance" && <BalancePanel ratios={analysis.ratios} patterns={analysis.patterns} />}
             {tab === "sessions" && <SessionsPanel sessions={analysis.sessions} />}
-            {(tab === "findings" || tab === "coherence" || tab === "periodization" || tab === "structure") && (
+            {(tab === "findings" || tab === "periodization" || tab === "structure") && (
               <FindingsPanel warnings={analysis.warnings} strengths={analysis.strengths} />
             )}
           </div>

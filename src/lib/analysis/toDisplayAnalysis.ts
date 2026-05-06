@@ -26,6 +26,7 @@ function capitalize(s: string): string {
 
 function formatRatio(n: number | null): string {
   if (n === null) return "—";
+  if (!isFinite(n)) return "∞ : 1";
   return `${n.toFixed(2)} : 1`;
 }
 
@@ -49,7 +50,6 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
       ? `Sessions ${Math.min(...result.sessions.map((s) => s.estimatedMinutes))}–${Math.max(...result.sessions.map((s) => s.estimatedMinutes))} min`
       : "No sessions",
     balance: `Push:pull ${b.pushPullRatio?.toFixed(2) ?? "—"}:1`,
-    goalCoherence: `Rep distribution matches ${capitalize(result.goal.primary)} goal`,
     periodization: result.periodization.deloadDetected ? "Deload week detected" : "No deload week present",
   };
 
@@ -57,7 +57,6 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     { id: "volume",        label: "Volume",        score: dims.volume.score,        grade: dims.volume.grade,        status: DIM_STATUS(dims.volume.score),        note: dimNotes.volume },
     { id: "balance",       label: "Balance",       score: dims.balance.score,       grade: dims.balance.grade,       status: DIM_STATUS(dims.balance.score),       note: dimNotes.balance },
     { id: "structure",     label: "Structure",     score: dims.session.score,       grade: dims.session.grade,       status: DIM_STATUS(dims.session.score),       note: dimNotes.session },
-    { id: "coherence",     label: "Coherence",     score: dims.goalCoherence.score, grade: dims.goalCoherence.grade, status: DIM_STATUS(dims.goalCoherence.score), note: dimNotes.goalCoherence },
     { id: "periodization", label: "Periodization", score: dims.periodization.score, grade: dims.periodization.grade, status: DIM_STATUS(dims.periodization.score), note: dimNotes.periodization },
   ];
 
@@ -69,7 +68,9 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     mavHi: mv.landmarks.mavHigh,
     mrv: mv.landmarks.mrv,
     status: mv.severity,
-    flag: mv.severity === "red" ? "above_mrv" : mv.severity === "yellow" ? "below_mev" : undefined,
+    flag: mv.effectiveSets > mv.landmarks.mrv ? "above_mrv"
+        : mv.effectiveSets < mv.landmarks.mev ? "below_mev"
+        : undefined,
   }));
 
   const bt = BALANCE_TARGETS;
@@ -119,16 +120,13 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     msg: w.message,
   }));
 
-  const goal = result.goal;
-
   return {
     durationMs,
     overall: { score: result.overall.score, grade: result.overall.grade },
     fingerprint: {
-      primary: capitalize(goal.primary),
-      secondary: goal.secondary ? capitalize(goal.secondary) : null,
-      label: `${capitalize(goal.primary)}-focused · ${result.sessions.length}d/wk`,
-      confidence: goal.confidence,
+      primary: `${result.sessions.length}d/wk`,
+      secondary: null,
+      label: `${result.sessions.length}-day program`,
     },
     dimensions,
     muscles,

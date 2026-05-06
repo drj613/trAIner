@@ -119,6 +119,7 @@ export type WorkoutLogDocument = {
 
 export type WorkoutLogEntry = {
   exerciseId: ID;
+  exerciseName?: string;
   canonicalExerciseId?: ID;
   sets: WorkoutSetLog[];
 };
@@ -129,6 +130,7 @@ export type WorkoutSetLog = {
   reps?: number;
   rpe?: number;
   notes?: string;
+  rawCell?: string;
 };
 
 export type AliasDocument = {
@@ -141,6 +143,7 @@ export type AliasDocument = {
 
 export type ImportWarning = {
   path: string;
+  rawName?: string;
   message: string;
   suggestions?: ExerciseSuggestion[];
 };

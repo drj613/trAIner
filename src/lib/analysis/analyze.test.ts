@@ -9,8 +9,6 @@ describe("analyzeProgram", () => {
     expect(result.overall.score).toBeLessThanOrEqual(100);
     expect(result.muscleVolumes.length).toBeGreaterThan(0);
     expect(result.sessions.length).toBe(3);
-    expect(result.goal.primary).toBeTruthy();
-    expect(result.goal.fingerprint).toBeTruthy();
   });
 
   it("scores balanced program higher than imbalanced", () => {

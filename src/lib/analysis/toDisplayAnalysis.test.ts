@@ -7,7 +7,6 @@ const makeResult = (): AnalysisResult => ({
     volume:        { name: "Volume",        score: 91, grade: "A" },
     session:       { name: "Structure",     score: 88, grade: "A" },
     balance:       { name: "Balance",       score: 78, grade: "B" },
-    goalCoherence: { name: "Coherence",     score: 83, grade: "B" },
     periodization: { name: "Periodization", score: 65, grade: "C" },
   },
   muscleVolumes: [{
@@ -28,10 +27,6 @@ const makeResult = (): AnalysisResult => ({
     movementPatternsMissing: ["hip_hinge"],
     warnings: [],
   },
-  goal: {
-    primary: "hypertrophy", secondary: "strength",
-    confidence: 0.88, fingerprint: "Hypertrophy-focused",
-  },
   periodization: {
     weeksDetected: 4, volumePattern: "increasing",
     deloadDetected: false, warnings: [],
@@ -51,13 +46,13 @@ describe("toDisplayAnalysis", () => {
 
   it("maps fingerprint", () => {
     const d = toDisplayAnalysis(makeResult(), 184);
-    expect(d.fingerprint.primary).toBe("Hypertrophy");
-    expect(d.fingerprint.secondary).toBe("Strength");
+    expect(typeof d.fingerprint.primary).toBe("string");
+    expect(d.fingerprint.secondary).toBeNull();
   });
 
-  it("produces 5 dimension entries", () => {
+  it("produces 4 dimension entries", () => {
     const d = toDisplayAnalysis(makeResult(), 184);
-    expect(d.dimensions).toHaveLength(5);
+    expect(d.dimensions).toHaveLength(4);
     expect(d.dimensions[0].id).toBe("volume");
   });
 

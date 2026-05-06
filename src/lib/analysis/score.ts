@@ -1,11 +1,10 @@
-import type { DimensionScore, Grade, MuscleVolumeResult, SessionResult, BalanceResult, GoalSignature, PeriodizationResult } from "./types";
+import type { DimensionScore, Grade, MuscleVolumeResult, SessionResult, BalanceResult, PeriodizationResult } from "./types";
 import { DIMENSION_WEIGHTS } from "./thresholds";
 
 export function computeOverallScore(dimensions: {
   volume: DimensionScore;
   session: DimensionScore;
   balance: DimensionScore;
-  goalCoherence: DimensionScore;
   periodization: DimensionScore;
 }): DimensionScore {
   const w = DIMENSION_WEIGHTS;
@@ -13,7 +12,6 @@ export function computeOverallScore(dimensions: {
     dimensions.volume.score * w.volume +
     dimensions.session.score * w.session +
     dimensions.balance.score * w.balance +
-    dimensions.goalCoherence.score * w.goalCoherence +
     dimensions.periodization.score * w.periodization
   );
   return { name: "Overall", score, grade: scoreToGrade(score) };
@@ -51,11 +49,6 @@ export function scoreBalanceDimension(result: BalanceResult): DimensionScore {
   score -= result.warnings.filter((w) => w.severity === "yellow").length * 8;
   score = Math.max(0, Math.min(100, score));
   return { name: "Balance", score, grade: scoreToGrade(score) };
-}
-
-export function scoreGoalCoherence(goal: GoalSignature): DimensionScore {
-  const score = Math.round(goal.confidence * 100);
-  return { name: "Goal Coherence", score, grade: scoreToGrade(score) };
 }
 
 export function scorePeriodizationDimension(result: PeriodizationResult): DimensionScore {

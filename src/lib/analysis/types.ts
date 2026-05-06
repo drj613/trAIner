@@ -15,10 +15,6 @@ export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
   "rotator_cuff", "neck",
 ];
 
-export type GoalArchetype =
-  | "hypertrophy" | "strength" | "olympic_weightlifting"
-  | "general_fitness" | "crossfit" | "rehab";
-
 export type Severity = "green" | "yellow" | "red";
 export type Grade = "A" | "B" | "C" | "D" | "F";
 
@@ -64,13 +60,6 @@ export type BalanceResult = {
   warnings: Warning[];
 };
 
-export type GoalSignature = {
-  primary: GoalArchetype;
-  secondary: GoalArchetype | null;
-  confidence: number;
-  fingerprint: string;
-};
-
 export type PeriodizationResult = {
   weeksDetected: number;
   volumePattern: "static" | "increasing" | "wave" | "decreasing";
@@ -90,13 +79,11 @@ export type AnalysisResult = {
     volume: DimensionScore;
     session: DimensionScore;
     balance: DimensionScore;
-    goalCoherence: DimensionScore;
     periodization: DimensionScore;
   };
   muscleVolumes: MuscleVolumeResult[];
   sessions: SessionResult[];
   balance: BalanceResult;
-  goal: GoalSignature;
   periodization: PeriodizationResult;
   warnings: Warning[];
 };
@@ -148,7 +135,7 @@ export type FindingDisplay = {
 export type DisplayAnalysis = {
   durationMs: number;
   overall: { score: number; grade: string };
-  fingerprint: { primary: string; secondary: string | null; label: string; confidence: number };
+  fingerprint: { primary: string; secondary: string | null; label: string };
   dimensions: DimensionDisplay[];
   muscles: MuscleDisplay[];
   ratios: RatioDisplay[];
