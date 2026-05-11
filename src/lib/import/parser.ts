@@ -33,7 +33,9 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   const baseDays = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
 
   if (baseDays.length === 0) {
-    throw new Error("No day or sections were found in the pasted JSON.");
+    throw new Error(
+      'No workout days found. Make sure you\'re pasting the complete AI response — it should contain a "days" array. Go to Prompts to regenerate the prompt if needed.'
+    );
   }
 
   const lengthWeeks = optionalNumber(payload.weeks);

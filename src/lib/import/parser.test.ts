@@ -227,3 +227,18 @@ describe("multi-week import", () => {
     expect(review.program.overrides[0].scope).toBe("week");
   });
 });
+
+describe("parseProgramJson error messages", () => {
+  it("throws an actionable message when no days are found", () => {
+    expect(() => parseProgramJson(JSON.stringify({ title: "Test" }))).toThrow(
+      /No workout days found/
+    );
+    expect(() => parseProgramJson(JSON.stringify({ title: "Test" }))).toThrow(
+      /"days" array/
+    );
+  });
+
+  it("throws a JSON parse error for invalid JSON", () => {
+    expect(() => parseProgramJson("not json")).toThrow(/not valid JSON/);
+  });
+});
