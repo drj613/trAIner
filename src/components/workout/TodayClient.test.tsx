@@ -3,6 +3,23 @@ import { MemoryRouter } from "react-router-dom";
 import { TodayClient } from "./TodayClient";
 import type { ProfileDocument } from "@/lib/programs/types";
 
+const program = {
+  id: "p1", title: "Test", source: "import" as const, active: true,
+  days: [{
+    id: "day-1", dayNumber: 1, title: "Push",
+    sections: [{
+      id: "s1", name: "Main", type: "strength" as const,
+      groups: [{ id: "g1", type: "single" as const, exercises: [{
+        id: "e1", name: "Bench Press", sets: 3, reps: "8-10",
+        tags: { primary: ["chest"], secondary: [], incidental: [], modifiers: [] }
+      }]}]
+    }]
+  }],
+  overrides: [],
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
 let mockProfile: ProfileDocument | undefined = undefined;
 let mockPrograms: ProfileDocument[] = []; // will be ProgramDocument[] but declared loosely
 
@@ -17,7 +34,10 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
 }));
 
 jest.mock("@/lib/storage/logRepo", () => ({
-  logRepo: { listForProgram: jest.fn().mockResolvedValue([]) },
+  logRepo: {
+    listForProgram: jest.fn().mockResolvedValue([]),
+    getForDay: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 beforeEach(() => {
@@ -68,5 +88,25 @@ describe("TodayClient", () => {
     render(<MemoryRouter><TodayClient /></MemoryRouter>);
     const step1Link = screen.getByRole("link", { name: /Fill out your Profile/i });
     expect(step1Link.textContent).toMatch(/✓/);
+  });
+});
+
+describe("TodayClient format guide", () => {
+  it("renders a format guide summary element in the day header", async () => {
+    mockPrograms = [program];
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    await screen.findByText("Push"); // wait for day to render
+    expect(screen.getByText(/format guide/i)).toBeInTheDocument();
+  });
+
+  it("format guide details contains example entries", async () => {
+    mockPrograms = [program];
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    await screen.findByText("Push");
+    const summary = screen.getByText(/format guide/i);
+    const details = summary.closest("details");
+    expect(details?.textContent).toMatch(/70×8/);
+    expect(details?.textContent).toMatch(/skip/);
+    expect(details?.textContent).toMatch(/pain/);
   });
 });

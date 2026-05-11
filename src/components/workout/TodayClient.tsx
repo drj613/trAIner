@@ -479,6 +479,37 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
             <Sparkles size={13} aria-hidden />
           </button>
         </div>
+        {/* Format guide */}
+        <details style={{ marginTop: 6 }}>
+          <summary
+            style={{
+              fontSize: 10, color: "var(--fg-4)", cursor: "pointer",
+              fontFamily: "var(--font-mono)", userSelect: "none", listStyle: "none",
+            }}
+          >
+            format guide
+          </summary>
+          <div
+            style={{
+              paddingTop: 5, fontSize: 10, color: "var(--fg-3)",
+              fontFamily: "var(--font-mono)", lineHeight: 2,
+            }}
+          >
+            {[
+              ["70×8", "weight × reps (done)"],
+              ["+70×8", "personal record"],
+              ["bw×15", "bodyweight"],
+              ["70×8!", "failed / missed rep"],
+              ["skip", "skipped set"],
+              ["pain", "pain noted"],
+            ].map(([ex, desc]) => (
+              <span key={ex} style={{ display: "inline-flex", gap: 4, marginRight: 14, alignItems: "baseline" }}>
+                <code style={{ background: "var(--bg-3)", padding: "0 4px", borderRadius: 3 }}>{ex}</code>
+                <span style={{ color: "var(--fg-4)", fontSize: 9 }}>{desc}</span>
+              </span>
+            ))}
+          </div>
+        </details>
       </div>
 
       {/* Sections */}
