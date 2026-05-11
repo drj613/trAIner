@@ -120,16 +120,6 @@ const ExerciseRow = memo(function ExerciseRow({
           </span>
           <button
             className="btn ghost"
-            onClick={onReplaceExercise}
-            style={{ padding: "3px 6px", flexShrink: 0 }}
-            aria-label={`Replace ${exercise.name} from catalogue`}
-            title="Replace from catalogue"
-            type="button"
-          >
-            <ArrowLeftRight size={13} aria-hidden />
-          </button>
-          <button
-            className="btn ghost"
             onClick={onOpenHistory}
             style={{ padding: "3px 6px", flexShrink: 0 }}
             aria-label={`History for ${exercise.name}`}
@@ -137,6 +127,16 @@ const ExerciseRow = memo(function ExerciseRow({
             type="button"
           >
             <History size={13} aria-hidden />
+          </button>
+          <button
+            className="btn ghost"
+            onClick={onReplaceExercise}
+            style={{ padding: "3px 6px", flexShrink: 0 }}
+            aria-label={`Replace ${exercise.name} from catalogue`}
+            title="Replace from catalogue"
+            type="button"
+          >
+            <ArrowLeftRight size={13} aria-hidden />
           </button>
         </div>
         {prescription && (
@@ -409,6 +409,8 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     setCells((prev) => addSet(prev, exId));
   }, []);
 
+  const handleReplaceExercise = useCallback((exId: string) => setReplaceTarget(exId), []);
+
   function handleApplyReplacement(replacement: ProgramDay) {
     const stored = storePendingDiff(program.id, day, replacement);
     if (!stored) {
@@ -423,7 +425,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   function handleReplaceConfirm(item: ExerciseCatalogItem) {
     if (!replaceTarget) return;
     const newDay = swapExercise(day, replaceTarget, item);
-    setReplaceTarget(null);
+    setReplaceTarget(null); // clear before navigate — keep sync if handleApplyReplacement ever becomes async
     handleApplyReplacement(newDay);
   }
 
@@ -488,7 +490,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}
-          onReplaceExercise={(exerciseId) => setReplaceTarget(exerciseId)}
+          onReplaceExercise={handleReplaceExercise}
         />
       ))}
 
