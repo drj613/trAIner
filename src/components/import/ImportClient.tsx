@@ -189,16 +189,16 @@ export function ImportClient() {
         <section className="panel stack">
           <h2 className="font-bold">{review.program.title}</h2>
           <p className="muted text-sm">
-            {review.program.days.length} day(s) · {exerciseCount} exercise(s)
+            {review.program.days.length} {review.program.days.length === 1 ? "day" : "days"} · {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
           </p>
           {resolvedCount > 0 && (
             <p className="text-sm" style={{ color: "var(--good, green)" }}>
-              {resolvedCount} exercise(s) mapped to catalog
+              {resolvedCount} {resolvedCount === 1 ? "exercise" : "exercises"} mapped to catalog
             </p>
           )}
           {customCount > 0 && (
             <p className="text-sm muted">
-              {customCount} exercise(s) imported as custom (no history tracking)
+              {customCount} {customCount === 1 ? "exercise" : "exercises"} imported as custom (no history tracking)
             </p>
           )}
         </section>
