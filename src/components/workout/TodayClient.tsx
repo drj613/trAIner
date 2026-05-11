@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
+import { ArrowLeftRight, CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
@@ -16,6 +16,9 @@ import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
 import { getRenderableDays } from "@/lib/programs/overrides";
+import { ExerciseReplaceSheet } from "./ExerciseReplaceSheet";
+import { swapExercise } from "@/lib/workout/exerciseSwap";
+import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 
 function localDateString(): string {
   const d = new Date();
@@ -84,12 +87,14 @@ const ExerciseRow = memo(function ExerciseRow({
   onCellChange,
   onAddSet,
   onOpenHistory,
+  onReplaceExercise,
 }: {
   exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
   cells: string[];
   onCellChange: (i: number, v: string) => void;
   onAddSet: () => void;
   onOpenHistory: () => void;
+  onReplaceExercise: () => void;
 }) {
   const prescription = [
     exercise.sets ? `${exercise.sets}×` : "",
@@ -113,6 +118,16 @@ const ExerciseRow = memo(function ExerciseRow({
           <span style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", flex: 1 }}>
             {exercise.name}
           </span>
+          <button
+            className="btn ghost"
+            onClick={onReplaceExercise}
+            style={{ padding: "3px 6px", flexShrink: 0 }}
+            aria-label={`Replace ${exercise.name} from catalogue`}
+            title="Replace from catalogue"
+            type="button"
+          >
+            <ArrowLeftRight size={13} aria-hidden />
+          </button>
           <button
             className="btn ghost"
             onClick={onOpenHistory}
@@ -194,12 +209,14 @@ function SectionCard({
   onCellChange,
   onAddSet,
   onOpenHistory,
+  onReplaceExercise,
 }: {
   section: ProgramSection;
   cells: CellMap;
   onCellChange: (exId: string, i: number, v: string) => void;
   onAddSet: (exId: string) => void;
   onOpenHistory: (exerciseName: string, exerciseId: string) => void;
+  onReplaceExercise: (exerciseId: string) => void;
 }) {
   const { cls, glyph } = sectionKind(section.type);
   return (
@@ -244,6 +261,7 @@ function SectionCard({
               onCellChange={(i, v) => onCellChange(ex.id, i, v)}
               onAddSet={() => onAddSet(ex.id)}
               onOpenHistory={() => onOpenHistory(ex.name, ex.id)}
+              onReplaceExercise={() => onReplaceExercise(ex.id)}
             />
           ))}
         </GroupRail>
@@ -291,6 +309,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     exerciseName: string;
     rows: ExerciseSessionRow[];
   } | null>(null);
+  const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
     try {
@@ -401,6 +420,13 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     navigate(`/programs/${program.id}/diff`);
   }
 
+  function handleReplaceConfirm(item: ExerciseCatalogItem) {
+    if (!replaceTarget) return;
+    const newDay = swapExercise(day, replaceTarget, item);
+    setReplaceTarget(null);
+    handleApplyReplacement(newDay);
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Day header */}
@@ -462,6 +488,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}
+          onReplaceExercise={(exerciseId) => setReplaceTarget(exerciseId)}
         />
       ))}
 
@@ -477,6 +504,12 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           exerciseName={historyDrawer.exerciseName}
           rows={historyDrawer.rows}
           onClose={() => setHistoryDrawer(null)}
+        />
+      )}
+      {replaceTarget && (
+        <ExerciseReplaceSheet
+          onSelect={handleReplaceConfirm}
+          onClose={() => setReplaceTarget(null)}
         />
       )}
 
