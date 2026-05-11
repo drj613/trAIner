@@ -53,7 +53,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{program.title}</h1>
-          <p className="muted">{days.length} rendered day(s)</p>
+          <p className="muted">{days.length} rendered {days.length === 1 ? "day" : "days"}</p>
         </div>
         <div className="flex gap-2">
           <Link className="button secondary" to={`/programs/${id}/edit`}>
@@ -68,7 +68,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
             Map
           </Link>
           <Link className="button" to={`/programs/${id}/log`}>
-            Log
+            Start today →
           </Link>
         </div>
       </div>

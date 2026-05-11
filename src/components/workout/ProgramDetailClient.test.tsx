@@ -38,4 +38,19 @@ describe("ProgramDetailClient analysis integration", () => {
       expect(screen.getByText(/Analysis/)).toBeInTheDocument();
     });
   });
+
+  it('shows "Start today →" link instead of "Log"', async () => {
+    render(<MemoryRouter><ProgramDetailClient id="p1" /></MemoryRouter>);
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "Start today →" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Log" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("pluralises rendered days correctly for 0 days", async () => {
+    render(<MemoryRouter><ProgramDetailClient id="p1" /></MemoryRouter>);
+    await waitFor(() => {
+      expect(screen.getByText("0 rendered days")).toBeInTheDocument();
+    });
+  });
 });
