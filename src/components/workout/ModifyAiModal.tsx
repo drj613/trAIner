@@ -166,10 +166,25 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
                 userSelect: "text",
               }}
             >
-              {prompt}
+              {(() => {
+                const placeholder = "[Describe what you want to change here]";
+                const idx = prompt.indexOf(placeholder);
+                if (idx === -1) return prompt;
+                return (
+                  <>
+                    {prompt.slice(0, idx)}
+                    <mark style={{ background: "rgba(230,182,100,0.25)", color: "var(--warn)", borderRadius: 3, padding: "0 2px", fontWeight: 600 }}>
+                      {placeholder}
+                    </mark>
+                    {prompt.slice(idx + placeholder.length)}
+                  </>
+                );
+              })()}
             </pre>
-            <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--fg-4)", lineHeight: 1.4 }}>
-              Paste into Claude, ChatGPT, or any AI. Edit the last line to describe what you want changed.
+            <p style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.4 }}>
+              <span style={{ color: "var(--warn)", fontWeight: 600, fontFamily: "var(--font-mono)" }}>↑ Replace the highlighted line</span>
+              {" "}
+              <span style={{ color: "var(--fg-3)" }}>with your actual request, then paste into Claude or ChatGPT.</span>
             </p>
           </div>
 

@@ -96,4 +96,29 @@ describe("ModifyAiModal", () => {
     await user.click(screen.getByRole("button", { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("wraps the placeholder in a highlighted element", () => {
+    render(
+      <ModifyAiModal
+        currentDay={mockDay}
+        programId="prog-1"
+        onApply={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    const placeholder = screen.getByText(/Describe what you want to change here/i);
+    expect(placeholder.tagName).toMatch(/mark|strong|em|span/i);
+  });
+
+  it("renders the replace instruction note", () => {
+    render(
+      <ModifyAiModal
+        currentDay={mockDay}
+        programId="prog-1"
+        onApply={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(screen.getByText(/replace/i)).toBeInTheDocument();
+  });
 });
