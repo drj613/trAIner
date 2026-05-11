@@ -61,7 +61,7 @@ node_modules/
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
 
 # Local SQLite files
 data/*.sqlite
@@ -75,3 +75,5 @@ data/*.sqlite-wal
 .codex
 .pi/
 .claude/settings.local.json
+
+.playwright-cli/
