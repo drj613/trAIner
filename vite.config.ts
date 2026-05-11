@@ -9,6 +9,5 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
-  // Uncomment and set to your GitHub repo name if deploying to username.github.io/reponame:
-  // base: "/trainer-app/",
+  base: "/trAIner/",
 });
