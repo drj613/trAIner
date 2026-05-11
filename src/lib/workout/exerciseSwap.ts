@@ -6,6 +6,11 @@ export function swapExercise(
   targetId: string,
   item: ExerciseCatalogItem,
 ): ProgramDay {
+  const found = day.sections.some((s) =>
+    s.groups.some((g) => g.exercises.some((e) => e.id === targetId))
+  );
+  if (!found) return day;
+
   return {
     ...day,
     sections: day.sections.map((section) => ({
@@ -18,6 +23,7 @@ export function swapExercise(
             ...ex,
             name: item.name,
             canonicalExerciseId: item.id,
+            // catalog items have no incidental/modifier data; reset to empty on swap
             tags: {
               primary: item.muscles.primary,
               secondary: item.muscles.secondary,

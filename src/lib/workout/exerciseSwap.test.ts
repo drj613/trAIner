@@ -87,8 +87,8 @@ describe("swapExercise", () => {
     expect(bench.id).toBe("ex-2");
   });
 
-  it("returns the day unchanged when targetId is not found", () => {
+  it("returns the original day reference when targetId is not found", () => {
     const result = swapExercise(mockDay, "ex-999", catalogItem);
-    expect(result).toEqual(mockDay);
+    expect(result).toBe(mockDay); // same reference, not just equal
   });
 });
