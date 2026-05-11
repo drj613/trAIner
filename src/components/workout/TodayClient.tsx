@@ -644,14 +644,55 @@ export function TodayClient() {
   }
 
   if (!activeProgram || !resolvedDay) {
+    const profileDone = !!profile;
+    const steps: Array<{ label: string; to: string; done: boolean }> = [
+      { label: "Fill out your Profile", to: "/profile", done: profileDone },
+      { label: "Choose a coach on Prompts — copy the generated prompt", to: "/prompts", done: false },
+      { label: "Paste the AI's JSON response on Import", to: "/import", done: false },
+    ];
     return (
       <>
         {banner}
-        <div className="panel stack">
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Today</h1>
-          <p style={{ color: "var(--fg-3)" }}>
-            Import a program to start logging workouts.
-          </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 6px", color: "var(--fg)" }}>Today</h1>
+            <p style={{ color: "var(--fg-3)", fontSize: 13, margin: 0 }}>
+              No active program yet. Follow these steps to get started:
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {steps.map(({ label, to, done }, i) => (
+              <Link
+                key={to}
+                to={to}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 12px",
+                  background: done ? "var(--bg-2)" : "var(--bg-1)",
+                  border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
+                  borderRadius: "var(--r, 6px)",
+                  textDecoration: "none", color: "var(--fg)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 22, height: 22, borderRadius: 11, flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: done ? 12 : 11,
+                    fontFamily: "var(--font-mono)", fontWeight: 700,
+                    background: done ? "var(--good)" : "var(--bg-3)",
+                    color: done ? "#fff" : "var(--fg-3)",
+                    border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
+                  }}
+                >
+                  {done ? "✓" : i + 1}
+                </span>
+                <span style={{ flex: 1, fontSize: 13, lineHeight: 1.35 }}>{label}</span>
+                <span aria-hidden style={{ color: "var(--fg-4)", fontSize: 11 }}>→</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </>
     );
