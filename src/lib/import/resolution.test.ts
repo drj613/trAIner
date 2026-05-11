@@ -210,6 +210,62 @@ describe("applyResolutions", () => {
   });
 });
 
+describe("applyResolutions multi-week", () => {
+  it("patches all days that share a dayNumber when the program has multiple weeks", () => {
+    const makeDay = (id: string, dayNumber: number, weekNumber: number) => ({
+      id,
+      dayNumber,
+      weekNumber,
+      title: `Day ${dayNumber}`,
+      sections: [
+        {
+          id: `s-${id}`,
+          type: "strength" as const,
+          name: "S",
+          groups: [
+            {
+              id: `g-${id}`,
+              type: "single" as const,
+              exercises: [
+                {
+                  id: `e-${id}`,
+                  name: "Moon Lunge",
+                  canonicalExerciseId: undefined,
+                  tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const program: ProgramDocument = {
+      id: "p1",
+      title: "Multi-Week",
+      source: "import",
+      active: true,
+      overrides: [],
+      createdAt: "2026-05-06T00:00:00Z",
+      updatedAt: "2026-05-06T00:00:00Z",
+      days: [
+        makeDay("w1d1", 1, 1),
+        makeDay("w2d1", 1, 2),
+        makeDay("w3d1", 1, 3),
+      ],
+    };
+
+    const resolutions = [
+      { path: "days.1.sections.0.groups.0.exercises.0", canonicalId: "moon-lunge" },
+    ];
+    const patched = applyResolutions(program, resolutions);
+
+    expect(patched.days[0].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("moon-lunge");
+    expect(patched.days[1].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("moon-lunge");
+    expect(patched.days[2].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("moon-lunge");
+  });
+});
+
 describe("CUSTOM_ID sentinel", () => {
   it("applyResolutions skips exercises resolved to CUSTOM_ID (no canonicalExerciseId set)", () => {
     const program = makeProgram("Incline Treadmill Walk");

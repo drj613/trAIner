@@ -1,6 +1,6 @@
 import { matchExercise } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
-import type { AliasDocument, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
+import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 
 type ImportPayload = Record<string, unknown>;
@@ -28,20 +28,27 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
 export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
   const warnings: ImportWarning[] = [];
   const now = new Date().toISOString();
-  const days = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+  const programId = newId("program");
 
-  if (days.length === 0) {
+  const baseDays = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+
+  if (baseDays.length === 0) {
     throw new Error("No day or sections were found in the pasted JSON.");
   }
 
+  const lengthWeeks = optionalNumber(payload.weeks);
+  const days = expandDays(baseDays, lengthWeeks);
+  const overrides = parseOverrides(payload, programId, warnings, aliases, userExercises);
+
   const program: ProgramDocument = {
-    id: newId("program"),
+    id: programId,
     title: stringFrom(payload.program_name ?? payload.programName ?? payload.title, "Imported Program"),
     description: optionalString(payload.description),
     source: "import",
     active: true,
+    ...(lengthWeeks !== undefined ? { lengthWeeks } : {}),
     days,
-    overrides: [],
+    overrides,
     import: {
       rawJson: payload,
       warnings
@@ -52,6 +59,44 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   };
 
   return { program, warnings };
+}
+
+function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): ProgramDay[] {
+  if (!lengthWeeks || lengthWeeks <= 1) return baseDays;
+  const expanded: ProgramDay[] = [];
+  for (let week = 1; week <= lengthWeeks; week++) {
+    for (const base of baseDays) {
+      expanded.push({ ...base, id: newId("day"), weekNumber: week });
+    }
+  }
+  return expanded;
+}
+
+function parseOverrides(
+  payload: ImportPayload,
+  programId: ID,
+  _warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[]
+): ProgramOverride[] {
+  if (!Array.isArray(payload.overrides)) return [];
+  const now = new Date().toISOString();
+  return payload.overrides.filter(isRecord).map((raw) => {
+    const localWarnings: ImportWarning[] = [];
+    const days = arrayOfRecords(raw.days).map((day, index) =>
+      normalizeDay(day, index + 1, localWarnings, aliases, userExercises)
+    );
+    const scope: "week" | "day" = stringFrom(raw.scope, "week") === "day" ? "day" : "week";
+    return {
+      id: newId("override"),
+      scope,
+      programId,
+      weekNumber: optionalNumber(raw.weekNumber),
+      replacement: days,
+      reason: optionalString(raw.reason),
+      createdAt: now,
+    };
+  });
 }
 
 function detectDays(payload: ImportPayload): ImportPayload[] {

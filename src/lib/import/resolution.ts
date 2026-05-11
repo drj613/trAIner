@@ -88,8 +88,8 @@ export function applyResolutions(
     };
   }
 
-  function patchDay(d: ProgramDay, index: number): ProgramDay {
-    const dayPath = `days.${index + 1}`;
+  function patchDay(d: ProgramDay, _index: number): ProgramDay {
+    const dayPath = `days.${d.dayNumber}`;
     return {
       ...d,
       sections: d.sections.map((s, i) =>

@@ -111,6 +111,18 @@ describe("buildSchemaBlock", () => {
   it("mentions JSON in the output", () => {
     expect(buildSchemaBlock()).toContain("JSON");
   });
+  it("includes weeks field for multi-week programs", () => {
+    expect(buildSchemaBlock()).toContain('"weeks"');
+  });
+  it("includes overrides array for week-specific modifications", () => {
+    expect(buildSchemaBlock()).toContain('"overrides"');
+  });
+  it("instructs the LLM to use days as a base template", () => {
+    expect(buildSchemaBlock()).toMatch(/base.*week|base.*template|repeating/i);
+  });
+  it("instructs the LLM to omit weeks and overrides for single-week programs", () => {
+    expect(buildSchemaBlock()).toMatch(/omit.*week|single.week|single-week/i);
+  });
 });
 
 describe("assemblePrompt", () => {

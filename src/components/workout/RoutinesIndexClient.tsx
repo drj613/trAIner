@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLocalData } from "@/components/app/LocalDataProvider";
-import { programRepo } from "@/lib/storage/programRepo";
 import { programStatus, programDaysPerWeek, programLengthWeeks } from "@/lib/programs/routineMeta";
 import type { ProgramDocument } from "@/lib/programs/types";
 
@@ -432,7 +431,7 @@ function RoutineRow({
 }
 
 export function RoutinesIndexClient() {
-  const { programs, loading, refresh } = useLocalData();
+  const { programs, loading, activateProgram, duplicateProgram, removeProgram } = useLocalData();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -445,8 +444,7 @@ export function RoutinesIndexClient() {
 
   async function handleActivate(id: string) {
     try {
-      await programRepo.activate(id);
-      await refresh();
+      await activateProgram(id);
     } catch (err) {
       console.error("Failed to activate routine", err);
     }
@@ -454,7 +452,7 @@ export function RoutinesIndexClient() {
 
   async function handleDuplicate(id: string) {
     try {
-      const copy = await programRepo.duplicate(id);
+      const copy = await duplicateProgram(id);
       navigate(`/programs/${copy.id}`);
     } catch (err) {
       console.error("Failed to duplicate routine", err);
@@ -464,8 +462,7 @@ export function RoutinesIndexClient() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this routine?")) return;
     try {
-      await programRepo.remove(id);
-      await refresh();
+      await removeProgram(id);
     } catch (err) {
       console.error("Failed to delete routine", err);
     }

@@ -1,7 +1,10 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { RoutinesIndexClient } from "./RoutinesIndexClient";
-import { programRepo } from "@/lib/storage/programRepo";
+
+const mockActivateProgram = jest.fn().mockResolvedValue(undefined);
+const mockDuplicateProgram = jest.fn().mockResolvedValue({ id: "p-copy" });
+const mockRemoveProgram = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
   useLocalData: () => ({
@@ -27,16 +30,10 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
       },
     ],
     loading: false,
-    refresh: jest.fn().mockResolvedValue(undefined),
+    activateProgram: mockActivateProgram,
+    duplicateProgram: mockDuplicateProgram,
+    removeProgram: mockRemoveProgram,
   }),
-}));
-
-jest.mock("@/lib/storage/programRepo", () => ({
-  programRepo: {
-    activate: jest.fn().mockResolvedValue(undefined),
-    duplicate: jest.fn().mockResolvedValue({ id: "p-copy" }),
-    remove: jest.fn().mockResolvedValue(undefined),
-  },
 }));
 
 beforeEach(() => {
@@ -70,14 +67,14 @@ describe("RoutinesIndexClient", () => {
     });
   });
 
-  it("clicking Duplicate in the row menu calls programRepo.duplicate and navigates", async () => {
+  it("clicking Duplicate in the row menu calls duplicateProgram and navigates", async () => {
     render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
     // Open the menu for "Power Look Draft" (p2)
     const menuButtons = screen.getAllByRole("button", { name: /open menu/i });
     fireEvent.click(menuButtons[0]); // first row = p2 (p1 is in active card, not in rows)
     fireEvent.click(screen.getByText("Duplicate"));
     await waitFor(() => {
-      expect((programRepo.duplicate as jest.Mock)).toHaveBeenCalledWith("p2");
+      expect(mockDuplicateProgram).toHaveBeenCalledWith("p2");
     });
   });
 });

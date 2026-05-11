@@ -1,24 +1,19 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { ProfileClient } from "./ProfileClient";
-import { profileRepo } from "@/lib/storage/profileRepo";
 
 jest.mock("@/lib/storage/logRepo", () => ({
   logRepo: { list: jest.fn().mockResolvedValue([]) },
 }));
 
-jest.mock("@/lib/storage/profileRepo", () => ({
-  profileRepo: { save: jest.fn().mockResolvedValue(undefined) },
-}));
-
-const mockRefresh = jest.fn().mockResolvedValue(undefined);
+const mockSaveProfile = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
   useLocalData: () => ({
     profile: undefined,
     loading: false,
     error: null,
-    refresh: mockRefresh,
+    saveProfile: mockSaveProfile,
   }),
 }));
 
@@ -31,22 +26,20 @@ describe("ProfileClient — no profile", () => {
     expect(screen.getByPlaceholderText(/your name/i)).toBeInTheDocument();
   });
 
-  it("saves and refreshes when the Save profile button is clicked", async () => {
+  it("saves when the Save profile button is clicked", async () => {
     render(<MemoryRouter><ProfileClient /></MemoryRouter>);
     fireEvent.change(screen.getByPlaceholderText(/your name/i), {
       target: { value: "Alex" },
     });
     fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
     await waitFor(() => {
-      expect(profileRepo.save).toHaveBeenCalledWith(
+      expect(mockSaveProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Alex",
           id: "local-profile",
-          updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
           defaultDaysPerWeek: 4,
         })
       );
-      expect(mockRefresh).toHaveBeenCalled();
     });
   });
 });

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Copy } from "lucide-react";
+import { ArrowRight, Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
   buildProfileBlock,
@@ -49,13 +49,18 @@ export function PromptBuilderClient() {
       return `## Coach: ${p.name}\n${text}`;
     });
 
+    const synthesisBlock =
+      selectedPersonas.length > 1
+        ? `## Multi-Coach Synthesis\n\nYou are drawing on the combined expertise of ${selectedPersonas.length} coaches: ${selectedPersonas.map((p) => p.name).join(", ")}. Do not treat their approaches as separate, competing voices. Synthesize their philosophies into a single unified coaching perspective. Where their principles align, reinforce them. Where they differ, find the underlying shared intent and blend them into a coherent whole — not a patchwork of isolated styles.`
+        : "";
+
     const sectionBlocks: string[] = [];
     if (blocks.profile && profile) sectionBlocks.push(buildProfileBlock(profile));
     if (blocks.routine) sectionBlocks.push(buildRoutineBlock(program));
     if (blocks.constraints && profile) sectionBlocks.push(buildConstraintsBlock(profile));
     if (blocks.schema) sectionBlocks.push(buildSchemaBlock());
 
-    return assemblePrompt([...personaBlocks, ...sectionBlocks]);
+    return assemblePrompt([synthesisBlock, ...personaBlocks, ...sectionBlocks]);
   }, [selectedPersonas, editedBlocks, blocks, profile, program]);
 
   return (
@@ -161,6 +166,9 @@ export function PromptBuilderClient() {
         >
           <Copy size={14} /> Copy prompt · {prompt.length.toLocaleString()} chars
         </button>
+        <Link to="/import" className="button mt-2 w-full justify-center">
+          <ArrowRight size={14} /> Go to Import
+        </Link>
       </section>
     </div>
   );

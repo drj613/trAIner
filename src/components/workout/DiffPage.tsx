@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { programRepo } from "@/lib/storage/programRepo";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { DiffReview } from "@/components/workout/DiffReview";
 import { diffDays } from "@/lib/workout/programDiff";
 import { loadPendingDiff, clearPendingDiff } from "@/lib/workout/pendingDiff";
@@ -9,6 +10,7 @@ import type { ProgramDay } from "@/lib/programs/types";
 export function DiffPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { saveProgram } = useLocalData();
   const [state, setState] = useState<{ original: ProgramDay; replacement: ProgramDay } | null>(null);
   const [scope, setScope] = useState<"day" | "week">("day");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -53,10 +55,7 @@ export function DiffPage() {
               reason: "Modified with AI",
               createdAt: new Date().toISOString(),
             };
-      await programRepo.save({
-        ...program,
-        overrides: [...program.overrides, override],
-      });
+      await saveProgram({ ...program, overrides: [...program.overrides, override] });
       clearPendingDiff();
       navigate("/today", { replace: true });
     } catch (e) {

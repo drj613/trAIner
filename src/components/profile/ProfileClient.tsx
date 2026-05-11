@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
-import { profileRepo } from "@/lib/storage/profileRepo";
 import { logRepo } from "@/lib/storage/logRepo";
 import { buildHeatmapCells } from "@/lib/analytics/trainingHeatmap";
 import { TrainingHeatmap } from "./TrainingHeatmap";
@@ -234,7 +233,7 @@ function ProfileCard({
 }
 
 export function ProfileClient() {
-  const { profile, loading, refresh } = useLocalData();
+  const { profile, loading, saveProfile } = useLocalData();
   const [heatmapCells, setHeatmapCells] = useState<HeatmapCell[][] | null>(null);
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [draft, setDraft] = useState<ProfileDocument | null>(null);
@@ -279,8 +278,7 @@ export function ProfileClient() {
 
   async function saveEdit() {
     if (!draft) return;
-    await profileRepo.save(draft);
-    await refresh();
+    await saveProfile(draft);
     setEditingSection(null);
     setDraft(null);
   }
@@ -295,8 +293,7 @@ export function ProfileClient() {
       setSaving(true);
       setSaveError(null);
       try {
-        await profileRepo.save({ ...draft, updatedAt: new Date().toISOString() });
-        await refresh();
+        await saveProfile(draft);
       } catch {
         setSaveError("Failed to save profile. Please try again.");
         setSaving(false);

@@ -11,6 +11,11 @@ type LocalDataContextValue = {
   loading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
+  saveProgram: (program: ProgramDocument) => Promise<void>;
+  removeProgram: (id: string) => Promise<void>;
+  activateProgram: (id: string) => Promise<void>;
+  duplicateProgram: (id: string) => Promise<ProgramDocument>;
+  saveProfile: (profile: ProfileDocument) => Promise<void>;
 };
 
 const LocalDataContext = createContext<LocalDataContextValue | undefined>(undefined);
@@ -35,6 +40,46 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
     }
   }
 
+  async function saveProgram(program: ProgramDocument) {
+    const now = new Date().toISOString();
+    const stamped: ProgramDocument = { ...program, updatedAt: now, createdAt: program.createdAt || now };
+    await programRepo.save(stamped);
+    setPrograms((prev) => {
+      const idx = prev.findIndex((p) => p.id === stamped.id);
+      return idx >= 0 ? prev.map((p, i) => (i === idx ? stamped : p)) : [...prev, stamped];
+    });
+  }
+
+  async function removeProgram(id: string) {
+    await programRepo.remove(id);
+    setPrograms((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function activateProgram(id: string) {
+    await programRepo.activate(id);
+    const now = new Date().toISOString();
+    setPrograms((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, active: true, status: "active" as const, updatedAt: now }
+          : { ...p, active: false, status: (p.status === "archived" ? "archived" : "draft") as "archived" | "draft", updatedAt: now }
+      )
+    );
+  }
+
+  async function duplicateProgram(id: string): Promise<ProgramDocument> {
+    const copy = await programRepo.duplicate(id);
+    setPrograms((prev) => [...prev, copy]);
+    return copy;
+  }
+
+  async function saveProfile(profile: ProfileDocument) {
+    const now = new Date().toISOString();
+    const stamped: ProfileDocument = { ...profile, updatedAt: now };
+    await profileRepo.save(stamped);
+    setProfile(stamped);
+  }
+
   useEffect(() => {
     refresh();
   }, []);
@@ -46,7 +91,7 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   );
 
   return (
-    <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh }}>
+    <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh, saveProgram, removeProgram, activateProgram, duplicateProgram, saveProfile }}>
       {children}
     </LocalDataContext.Provider>
   );

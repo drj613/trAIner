@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, ChevronRight, Trash2, X } from "lucide-react";
-import { programRepo } from "@/lib/storage/programRepo";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import type {
@@ -387,6 +387,7 @@ function DayEditorStep({
 
 export function RoutineBuilderClient() {
   const navigate = useNavigate();
+  const { saveProgram } = useLocalData();
   const [step, setStep] = useState<"setup" | "days" | "edit">("setup");
   const [draft, setDraft] = useState<Draft>({ name: "", description: "", days: [] });
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
@@ -453,7 +454,7 @@ export function RoutineBuilderClient() {
     setSaving(true);
     try {
       const program = draftToProgram(draft);
-      await programRepo.save(program);
+      await saveProgram(program);
       navigate(`/programs/${program.id}`);
     } finally {
       setSaving(false);

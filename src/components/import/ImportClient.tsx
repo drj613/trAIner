@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Save } from "lucide-react";
 import { parseProgramJson, type ImportReview } from "@/lib/import/parser";
 import {
@@ -11,21 +12,22 @@ import {
   type ResolutionItem,
 } from "@/lib/import/resolution";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
-import { programRepo } from "@/lib/storage/programRepo";
 import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ResolutionStep } from "./ResolutionStep";
 import type { UserExerciseDocument } from "@/lib/programs/types";
 
 type Step = "paste" | "resolve" | "confirm";
 
 export function ImportClient() {
+  const { saveProgram } = useLocalData();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("paste");
   const [json, setJson] = useState("");
   const [review, setReview] = useState<ImportReview | undefined>();
   const [parseError, setParseError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [userExercises, setUserExercises] = useState<UserExerciseDocument[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -115,12 +117,8 @@ export function ImportClient() {
           ),
       );
 
-      await programRepo.save(resolvedProgram);
-      setSavedMessage(`"${resolvedProgram.title}" saved.`);
-      setStep("paste");
-      setJson("");
-      setReview(undefined);
-      setResolutions({});
+      await saveProgram(resolvedProgram);
+      navigate(`/programs/${resolvedProgram.id}`);
     } catch (err) {
       setSaveError(
         err instanceof Error ? err.message : "Failed to save program.",
@@ -137,11 +135,6 @@ export function ImportClient() {
           <h1 className="text-2xl font-bold">Import</h1>
           <p className="muted">Paste JSON from an AI coach or external source.</p>
         </div>
-        {savedMessage && (
-          <p className="text-sm font-bold" style={{ color: "var(--accent)" }}>
-            {savedMessage}
-          </p>
-        )}
         <textarea
           className="input min-h-72 font-mono text-xs"
           value={json}
