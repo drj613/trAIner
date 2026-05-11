@@ -94,9 +94,12 @@ export async function restoreBackup(backup: unknown): Promise<void> {
 }
 
 export async function resetWorkspace(): Promise<void> {
+  resetDbConnection(); // close cached connection first — deleteDatabase blocks on open connections
   return new Promise((resolve, reject) => {
     const req = indexedDB.deleteDatabase(DB_NAME);
-    req.onsuccess = () => { resetDbConnection(); resolve(); };
+    req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
+    req.onblocked = () =>
+      reject(new Error("Reset blocked — close other trAIner tabs and try again."));
   });
 }

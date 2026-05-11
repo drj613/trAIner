@@ -136,4 +136,32 @@ describe("resetWorkspace", () => {
 
     await expect(promise).rejects.toBe(error);
   });
+
+  it("calls resetDbConnection BEFORE deleteDatabase to avoid blocking", async () => {
+    const callOrder: string[] = [];
+    (resetDbConnection as jest.Mock).mockImplementation(() => callOrder.push("reset"));
+    const deleteDatabase = jest.fn().mockImplementation(() => {
+      callOrder.push("delete");
+      return {};
+    });
+    Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
+
+    const promise = resetWorkspace();
+    const req = deleteDatabase.mock.results[0].value;
+    req.onsuccess?.();
+    await promise;
+
+    expect(callOrder).toEqual(["reset", "delete"]);
+  });
+
+  it("rejects with a user-readable message when deleteDatabase is blocked", async () => {
+    const deleteDatabase = jest.fn().mockReturnValue({});
+    Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
+
+    const promise = resetWorkspace();
+    const req = deleteDatabase.mock.results[0].value;
+    req.onblocked?.();
+
+    await expect(promise).rejects.toThrow(/blocked/i);
+  });
 });

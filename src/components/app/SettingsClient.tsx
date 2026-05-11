@@ -74,6 +74,7 @@ export function SettingsClient() {
   const [snapshotting, setSnapshotting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [wiping, setWiping] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -262,11 +263,13 @@ export function SettingsClient() {
                 disabled={wiping}
                 onClick={async () => {
                   setWiping(true);
+                  setResetError(null);
                   try {
                     await resetWorkspace();
                     window.location.reload();
-                  } catch {
+                  } catch (e) {
                     setWiping(false);
+                    setResetError(e instanceof Error ? e.message : "Reset failed. Please try again.");
                   }
                 }}
                 style={{
@@ -292,6 +295,11 @@ export function SettingsClient() {
                 Cancel
               </button>
             </div>
+            {resetError && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>
+                {resetError}
+              </p>
+            )}
           </div>
         )}
       </div>
