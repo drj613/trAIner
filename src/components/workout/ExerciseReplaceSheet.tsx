@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
@@ -10,6 +12,7 @@ type Props = {
 export function ExerciseReplaceSheet({ onSelect, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
+  // state resets naturally on each open because the parent mounts/unmounts this component
   const [selected, setSelected] = useState<string | null>(null);
 
   const muscles = useMemo(() => {
