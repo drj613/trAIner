@@ -1,4 +1,4 @@
-import { swapExercise } from "./exerciseSwap";
+import { swapExercise, addExercise } from "./exerciseSwap";
 import type { ProgramDay } from "@/lib/programs/types";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 
@@ -90,5 +90,62 @@ describe("swapExercise", () => {
   it("returns the original day reference when targetId is not found", () => {
     const result = swapExercise(mockDay, "ex-999", catalogItem);
     expect(result).toBe(mockDay); // same reference, not just equal
+  });
+});
+
+describe("addExercise", () => {
+  it("appends a new single group to the target section", () => {
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const groups = result.sections[0].groups;
+    expect(groups).toHaveLength(2);
+    expect(groups[1].type).toBe("single");
+  });
+
+  it("new exercise has name and canonicalExerciseId from catalog item", () => {
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const ex = result.sections[0].groups[1].exercises[0];
+    expect(ex.name).toBe("Leg Press");
+    expect(ex.canonicalExerciseId).toBe("cat-leg-press");
+  });
+
+  it("new exercise gets default sets:3 reps:'8-10'", () => {
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const ex = result.sections[0].groups[1].exercises[0];
+    expect(ex.sets).toBe(3);
+    expect(ex.reps).toBe("8-10");
+  });
+
+  it("new exercise and group have unique string ids", () => {
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const newGroup = result.sections[0].groups[1];
+    expect(typeof newGroup.id).toBe("string");
+    expect(newGroup.id).not.toBe("grp-1");
+    expect(typeof newGroup.exercises[0].id).toBe("string");
+  });
+
+  it("new exercise tags come from catalog item muscles", () => {
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const tags = result.sections[0].groups[1].exercises[0].tags;
+    expect(tags.primary).toEqual(["quads"]);
+    expect(tags.secondary).toEqual(["glutes"]);
+    expect(tags.incidental).toEqual([]);
+    expect(tags.modifiers).toEqual([]);
+  });
+
+  it("returns original day reference when sectionId is not found", () => {
+    const result = addExercise(mockDay, "sec-999", catalogItem);
+    expect(result).toBe(mockDay);
+  });
+
+  it("leaves other sections untouched", () => {
+    const day2: ProgramDay = {
+      ...mockDay,
+      sections: [
+        mockDay.sections[0],
+        { id: "sec-2", type: "warmup", name: "Warm-up", groups: [] },
+      ],
+    };
+    const result = addExercise(day2, "sec-1", catalogItem);
+    expect(result.sections[1].groups).toHaveLength(0);
   });
 });
