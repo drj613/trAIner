@@ -154,7 +154,7 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -1332,8 +1332,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -1472,7 +1472,7 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -1725,7 +1725,7 @@
       ],
       "secondary": [
         "upper back",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -2020,8 +2020,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -2307,7 +2307,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -2972,8 +2972,8 @@
         "serratus anterior"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -3559,7 +3559,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -3581,8 +3581,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -5722,8 +5722,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -5840,8 +5840,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -5865,8 +5865,8 @@
         "shoulders"
       ],
       "secondary": [
-        "rhomboids",
-        "trapezius"
+        "mid back",
+        "traps"
       ]
     },
     "tags": [
@@ -5890,7 +5890,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6073,7 +6073,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -6167,7 +6167,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6191,7 +6191,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -6213,7 +6213,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6239,7 +6239,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6377,8 +6377,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -6475,7 +6475,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6593,7 +6593,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6640,7 +6640,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6709,7 +6709,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6732,7 +6732,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6755,7 +6755,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -6803,8 +6803,8 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -7251,8 +7251,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -7299,8 +7299,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -7809,8 +7809,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -7833,7 +7833,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -8063,8 +8063,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -8156,9 +8156,9 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
-        "rear deltoids"
+        "traps",
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -8227,7 +8227,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -8369,8 +8369,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -8467,7 +8467,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -8540,8 +8540,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -8564,8 +8564,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -8775,7 +8775,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -8822,8 +8822,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -9002,7 +9002,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -9850,7 +9850,7 @@
     "name": "deep push up",
     "aliases": [],
     "equipment": [
-      "dumbbell (used as handles for deeper range)"
+      "dumbbell"
     ],
     "movementPatterns": [
       "strength"
@@ -10001,7 +10001,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "forearms",
         "core"
       ]
@@ -10257,7 +10257,7 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi"
+        "lats"
       ]
     },
     "tags": [
@@ -10814,7 +10814,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -10839,7 +10839,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -10977,7 +10977,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -11368,7 +11368,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -11554,7 +11554,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -11578,7 +11578,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -11623,8 +11623,8 @@
         "serratus anterior"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -11671,7 +11671,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -11763,7 +11763,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -11876,7 +11876,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -12037,8 +12037,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -12060,8 +12060,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -12132,7 +12132,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -12225,7 +12225,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -12590,7 +12590,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -12613,7 +12613,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "rotator cuff"
       ]
     },
@@ -12705,8 +12705,8 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi",
-        "rhomboids"
+        "lats",
+        "mid back"
       ]
     },
     "tags": [
@@ -12731,8 +12731,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -13418,7 +13418,7 @@
         "chest"
       ],
       "secondary": [
-        "latissimus dorsi",
+        "lats",
         "triceps"
       ]
     },
@@ -13467,7 +13467,7 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi"
+        "lats"
       ]
     },
     "tags": [
@@ -13490,7 +13490,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -13512,8 +13512,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -13558,8 +13558,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -13585,7 +13585,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -13835,8 +13835,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -13881,7 +13881,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -13994,8 +13994,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -14547,8 +14547,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -14891,7 +14891,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -15384,7 +15384,7 @@
       ],
       "secondary": [
         "rotator cuff",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -15617,7 +15617,7 @@
       ],
       "secondary": [
         "shoulders",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -16157,7 +16157,7 @@
       ],
       "secondary": [
         "rotator cuff",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -16801,7 +16801,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -17014,7 +17014,7 @@
       ],
       "secondary": [
         "biceps",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -17106,7 +17106,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -17253,8 +17253,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -17277,8 +17277,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -19947,8 +19947,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -20064,7 +20064,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -20411,8 +20411,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -20550,8 +20550,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -20830,8 +20830,8 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -20966,8 +20966,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -20992,8 +20992,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -21878,7 +21878,8 @@
     "name": "monster walk",
     "aliases": [],
     "equipment": [
-      "body weight (with resistance band)"
+      "bodyweight",
+      "resistance band"
     ],
     "movementPatterns": [
       "strength"
@@ -22240,7 +22241,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -22401,7 +22402,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "forearms",
         "core"
       ]
@@ -23228,7 +23229,7 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -23300,7 +23301,7 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids",
+        "shoulders",
         "core"
       ]
     },
@@ -23559,7 +23560,7 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -23708,8 +23709,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -23732,8 +23733,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -24051,8 +24052,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -24381,7 +24382,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -24404,7 +24405,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -24593,8 +24594,8 @@
         "traps"
       ],
       "secondary": [
-        "rhomboids",
-        "deltoids"
+        "mid back",
+        "shoulders"
       ]
     },
     "tags": [
@@ -24644,8 +24645,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -24917,7 +24918,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -25414,7 +25415,7 @@
         "upper back"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "sternocleidomastoid"
       ]
     },
@@ -25460,7 +25461,7 @@
         "upper back"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "sternocleidomastoid"
       ]
     },
@@ -26521,8 +26522,8 @@
         "serratus anterior"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -26730,7 +26731,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -26798,8 +26799,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -28241,7 +28242,7 @@
         "chest"
       ],
       "secondary": [
-        "latissimus dorsi",
+        "lats",
         "triceps"
       ]
     },
@@ -28762,8 +28763,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [

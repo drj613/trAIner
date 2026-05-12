@@ -109,6 +109,11 @@ const MUSCLE_ALIASES = new Map([
   ["back", "upper back"],
   ["serratus anterior", "serratus anterior"],
   ["upper back", "upper back"],
+  ["trapezius", "traps"],
+  ["deltoids", "shoulders"],
+  ["rear deltoids", "rear delts"],
+  ["latissimus dorsi", "lats"],
+  ["rhomboids", "mid back"],
 ]);
 
 const ABBREVIATIONS = [

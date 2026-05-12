@@ -37,7 +37,7 @@
   },
   {
     "id": "3-4-sit-up",
-    "name": "3/4 sit-up",
+    "name": "3/4 Sit-Up",
     "aliases": [
       "3 4 Sit Up",
       "3 4 sit up"
@@ -140,7 +140,7 @@
   },
   {
     "id": "45-side-bend",
-    "name": "45° side bend",
+    "name": "45° Side Bend",
     "aliases": [
       "45 side bend"
     ],
@@ -429,11 +429,12 @@
   },
   {
     "id": "advanced-kettlebell-windmill",
-    "name": "kettlebell advanced windmill",
+    "name": "Advanced Kettlebell Windmill",
     "aliases": [
       "Advanced KB Windmill"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -461,7 +462,7 @@
   },
   {
     "id": "air-bike",
-    "name": "air bike",
+    "name": "Air Bike",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -584,7 +585,7 @@
   },
   {
     "id": "alternate-heel-touchers",
-    "name": "alternate heel touchers",
+    "name": "Alternate Heel Touchers",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -640,7 +641,7 @@
   },
   {
     "id": "alternate-lateral-pulldown",
-    "name": "alternate lateral pulldown",
+    "name": "Alternate Lateral Pulldown",
     "aliases": [],
     "equipment": [
       "cable"
@@ -655,7 +656,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids"
+        "rhomboids",
+        "mid back"
       ]
     },
     "tags": [
@@ -904,12 +906,13 @@
   },
   {
     "id": "alternating-kettlebell-press",
-    "name": "kettlebell alternating press",
+    "name": "Alternating Kettlebell Press",
     "aliases": [
       "Alternating KB Press",
       "Alternating KB"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -935,11 +938,12 @@
   },
   {
     "id": "alternating-kettlebell-row",
-    "name": "kettlebell alternating row",
+    "name": "Alternating Kettlebell Row",
     "aliases": [
       "Alternating KB Row"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -1148,7 +1152,7 @@
   },
   {
     "id": "ankle-circles",
-    "name": "ankle circles",
+    "name": "Ankle Circles",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -1338,7 +1342,7 @@
   },
   {
     "id": "archer-pull-up",
-    "name": "archer pull up",
+    "name": "Archer Pull Up",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -1573,7 +1577,7 @@
   },
   {
     "id": "arnold-dumbbell-press",
-    "name": "dumbbell arnold press",
+    "name": "Arnold Dumbbell Press",
     "aliases": [
       "Arnold DB Press",
       "Arnold DB"
@@ -1720,7 +1724,7 @@
   },
   {
     "id": "assisted-chest-dip-kneeling",
-    "name": "assisted chest dip (kneeling)",
+    "name": "Assisted Chest Dip (kneeling)",
     "aliases": [
       "assisted chest dip kneeling",
       "assisted chest dip"
@@ -1765,9 +1769,10 @@
   },
   {
     "id": "assisted-hanging-knee-raise",
-    "name": "assisted hanging knee raise",
+    "name": "Assisted Hanging Knee Raise",
     "aliases": [],
     "equipment": [
+      "machine",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -1789,9 +1794,10 @@
   },
   {
     "id": "assisted-hanging-knee-raise-with-throw-down",
-    "name": "assisted hanging knee raise with throw down",
+    "name": "Assisted Hanging Knee Raise With Throw Down",
     "aliases": [],
     "equipment": [
+      "machine",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -1880,9 +1886,10 @@
   },
   {
     "id": "assisted-lying-leg-raise-with-lateral-throw-down",
-    "name": "assisted lying leg raise with lateral throw down",
+    "name": "Assisted Lying Leg Raise With Lateral Throw Down",
     "aliases": [],
     "equipment": [
+      "machine",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -1905,9 +1912,10 @@
   },
   {
     "id": "assisted-lying-leg-raise-with-throw-down",
-    "name": "assisted lying leg raise with throw down",
+    "name": "Assisted Lying Leg Raise With Throw Down",
     "aliases": [],
     "equipment": [
+      "machine",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -2047,11 +2055,12 @@
   },
   {
     "id": "assisted-pull-up",
-    "name": "assisted pull-up",
+    "name": "Assisted Pull-Up",
     "aliases": [
       "assisted pull up"
     ],
     "equipment": [
+      "resistance band",
       "machine"
     ],
     "movementPatterns": [
@@ -2599,9 +2608,10 @@
   },
   {
     "id": "back-lever",
-    "name": "back lever",
+    "name": "Back Lever",
     "aliases": [],
     "equipment": [
+      "pull-up bar",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -2811,9 +2821,10 @@
   },
   {
     "id": "balance-board",
-    "name": "balance board",
+    "name": "Balance Board",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -2955,12 +2966,13 @@
   },
   {
     "id": "band-assisted-pull-up",
-    "name": "band assisted pull-up",
+    "name": "Band Assisted Pull-Up",
     "aliases": [
       "Band Assisted Pull Up",
       "band assisted pull up"
     ],
     "equipment": [
+      "other",
       "resistance band"
     ],
     "movementPatterns": [
@@ -3008,12 +3020,13 @@
   },
   {
     "id": "band-bench-press",
-    "name": "band bench press",
+    "name": "Band Bench Press",
     "aliases": [
       "band bench press"
     ],
     "equipment": [
-      "resistance band"
+      "resistance band",
+      "bench"
     ],
     "movementPatterns": [
       "strength"
@@ -3165,8 +3178,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -3389,7 +3402,7 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -3706,7 +3719,7 @@
       ],
       "secondary": [
         "upper back",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -4050,8 +4063,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -4337,7 +4350,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -4640,14 +4653,15 @@
   },
   {
     "id": "barbell-bench-press",
-    "name": "barbell bench press",
+    "name": "Barbell Bench Press",
     "aliases": [
       "bench press",
       "flat bench",
       "flat barbell bench press"
     ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
       "horizontal press",
@@ -4801,9 +4815,10 @@
   },
   {
     "id": "barbell-clean-and-press",
-    "name": "barbell clean and press",
+    "name": "Barbell Clean and press",
     "aliases": [],
     "equipment": [
+      "dumbbell",
       "barbell"
     ],
     "movementPatterns": [
@@ -4830,7 +4845,7 @@
   },
   {
     "id": "barbell-curl",
-    "name": "barbell curl",
+    "name": "Barbell Curl",
     "aliases": [
       "BB Curl"
     ],
@@ -4886,7 +4901,7 @@
   },
   {
     "id": "barbell-deadlift",
-    "name": "barbell deadlift",
+    "name": "Barbell Deadlift",
     "aliases": [
       "BB Deadlift"
     ],
@@ -4924,14 +4939,15 @@
   },
   {
     "id": "barbell-decline-bench-press",
-    "name": "barbell decline bench press",
+    "name": "Barbell Decline Bench Press",
     "aliases": [
       "barbell decline bench press",
       "BB Decline Bench Press",
       "BB Decline Bench"
     ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
       "strength"
@@ -5066,7 +5082,7 @@
   },
   {
     "id": "barbell-full-squat",
-    "name": "barbell full squat",
+    "name": "Barbell Full Squat",
     "aliases": [
       "BB Full Squat"
     ],
@@ -5182,7 +5198,7 @@
   },
   {
     "id": "barbell-glute-bridge",
-    "name": "barbell glute bridge",
+    "name": "Barbell Glute Bridge",
     "aliases": [
       "BB Glute Bridge"
     ],
@@ -5260,7 +5276,7 @@
   },
   {
     "id": "barbell-guillotine-bench-press",
-    "name": "barbell guillotine bench press",
+    "name": "Barbell Guillotine Bench Press",
     "aliases": [
       "BB Guillotine Bench Press",
       "BB Guillotine Bench"
@@ -5291,7 +5307,7 @@
   },
   {
     "id": "barbell-hack-squat",
-    "name": "barbell hack squat",
+    "name": "Barbell Hack Squat",
     "aliases": [
       "BB Hack Squat"
     ],
@@ -5397,14 +5413,15 @@
   },
   {
     "id": "barbell-incline-bench-press",
-    "name": "barbell incline bench press",
+    "name": "Barbell Incline Bench Press",
     "aliases": [
       "barbell incline bench press",
       "BB Incline Bench Press",
       "BB Incline Bench"
     ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
       "strength"
@@ -5504,7 +5521,7 @@
   },
   {
     "id": "barbell-incline-shoulder-raise",
-    "name": "barbell incline shoulder raise",
+    "name": "Barbell Incline Shoulder Raise",
     "aliases": [
       "BB Incline Shoulder Raise"
     ],
@@ -5523,8 +5540,8 @@
       ],
       "secondary": [
         "chest",
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -5655,7 +5672,7 @@
   },
   {
     "id": "barbell-lunge",
-    "name": "barbell lunge",
+    "name": "Barbell Lunge",
     "aliases": [
       "BB Lunge"
     ],
@@ -6162,7 +6179,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -6171,7 +6188,7 @@
   },
   {
     "id": "barbell-rear-delt-row",
-    "name": "barbell rear delt row",
+    "name": "Barbell Rear Delt Row",
     "aliases": [
       "BB Rear Delt Row"
     ],
@@ -6191,8 +6208,7 @@
         "biceps",
         "lats",
         "mid back",
-        "trapezius",
-        "rhomboids"
+        "traps"
       ]
     },
     "tags": [
@@ -6390,10 +6406,11 @@
   },
   {
     "id": "barbell-reverse-wrist-curl",
-    "name": "barbell reverse wrist curl",
+    "name": "Barbell Reverse Wrist Curl",
     "aliases": [],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
       "arms",
@@ -6623,7 +6640,7 @@
   },
   {
     "id": "barbell-seated-calf-raise",
-    "name": "barbell seated calf raise",
+    "name": "Barbell Seated Calf Raise",
     "aliases": [
       "BB Seated Calf Raise"
     ],
@@ -6751,7 +6768,7 @@
   },
   {
     "id": "barbell-shrug",
-    "name": "barbell shrug",
+    "name": "Barbell Shrug",
     "aliases": [
       "BB Shrug"
     ],
@@ -6864,7 +6881,7 @@
   },
   {
     "id": "barbell-side-split-squat",
-    "name": "barbell side split squat",
+    "name": "Barbell Side Split Squat",
     "aliases": [
       "BB Side Split Squat"
     ],
@@ -7683,10 +7700,11 @@
   },
   {
     "id": "barbell-wrist-curl",
-    "name": "barbell wrist curl",
+    "name": "Barbell Wrist Curl",
     "aliases": [],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
       "arms",
@@ -7813,9 +7831,10 @@
   },
   {
     "id": "battling-ropes",
-    "name": "battling ropes",
+    "name": "Battling Ropes",
     "aliases": [],
     "equipment": [
+      "other",
       "cable"
     ],
     "movementPatterns": [
@@ -7974,9 +7993,10 @@
   },
   {
     "id": "behind-head-chest-stretch",
-    "name": "behind head chest stretch",
+    "name": "Behind Head Chest Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -8263,7 +8283,7 @@
   },
   {
     "id": "bench-press-dumbbell",
-    "name": "dumbbell bench press",
+    "name": "Bench Press – Dumbbell",
     "aliases": [
       "bench press dumbbell"
     ],
@@ -8523,7 +8543,7 @@
   },
   {
     "id": "bent-arm-barbell-pullover",
-    "name": "barbell bent arm pullover",
+    "name": "Bent-Arm Barbell Pullover",
     "aliases": [
       "Bent Arm Barbell Pullover",
       "Bent-Arm BB Pullover"
@@ -8608,7 +8628,7 @@
   },
   {
     "id": "bent-knee-hip-raise",
-    "name": "hip raise (bent knee)",
+    "name": "Bent-Knee Hip Raise",
     "aliases": [
       "Bent Knee Hip Raise",
       "hip raise bent knee",
@@ -8681,7 +8701,7 @@
   },
   {
     "id": "bent-over-barbell-row",
-    "name": "barbell bent over row",
+    "name": "Bent Over Barbell Row",
     "aliases": [
       "Bent Over BB Row"
     ],
@@ -9561,7 +9581,7 @@
   },
   {
     "id": "body-up",
-    "name": "body-up",
+    "name": "Body-Up",
     "aliases": [
       "Body Up",
       "body up"
@@ -10130,7 +10150,7 @@
   },
   {
     "id": "bottoms-up",
-    "name": "bottoms-up",
+    "name": "Bottoms Up",
     "aliases": [
       "bottoms up"
     ],
@@ -10160,11 +10180,12 @@
   },
   {
     "id": "bottoms-up-clean-from-the-hang-position",
-    "name": "kettlebell bottoms up clean from the hang position",
+    "name": "Bottoms-Up Clean From The Hang Position",
     "aliases": [
       "Bottoms Up Clean From The Hang Position"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -10706,7 +10727,7 @@
   },
   {
     "id": "burpee",
-    "name": "burpee",
+    "name": "Burpee",
     "aliases": [
       "burpees"
     ],
@@ -10850,7 +10871,7 @@
   },
   {
     "id": "butt-ups",
-    "name": "butt-ups",
+    "name": "Butt-Ups",
     "aliases": [
       "Butt Ups",
       "butt ups"
@@ -11122,8 +11143,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -11245,7 +11266,7 @@
   },
   {
     "id": "cable-concentration-curl",
-    "name": "cable concentration curl",
+    "name": "Cable Concentration Curl",
     "aliases": [],
     "equipment": [
       "cable"
@@ -11331,8 +11352,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -11356,8 +11377,8 @@
         "shoulders"
       ],
       "secondary": [
-        "rhomboids",
-        "trapezius"
+        "mid back",
+        "traps"
       ]
     },
     "tags": [
@@ -11381,7 +11402,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -11443,7 +11464,7 @@
   },
   {
     "id": "cable-curl",
-    "name": "cable curl",
+    "name": "Cable Curl",
     "aliases": [
       "cable bicep curl",
       "cable biceps curl",
@@ -11820,7 +11841,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -11906,7 +11927,7 @@
   },
   {
     "id": "cable-hip-adduction",
-    "name": "cable hip adduction",
+    "name": "Cable Hip Adduction",
     "aliases": [],
     "equipment": [
       "cable"
@@ -11948,7 +11969,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -11972,7 +11993,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -11994,7 +12015,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12020,7 +12041,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12030,7 +12051,7 @@
   },
   {
     "id": "cable-incline-pushdown",
-    "name": "cable incline pushdown",
+    "name": "Cable Incline Pushdown",
     "aliases": [],
     "equipment": [
       "cable"
@@ -12058,7 +12079,7 @@
   },
   {
     "id": "cable-incline-triceps-extension",
-    "name": "cable incline triceps extension",
+    "name": "Cable Incline Triceps Extension",
     "aliases": [],
     "equipment": [
       "cable"
@@ -12135,7 +12156,7 @@
   },
   {
     "id": "cable-judo-flip",
-    "name": "cable judo flip",
+    "name": "Cable Judo Flip",
     "aliases": [],
     "equipment": [
       "cable"
@@ -12223,8 +12244,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -12285,7 +12306,7 @@
   },
   {
     "id": "cable-lateral-raise",
-    "name": "cable lateral raise",
+    "name": "Cable Lateral Raise",
     "aliases": [
       "cable side raise",
       "cable lateral raises",
@@ -12348,7 +12369,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12466,7 +12487,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12538,7 +12559,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12607,7 +12628,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12630,7 +12651,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12653,7 +12674,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -12701,8 +12722,8 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -12943,7 +12964,7 @@
   },
   {
     "id": "cable-preacher-curl",
-    "name": "cable preacher curl",
+    "name": "Cable Preacher Curl",
     "aliases": [],
     "equipment": [
       "cable"
@@ -13274,8 +13295,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -13322,8 +13343,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -13332,7 +13353,7 @@
   },
   {
     "id": "cable-reverse-crunch",
-    "name": "cable reverse crunch",
+    "name": "Cable Reverse Crunch",
     "aliases": [],
     "equipment": [
       "cable"
@@ -13679,7 +13700,7 @@
   },
   {
     "id": "cable-rope-overhead-triceps-extension",
-    "name": "cable overhead triceps extension (rope attachment)",
+    "name": "Cable Rope Overhead Triceps Extension",
     "aliases": [
       "cable overhead triceps extension rope attachment",
       "cable overhead triceps extension"
@@ -13836,7 +13857,7 @@
   },
   {
     "id": "cable-seated-crunch",
-    "name": "cable seated crunch",
+    "name": "Cable Seated Crunch",
     "aliases": [],
     "equipment": [
       "cable"
@@ -13902,8 +13923,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -13912,7 +13933,7 @@
   },
   {
     "id": "cable-seated-lateral-raise",
-    "name": "cable seated rear lateral raise",
+    "name": "Cable Seated Lateral Raise",
     "aliases": [],
     "equipment": [
       "cable"
@@ -13928,8 +13949,7 @@
       ],
       "secondary": [
         "mid back",
-        "traps",
-        "rhomboids"
+        "traps"
       ]
     },
     "tags": [
@@ -14031,7 +14051,7 @@
   },
   {
     "id": "cable-shoulder-press",
-    "name": "cable shoulder press",
+    "name": "Cable Shoulder Press",
     "aliases": [],
     "equipment": [
       "cable"
@@ -14210,8 +14230,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -14303,9 +14323,9 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
-        "rear deltoids"
+        "traps",
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -14374,7 +14394,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -14516,8 +14536,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -14614,7 +14634,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -14687,8 +14707,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -14711,8 +14731,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -14994,7 +15014,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -15041,8 +15061,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -15069,7 +15089,7 @@
   },
   {
     "id": "cable-wrist-curl",
-    "name": "cable wrist curl",
+    "name": "Cable Wrist Curl",
     "aliases": [],
     "equipment": [
       "cable"
@@ -15452,7 +15472,7 @@
   },
   {
     "id": "calf-stretch-hands-against-wall",
-    "name": "calf stretch with hands against wall",
+    "name": "Calf Stretch Hands Against Wall",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -15842,9 +15862,10 @@
   },
   {
     "id": "chair-leg-extended-stretch",
-    "name": "chair leg extended stretch",
+    "name": "Chair Leg Extended Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -15954,9 +15975,10 @@
   },
   {
     "id": "chest-and-front-of-shoulder-stretch",
-    "name": "chest and front of shoulder stretch",
+    "name": "Chest And Front Of Shoulder Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -15970,8 +15992,7 @@
         "chest"
       ],
       "secondary": [
-        "shoulders",
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -16469,7 +16490,7 @@
   },
   {
     "id": "chin-up",
-    "name": "chin-up",
+    "name": "Chin-Up",
     "aliases": [
       "Chin Up",
       "chin up"
@@ -16623,7 +16644,7 @@
   },
   {
     "id": "clap-push-up",
-    "name": "clap push up",
+    "name": "Clap Push-UP",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -16943,7 +16964,7 @@
   },
   {
     "id": "clock-push-up",
-    "name": "clock push-up",
+    "name": "Clock Push-Up",
     "aliases": [
       "Clock Push Up",
       "clock push up"
@@ -16993,7 +17014,7 @@
   },
   {
     "id": "close-grip-barbell-bench-press",
-    "name": "barbell close-grip bench press",
+    "name": "Close-Grip Barbell Bench Press",
     "aliases": [
       "Close Grip Barbell Bench Press",
       "Close-Grip BB Bench Press",
@@ -17081,7 +17102,7 @@
   },
   {
     "id": "close-grip-dumbbell-press",
-    "name": "dumbbell close grip press",
+    "name": "Close-Grip Dumbbell Press",
     "aliases": [
       "Close Grip Dumbbell Press",
       "Close-Grip DB Press",
@@ -17171,7 +17192,7 @@
   },
   {
     "id": "close-grip-ez-bar-press",
-    "name": "ez-bar close-grip bench press",
+    "name": "Close-Grip EZ-Bar Press",
     "aliases": [
       "Close Grip EZ Bar Press",
       "ez bar close grip bench press"
@@ -17316,7 +17337,7 @@
   },
   {
     "id": "close-grip-push-up",
-    "name": "band close-grip push-up",
+    "name": "Close-Grip Push-Up",
     "aliases": [
       "close grip push up",
       "band close grip push up"
@@ -17425,7 +17446,7 @@
   },
   {
     "id": "close-grip-standing-barbell-curl",
-    "name": "barbell standing close grip curl",
+    "name": "Close-Grip Standing Barbell Curl",
     "aliases": [
       "Close Grip Standing Barbell Curl",
       "Close-Grip Standing BB Curl"
@@ -17477,7 +17498,7 @@
   },
   {
     "id": "cocoons",
-    "name": "cocoons",
+    "name": "Cocoons",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -17816,7 +17837,7 @@
   },
   {
     "id": "cross-body-crunch",
-    "name": "cross body crunch",
+    "name": "Cross-Body Crunch",
     "aliases": [
       "Cross Body Crunch"
     ],
@@ -17845,7 +17866,7 @@
   },
   {
     "id": "cross-body-hammer-curl",
-    "name": "dumbbell cross body hammer curl",
+    "name": "Cross Body Hammer Curl",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -18055,7 +18076,7 @@
   },
   {
     "id": "crunch-hands-overhead",
-    "name": "crunch (hands overhead)",
+    "name": "Crunch - Hands Overhead",
     "aliases": [
       "Crunch Hands Overhead",
       "Crunch",
@@ -18729,7 +18750,7 @@
   },
   {
     "id": "dead-bug",
-    "name": "dead bug",
+    "name": "Dead Bug",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -18812,7 +18833,7 @@
   },
   {
     "id": "deadlift-dumbbell",
-    "name": "dumbbell deadlift",
+    "name": "Deadlift – Dumbbell",
     "aliases": [
       "deadlift dumbbell"
     ],
@@ -19068,7 +19089,7 @@
   },
   {
     "id": "decline-bench-press-dumbbell",
-    "name": "dumbbell decline bench press",
+    "name": "Decline Bench Press – Dumbbell",
     "aliases": [
       "decline bench press dumbbell"
     ],
@@ -19144,7 +19165,7 @@
   },
   {
     "id": "decline-crunch",
-    "name": "decline crunch",
+    "name": "Decline Crunch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -19229,7 +19250,7 @@
   },
   {
     "id": "decline-dumbbell-triceps-extension",
-    "name": "dumbbell decline triceps extension",
+    "name": "Decline Dumbbell Triceps Extension",
     "aliases": [
       "Decline DB Triceps Extension"
     ],
@@ -19308,7 +19329,7 @@
   },
   {
     "id": "decline-push-up",
-    "name": "decline push-up",
+    "name": "Decline Push-Up",
     "aliases": [
       "Decline Push Up",
       "decline push up"
@@ -19386,7 +19407,7 @@
   },
   {
     "id": "decline-sit-up",
-    "name": "decline sit-up",
+    "name": "Decline Sit-Up",
     "aliases": [
       "decline sit up"
     ],
@@ -19443,7 +19464,7 @@
     "name": "deep push up",
     "aliases": [],
     "equipment": [
-      "dumbbell (used as handles for deeper range)"
+      "dumbbell"
     ],
     "movementPatterns": [
       "strength"
@@ -19949,11 +19970,12 @@
   },
   {
     "id": "double-kettlebell-alternating-hang-clean",
-    "name": "kettlebell alternating hang clean",
+    "name": "Double Kettlebell Alternating Hang Clean",
     "aliases": [
       "Double KB Alternating Hang Clean"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -20042,11 +20064,12 @@
   },
   {
     "id": "double-kettlebell-jerk",
-    "name": "kettlebell double jerk",
+    "name": "Double Kettlebell Jerk",
     "aliases": [
       "Double KB Jerk"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -20074,12 +20097,13 @@
   },
   {
     "id": "double-kettlebell-push-press",
-    "name": "kettlebell double push press",
+    "name": "Double Kettlebell Push Press",
     "aliases": [
       "Double KB Push Press",
       "Double KB Push"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -20107,11 +20131,12 @@
   },
   {
     "id": "double-kettlebell-snatch",
-    "name": "kettlebell double snatch",
+    "name": "Double Kettlebell Snatch",
     "aliases": [
       "Double KB Snatch"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -20127,7 +20152,7 @@
         "glutes",
         "hamstrings",
         "quads",
-        "trapezius",
+        "traps",
         "forearms",
         "core"
       ]
@@ -20141,11 +20166,12 @@
   },
   {
     "id": "double-kettlebell-windmill",
-    "name": "kettlebell double windmill",
+    "name": "Double Kettlebell Windmill",
     "aliases": [
       "Double KB Windmill"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -20688,7 +20714,7 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi"
+        "lats"
       ]
     },
     "tags": [
@@ -20728,7 +20754,7 @@
   },
   {
     "id": "dumbbell-bench-press-with-neutral-grip",
-    "name": "dumbbell neutral grip bench press",
+    "name": "Dumbbell Bench Press with Neutral Grip",
     "aliases": [
       "DB Bench Press with Neutral Grip"
     ],
@@ -20830,7 +20856,7 @@
   },
   {
     "id": "dumbbell-bent-over-row",
-    "name": "dumbbell bent over row",
+    "name": "Dumbbell Bent Over Row",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -21180,7 +21206,7 @@
   },
   {
     "id": "dumbbell-clean",
-    "name": "dumbbell clean",
+    "name": "Dumbbell Clean",
     "aliases": [
       "DB Clean"
     ],
@@ -21238,7 +21264,7 @@
   },
   {
     "id": "dumbbell-concentration-curl",
-    "name": "dumbbell concentration curl",
+    "name": "Dumbbell Concentration Curl",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -21556,7 +21582,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -21581,7 +21607,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -21835,7 +21861,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -21892,7 +21918,7 @@
   },
   {
     "id": "dumbbell-goblet-squat",
-    "name": "dumbbell goblet squat",
+    "name": "Dumbbell Goblet Squat",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -22136,7 +22162,7 @@
   },
   {
     "id": "dumbbell-incline-curl",
-    "name": "dumbbell incline curl",
+    "name": "Dumbbell Incline Curl",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -22185,10 +22211,11 @@
   },
   {
     "id": "dumbbell-incline-fly",
-    "name": "dumbbell incline fly",
+    "name": "Dumbbell Incline Fly",
     "aliases": [],
     "equipment": [
-      "dumbbell"
+      "dumbbell",
+      "incline bench"
     ],
     "movementPatterns": [
       "chest",
@@ -22313,7 +22340,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -22499,7 +22526,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -22523,7 +22550,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -22532,7 +22559,7 @@
   },
   {
     "id": "dumbbell-incline-row",
-    "name": "dumbbell incline row",
+    "name": "Dumbbell Incline Row",
     "aliases": [
       "DB Incline Row"
     ],
@@ -22565,7 +22592,7 @@
   },
   {
     "id": "dumbbell-incline-shoulder-raise",
-    "name": "dumbbell incline shoulder raise",
+    "name": "Dumbbell Incline Shoulder Raise",
     "aliases": [
       "DB Incline Shoulder Raise"
     ],
@@ -22584,8 +22611,8 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -22635,7 +22662,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -22727,7 +22754,7 @@
       ],
       "secondary": [
         "shoulders",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -22840,7 +22867,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -23076,8 +23103,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -23099,8 +23126,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -23157,7 +23184,7 @@
   },
   {
     "id": "dumbbell-lying-one-arm-rear-lateral-raise",
-    "name": "dumbbell lying one arm rear lateral raise",
+    "name": "Dumbbell Lying One-Arm Rear Lateral Raise",
     "aliases": [
       "Dumbbell Lying One Arm Rear Lateral Raise",
       "DB Lying One-Arm Rear Lateral Raise"
@@ -23176,8 +23203,7 @@
       ],
       "secondary": [
         "mid back",
-        "traps",
-        "rhomboids"
+        "traps"
       ]
     },
     "tags": [
@@ -23189,7 +23215,7 @@
   },
   {
     "id": "dumbbell-lying-pronation",
-    "name": "dumbbell lying pronation",
+    "name": "Dumbbell Lying Pronation",
     "aliases": [
       "DB Lying Pronation"
     ],
@@ -23266,7 +23292,7 @@
   },
   {
     "id": "dumbbell-lying-rear-lateral-raise",
-    "name": "dumbbell lying rear lateral raise",
+    "name": "Dumbbell Lying Rear Lateral Raise",
     "aliases": [
       "DB Lying Rear Lateral Raise"
     ],
@@ -23284,7 +23310,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -23318,7 +23344,7 @@
   },
   {
     "id": "dumbbell-lying-supination",
-    "name": "dumbbell lying supination",
+    "name": "Dumbbell Lying Supination",
     "aliases": [
       "DB Lying Supination"
     ],
@@ -23659,7 +23685,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -23682,7 +23708,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "rotator cuff"
       ]
     },
@@ -23774,8 +23800,8 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi",
-        "rhomboids"
+        "lats",
+        "mid back"
       ]
     },
     "tags": [
@@ -23800,8 +23826,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -23944,7 +23970,7 @@
   },
   {
     "id": "dumbbell-one-arm-shoulder-press",
-    "name": "dumbbell one arm shoulder press",
+    "name": "Dumbbell One-Arm Shoulder Press",
     "aliases": [
       "Dumbbell One Arm Shoulder Press",
       "DB One-Arm Shoulder Press",
@@ -24122,7 +24148,7 @@
   },
   {
     "id": "dumbbell-one-arm-upright-row",
-    "name": "dumbbell one arm upright row",
+    "name": "Dumbbell One-Arm Upright Row",
     "aliases": [
       "Dumbbell One Arm Upright Row",
       "DB One-Arm Upright Row"
@@ -24406,7 +24432,7 @@
   },
   {
     "id": "dumbbell-preacher-curl",
-    "name": "dumbbell preacher curl",
+    "name": "Dumbbell Preacher Curl",
     "aliases": [
       "dumbbell preacher curl",
       "DB Preacher Curl"
@@ -24501,7 +24527,7 @@
   },
   {
     "id": "dumbbell-prone-incline-curl",
-    "name": "dumbbell prone incline curl",
+    "name": "Dumbbell Prone Incline Curl",
     "aliases": [
       "DB Prone Incline Curl"
     ],
@@ -24530,7 +24556,7 @@
   },
   {
     "id": "dumbbell-pullover",
-    "name": "dumbbell pullover",
+    "name": "Dumbbell Pullover",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -24545,7 +24571,7 @@
         "chest"
       ],
       "secondary": [
-        "latissimus dorsi",
+        "lats",
         "triceps"
       ]
     },
@@ -24595,7 +24621,7 @@
       ],
       "secondary": [
         "triceps",
-        "latissimus dorsi"
+        "lats"
       ]
     },
     "tags": [
@@ -24622,7 +24648,7 @@
   },
   {
     "id": "dumbbell-raise",
-    "name": "dumbbell raise",
+    "name": "Dumbbell Raise",
     "aliases": [
       "DB Raise"
     ],
@@ -24641,7 +24667,7 @@
       "secondary": [
         "biceps",
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -24666,8 +24692,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -24676,7 +24702,7 @@
   },
   {
     "id": "dumbbell-rear-delt-row",
-    "name": "dumbbell lying rear delt row",
+    "name": "Dumbbell rear delt row",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -24717,8 +24743,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -24744,7 +24770,7 @@
       ],
       "secondary": [
         "traps",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -24753,7 +24779,7 @@
   },
   {
     "id": "dumbbell-rear-lunge",
-    "name": "dumbbell rear lunge",
+    "name": "Dumbbell Rear Lunge",
     "aliases": [
       "DB Rear Lunge"
     ],
@@ -24967,7 +24993,7 @@
   },
   {
     "id": "dumbbell-romanian-deadlift",
-    "name": "dumbbell romanian deadlift",
+    "name": "Dumbbell Romanian Deadlift",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -25006,8 +25032,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -25081,7 +25107,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -25194,8 +25220,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -25532,7 +25558,7 @@
   },
   {
     "id": "dumbbell-seated-one-leg-calf-raise",
-    "name": "dumbbell seated one leg calf raise",
+    "name": "Dumbbell Seated One-Leg Calf Raise",
     "aliases": [
       "Dumbbell Seated One Leg Calf Raise",
       "DB Seated One-Leg Calf Raise"
@@ -25779,7 +25805,7 @@
   },
   {
     "id": "dumbbell-shrug",
-    "name": "dumbbell shrug",
+    "name": "Dumbbell Shrug",
     "aliases": [
       "DB Shrug"
     ],
@@ -25808,7 +25834,7 @@
   },
   {
     "id": "dumbbell-side-bend",
-    "name": "dumbbell side bend",
+    "name": "Dumbbell Side Bend",
     "aliases": [
       "DB Side Bend"
     ],
@@ -25850,8 +25876,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -26087,7 +26113,7 @@
   },
   {
     "id": "dumbbell-squat",
-    "name": "dumbbell squat",
+    "name": "Dumbbell Squat",
     "aliases": [
       "DB Squat"
     ],
@@ -26324,7 +26350,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -26900,7 +26926,7 @@
   },
   {
     "id": "dumbbell-upright-row",
-    "name": "dumbbell upright row",
+    "name": "Dumbbell upright-row",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -26967,7 +26993,7 @@
       ],
       "secondary": [
         "rotator cuff",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -27173,7 +27199,7 @@
   },
   {
     "id": "dynamic-chest-stretch",
-    "name": "dynamic chest stretch",
+    "name": "Dynamic Chest Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -27386,7 +27412,7 @@
   },
   {
     "id": "elbow-to-knee",
-    "name": "elbow-to-knee",
+    "name": "Elbow to Knee",
     "aliases": [
       "elbow to knee"
     ],
@@ -27595,7 +27621,7 @@
       ],
       "secondary": [
         "shoulders",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -28292,13 +28318,14 @@
   },
   {
     "id": "extended-range-one-arm-kettlebell-floor-press",
-    "name": "kettlebell extended range one arm press on floor",
+    "name": "Extended Range One-Arm Kettlebell Floor Press",
     "aliases": [
       "Extended Range One Arm Kettlebell Floor Press",
       "Extended Range One-Arm KB Floor Press",
       "Extended Range One-Arm KB Floor"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -28472,7 +28499,7 @@
   },
   {
     "id": "external-shoulder-rotation-cable",
-    "name": "cable standing shoulder external rotation",
+    "name": "External Shoulder Rotation – Cable",
     "aliases": [
       "external shoulder rotation cable"
     ],
@@ -28491,7 +28518,7 @@
         "forearms",
         "rear delts",
         "rotator cuff",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -29179,11 +29206,12 @@
   },
   {
     "id": "farmers-walk",
-    "name": "farmers walk",
+    "name": "Farmer's Walk",
     "aliases": [
       "Farmers Walk"
     ],
     "equipment": [
+      "other",
       "dumbbell"
     ],
     "movementPatterns": [
@@ -29306,7 +29334,7 @@
   },
   {
     "id": "finger-curls",
-    "name": "finger curls",
+    "name": "Finger Curls",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -29433,7 +29461,7 @@
   },
   {
     "id": "flat-bench-leg-pull-in",
-    "name": "leg pull in flat bench",
+    "name": "Flat Bench Leg Pull-In",
     "aliases": [
       "Flat Bench Leg Pull In"
     ],
@@ -29463,7 +29491,7 @@
   },
   {
     "id": "flat-bench-lying-leg-raise",
-    "name": "lying leg raise flat bench",
+    "name": "Flat Bench Lying Leg Raise",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -29678,7 +29706,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -29846,7 +29874,7 @@
   },
   {
     "id": "flutter-kicks",
-    "name": "flutter kicks",
+    "name": "Flutter Kicks",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -30244,7 +30272,7 @@
   },
   {
     "id": "frankenstein-squat",
-    "name": "frankenstein squat",
+    "name": "Frankenstein Squat",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -30469,7 +30497,7 @@
   },
   {
     "id": "front-barbell-squat",
-    "name": "barbell front squat",
+    "name": "Front Barbell Squat",
     "aliases": [
       "Front BB Squat"
     ],
@@ -30565,7 +30593,7 @@
   },
   {
     "id": "front-cable-raise",
-    "name": "cable front raise",
+    "name": "Front Cable Raise",
     "aliases": [],
     "equipment": [
       "cable"
@@ -30627,7 +30655,7 @@
   },
   {
     "id": "front-dumbbell-raise",
-    "name": "dumbbell front raise",
+    "name": "Front Dumbbell Raise",
     "aliases": [
       "Front DB Raise"
     ],
@@ -30645,7 +30673,7 @@
       ],
       "secondary": [
         "biceps",
-        "trapezius"
+        "traps"
       ]
     },
     "tags": [
@@ -30725,7 +30753,7 @@
   },
   {
     "id": "front-lever",
-    "name": "front lever",
+    "name": "Front Lever",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -31070,7 +31098,7 @@
   },
   {
     "id": "front-raise-and-pullover",
-    "name": "barbell front raise and pullover",
+    "name": "Front Raise And Pullover",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -31087,8 +31115,7 @@
       "secondary": [
         "lats",
         "shoulders",
-        "triceps",
-        "deltoids"
+        "triceps"
       ]
     },
     "tags": [
@@ -31100,7 +31127,7 @@
   },
   {
     "id": "front-raise-barbell",
-    "name": "barbell front raise",
+    "name": "Front Raise – Barbell",
     "aliases": [
       "front raise barbell"
     ],
@@ -31224,7 +31251,7 @@
   },
   {
     "id": "front-squat-clean-grip",
-    "name": "barbell clean-grip front squat",
+    "name": "Front Squat (Clean Grip)",
     "aliases": [
       "Front Squat Clean Grip",
       "Front Squat",
@@ -31430,7 +31457,7 @@
   },
   {
     "id": "full-range-of-motion-lat-pulldown",
-    "name": "cable lat pulldown full range of motion",
+    "name": "Full Range-Of-Motion Lat Pulldown",
     "aliases": [
       "Full Range Of Motion Lat Pulldown"
     ],
@@ -31450,8 +31477,7 @@
         "biceps",
         "mid back",
         "shoulders",
-        "rhomboids",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -31499,8 +31525,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -31659,11 +31685,12 @@
   },
   {
     "id": "glute-ham-raise",
-    "name": "glute-ham raise",
+    "name": "Glute Ham Raise",
     "aliases": [
       "glute ham raise"
     ],
     "equipment": [
+      "machine",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -32249,7 +32276,7 @@
   },
   {
     "id": "hammer-curl-cable-with-rope",
-    "name": "cable hammer curl (with rope)",
+    "name": "Hammer Curl – Cable With Rope",
     "aliases": [
       "hammer curl cable with rope",
       "cable hammer curl with rope",
@@ -32275,7 +32302,7 @@
   },
   {
     "id": "hammer-curl-dumbbell",
-    "name": "dumbbell hammer curl",
+    "name": "Hammer Curl – Dumbbell",
     "aliases": [
       "hammer curl dumbbell"
     ],
@@ -32500,7 +32527,7 @@
   },
   {
     "id": "hamstring-stretch",
-    "name": "hamstring stretch",
+    "name": "Hamstring Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -32654,7 +32681,7 @@
   },
   {
     "id": "handstand",
-    "name": "handstand",
+    "name": "Handstand",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -32680,7 +32707,7 @@
   },
   {
     "id": "handstand-push-up",
-    "name": "handstand push-up",
+    "name": "Handstand Push Up",
     "aliases": [
       "handstand push up"
     ],
@@ -33061,7 +33088,7 @@
   },
   {
     "id": "hanging-leg-raise",
-    "name": "hanging leg raise",
+    "name": "Hanging Leg Raise",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -33130,7 +33157,7 @@
   },
   {
     "id": "hanging-pike",
-    "name": "hanging pike",
+    "name": "Hanging Pike",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -34335,7 +34362,7 @@
   },
   {
     "id": "hug-knees-to-chest",
-    "name": "hug knees to chest",
+    "name": "Hug Knees To Chest",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -34659,7 +34686,7 @@
   },
   {
     "id": "inchworm",
-    "name": "inchworm",
+    "name": "Inchworm",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -34713,11 +34740,12 @@
   },
   {
     "id": "incline-barbell-triceps-extension",
-    "name": "ez barbell incline triceps extension",
+    "name": "Incline Barbell Triceps Extension",
     "aliases": [
       "Incline BB Triceps Extension"
     ],
     "equipment": [
+      "barbell",
       "ez bar"
     ],
     "movementPatterns": [
@@ -34762,7 +34790,7 @@
   },
   {
     "id": "incline-bench-press-dumbbell",
-    "name": "dumbbell incline bench press",
+    "name": "Incline Bench Press – Dumbbell",
     "aliases": [
       "incline bench press dumbbell"
     ],
@@ -34829,7 +34857,7 @@
   },
   {
     "id": "incline-bench-press-smith-machine",
-    "name": "smith incline bench press",
+    "name": "Incline Bench Press – Smith Machine",
     "aliases": [
       "incline bench press smith machine"
     ],
@@ -35004,7 +35032,7 @@
   },
   {
     "id": "incline-close-grip-barbell-bench-press",
-    "name": "barbell incline close grip bench press",
+    "name": "Incline Close Grip Barbell Bench Press",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -35371,7 +35399,7 @@
   },
   {
     "id": "incline-inner-biceps-curl",
-    "name": "dumbbell incline inner biceps curl",
+    "name": "Incline Inner Biceps Curl",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -35491,7 +35519,7 @@
   },
   {
     "id": "incline-push-up",
-    "name": "incline push-up",
+    "name": "Incline Push-Up",
     "aliases": [
       "Incline Push Up",
       "incline push up"
@@ -35522,7 +35550,7 @@
   },
   {
     "id": "incline-push-up-close-grip",
-    "name": "incline close-grip push-up",
+    "name": "Incline Push-Up Close-Grip",
     "aliases": [
       "Incline Push Up Close Grip",
       "incline close grip push up"
@@ -35553,11 +35581,12 @@
   },
   {
     "id": "incline-push-up-depth-jump",
-    "name": "incline push up depth jump",
+    "name": "Incline Push-Up Depth Jump",
     "aliases": [
       "Incline Push Up Depth Jump"
     ],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -35641,7 +35670,7 @@
   },
   {
     "id": "incline-push-up-reverse-grip",
-    "name": "incline reverse grip push-up",
+    "name": "Incline Push-Up Reverse Grip",
     "aliases": [
       "Incline Push Up Reverse Grip",
       "incline reverse grip push up"
@@ -35855,9 +35884,10 @@
   },
   {
     "id": "intermediate-hip-flexor-and-quad-stretch",
-    "name": "intermediate hip flexor and quad stretch",
+    "name": "Intermediate Hip Flexor and Quad Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "cable"
     ],
     "movementPatterns": [
@@ -35924,7 +35954,7 @@
   },
   {
     "id": "internal-shoulder-rotation-cable",
-    "name": "cable seated shoulder internal rotation",
+    "name": "Internal Shoulder Rotation – Cable",
     "aliases": [
       "internal shoulder rotation cable"
     ],
@@ -36031,7 +36061,7 @@
   },
   {
     "id": "inverted-row",
-    "name": "inverted row",
+    "name": "Inverted Row",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -36132,9 +36162,10 @@
   },
   {
     "id": "inverted-row-with-straps",
-    "name": "inverted row with straps",
+    "name": "Inverted Row with Straps",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -36462,7 +36493,7 @@
   },
   {
     "id": "isometric-wipers",
-    "name": "isometric wipers",
+    "name": "Isometric Wipers",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -36565,7 +36596,7 @@
   },
   {
     "id": "jackknife-sit-up",
-    "name": "jackknife sit-up",
+    "name": "Jackknife Sit-Up",
     "aliases": [
       "Jackknife Sit Up",
       "jackknife sit up"
@@ -36748,7 +36779,7 @@
   },
   {
     "id": "janda-sit-up",
-    "name": "janda sit-up",
+    "name": "Janda Sit-Up",
     "aliases": [
       "Janda Sit Up",
       "janda sit up"
@@ -37201,12 +37232,13 @@
   },
   {
     "id": "kettlebell-arnold-press",
-    "name": "kettlebell arnold press",
+    "name": "Kettlebell Arnold Press",
     "aliases": [
       "KB Arnold Press",
       "KB Arnold"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37307,11 +37339,12 @@
   },
   {
     "id": "kettlebell-figure-8",
-    "name": "kettlebell figure 8",
+    "name": "Kettlebell Figure 8",
     "aliases": [
       "KB Figure 8"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37384,11 +37417,12 @@
   },
   {
     "id": "kettlebell-hang-clean",
-    "name": "kettlebell hang clean",
+    "name": "Kettlebell Hang Clean",
     "aliases": [
       "KB Hang Clean"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37556,11 +37590,12 @@
   },
   {
     "id": "kettlebell-pistol-squat",
-    "name": "kettlebell pistol squat",
+    "name": "Kettlebell Pistol Squat",
     "aliases": [
       "KB Pistol Squat"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37616,12 +37651,13 @@
   },
   {
     "id": "kettlebell-seated-press",
-    "name": "kettlebell seated press",
+    "name": "Kettlebell Seated Press",
     "aliases": [
       "KB Seated Press",
       "KB Seated"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37647,12 +37683,13 @@
   },
   {
     "id": "kettlebell-seesaw-press",
-    "name": "kettlebell seesaw press",
+    "name": "Kettlebell Seesaw Press",
     "aliases": [
       "KB Seesaw Press",
       "KB Seesaw"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37700,11 +37737,12 @@
   },
   {
     "id": "kettlebell-sumo-high-pull",
-    "name": "kettlebell sumo high pull",
+    "name": "Kettlebell Sumo High Pull",
     "aliases": [
       "KB Sumo High Pull"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37733,7 +37771,7 @@
   },
   {
     "id": "kettlebell-swing",
-    "name": "kettlebell swing",
+    "name": "Kettlebell Swing",
     "aliases": [
       "kb swing",
       "kettlebell swings",
@@ -37791,11 +37829,12 @@
   },
   {
     "id": "kettlebell-thruster",
-    "name": "kettlebell thruster",
+    "name": "Kettlebell Thruster",
     "aliases": [
       "KB Thruster"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37857,7 +37896,7 @@
   },
   {
     "id": "kettlebell-turkish-get-up-squat-style",
-    "name": "kettlebell turkish get up (squat style)",
+    "name": "Kettlebell Turkish Get-Up (Squat style)",
     "aliases": [
       "Kettlebell Turkish Get Up Squat style",
       "Kettlebell Turkish Get-Up",
@@ -37866,6 +37905,7 @@
       "kettlebell turkish get up"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37896,11 +37936,12 @@
   },
   {
     "id": "kettlebell-windmill",
-    "name": "kettlebell windmill",
+    "name": "Kettlebell Windmill",
     "aliases": [
       "KB Windmill"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -37995,9 +38036,10 @@
   },
   {
     "id": "kipping-muscle-up",
-    "name": "kipping muscle up",
+    "name": "Kipping Muscle Up",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -38295,7 +38337,7 @@
   },
   {
     "id": "kneeling-cable-triceps-extension",
-    "name": "cable kneeling triceps extension",
+    "name": "Kneeling Cable Triceps Extension",
     "aliases": [],
     "equipment": [
       "cable"
@@ -38437,7 +38479,7 @@
   },
   {
     "id": "kneeling-jump-squat",
-    "name": "kneeling jump squat",
+    "name": "Kneeling Jump Squat",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -38554,7 +38596,7 @@
   },
   {
     "id": "kneeling-push-up",
-    "name": "kneeling push-up",
+    "name": "Kneeling Push-Up",
     "aliases": [
       "kneeling push up"
     ],
@@ -39397,7 +39439,7 @@
   },
   {
     "id": "lateral-raise-dumbbell",
-    "name": "dumbbell lateral raise",
+    "name": "Lateral Raise – Dumbbell",
     "aliases": [
       "lateral raise dumbbell"
     ],
@@ -39423,9 +39465,22 @@
   },
   {
     "id": "lateral-raise-machine",
+    "name": "Lateral Raise – Machine",
     "aliases": [
+      "lateral raise machine",
       "machine lateral raise"
-    ]
+    ],
+    "equipment": [],
+    "movementPatterns": [],
+    "muscles": {
+      "primary": [
+        "side delts"
+      ],
+      "secondary": [
+        "front delts"
+      ]
+    },
+    "tags": []
   },
   {
     "id": "lateral-raise-with-bands",
@@ -40122,7 +40177,7 @@
   },
   {
     "id": "leg-up-hamstring-stretch",
-    "name": "leg up hamstring stretch",
+    "name": "Leg-Up Hamstring Stretch",
     "aliases": [
       "Leg Up Hamstring Stretch"
     ],
@@ -40502,8 +40557,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -40619,7 +40674,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -40966,8 +41021,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -41105,8 +41160,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -41385,8 +41440,8 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -41521,8 +41576,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -41547,8 +41602,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -42554,7 +42609,7 @@
   },
   {
     "id": "lower-back-curl",
-    "name": "lower back curl",
+    "name": "Lower Back Curl",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -42680,7 +42735,7 @@
   },
   {
     "id": "lunge-dumbbell",
-    "name": "dumbbell lunge",
+    "name": "Lunge – Dumbbell",
     "aliases": [
       "lunge dumbbell"
     ],
@@ -43149,7 +43204,7 @@
   },
   {
     "id": "lying-external-shoulder-rotation-dumbbell",
-    "name": "dumbbell lying external shoulder rotation",
+    "name": "Lying External Shoulder Rotation – Dumbbell",
     "aliases": [
       "lying external shoulder rotation dumbbell"
     ],
@@ -43631,7 +43686,7 @@
   },
   {
     "id": "lying-supine-dumbbell-curl",
-    "name": "dumbbell lying supine biceps curl",
+    "name": "Lying Supine Dumbbell Curl",
     "aliases": [
       "Lying Supine DB Curl"
     ],
@@ -44241,7 +44296,7 @@
   },
   {
     "id": "medicine-ball-chest-pass",
-    "name": "medicine ball chest pass",
+    "name": "Medicine Ball Chest Pass",
     "aliases": [],
     "equipment": [
       "medicine ball"
@@ -44741,10 +44796,11 @@
   },
   {
     "id": "monster-walk",
-    "name": "monster walk",
+    "name": "Monster Walk",
     "aliases": [],
     "equipment": [
-      "body weight (with resistance band)"
+      "resistance band",
+      "bodyweight"
     ],
     "movementPatterns": [
       "strength",
@@ -44913,9 +44969,10 @@
   },
   {
     "id": "muscle-up",
-    "name": "muscle up",
+    "name": "Muscle Up",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -45675,7 +45732,7 @@
   },
   {
     "id": "one-arm-against-wall",
-    "name": "one arm against wall",
+    "name": "One Arm Against Wall",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -45740,12 +45797,13 @@
   },
   {
     "id": "one-arm-chin-up",
-    "name": "one arm chin-up",
+    "name": "One Arm Chin-Up",
     "aliases": [
       "One Arm Chin Up",
       "one arm chin up"
     ],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -45827,7 +45885,7 @@
   },
   {
     "id": "one-arm-dumbbell-preacher-curl",
-    "name": "dumbbell one arm hammer preacher curl",
+    "name": "One Arm Dumbbell Preacher Curl",
     "aliases": [
       "One Arm DB Preacher Curl"
     ],
@@ -45916,7 +45974,7 @@
   },
   {
     "id": "one-arm-floor-press",
-    "name": "barbell one arm floor press",
+    "name": "One Arm Floor Press",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -46028,7 +46086,7 @@
   },
   {
     "id": "one-arm-incline-lateral-raise",
-    "name": "dumbbell incline one arm lateral raise",
+    "name": "One-Arm Incline Lateral Raise",
     "aliases": [
       "One Arm Incline Lateral Raise"
     ],
@@ -46045,7 +46103,7 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "triceps"
       ]
     },
@@ -46091,12 +46149,13 @@
   },
   {
     "id": "one-arm-kettlebell-clean-and-jerk",
-    "name": "kettlebell one arm clean and jerk",
+    "name": "One-Arm Kettlebell Clean and Jerk",
     "aliases": [
       "One Arm Kettlebell Clean and Jerk",
       "One-Arm KB Clean and Jerk"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46122,13 +46181,14 @@
   },
   {
     "id": "one-arm-kettlebell-floor-press",
-    "name": "kettlebell one arm floor press",
+    "name": "One-Arm Kettlebell Floor Press",
     "aliases": [
       "One Arm Kettlebell Floor Press",
       "One-Arm KB Floor Press",
       "One-Arm KB Floor"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46154,12 +46214,13 @@
   },
   {
     "id": "one-arm-kettlebell-jerk",
-    "name": "kettlebell one arm jerk",
+    "name": "One-Arm Kettlebell Jerk",
     "aliases": [
       "One Arm Kettlebell Jerk",
       "One-Arm KB Jerk"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46187,12 +46248,13 @@
   },
   {
     "id": "one-arm-kettlebell-military-press-to-the-side",
-    "name": "kettlebell one arm military press to the side",
+    "name": "One-Arm Kettlebell Military Press To The Side",
     "aliases": [
       "One Arm Kettlebell Military Press To The Side",
       "One-Arm KB Military Press To The Side"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46249,13 +46311,14 @@
   },
   {
     "id": "one-arm-kettlebell-push-press",
-    "name": "kettlebell one arm push press",
+    "name": "One-Arm Kettlebell Push Press",
     "aliases": [
       "One Arm Kettlebell Push Press",
       "One-Arm KB Push Press",
       "One-Arm KB Push"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46283,12 +46346,13 @@
   },
   {
     "id": "one-arm-kettlebell-row",
-    "name": "kettlebell one arm row",
+    "name": "One-Arm Kettlebell Row",
     "aliases": [
       "One Arm Kettlebell Row",
       "One-Arm KB Row"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46316,12 +46380,13 @@
   },
   {
     "id": "one-arm-kettlebell-snatch",
-    "name": "kettlebell one arm snatch",
+    "name": "One-Arm Kettlebell Snatch",
     "aliases": [
       "One Arm Kettlebell Snatch",
       "One-Arm KB Snatch"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -46340,7 +46405,6 @@
         "lower back",
         "traps",
         "triceps",
-        "trapezius",
         "forearms",
         "core"
       ]
@@ -46583,7 +46647,7 @@
   },
   {
     "id": "one-arm-medicine-ball-slam",
-    "name": "one arm slam (with medicine ball)",
+    "name": "One-Arm Medicine Ball Slam",
     "aliases": [
       "One Arm Medicine Ball Slam",
       "one arm slam with medicine ball",
@@ -46722,7 +46786,7 @@
   },
   {
     "id": "one-arm-pronated-dumbbell-triceps-extension",
-    "name": "dumbbell lying one arm pronated triceps extension",
+    "name": "One Arm Pronated Dumbbell Triceps Extension",
     "aliases": [
       "One Arm Pronated DB Triceps Extension"
     ],
@@ -46810,7 +46874,7 @@
   },
   {
     "id": "one-arm-side-deadlift",
-    "name": "barbell one arm side deadlift",
+    "name": "One-Arm Side Deadlift",
     "aliases": [
       "One Arm Side Deadlift"
     ],
@@ -46873,7 +46937,7 @@
   },
   {
     "id": "one-arm-supinated-dumbbell-triceps-extension",
-    "name": "dumbbell lying one arm supinated triceps extension",
+    "name": "One Arm Supinated Dumbbell Triceps Extension",
     "aliases": [
       "One Arm Supinated DB Triceps Extension"
     ],
@@ -47500,7 +47564,7 @@
   },
   {
     "id": "one-leg-barbell-squat",
-    "name": "barbell one leg squat",
+    "name": "One Leg Barbell Squat",
     "aliases": [
       "One Leg BB Squat"
     ],
@@ -48112,7 +48176,7 @@
   },
   {
     "id": "otis-up",
-    "name": "otis up",
+    "name": "Otis-Up",
     "aliases": [
       "Otis Up"
     ],
@@ -48209,7 +48273,7 @@
   },
   {
     "id": "overhead-cable-curl",
-    "name": "cable overhead curl",
+    "name": "Overhead Cable Curl",
     "aliases": [],
     "equipment": [
       "cable"
@@ -48648,7 +48712,7 @@
   },
   {
     "id": "palms-down-wrist-curl-over-a-bench",
-    "name": "barbell palms down wrist curl over a bench",
+    "name": "Palms-Down Wrist Curl Over A Bench",
     "aliases": [
       "Palms Down Wrist Curl Over A Bench"
     ],
@@ -48678,7 +48742,7 @@
   },
   {
     "id": "palms-up-barbell-wrist-curl-over-a-bench",
-    "name": "barbell palms up wrist curl over a bench",
+    "name": "Palms-Up Barbell Wrist Curl Over A Bench",
     "aliases": [
       "Palms Up Barbell Wrist Curl Over A Bench",
       "Palms-Up BB Wrist Curl Over A Bench"
@@ -48976,7 +49040,7 @@
   },
   {
     "id": "pelvic-tilt-into-bridge",
-    "name": "pelvic tilt into bridge",
+    "name": "Pelvic Tilt Into Bridge",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -49150,9 +49214,10 @@
   },
   {
     "id": "peroneals-stretch",
-    "name": "peroneals stretch",
+    "name": "Peroneals Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "cable"
     ],
     "movementPatterns": [
@@ -49856,7 +49921,7 @@
   },
   {
     "id": "plyo-push-up",
-    "name": "plyo push up",
+    "name": "Plyo Push-up",
     "aliases": [
       "Plyo Push up"
     ],
@@ -49912,9 +49977,10 @@
   },
   {
     "id": "posterior-tibialis-stretch",
-    "name": "posterior tibialis stretch",
+    "name": "Posterior Tibialis Stretch",
     "aliases": [],
     "equipment": [
+      "other",
       "cable"
     ],
     "movementPatterns": [
@@ -49987,7 +50053,7 @@
   },
   {
     "id": "power-clean",
-    "name": "power clean",
+    "name": "Power Clean",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -50316,7 +50382,7 @@
   },
   {
     "id": "preacher-curl-barbell",
-    "name": "barbell preacher curl",
+    "name": "Preacher Curl – Barbell",
     "aliases": [
       "preacher curl barbell"
     ],
@@ -50420,7 +50486,7 @@
   },
   {
     "id": "preacher-hammer-dumbbell-curl",
-    "name": "dumbbell alternate hammer preacher curl",
+    "name": "Preacher Hammer Dumbbell Curl",
     "aliases": [
       "Preacher Hammer DB Curl"
     ],
@@ -50829,7 +50895,7 @@
   },
   {
     "id": "pull-up",
-    "name": "pull-up",
+    "name": "Pull-Up",
     "aliases": [
       "pull ups",
       "pullup",
@@ -50838,6 +50904,7 @@
       "pull up"
     ],
     "equipment": [
+      "pull-up bar",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -51039,7 +51106,7 @@
   },
   {
     "id": "pullover-barbell",
-    "name": "barbell pullover",
+    "name": "Pullover – Barbell",
     "aliases": [
       "pullover barbell"
     ],
@@ -51189,7 +51256,7 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -51304,7 +51371,7 @@
   },
   {
     "id": "push-press-dumbbell",
-    "name": "dumbbell push press",
+    "name": "Push Press – Dumbbell",
     "aliases": [
       "push press dumbbell"
     ],
@@ -51360,7 +51427,7 @@
   },
   {
     "id": "push-up",
-    "name": "push-up",
+    "name": "Push-Up",
     "aliases": [
       "push ups",
       "pushup",
@@ -51385,7 +51452,7 @@
         "front delts",
         "serratus anterior",
         "triceps",
-        "deltoids",
+        "shoulders",
         "core"
       ]
     },
@@ -51536,7 +51603,7 @@
   },
   {
     "id": "push-up-medicine-ball",
-    "name": "push-up medicine ball",
+    "name": "Push-Up – Medicine Ball",
     "aliases": [
       "push up medicine ball"
     ],
@@ -51685,7 +51752,7 @@
   },
   {
     "id": "push-up-to-side-plank",
-    "name": "push-up to side plank",
+    "name": "Push Up to Side Plank",
     "aliases": [
       "push up to side plank"
     ],
@@ -51735,7 +51802,7 @@
       ],
       "secondary": [
         "triceps",
-        "deltoids"
+        "shoulders"
       ]
     },
     "tags": [
@@ -52560,7 +52627,7 @@
   },
   {
     "id": "rear-delt-row-cable",
-    "name": "cable rear delt row (stirrups)",
+    "name": "Rear Delt Row – Cable",
     "aliases": [
       "rear delt row cable",
       "cable rear delt row stirrups",
@@ -52583,8 +52650,8 @@
         "rotator cuff",
         "side delts",
         "lats",
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -52629,8 +52696,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids"
+        "traps",
+        "mid back"
       ]
     },
     "tags": [
@@ -53270,7 +53337,7 @@
   },
   {
     "id": "reverse-barbell-curl",
-    "name": "barbell reverse curl",
+    "name": "Reverse Barbell Curl",
     "aliases": [
       "Reverse BB Curl"
     ],
@@ -53328,7 +53395,7 @@
   },
   {
     "id": "reverse-cable-curl",
-    "name": "cable reverse curl",
+    "name": "Reverse Cable Curl",
     "aliases": [],
     "equipment": [
       "cable"
@@ -53375,7 +53442,7 @@
   },
   {
     "id": "reverse-crunch",
-    "name": "reverse crunch",
+    "name": "Reverse Crunch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -53487,7 +53554,7 @@
   },
   {
     "id": "reverse-fly-dumbbell",
-    "name": "dumbbell reverse fly",
+    "name": "Reverse Fly – Dumbbell",
     "aliases": [
       "reverse fly dumbbell"
     ],
@@ -53505,8 +53572,7 @@
       ],
       "secondary": [
         "traps",
-        "trapezius",
-        "rhomboids"
+        "mid back"
       ]
     },
     "tags": [
@@ -54217,9 +54283,10 @@
   },
   {
     "id": "ring-dips",
-    "name": "ring dips",
+    "name": "Ring Dips",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -54577,7 +54644,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -54600,7 +54667,7 @@
         "chest"
       ],
       "secondary": [
-        "deltoids",
+        "shoulders",
         "triceps"
       ]
     },
@@ -54700,7 +54767,7 @@
   },
   {
     "id": "romanian-deadlift-barbell",
-    "name": "barbell romanian deadlift",
+    "name": "Romanian Deadlift – Barbell",
     "aliases": [
       "romanian deadlift barbell"
     ],
@@ -54803,9 +54870,10 @@
   },
   {
     "id": "rope-climb",
-    "name": "rope climb",
+    "name": "Rope Climb",
     "aliases": [],
     "equipment": [
+      "other",
       "cable"
     ],
     "movementPatterns": [
@@ -55328,7 +55396,7 @@
   },
   {
     "id": "run",
-    "name": "run",
+    "name": "Run",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -55449,7 +55517,7 @@
   },
   {
     "id": "runners-stretch",
-    "name": "runners stretch",
+    "name": "Runner's Stretch",
     "aliases": [
       "Runners Stretch"
     ],
@@ -55506,7 +55574,7 @@
   },
   {
     "id": "russian-twist",
-    "name": "russian twist",
+    "name": "Russian Twist",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -55640,8 +55708,8 @@
         "traps"
       ],
       "secondary": [
-        "rhomboids",
-        "deltoids"
+        "mid back",
+        "shoulders"
       ]
     },
     "tags": [
@@ -55696,7 +55764,7 @@
   },
   {
     "id": "scapular-pull-up",
-    "name": "scapular pull-up",
+    "name": "Scapular Pull-Up",
     "aliases": [
       "Scapular Pull Up",
       "scapular pull up"
@@ -55717,8 +55785,7 @@
         "lats",
         "mid back",
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -55934,7 +56001,7 @@
   },
   {
     "id": "seated-barbell-twist",
-    "name": "barbell seated twist",
+    "name": "Seated Barbell Twist",
     "aliases": [
       "Seated BB Twist"
     ],
@@ -56131,7 +56198,7 @@
   },
   {
     "id": "seated-cable-row",
-    "name": "cable seated row",
+    "name": "Seated Cable Row",
     "aliases": [],
     "equipment": [
       "cable"
@@ -56253,7 +56320,7 @@
   },
   {
     "id": "seated-calf-stretch",
-    "name": "seated calf stretch",
+    "name": "Seated Calf Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -56281,7 +56348,7 @@
   },
   {
     "id": "seated-close-grip-concentration-barbell-curl",
-    "name": "barbell seated close-grip concentration curl",
+    "name": "Seated Close-Grip Concentration Barbell Curl",
     "aliases": [
       "Seated Close Grip Concentration Barbell Curl",
       "Seated Close-Grip Concentration BB Curl",
@@ -56354,7 +56421,7 @@
   },
   {
     "id": "seated-dumbbell-calf-raise",
-    "name": "dumbbell seated calf raise",
+    "name": "Seated Dumbbell Calf Raise",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -56378,7 +56445,7 @@
   },
   {
     "id": "seated-dumbbell-curl",
-    "name": "dumbbell seated curl",
+    "name": "Seated Dumbbell Curl",
     "aliases": [
       "Seated DB Curl"
     ],
@@ -56429,7 +56496,7 @@
   },
   {
     "id": "seated-dumbbell-inner-biceps-curl",
-    "name": "dumbbell seated inner biceps curl",
+    "name": "Seated Dumbbell Inner Biceps Curl",
     "aliases": [
       "Seated DB Inner Biceps Curl"
     ],
@@ -56486,7 +56553,7 @@
   },
   {
     "id": "seated-dumbbell-palms-up-wrist-curl",
-    "name": "dumbbell seated palms up wrist curl",
+    "name": "Seated Dumbbell Palms-Up Wrist Curl",
     "aliases": [
       "Seated Dumbbell Palms Up Wrist Curl",
       "Seated DB Palms-Up Wrist Curl"
@@ -56709,7 +56776,7 @@
   },
   {
     "id": "seated-good-morning-barbell",
-    "name": "barbell seated good morning",
+    "name": "Seated Good Morning – Barbell",
     "aliases": [
       "seated good morning barbell"
     ],
@@ -56906,7 +56973,7 @@
   },
   {
     "id": "seated-incline-front-raise-dumbbell",
-    "name": "dumbbell seated front raise",
+    "name": "Seated Incline Front Raise – Dumbbell",
     "aliases": [
       "seated incline front raise dumbbell"
     ],
@@ -56924,7 +56991,7 @@
       "secondary": [
         "chest",
         "side delts",
-        "trapezius",
+        "traps",
         "biceps"
       ]
     },
@@ -57465,7 +57532,7 @@
   },
   {
     "id": "seated-shoulder-press-dumbbell",
-    "name": "dumbbell seated shoulder press",
+    "name": "Seated Shoulder Press – Dumbbell",
     "aliases": [
       "seated shoulder press dumbbell"
     ],
@@ -57492,7 +57559,7 @@
   },
   {
     "id": "seated-shoulder-press-smith-machine",
-    "name": "smith seated shoulder press",
+    "name": "Seated Shoulder Press – Smith Machine",
     "aliases": [
       "seated shoulder press smith machine"
     ],
@@ -59009,7 +59076,7 @@
   },
   {
     "id": "side-lying-floor-stretch",
-    "name": "side lying floor stretch",
+    "name": "Side-Lying Floor Stretch",
     "aliases": [
       "Side Lying Floor Stretch"
     ],
@@ -59105,7 +59172,7 @@
   },
   {
     "id": "side-neck-stretch",
-    "name": "neck side stretch",
+    "name": "Side Neck Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -59122,7 +59189,7 @@
         "upper back"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "sternocleidomastoid"
       ]
     },
@@ -59208,7 +59275,7 @@
         "upper back"
       ],
       "secondary": [
-        "trapezius",
+        "traps",
         "sternocleidomastoid"
       ]
     },
@@ -59794,7 +59861,7 @@
   },
   {
     "id": "single-arm-push-up",
-    "name": "raise single arm push-up",
+    "name": "Single-Arm Push-Up",
     "aliases": [
       "Single Arm Push Up",
       "raise single arm push up"
@@ -60003,7 +60070,7 @@
   },
   {
     "id": "single-leg-deadlift-with-dumbbell",
-    "name": "dumbbell single leg deadlift",
+    "name": "Single-Leg Deadlift with Dumbbell",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -60992,9 +61059,32 @@
   },
   {
     "id": "slam-medicine-ball",
+    "name": "Slam – Medicine Ball",
     "aliases": [
+      "slam medicine ball",
       "medicine ball slam"
-    ]
+    ],
+    "equipment": [],
+    "movementPatterns": [],
+    "muscles": {
+      "primary": [
+        "abs",
+        "lats",
+        "obliques",
+        "front delts"
+      ],
+      "secondary": [
+        "calves",
+        "chest",
+        "forearms",
+        "glutes",
+        "hamstrings",
+        "lower back",
+        "quads",
+        "triceps"
+      ]
+    },
+    "tags": []
   },
   {
     "id": "sled-45-calf-press",
@@ -61950,8 +62040,8 @@
         "serratus anterior"
       ],
       "secondary": [
-        "deltoids",
-        "trapezius"
+        "shoulders",
+        "traps"
       ]
     },
     "tags": [
@@ -62063,9 +62153,10 @@
   },
   {
     "id": "smith-machine-bent-over-row",
-    "name": "smith bent over row",
+    "name": "Smith Machine Bent Over Row",
     "aliases": [],
     "equipment": [
+      "machine",
       "smith machine"
     ],
     "movementPatterns": [
@@ -62141,12 +62232,13 @@
   },
   {
     "id": "smith-machine-close-grip-bench-press",
-    "name": "smith close-grip bench press",
+    "name": "Smith Machine Close-Grip Bench Press",
     "aliases": [
       "Smith Machine Close Grip Bench Press",
       "smith close grip bench press"
     ],
     "equipment": [
+      "machine",
       "smith machine"
     ],
     "movementPatterns": [
@@ -62419,9 +62511,10 @@
   },
   {
     "id": "smith-machine-reverse-calf-raises",
-    "name": "smith reverse calf raises",
+    "name": "Smith Machine Reverse Calf Raises",
     "aliases": [],
     "equipment": [
+      "machine",
       "smith machine"
     ],
     "movementPatterns": [
@@ -62611,7 +62704,7 @@
       ],
       "secondary": [
         "biceps",
-        "rear deltoids"
+        "rear delts"
       ]
     },
     "tags": [
@@ -62699,8 +62792,8 @@
         "shoulders"
       ],
       "secondary": [
-        "trapezius",
-        "rhomboids",
+        "traps",
+        "mid back",
         "biceps"
       ]
     },
@@ -62848,11 +62941,12 @@
   },
   {
     "id": "smith-single-leg-split-squat",
-    "name": "smith single leg split squat",
+    "name": "Smith Single-Leg Split Squat",
     "aliases": [
       "Smith Single Leg Split Squat"
     ],
     "equipment": [
+      "machine",
       "smith machine"
     ],
     "movementPatterns": [
@@ -63356,7 +63450,7 @@
   },
   {
     "id": "snatch-pull",
-    "name": "snatch pull",
+    "name": "Snatch Pull",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -63535,7 +63629,7 @@
   },
   {
     "id": "spell-caster",
-    "name": "spell caster",
+    "name": "Spell Caster",
     "aliases": [],
     "equipment": [
       "dumbbell"
@@ -63565,7 +63659,7 @@
   },
   {
     "id": "sphinx",
-    "name": "sphinx",
+    "name": "Sphinx",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -63939,7 +64033,7 @@
   },
   {
     "id": "split-squats",
-    "name": "split squats",
+    "name": "Split Squats",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -64131,7 +64225,7 @@
   },
   {
     "id": "squat-jerk",
-    "name": "squat jerk",
+    "name": "Squat Jerk",
     "aliases": [],
     "equipment": [
       "barbell"
@@ -64672,7 +64766,7 @@
   },
   {
     "id": "standing-barbell-calf-raise",
-    "name": "barbell standing calf raise",
+    "name": "Standing Barbell Calf Raise",
     "aliases": [
       "Standing BB Calf Raise"
     ],
@@ -64702,7 +64796,7 @@
   },
   {
     "id": "standing-barbell-press-behind-neck",
-    "name": "standing behind neck press",
+    "name": "Standing Barbell Press Behind Neck",
     "aliases": [
       "Standing BB Press Behind Neck"
     ],
@@ -64732,7 +64826,7 @@
   },
   {
     "id": "standing-bent-over-one-arm-dumbbell-triceps-extension",
-    "name": "dumbbell standing bent over one arm triceps extension",
+    "name": "Standing Bent-Over One-Arm Dumbbell Triceps Extension",
     "aliases": [
       "Standing Bent Over One Arm Dumbbell Triceps Extension",
       "Standing Bent-Over One-Arm DB Triceps Extension"
@@ -64763,7 +64857,7 @@
   },
   {
     "id": "standing-bent-over-two-arm-dumbbell-triceps-extension",
-    "name": "dumbbell standing bent over two arm triceps extension",
+    "name": "Standing Bent-Over Two-Arm Dumbbell Triceps Extension",
     "aliases": [
       "Standing Bent Over Two Arm Dumbbell Triceps Extension",
       "Standing Bent-Over Two-Arm DB Triceps Extension"
@@ -65005,7 +65099,7 @@
   },
   {
     "id": "standing-cable-lift",
-    "name": "cable standing lift",
+    "name": "Standing Cable Lift",
     "aliases": [],
     "equipment": [
       "cable"
@@ -65290,7 +65384,7 @@
   },
   {
     "id": "standing-dumbbell-calf-raise",
-    "name": "dumbbell standing calf raise",
+    "name": "Standing Dumbbell Calf Raise",
     "aliases": [
       "Standing DB Calf Raise"
     ],
@@ -65349,7 +65443,7 @@
   },
   {
     "id": "standing-dumbbell-reverse-curl",
-    "name": "dumbbell standing reverse curl",
+    "name": "Standing Dumbbell Reverse Curl",
     "aliases": [
       "Standing DB Reverse Curl"
     ],
@@ -65406,7 +65500,7 @@
   },
   {
     "id": "standing-dumbbell-triceps-extension",
-    "name": "dumbbell standing triceps extension",
+    "name": "Standing Dumbbell Triceps Extension",
     "aliases": [
       "Standing DB Triceps Extension"
     ],
@@ -65509,7 +65603,7 @@
   },
   {
     "id": "standing-front-barbell-raise-over-head",
-    "name": "barbell standing front raise over head",
+    "name": "Standing Front Barbell Raise Over Head",
     "aliases": [
       "Standing Front BB Raise Over Head"
     ],
@@ -65719,7 +65813,7 @@
   },
   {
     "id": "standing-lateral-stretch",
-    "name": "standing lateral stretch",
+    "name": "Standing Lateral Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -65939,7 +66033,7 @@
   },
   {
     "id": "standing-one-arm-cable-curl",
-    "name": "cable one arm curl",
+    "name": "Standing One-Arm Cable Curl",
     "aliases": [
       "Standing One Arm Cable Curl"
     ],
@@ -65968,7 +66062,7 @@
   },
   {
     "id": "standing-one-arm-dumbbell-curl-over-incline-bench",
-    "name": "dumbbell standing one arm curl (over incline bench)",
+    "name": "Standing One-Arm Dumbbell Curl Over Incline Bench",
     "aliases": [
       "Standing One Arm Dumbbell Curl Over Incline Bench",
       "Standing One-Arm DB Curl Over Incline Bench",
@@ -66000,7 +66094,7 @@
   },
   {
     "id": "standing-one-arm-dumbbell-triceps-extension",
-    "name": "dumbbell standing one arm extension",
+    "name": "Standing One-Arm Dumbbell Triceps Extension",
     "aliases": [
       "Standing One Arm Dumbbell Triceps Extension",
       "Standing One-Arm DB Triceps Extension"
@@ -66031,7 +66125,7 @@
   },
   {
     "id": "standing-overhead-barbell-triceps-extension",
-    "name": "barbell standing overhead triceps extension",
+    "name": "Standing Overhead Barbell Triceps Extension",
     "aliases": [
       "Standing Overhead BB Triceps Extension"
     ],
@@ -66060,7 +66154,7 @@
   },
   {
     "id": "standing-palm-in-one-arm-dumbbell-press",
-    "name": "dumbbell standing one arm palm in press",
+    "name": "Standing Palm-In One-Arm Dumbbell Press",
     "aliases": [
       "Standing Palm In One Arm Dumbbell Press",
       "Standing Palm-In One-Arm DB Press",
@@ -66092,7 +66186,7 @@
   },
   {
     "id": "standing-palms-in-dumbbell-press",
-    "name": "dumbbell standing palms in press",
+    "name": "Standing Palms-In Dumbbell Press",
     "aliases": [
       "Standing Palms In Dumbbell Press",
       "Standing Palms-In DB Press",
@@ -66192,7 +66286,7 @@
   },
   {
     "id": "standing-pelvic-tilt",
-    "name": "standing pelvic tilt",
+    "name": "Standing Pelvic Tilt",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -66471,7 +66565,7 @@
   },
   {
     "id": "star-jump",
-    "name": "star jump",
+    "name": "Star Jump",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -66666,7 +66760,7 @@
   },
   {
     "id": "stiff-leg-barbell-good-morning",
-    "name": "barbell stiff leg good morning",
+    "name": "Stiff Leg Barbell Good Morning",
     "aliases": [
       "Stiff Leg BB Good Morning"
     ],
@@ -66902,7 +66996,7 @@
   },
   {
     "id": "straight-arm-dumbbell-pullover",
-    "name": "dumbbell straight arm pullover",
+    "name": "Straight-Arm Dumbbell Pullover",
     "aliases": [
       "Straight Arm Dumbbell Pullover",
       "Straight-Arm DB Pullover"
@@ -66922,8 +67016,7 @@
       "secondary": [
         "lats",
         "shoulders",
-        "triceps",
-        "latissimus dorsi"
+        "triceps"
       ]
     },
     "tags": [
@@ -67021,7 +67114,7 @@
   },
   {
     "id": "straight-arm-pulldown-cable",
-    "name": "cable straight arm pulldown",
+    "name": "Straight-Arm Pulldown (Cable)",
     "aliases": [],
     "equipment": [
       "cable"
@@ -67243,7 +67336,7 @@
   },
   {
     "id": "sumo-deadlift-barbell",
-    "name": "barbell sumo deadlift",
+    "name": "Sumo Deadlift – Barbell",
     "aliases": [
       "sumo deadlift barbell"
     ],
@@ -67732,12 +67825,13 @@
   },
   {
     "id": "suspended-push-up",
-    "name": "suspended push-up",
+    "name": "Suspended Push-Up",
     "aliases": [
       "Suspended Push Up",
       "suspended push up"
     ],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -67764,9 +67858,10 @@
   },
   {
     "id": "suspended-reverse-crunch",
-    "name": "suspended reverse crunch",
+    "name": "Suspended Reverse Crunch",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -67791,9 +67886,10 @@
   },
   {
     "id": "suspended-row",
-    "name": "suspended row",
+    "name": "Suspended Row",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -67821,9 +67917,10 @@
   },
   {
     "id": "suspended-split-squat",
-    "name": "suspended split squat",
+    "name": "Suspended Split Squat",
     "aliases": [],
     "equipment": [
+      "other",
       "bodyweight"
     ],
     "movementPatterns": [
@@ -68234,9 +68331,10 @@
   },
   {
     "id": "tire-flip",
-    "name": "tire flip",
+    "name": "Tire Flip",
     "aliases": [],
     "equipment": [
+      "other",
       "tire"
     ],
     "movementPatterns": [
@@ -68527,9 +68625,10 @@
   },
   {
     "id": "trap-bar-deadlift",
-    "name": "trap bar deadlift",
+    "name": "Trap Bar Deadlift",
     "aliases": [],
     "equipment": [
+      "other",
       "trap bar"
     ],
     "movementPatterns": [
@@ -69081,7 +69180,7 @@
   },
   {
     "id": "triceps-stretch",
-    "name": "triceps stretch",
+    "name": "Triceps Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -69337,7 +69436,7 @@
   },
   {
     "id": "tuck-crunch",
-    "name": "tuck crunch",
+    "name": "Tuck Crunch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -69458,8 +69557,8 @@
       ],
       "secondary": [
         "biceps",
-        "rhomboids",
-        "rear deltoids"
+        "mid back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -69468,7 +69567,7 @@
   },
   {
     "id": "twist-cable",
-    "name": "cable twist",
+    "name": "Twist – Cable",
     "aliases": [
       "twist cable"
     ],
@@ -69568,12 +69667,13 @@
   },
   {
     "id": "two-arm-kettlebell-clean",
-    "name": "kettlebell two arm clean",
+    "name": "Two-Arm Kettlebell Clean",
     "aliases": [
       "Two Arm Kettlebell Clean",
       "Two-Arm KB Clean"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -69635,13 +69735,14 @@
   },
   {
     "id": "two-arm-kettlebell-military-press",
-    "name": "kettlebell seated two arm military press",
+    "name": "Two-Arm Kettlebell Military Press",
     "aliases": [
       "Two Arm Kettlebell Military Press",
       "Two-Arm KB Military Press",
       "Two-Arm KB Military"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -69667,12 +69768,13 @@
   },
   {
     "id": "two-arm-kettlebell-row",
-    "name": "kettlebell two arm row",
+    "name": "Two-Arm Kettlebell Row",
     "aliases": [
       "Two Arm Kettlebell Row",
       "Two-Arm KB Row"
     ],
     "equipment": [
+      "kettlebells",
       "kettlebell"
     ],
     "movementPatterns": [
@@ -69949,7 +70051,7 @@
   },
   {
     "id": "upper-back-stretch",
-    "name": "upper back stretch",
+    "name": "Upper Back Stretch",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -69998,7 +70100,7 @@
   },
   {
     "id": "upright-barbell-row",
-    "name": "barbell upright row",
+    "name": "Upright Barbell Row",
     "aliases": [
       "Upright BB Row"
     ],
@@ -70028,7 +70130,7 @@
   },
   {
     "id": "upright-cable-row",
-    "name": "cable upright row",
+    "name": "Upright Cable Row",
     "aliases": [],
     "equipment": [
       "cable"
@@ -70991,7 +71093,7 @@
   },
   {
     "id": "weighted-bench-dip",
-    "name": "weighted bench dip",
+    "name": "Weighted Bench Dip",
     "aliases": [],
     "equipment": [
       "other"
@@ -71068,9 +71170,10 @@
   },
   {
     "id": "weighted-crunch",
-    "name": "weighted crunch",
+    "name": "Weighted Crunch",
     "aliases": [],
     "equipment": [
+      "dumbbell",
       "other"
     ],
     "movementPatterns": [
@@ -71465,7 +71568,7 @@
   },
   {
     "id": "weighted-pull-up",
-    "name": "weighted pull-up",
+    "name": "Weighted Pull-Up",
     "aliases": [
       "weighted pull-ups",
       "weighted pullup",
@@ -71473,6 +71576,7 @@
       "weighted pull up"
     ],
     "equipment": [
+      "pull-up bar",
       "other"
     ],
     "movementPatterns": [
@@ -71722,9 +71826,10 @@
   },
   {
     "id": "weighted-sissy-squat",
-    "name": "weighted sissy squat",
+    "name": "Weighted Sissy Squat",
     "aliases": [],
     "equipment": [
+      "barbell",
       "other"
     ],
     "movementPatterns": [
@@ -71779,7 +71884,7 @@
   },
   {
     "id": "weighted-squat",
-    "name": "weighted squat",
+    "name": "Weighted Squat",
     "aliases": [],
     "equipment": [
       "other"
@@ -72056,7 +72161,7 @@
   },
   {
     "id": "wide-grip-barbell-bench-press",
-    "name": "barbell wide bench press",
+    "name": "Wide-Grip Barbell Bench Press",
     "aliases": [
       "Wide Grip Barbell Bench Press",
       "Wide-Grip BB Bench Press",
@@ -72113,7 +72218,7 @@
   },
   {
     "id": "wide-grip-decline-barbell-bench-press",
-    "name": "barbell decline wide-grip press",
+    "name": "Wide-Grip Decline Barbell Bench Press",
     "aliases": [
       "Wide Grip Decline Barbell Bench Press",
       "Wide-Grip Decline BB Bench Press",
@@ -72146,7 +72251,7 @@
   },
   {
     "id": "wide-grip-decline-barbell-pullover",
-    "name": "barbell decline wide-grip pullover",
+    "name": "Wide-Grip Decline Barbell Pullover",
     "aliases": [
       "Wide Grip Decline Barbell Pullover",
       "Wide-Grip Decline BB Pullover",
@@ -72211,7 +72316,7 @@
   },
   {
     "id": "wide-grip-pull-up",
-    "name": "wide grip pull-up",
+    "name": "Wide Grip Pull Up",
     "aliases": [
       "wide grip pull up"
     ],
@@ -72294,7 +72399,7 @@
   },
   {
     "id": "wide-grip-rear-pull-up",
-    "name": "wide grip rear pull-up",
+    "name": "Wide-Grip Rear Pull-Up",
     "aliases": [
       "Wide Grip Rear Pull Up",
       "wide grip rear pull up"
@@ -72327,7 +72432,7 @@
   },
   {
     "id": "wide-grip-seated-row-cable",
-    "name": "cable decline seated wide-grip row",
+    "name": "Wide Grip Seated Row – Cable",
     "aliases": [
       "wide grip seated row cable",
       "cable decline seated wide grip row"
@@ -72357,7 +72462,7 @@
   },
   {
     "id": "wide-grip-standing-barbell-curl",
-    "name": "barbell standing wide grip biceps curl",
+    "name": "Wide-Grip Standing Barbell Curl",
     "aliases": [
       "Wide Grip Standing Barbell Curl",
       "Wide-Grip Standing BB Curl"
@@ -72491,7 +72596,7 @@
   },
   {
     "id": "wind-sprints",
-    "name": "wind sprints",
+    "name": "Wind Sprints",
     "aliases": [],
     "equipment": [
       "bodyweight"
@@ -72620,7 +72725,7 @@
   },
   {
     "id": "wrist-circles",
-    "name": "wrist circles",
+    "name": "Wrist Circles",
     "aliases": [],
     "equipment": [
       "bodyweight"

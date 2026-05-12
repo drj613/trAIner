@@ -134,8 +134,9 @@ function mergeExercise(base, override) {
   return {
     ...base,
     ...override,
+    name: base.name ?? override.name,   // preserve existing name
     aliases: unique([...(base.aliases ?? []), ...(override.aliases ?? [])]),
-    equipment: unique(override.equipment?.length ? override.equipment : base.equipment ?? []),
+    equipment: unique([...(base.equipment ?? []), ...(override.equipment ?? [])]),
     movementPatterns: unique([...(base.movementPatterns ?? []), ...(override.movementPatterns ?? [])]),
     muscles: {
       primary: unique([...(base.muscles?.primary ?? []), ...(override.muscles?.primary ?? [])]),
@@ -263,11 +264,18 @@ function addExercises(exercises, sourceName) {
 
 console.log("Loading curated entries...");
 const curated = JSON.parse(await readFile(CURATED_PATH, "utf8"));
+const curatedStubs = [];
 let curatedLoaded = 0;
 for (const entry of curated) {
-  if (entry?.id) { byId.set(entry.id, entry); curatedLoaded++; }
+  if (!entry?.id) continue;
+  if (entry.name) {
+    byId.set(entry.id, entry);
+    curatedLoaded++;
+  } else {
+    curatedStubs.push(entry); // alias-only stubs — applied after other sources
+  }
 }
-console.log(`  loaded ${curatedLoaded} curated entries`);
+console.log(`  loaded ${curatedLoaded} curated entries, ${curatedStubs.length} stubs deferred`);
 
 console.log("Loading live sources...");
 for (const descriptor of LIVE_SOURCES) {
@@ -279,6 +287,15 @@ console.log("Loading snapshots...");
 for (const snapshotPath of SNAPSHOT_PATHS) {
   const exercises = await loadSnapshot(snapshotPath);
   if (exercises.length > 0) addExercises(exercises, path.basename(snapshotPath));
+}
+
+for (const stub of curatedStubs) {
+  if (byId.has(stub.id)) {
+    byId.set(stub.id, mergeExercise(byId.get(stub.id), stub));
+  }
+}
+if (curatedStubs.length > 0) {
+  console.log(`  Applied ${curatedStubs.length} curated stubs`);
 }
 
 console.log("Applying Pro enrichment...");
