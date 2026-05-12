@@ -4,6 +4,8 @@
  * Usage:
  *   node scripts/ingest/ingest-exercisedbpro.mjs
  *
+ * Requires src/lib/catalog/exercises.generated.json to exist — run build-exercise-catalog.mjs first.
+ *
  * Reads: exerciseDBpro720px/exerciseData_complete.json
  * Writes:
  *   scripts/sources/exercisedbpro-snapshot.json  — normalized ExerciseCatalogItem[]
@@ -104,8 +106,6 @@ const MUSCLE_ALIASES = new Map([
   ["spine", "lower back"],
   // Pro additions
   ["pectorals", "chest"],
-  ["cardiovascular system", "heart"],   // already present but kept for clarity
-  ["quadriceps", "quads"],
   ["back", "upper back"],
   ["serratus anterior", "serratus anterior"],
   ["upper back", "upper back"],
@@ -140,12 +140,6 @@ function normalizeList(value) {
 function normalizeMuscle(name) {
   const cleaned = cleanText(name).toLowerCase();
   return MUSCLE_ALIASES.get(cleaned) ?? cleaned;
-}
-
-function normalizeEquipment(value) {
-  const eq = cleanText(value).toLowerCase();
-  if (!eq || eq === "null") return [];
-  return [EQUIPMENT_ALIASES.get(eq) ?? eq];
 }
 
 function unique(values) {
@@ -242,8 +236,7 @@ function jaccard(setA, setB) {
 // ─── Transform ────────────────────────────────────────────────────────────────
 
 function transformPro(source) {
-  const cleanedName = stripGenderSuffix(source.name);
-  const name = cleanedName;
+  const name = stripGenderSuffix(source.name);
   const equipment = unique(normalizeEquipmentPro(source.equipment));
   const category = (source.category ?? "").toLowerCase();
   const categoryMapping = CATEGORY_MAP[category] ?? { movementPatterns: [], tags: [] };
