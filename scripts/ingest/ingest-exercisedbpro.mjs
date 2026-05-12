@@ -183,10 +183,27 @@ function stripGenderSuffix(name) {
 /**
  * Split a potentially comma-separated equipment string and normalize each part.
  * E.g. "dumbbell, exercise ball" → ["dumbbell", "exercise ball"]
+ *
+ * Handles compound values that don't split cleanly on comma by mapping them
+ * to their constituent equipment parts before the split step.
  */
 function normalizeEquipmentPro(value) {
-  const raw = cleanText(value);
+  let raw = cleanText(value);
   if (!raw || raw === "null") return [];
+
+  // Pre-process compound values that contain parentheses or multiple items not separated by commas
+  const compound = {
+    "assisted (towel)": ["assisted"],
+    "body weight (with resistance band)": ["bodyweight", "resistance band"],
+    "dumbbell (used as handles for deeper range)": ["dumbbell"],
+    "dumbbell, exercise ball, tennis ball": ["dumbbell", "exercise ball", "tennis ball"],
+  };
+
+  if (compound[raw]) {
+    // Replace with comma-separated version for uniform processing
+    raw = compound[raw].join(", ");
+  }
+
   return raw
     .split(",")
     .map((part) => part.trim().toLowerCase())
