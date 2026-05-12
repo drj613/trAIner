@@ -170,7 +170,7 @@ function ExerciseRow({
   function commitName() {
     if (cancelledRef.current) { cancelledRef.current = false; setEditing(false); return; }
     setEditing(false);
-    if (name.trim() && name !== exercise.name) onCommitName(name.trim());
+    if (name.trim() && name.trim() !== exercise.name) onCommitName(name.trim());
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -716,7 +716,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
         <ModifyAiModal
           currentDay={aiModalDay}
           programId={id}
-          onApply={(replacement) => { setAiModalDay(null); openConfirm(aiModalDay, replacement); }}
+          onApply={(replacement) => { setAiModalDay(null); openConfirm(aiModalDay, { ...replacement, weekNumber: aiModalDay.weekNumber }); }}
           onClose={() => setAiModalDay(null)}
         />
       )}
