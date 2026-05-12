@@ -163,17 +163,24 @@ function ExerciseRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(exercise.name);
+  const cancelledRef = useRef(false);
 
   useEffect(() => { setName(exercise.name); }, [exercise.name]);
 
   function commitName() {
+    if (cancelledRef.current) { cancelledRef.current = false; setEditing(false); return; }
     setEditing(false);
     if (name.trim() && name !== exercise.name) onCommitName(name.trim());
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") e.currentTarget.blur();
-    if (e.key === "Escape") { setName(exercise.name); setEditing(false); }
+    if (e.key === "Escape") {
+      cancelledRef.current = true;
+      setName(exercise.name);
+      setEditing(false);
+      e.currentTarget.blur();
+    }
   }
 
   const prescription = [
@@ -259,7 +266,6 @@ function DayCard({
   onStart,
 }: {
   day: ProgramDay;
-  weekIndex: number;
   expanded: boolean;
   onToggle: () => void;
   onSwapEx: (exId: string) => void;
@@ -401,7 +407,6 @@ function RoutineConfirmModal({
   onScopeChange: (s: "base" | "week") => void;
   onAccept: () => void;
   onDiscard: () => void;
-  saving: boolean;
   saveError: string | null;
 }) {
   const diffs = diffDays(pending.original, pending.replacement);
@@ -690,7 +695,6 @@ export function ProgramDetailClient({ id }: { id: string }) {
                 <DayCard
                   key={day.id}
                   day={day}
-                  weekIndex={activeWeek}
                   expanded={!!expanded[day.id]}
                   onToggle={() => setExpanded((s) => ({ ...s, [day.id]: !s[day.id] }))}
                   onSwapEx={(exId) => setReplaceTarget({ kind: "swap", day, exId })}
@@ -739,7 +743,6 @@ export function ProgramDetailClient({ id }: { id: string }) {
           onScopeChange={setScope}
           onAccept={handleAccept}
           onDiscard={() => { setPendingChange(null); setSaveError(null); }}
-          saving={saving}
           saveError={saveError}
         />
       )}
