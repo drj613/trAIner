@@ -5,7 +5,7 @@ import path from "node:path";
 const CATALOG_DIR = path.join("src", "lib", "catalog");
 const OUTPUT_JSON_PATH = path.join(CATALOG_DIR, "exercises.generated.json");
 const OUTPUT_WRAPPER_PATH = path.join(CATALOG_DIR, "exercises.ts");
-const LOCAL_OVERRIDES_PATH = path.join("scripts", "catalog-local-overrides.json");
+const CURATED_PATH = path.join("scripts", "sources", "curated.json");
 
 // Snapshot files produced by scripts/ingest/*.mjs — skipped if absent
 const SNAPSHOT_PATHS = [
@@ -260,6 +260,13 @@ function addExercises(exercises, sourceName) {
   console.log(`  ${sourceName}: ${exercises.length} exercises, ${added} new`);
 }
 
+console.log("Loading curated entries...");
+const curated = JSON.parse(await readFile(CURATED_PATH, "utf8"));
+for (const entry of curated) {
+  if (entry?.id) byId.set(entry.id, entry);
+}
+console.log(`  loaded ${curated.length} curated entries`);
+
 console.log("Loading live sources...");
 for (const descriptor of LIVE_SOURCES) {
   const exercises = await loadSource(descriptor);
@@ -271,13 +278,6 @@ for (const snapshotPath of SNAPSHOT_PATHS) {
   const exercises = await loadSnapshot(snapshotPath);
   if (exercises.length > 0) addExercises(exercises, path.basename(snapshotPath));
 }
-
-console.log("Applying local overrides...");
-const localOverrides = JSON.parse(await readFile(LOCAL_OVERRIDES_PATH, "utf8"));
-for (const override of localOverrides) {
-  byId.set(override.id, mergeExercise(byId.get(override.id), override));
-}
-console.log(`  applied ${localOverrides.length} overrides`);
 
 const catalog = [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 

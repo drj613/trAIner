@@ -1366,24 +1366,15 @@
       "bodyweight"
     ],
     "movementPatterns": [
-      "stretching",
-      "push",
-      "isolation",
       "mobility"
     ],
     "muscles": {
       "primary": [
         "shoulders"
       ],
-      "secondary": [
-        "traps"
-      ]
+      "secondary": []
     },
     "tags": [
-      "stretching",
-      "beginner",
-      "isolation",
-      "push",
       "warmup",
       "mobility"
     ]
@@ -2732,9 +2723,6 @@
     "id": "barbell-bench-press",
     "name": "Barbell Bench Press",
     "aliases": [
-      "barbell bench press",
-      "BB Bench Press",
-      "BB Bench",
       "bench press",
       "flat bench",
       "flat barbell bench press"
@@ -2744,7 +2732,6 @@
       "bench"
     ],
     "movementPatterns": [
-      "strength",
       "horizontal press"
     ],
     "muscles": {
@@ -2752,7 +2739,6 @@
         "chest"
       ],
       "secondary": [
-        "shoulders",
         "triceps",
         "front delts"
       ]
@@ -6072,7 +6058,6 @@
     "id": "bulgarian-split-squat",
     "name": "Bulgarian Split Squat",
     "aliases": [
-      "bulgarian split squat",
       "rear foot elevated split squat",
       "rfess",
       "db bulgarian split squat",
@@ -6089,8 +6074,7 @@
     "muscles": {
       "primary": [
         "glutes",
-        "quads",
-        "adductors"
+        "quads"
       ],
       "secondary": [
         "hamstrings",
@@ -6166,7 +6150,6 @@
     "id": "burpee",
     "name": "Burpee",
     "aliases": [
-      "burpee",
       "burpees"
     ],
     "equipment": [
@@ -6178,13 +6161,10 @@
     "muscles": {
       "primary": [
         "chest",
-        "glutes",
         "quads",
-        "front delts"
+        "glutes"
       ],
       "secondary": [
-        "abs",
-        "lower back",
         "triceps",
         "shoulders"
       ]
@@ -7177,8 +7157,8 @@
     "id": "cable-pull-through",
     "name": "Cable Pull-Through",
     "aliases": [
-      "cable pull through",
       "pull through",
+      "cable pull through",
       "glute pull through",
       "cable hip hinge"
     ],
@@ -7191,12 +7171,9 @@
     ],
     "muscles": {
       "primary": [
-        "glutes",
-        "hamstrings",
-        "lower back"
+        "glutes"
       ],
       "secondary": [
-        "adductors",
         "hamstrings",
         "lower back"
       ]
@@ -9092,33 +9069,22 @@
       "barbell"
     ],
     "movementPatterns": [
-      "olympic weightlifting",
-      "pull",
-      "compound",
       "explosive",
+      "olympic weightlifting",
       "hinge"
     ],
     "muscles": {
       "primary": [
-        "quads",
         "glutes",
         "hamstrings",
         "traps"
       ],
       "secondary": [
-        "forearms",
-        "glutes",
-        "hamstrings",
-        "lower back",
-        "traps",
-        "quads"
+        "quads",
+        "lower back"
       ]
     },
     "tags": [
-      "olympic weightlifting",
-      "intermediate",
-      "compound",
-      "pull",
       "power",
       "olympic",
       "explosive"
@@ -9274,7 +9240,6 @@
         "chest"
       ],
       "secondary": [
-        "chest",
         "front delts"
       ]
     },
@@ -9853,25 +9818,20 @@
       "bodyweight"
     ],
     "movementPatterns": [
-      "legs",
       "mobility",
       "squat"
     ],
     "muscles": {
       "primary": [
-        "glutes",
-        "quads",
-        "adductors"
+        "adductors",
+        "quads"
       ],
       "secondary": [
-        "calves",
-        "abs",
         "glutes",
         "hips"
       ]
     },
     "tags": [
-      "legs",
       "mobility",
       "warmup"
     ]
@@ -17065,7 +17025,6 @@
     "id": "glute-bridge",
     "name": "Glute Bridge",
     "aliases": [
-      "glute bridge",
       "glute bridges",
       "bodyweight glute bridge",
       "floor glute bridge"
@@ -17078,8 +17037,7 @@
     ],
     "muscles": {
       "primary": [
-        "glutes",
-        "hamstrings"
+        "glutes"
       ],
       "secondary": [
         "hamstrings",
@@ -18060,7 +18018,6 @@
     "id": "hang-power-clean",
     "name": "Hang Power Clean",
     "aliases": [
-      "hang power clean",
       "hang power cleans",
       "power clean from hang"
     ],
@@ -18074,16 +18031,12 @@
     ],
     "muscles": {
       "primary": [
-        "glutes",
-        "lower back",
         "traps",
-        "quads"
+        "quads",
+        "glutes"
       ],
       "secondary": [
-        "forearms",
         "hamstrings",
-        "adductors",
-        "traps",
         "upper back"
       ]
     },
@@ -18246,7 +18199,6 @@
     "id": "hanging-knee-raise",
     "name": "Hanging Knee Raise",
     "aliases": [
-      "hanging knee raise",
       "hanging knee raises",
       "dead hang knee raise",
       "bent knee hanging raise"
@@ -18259,11 +18211,9 @@
     ],
     "muscles": {
       "primary": [
-        "abs",
-        "forearms"
+        "abs"
       ],
       "secondary": [
-        "obliques",
         "hip flexors",
         "forearms"
       ]
@@ -22057,7 +22007,6 @@
     "id": "kettlebell-swing",
     "name": "Kettlebell Swing",
     "aliases": [
-      "kettlebell swing",
       "kb swing",
       "kettlebell swings",
       "two-arm kettlebell swing",
@@ -22073,15 +22022,11 @@
     "muscles": {
       "primary": [
         "glutes",
-        "lower back",
         "hamstrings"
       ],
       "secondary": [
-        "forearms",
-        "hamstrings",
-        "adductors",
-        "traps",
         "lower back",
+        "traps",
         "core"
       ]
     },
@@ -23510,22 +23455,9 @@
   },
   {
     "id": "lateral-raise-machine",
-    "name": "Lateral Raise – Machine",
     "aliases": [
-      "lateral raise machine",
       "machine lateral raise"
-    ],
-    "equipment": [],
-    "movementPatterns": [],
-    "muscles": {
-      "primary": [
-        "side delts"
-      ],
-      "secondary": [
-        "front delts"
-      ]
-    },
-    "tags": []
+    ]
   },
   {
     "id": "lateral-raise-with-bands",
@@ -27080,7 +27012,6 @@
       "cable"
     ],
     "movementPatterns": [
-      "back",
       "vertical pull"
     ],
     "muscles": {
@@ -27093,9 +27024,9 @@
       ]
     },
     "tags": [
-      "back",
       "hypertrophy",
-      "vertical-pull"
+      "vertical-pull",
+      "back"
     ]
   },
   {
@@ -30510,7 +30441,6 @@
     "id": "pendlay-row",
     "name": "Pendlay Row",
     "aliases": [
-      "pendlay row",
       "pendlay rows",
       "dead-stop barbell row",
       "dead stop row"
@@ -30525,16 +30455,11 @@
     "muscles": {
       "primary": [
         "lats",
-        "rear delts",
-        "traps",
         "mid back"
       ],
       "secondary": [
-        "biceps",
-        "forearms",
-        "lower back",
-        "rotator cuff",
         "rear delts",
+        "biceps",
         "traps"
       ]
     },
@@ -30715,7 +30640,6 @@
       "bodyweight"
     ],
     "movementPatterns": [
-      "legs",
       "flexibility"
     ],
     "muscles": {
@@ -30728,7 +30652,6 @@
       ]
     },
     "tags": [
-      "legs",
       "mobility",
       "cooldown",
       "flexibility"
@@ -32105,7 +32028,6 @@
     "id": "pull-up",
     "name": "Pull-Up",
     "aliases": [
-      "pull up",
       "pull ups",
       "pullup",
       "strict pull-up",
@@ -32123,11 +32045,8 @@
         "biceps"
       ],
       "secondary": [
-        "biceps",
-        "forearms",
-        "rotator cuff",
-        "rear delts",
-        "upper back"
+        "upper back",
+        "rear delts"
       ]
     },
     "tags": [
@@ -32548,7 +32467,6 @@
     "id": "push-up",
     "name": "Push-Up",
     "aliases": [
-      "push up",
       "push ups",
       "pushup",
       "pushups",
@@ -32564,11 +32482,9 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs",
         "front delts",
         "serratus anterior"
       ]
@@ -36893,20 +36809,18 @@
       "machine"
     ],
     "movementPatterns": [
-      "legs",
       "isolation"
     ],
     "muscles": {
       "primary": [
-        "glutes",
-        "glute medius"
+        "glute medius",
+        "glutes"
       ],
       "secondary": [
         "abductors"
       ]
     },
     "tags": [
-      "legs",
       "hypertrophy",
       "isolation",
       "glutes"
@@ -40160,32 +40074,9 @@
   },
   {
     "id": "slam-medicine-ball",
-    "name": "Slam – Medicine Ball",
     "aliases": [
-      "slam medicine ball",
       "medicine ball slam"
-    ],
-    "equipment": [],
-    "movementPatterns": [],
-    "muscles": {
-      "primary": [
-        "abs",
-        "lats",
-        "obliques",
-        "front delts"
-      ],
-      "secondary": [
-        "calves",
-        "chest",
-        "forearms",
-        "glutes",
-        "hamstrings",
-        "lower back",
-        "quads",
-        "triceps"
-      ]
-    },
-    "tags": []
+    ]
   },
   {
     "id": "sled-drag-harness",
