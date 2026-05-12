@@ -514,7 +514,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
   const [replaceTarget, setReplaceTarget] = useState<ReplaceTarget | null>(null);
   const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
   const [scope, setScope] = useState<"base" | "week">("base");
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
 
