@@ -9,7 +9,7 @@ test.describe("Navigation", () => {
   // 1. Root "/" redirects to "/today"
   // -------------------------------------------------------------------------
   test("root / redirects to /today", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("");
     await expect(page).toHaveURL(/\/today$/);
   });
 
@@ -43,7 +43,7 @@ test.describe("Navigation", () => {
   //    computed color differs from the Today link's when on /history.
   // -------------------------------------------------------------------------
   test("nav drawer shows active state for current route", async ({ page }) => {
-    await page.goto("/history");
+    await page.goto("history");
 
     // Open the nav drawer
     await page.getByRole("button", { name: "Open menu" }).click();
@@ -68,7 +68,7 @@ test.describe("Navigation", () => {
   // 4. Unknown route shows a page (no unhandled crash / error boundary)
   // -------------------------------------------------------------------------
   test("unknown route does not crash the app", async ({ page }) => {
-    await page.goto("/does-not-exist");
+    await page.goto("does-not-exist");
     // AppShell still renders (header + main) — if React throws an unhandled error
     // the entire tree unmounts and this fails.
     await expect(page.getByRole("main")).toBeVisible();
@@ -78,8 +78,8 @@ test.describe("Navigation", () => {
   // 5. Browser back works after navigation
   // -------------------------------------------------------------------------
   test("browser back returns to previous route", async ({ page }) => {
-    await page.goto("/settings");
-    await page.goto("/today");
+    await page.goto("settings");
+    await page.goto("today");
     await page.goBack();
     await expect(page).toHaveURL(/\/settings$/);
   });

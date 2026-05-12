@@ -53,14 +53,48 @@ function DimChip({
       style={{
         flex: "0 0 auto", minWidth: 64, padding: "6px 8px",
         background: active ? sb(dim.status) : "var(--bg-2)",
-        border: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
         borderTop: `2px solid ${sc(dim.status)}`,
+        borderRight: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
+        borderBottom: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
+        borderLeft: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
         borderRadius: "var(--r-sm, 4px)", cursor: "pointer",
         fontFamily: "inherit", color: "var(--fg)", textAlign: "center",
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: sc(dim.status), lineHeight: 1 }}>{dim.score}</div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>{dim.label}</div>
+    </button>
+  );
+}
+
+function CoverageChip({ muscles, active, onClick }: {
+  muscles: DisplayAnalysis["muscles"];
+  active: boolean;
+  onClick: () => void;
+}) {
+  const trained = muscles.filter((m) => m.sets > 0).length;
+  const total = muscles.length;
+  const allTrained = trained === total;
+  const color = allTrained ? "var(--good)" : "var(--fg-3)";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: "0 0 auto", minWidth: 64, padding: "6px 8px",
+        background: active ? "rgba(255,255,255,0.04)" : "var(--bg-2)",
+        borderTop: `2px solid ${color}`,
+        borderRight: `1px solid ${active ? "var(--fg-3)" : "var(--line)"}`,
+        borderBottom: `1px solid ${active ? "var(--fg-3)" : "var(--line)"}`,
+        borderLeft: `1px solid ${active ? "var(--fg-3)" : "var(--line)"}`,
+        borderRadius: "var(--r-sm, 4px)", cursor: "pointer",
+        fontFamily: "inherit", color: "var(--fg)", textAlign: "center",
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color, lineHeight: 1 }}>
+        {trained}/{total}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>Coverage</div>
     </button>
   );
 }
@@ -144,6 +178,83 @@ function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"];
   );
 }
 
+function CoveragePanel({ muscles, patterns }: {
+  muscles: DisplayAnalysis["muscles"];
+  patterns: DisplayAnalysis["patterns"];
+}) {
+  const trained = muscles.filter((m) => m.sets > 0);
+  const untrained = muscles.filter((m) => m.sets === 0);
+
+  return (
+    <div>
+      {/* Movement patterns */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+          Movement patterns
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+          {Object.entries(MOVEMENT_PATTERN_LABELS).map(([id, label]) => {
+            const ok = patterns.covered.includes(id);
+            return (
+              <div key={id} style={{
+                display: "flex", alignItems: "center", gap: 6, padding: "5px 7px",
+                borderRadius: "var(--r-sm, 4px)",
+                background: ok ? sb("good") : sb("warn"),
+                border: `1px solid ${ok ? sc("good") : sc("warn")}`,
+              }}>
+                <span style={{ fontSize: 10, color: ok ? sc("good") : sc("warn") }}>{ok ? "✓" : "!"}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--warn)" }}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Trained muscles */}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+          Trained — {trained.length} muscle groups
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {trained.map((m) => (
+            <div key={m.group} style={{
+              display: "flex", alignItems: "center", gap: 4,
+              padding: "3px 7px", borderRadius: "var(--r-sm, 4px)",
+              background: sb(m.status), border: `1px solid ${sc(m.status)}`,
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc(m.status), flexShrink: 0 }} />
+              <span style={{ fontSize: 10.5, color: "var(--fg-2)" }}>{m.group}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: sc(m.status), marginLeft: 1 }}>{m.sets}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Untrained muscles */}
+      {untrained.length > 0 && (
+        <div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+            Not trained — {untrained.length} muscle groups
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {untrained.map((m) => (
+              <div key={m.group} style={{
+                padding: "3px 7px", borderRadius: "var(--r-sm, 4px)",
+                background: "var(--bg-2)", border: "1px solid var(--line)",
+              }}>
+                <span style={{ fontSize: 10.5, color: "var(--fg-4)" }}>{m.group}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5 }}>
+            Untrained muscles don't affect your score — specialists intentionally skip certain groups.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SessionsPanel({ sessions }: { sessions: DisplayAnalysis["sessions"] }) {
   return (
     <div>
@@ -198,7 +309,7 @@ function FindingsPanel({ warnings, strengths }: { warnings: DisplayAnalysis["war
   );
 }
 
-type Tab = "volume" | "balance" | "sessions" | "findings" | "structure" | "periodization";
+type Tab = "volume" | "balance" | "coverage" | "sessions" | "findings" | "structure" | "periodization";
 
 export function RoutineAnalysisCard({
   analysis,
@@ -210,7 +321,9 @@ export function RoutineAnalysisCard({
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<Tab>("volume");
 
-  const activeDim = analysis.dimensions.find((d) => d.id === tab) ?? analysis.dimensions[0];
+  const activeDim = tab !== "coverage"
+    ? (analysis.dimensions.find((d) => d.id === tab) ?? analysis.dimensions[0])
+    : null;
 
   return (
     <div style={{
@@ -253,7 +366,7 @@ export function RoutineAnalysisCard({
         <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
       </button>
 
-      {/* Dimension chips — always visible */}
+      {/* Chips row — dimension chips + coverage chip */}
       <div style={{ display: "flex", gap: 4, padding: "0 10px 10px", overflowX: "auto" }}>
         {analysis.dimensions.map((d) => (
           <DimChip
@@ -266,6 +379,14 @@ export function RoutineAnalysisCard({
             }}
           />
         ))}
+        <CoverageChip
+          muscles={analysis.muscles}
+          active={expanded && tab === "coverage"}
+          onClick={() => {
+            setTab("coverage");
+            setExpanded(true);
+          }}
+        />
       </div>
 
       {/* Expanded body */}
@@ -282,6 +403,7 @@ export function RoutineAnalysisCard({
           <div style={{ padding: 12 }}>
             {tab === "volume" && <VolumeBars muscles={analysis.muscles} />}
             {tab === "balance" && <BalancePanel ratios={analysis.ratios} patterns={analysis.patterns} />}
+            {tab === "coverage" && <CoveragePanel muscles={analysis.muscles} patterns={analysis.patterns} />}
             {tab === "sessions" && <SessionsPanel sessions={analysis.sessions} />}
             {(tab === "findings" || tab === "periodization" || tab === "structure") && (
               <FindingsPanel warnings={analysis.warnings} strengths={analysis.strengths} />

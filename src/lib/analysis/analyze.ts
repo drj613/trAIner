@@ -5,6 +5,7 @@ import { countWeeklyVolume, scoreVolume } from "./volume";
 import { analyzeSessions } from "./session";
 import { analyzeBalance } from "./balance";
 import { analyzePeriodization } from "./periodization";
+import { deriveCoverage } from "./coverage";
 import {
   computeOverallScore,
   scoreVolumeDimension,
@@ -53,7 +54,9 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
     ...periodization.warnings,
   ];
 
-  return { overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings };
+  const coverage = deriveCoverage(muscleVolumes, balance);
+
+  return { overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage };
 }
 
 function formatMuscleName(muscle: string): string {

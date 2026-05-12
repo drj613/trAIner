@@ -14,9 +14,9 @@ test.describe("Program import", () => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
     // Navigate first so IDB is accessible (clearDb requires a real origin)
-    await sharedPage.goto("/import");
+    await sharedPage.goto("import");
     await clearDb(sharedPage);
-    await sharedPage.goto("/import");
+    await sharedPage.goto("import");
   });
 
   test.afterAll(async () => {
@@ -69,7 +69,7 @@ test.describe("Program import", () => {
 
   // 6. imported program appears on programs list (persistence)
   test("imported program appears on programs list", async () => {
-    await sharedPage.goto("/programs");
+    await sharedPage.goto("programs");
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
   });
 

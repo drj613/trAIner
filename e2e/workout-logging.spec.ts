@@ -24,7 +24,7 @@ test.describe("Workout logging", () => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
     // Navigate first so IDB is accessible, then clear and re-seed
-    await sharedPage.goto("/today");
+    await sharedPage.goto("today");
     await clearDb(sharedPage);
     await seedDemoIfNeeded(sharedPage);
   });
@@ -86,7 +86,7 @@ test.describe("Workout logging", () => {
 test.describe("Workout logging — persistence", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate first so IDB is accessible, then clear and re-seed
-    await page.goto("/today");
+    await page.goto("today");
     await clearDb(page);
     await seedDemoIfNeeded(page);
   });

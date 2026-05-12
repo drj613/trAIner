@@ -22,7 +22,7 @@ test.describe("Routines index", () => {
     sharedPage = await ctx.newPage();
 
     // 1. Navigate first so IDB is accessible, then clear
-    await sharedPage.goto("/today");
+    await sharedPage.goto("today");
     await clearDb(sharedPage);
 
     // 2. Seed the demo program via UI
@@ -31,7 +31,7 @@ test.describe("Routines index", () => {
     await seedDemoIfNeeded(sharedPage);
 
     // 3. Navigate to /import and seed the draft "E2E Test Program"
-    await sharedPage.goto("/import");
+    await sharedPage.goto("import");
     await sharedPage.locator("textarea").fill(IMPORT_PROGRAM_JSON);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
     await expect(sharedPage.getByText(/1 day\(s\) · 1 exercise\(s\)/i)).toBeVisible();
@@ -44,7 +44,7 @@ test.describe("Routines index", () => {
       program_name: "Second Draft Program",
       days: [{ title: "Day 1", sections: [] }],
     });
-    await sharedPage.goto("/import");
+    await sharedPage.goto("import");
     await sharedPage.locator("textarea").fill(secondProgramJson);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
     await expect(sharedPage.getByText(/1 day\(s\)/i)).toBeVisible();
@@ -85,7 +85,7 @@ test.describe("Routines index", () => {
     //    so tests see an active card with stat tiles and WeekStrip.
     //    AppShell also has aria-label="Open menu" (nav hamburger) at index 0;
     //    program row menu buttons start at index 1.
-    await sharedPage.goto("/programs");
+    await sharedPage.goto("programs");
     // Wait for rows to render
     await expect(rowMenuBtns(sharedPage).nth(1)).toBeVisible({ timeout: 8000 });
     // Find the demo program row ("Local First Demo") and activate it
@@ -193,7 +193,7 @@ test.describe("Routines index", () => {
   // 8. Activate "E2E Test Program" moves it to the active card
   test("activate moves program to active card", async () => {
     // Reload to ensure clean state after test 7
-    await sharedPage.goto("/programs");
+    await sharedPage.goto("programs");
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
 
     // Find the "Open menu" button for the "E2E Test Program" row specifically.
@@ -250,7 +250,7 @@ test.describe("Routines index", () => {
     await sharedPage.waitForURL(/\/programs\/[^/]+$/);
 
     // Navigate back to /programs and reload
-    await sharedPage.goto("/programs");
+    await sharedPage.goto("programs");
     await sharedPage.reload();
     await expect(sharedPage.getByText(/copy of/i)).toBeVisible({ timeout: 8000 });
   });

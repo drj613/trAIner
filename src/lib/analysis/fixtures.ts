@@ -310,3 +310,189 @@ export const multiWeekProgram: ProgramDocument = program(
     ),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// startingStrengthProgram — Rippetoe's Starting Strength (A/B 3×/wk)
+// Minimal volume, big compound lifts, no isolation work.
+// A strong baseline for: does the analysis handle a specialist strength program
+// without being punitive about missing isolation muscles?
+//
+// TODO: These real-world programs could be offered as selectable routine
+// templates in the "new routine" flow (persona-matched suggestions).
+// ---------------------------------------------------------------------------
+
+export const startingStrengthProgram = program(
+  "starting-strength",
+  "Starting Strength",
+  [
+    // Workout A: Squat + Bench + Deadlift
+    day(
+      "ss-a",
+      1,
+      "Workout A",
+      1,
+      section(
+        "ss-a-main",
+        "strength",
+        "Main",
+        group(
+          "ss-a-sq",
+          ex("ss-a-sq-1", "Back Squat", 3, "5", ["quads", "glutes"], ["hamstrings", "lower back"]),
+        ),
+        group(
+          "ss-a-bp",
+          ex("ss-a-bp-1", "Bench Press", 3, "5", ["chest", "front delts"], ["triceps"]),
+        ),
+        group(
+          "ss-a-dl",
+          ex("ss-a-dl-1", "Deadlift", 1, "5", ["hamstrings", "glutes", "lower back"], ["lats", "upper back"]),
+        ),
+      ),
+    ),
+
+    // Workout B: Squat + OHP + Barbell Row
+    day(
+      "ss-b",
+      2,
+      "Workout B",
+      1,
+      section(
+        "ss-b-main",
+        "strength",
+        "Main",
+        group(
+          "ss-b-sq",
+          ex("ss-b-sq-1", "Back Squat", 3, "5", ["quads", "glutes"], ["hamstrings", "lower back"]),
+        ),
+        group(
+          "ss-b-ohp",
+          ex("ss-b-ohp-1", "Overhead Press", 3, "5", ["front delts", "shoulders"], ["triceps"]),
+        ),
+        group(
+          "ss-b-row",
+          ex("ss-b-row-1", "Barbell Row", 3, "5", ["lats", "upper back"], ["biceps"]),
+        ),
+      ),
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// pplProgram — Push / Pull / Legs (6-day hypertrophy split, Nippard-style)
+// High volume, full coverage, specialist hypertrophy program.
+// ---------------------------------------------------------------------------
+
+export const pplProgram = program(
+  "ppl",
+  "Push Pull Legs",
+  [
+    // Push Day
+    day(
+      "ppl-push",
+      1,
+      "Push",
+      1,
+      section(
+        "ppl-push-main",
+        "hypertrophy",
+        "Push",
+        group("ppl-push-bp", ex("ppl-bp", "Bench Press", 4, "6-10", ["chest", "front delts"], ["triceps"])),
+        group("ppl-push-inc", ex("ppl-inc", "Incline DB Press", 3, "8-12", ["chest", "front delts"], ["triceps"])),
+        group("ppl-push-ohp", ex("ppl-ohp", "Overhead Press", 3, "8-10", ["front delts", "shoulders"], ["triceps"])),
+        group("ppl-push-lr", ex("ppl-lr", "Lateral Raise", 4, "12-20", ["shoulders"])),
+        group("ppl-push-td", ex("ppl-td", "Tricep Pushdown", 3, "12-15", ["triceps"])),
+        group("ppl-push-oht", ex("ppl-oht", "Overhead Tri Extension", 3, "10-15", ["triceps"])),
+      ),
+    ),
+
+    // Pull Day
+    day(
+      "ppl-pull",
+      2,
+      "Pull",
+      1,
+      section(
+        "ppl-pull-main",
+        "hypertrophy",
+        "Pull",
+        group("ppl-pull-dl", ex("ppl-dl", "Romanian Deadlift", 3, "8-10", ["hamstrings", "glutes", "lower back"], [])),
+        group("ppl-pull-pu", ex("ppl-pu", "Pull-Up", 4, "5-10", ["lats", "upper back"], ["biceps"])),
+        group("ppl-pull-row", ex("ppl-row", "Cable Row", 4, "10-12", ["upper back", "lats"], ["biceps"])),
+        group("ppl-pull-fp", ex("ppl-fp", "Face Pull", 4, "15-20", ["rear delts"], ["rotator cuff"])),
+        group("ppl-pull-bc", ex("ppl-bc", "Barbell Curl", 3, "8-12", ["biceps"], ["forearms"])),
+        group("ppl-pull-hc", ex("ppl-hc", "Hammer Curl", 3, "10-15", ["biceps"], ["forearms"])),
+      ),
+    ),
+
+    // Legs Day
+    day(
+      "ppl-legs",
+      3,
+      "Legs",
+      1,
+      section(
+        "ppl-legs-main",
+        "hypertrophy",
+        "Legs",
+        group("ppl-legs-sq", ex("ppl-sq", "Back Squat", 4, "6-10", ["quads", "glutes"], ["hamstrings"])),
+        group("ppl-legs-lp", ex("ppl-lp", "Leg Press", 3, "10-15", ["quads", "glutes"], [])),
+        group("ppl-legs-rdl", ex("ppl-rdl", "RDL", 3, "10-12", ["hamstrings", "glutes"], ["lower back"])),
+        group("ppl-legs-lc", ex("ppl-lc", "Leg Curl", 4, "10-15", ["hamstrings"])),
+        group("ppl-legs-cr", ex("ppl-cr", "Calf Raise", 5, "12-20", ["calves"])),
+      ),
+    ),
+
+    // Push 2
+    day(
+      "ppl-push2",
+      4,
+      "Push 2",
+      1,
+      section(
+        "ppl-push2-main",
+        "hypertrophy",
+        "Push 2",
+        group("ppl-p2-bp", ex("ppl-p2-bp", "Incline Bench Press", 4, "8-12", ["chest", "front delts"], ["triceps"])),
+        group("ppl-p2-cbp", ex("ppl-p2-cbp", "Cable Fly", 3, "12-15", ["chest"])),
+        group("ppl-p2-ohp", ex("ppl-p2-ohp", "DB Shoulder Press", 4, "10-12", ["front delts", "shoulders"], ["triceps"])),
+        group("ppl-p2-lr", ex("ppl-p2-lr", "Lateral Raise", 4, "15-20", ["shoulders"])),
+        group("ppl-p2-td", ex("ppl-p2-td", "Skull Crusher", 3, "10-12", ["triceps"])),
+      ),
+    ),
+
+    // Pull 2
+    day(
+      "ppl-pull2",
+      5,
+      "Pull 2",
+      1,
+      section(
+        "ppl-pull2-main",
+        "hypertrophy",
+        "Pull 2",
+        group("ppl-p2-pu", ex("ppl-p2-pu", "Lat Pulldown", 4, "10-12", ["lats"], ["biceps"])),
+        group("ppl-p2-row", ex("ppl-p2-row", "DB Row", 4, "10-12", ["upper back", "lats"], ["biceps"])),
+        group("ppl-p2-rfly", ex("ppl-p2-rfly", "Reverse Fly", 3, "15-20", ["rear delts"])),
+        group("ppl-p2-bc", ex("ppl-p2-bc", "Incline DB Curl", 3, "10-15", ["biceps"])),
+      ),
+    ),
+
+    // Legs 2
+    day(
+      "ppl-legs2",
+      6,
+      "Legs 2",
+      1,
+      section(
+        "ppl-legs2-main",
+        "hypertrophy",
+        "Legs 2",
+        group("ppl-l2-sq", ex("ppl-l2-sq", "Front Squat", 4, "6-8", ["quads", "glutes"], ["hamstrings"])),
+        group("ppl-l2-le", ex("ppl-l2-le", "Leg Extension", 3, "12-15", ["quads"])),
+        group("ppl-l2-rdl", ex("ppl-l2-rdl", "Romanian Deadlift", 4, "8-10", ["hamstrings", "glutes"], ["lower back"])),
+        group("ppl-l2-lc", ex("ppl-l2-lc", "Lying Leg Curl", 3, "12-15", ["hamstrings"])),
+        group("ppl-l2-cr", ex("ppl-l2-cr", "Seated Calf Raise", 4, "15-20", ["calves"])),
+      ),
+    ),
+  ],
+);

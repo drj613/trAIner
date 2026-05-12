@@ -14,19 +14,23 @@ test.describe("RoutineAnalysisCard", () => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
 
-    // 1. Navigate first so IDB is accessible, then clear
-    await sharedPage.goto("/today");
+    // 1. Navigate first so IDB is accessible, then clear + hard reload
+    await sharedPage.goto("today");
     await clearDb(sharedPage);
+    await sharedPage.reload();
+    await sharedPage.waitForLoadState("load");
+    await sharedPage.waitForTimeout(500);
 
     // 2. Import a program via UI
     await seedDemoIfNeeded(sharedPage);
 
     // 3. Navigate to the programs list and open the first program.
-    await sharedPage.goto("/programs");
-    const firstProgramLink = sharedPage.locator('a[href^="/programs/"]').first();
-    await firstProgramLink.click();
+    await sharedPage.goto("programs");
+    // Program rows are <button> elements with the program title as text
+    const firstProgramBtn = sharedPage.getByRole("button", { name: /e2e test program/i }).first();
+    await firstProgramBtn.click();
     // Wait for the program detail page to load
-    await expect(sharedPage.getByRole("heading")).toBeVisible({
+    await expect(sharedPage.getByRole("heading").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -67,7 +71,7 @@ test.describe("RoutineAnalysisCard", () => {
 
     // After expansion the VolumeBars header row shows "MEV", "MAV", "MRV" labels
     // (line 74 of RoutineAnalysisCard). "MEV" only exists inside the expanded panel.
-    await expect(sharedPage.getByText("MEV")).toBeVisible({ timeout: 5000 });
+    await expect(sharedPage.getByText("MEV (Minimum Effective Volume)")).toBeVisible({ timeout: 5000 });
   });
 
   // -------------------------------------------------------------------------
@@ -117,5 +121,19 @@ test.describe("RoutineAnalysisCard", () => {
 
     // LlmAnalysisSheet returns null when open=false, so the backdrop disappears
     await expect(backdrop).not.toBeVisible({ timeout: 5000 });
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 6: Clicking the coverage chip shows the coverage panel
+  // -------------------------------------------------------------------------
+
+  test("clicking coverage chip shows coverage panel", async () => {
+    // The card is already expanded. Click the Coverage chip.
+    const coverageChip = sharedPage.getByRole("button", { name: /coverage/i });
+    await coverageChip.click();
+
+    // CoveragePanel renders a "Movement patterns" section header and a "Trained —" section.
+    await expect(sharedPage.getByText("Movement patterns")).toBeVisible({ timeout: 5000 });
+    await expect(sharedPage.getByText(/Trained — \d+ muscle groups?/)).toBeVisible({ timeout: 3000 });
   });
 });

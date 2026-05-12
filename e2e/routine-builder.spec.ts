@@ -13,9 +13,9 @@ test.describe("Routine builder", () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
-    await sharedPage.goto("/");
+    await sharedPage.goto("");
     await clearDb(sharedPage);
-    await sharedPage.goto("/programs/new");
+    await sharedPage.goto("programs/new");
   });
 
   test.afterAll(async () => {

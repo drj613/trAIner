@@ -18,7 +18,7 @@ export function computeOverallScore(dimensions: {
 }
 
 export function scoreVolumeDimension(results: MuscleVolumeResult[]): DimensionScore {
-  const trained = results.filter((r) => r.effectiveSets > 0 || r.landmarks.mev > 0);
+  const trained = results.filter((r) => r.effectiveSets > 0);
   if (trained.length === 0) return { name: "Volume", score: 0, grade: "F" };
   const scores = trained.map((r) => {
     if (r.severity === "green") return 90;

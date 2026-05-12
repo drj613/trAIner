@@ -31,7 +31,7 @@ test.describe("Exercise history", () => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
     // Navigate first so IDB is accessible, then clear and re-seed
-    await sharedPage.goto("/today");
+    await sharedPage.goto("today");
     await clearDb(sharedPage);
     await seedDemoIfNeeded(sharedPage);
   });

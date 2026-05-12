@@ -4,7 +4,7 @@ import { seedDemoIfNeeded, clearDb } from "./helpers";
 test.describe("Today screen", () => {
   test.beforeEach(async ({ page }) => {
     await clearDb(page);
-    await page.goto("/today");
+    await page.goto("today");
   });
 
   test("shows import prompt when no program exists", async ({ page }) => {

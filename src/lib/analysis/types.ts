@@ -73,6 +73,13 @@ export type DimensionScore = {
   grade: Grade;
 };
 
+export type CoverageResult = {
+  patternsCovered: string[];
+  patternsMissing: string[];
+  musclesTrained: MuscleGroup[];
+  musclesUntrained: MuscleGroup[];
+};
+
 export type AnalysisResult = {
   overall: DimensionScore;
   dimensions: {
@@ -86,6 +93,7 @@ export type AnalysisResult = {
   balance: BalanceResult;
   periodization: PeriodizationResult;
   warnings: Warning[];
+  coverage: CoverageResult;
 };
 
 export type DimensionDisplay = {

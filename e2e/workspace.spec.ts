@@ -14,9 +14,9 @@ test.describe("Workspace settings", () => {
     const ctx = await browser.newContext();
     sharedPage = await ctx.newPage();
     // Clear any previously-persisted theme/density/mono so tests start clean
-    await sharedPage.goto("/");
+    await sharedPage.goto("");
     await sharedPage.evaluate(() => localStorage.clear());
-    await sharedPage.goto("/settings");
+    await sharedPage.goto("settings");
     await sharedPage.waitForLoadState("networkidle");
   });
 

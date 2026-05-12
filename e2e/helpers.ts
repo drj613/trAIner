@@ -5,18 +5,20 @@ import type { Page } from "@playwright/test";
  * Returns when the Today screen shows workout content.
  */
 export async function seedDemoIfNeeded(page: Page) {
-  await page.goto("/today");
-  const hasNoProgram = await page.getByText(/import a program/i).isVisible({ timeout: 3000 }).catch(() => false);
-  if (hasNoProgram) {
-    await page.goto("/import");
-    await page.locator("textarea").fill(IMPORT_PROGRAM_JSON);
-    await page.getByRole("button", { name: /validate/i }).click();
-    await page.getByRole("button", { name: /save program/i }).click();
-    await page.goto("/today");
-    await page.waitForSelector('[data-testid="today-workout"], .panel h1, button[aria-label*="History"]', {
-      timeout: 8000,
-    });
+  // Always import — tests use fresh browser contexts, so DB is empty
+  await page.goto("import");
+  // Wait for textarea to be ready
+  await page.locator("textarea").waitFor({ state: "visible", timeout: 10000 });
+  await page.locator("textarea").fill(IMPORT_PROGRAM_JSON);
+  await page.waitForTimeout(300);
+  await page.getByRole("button", { name: /validate/i }).click({ timeout: 10000 });
+  // Handle "Resolve exercises" step — exercises may need attention
+  const reviewBtn = page.getByRole("button", { name: /review import/i });
+  if (await reviewBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
+    await reviewBtn.click();
   }
+  await page.getByRole("button", { name: /save program/i }).click({ timeout: 10000 });
+  await page.waitForTimeout(500);
 }
 
 /**
@@ -25,7 +27,7 @@ export async function seedDemoIfNeeded(page: Page) {
 export async function clearDb(page: Page) {
   // indexedDB.databases() throws a SecurityError on about:blank; navigate first.
   if (page.url() === "about:blank") {
-    await page.goto("/");
+    await page.goto("");
   }
   await page.evaluate(async () => {
     const dbs = await indexedDB.databases?.();
