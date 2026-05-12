@@ -281,6 +281,48 @@ for (const snapshotPath of SNAPSHOT_PATHS) {
   if (exercises.length > 0) addExercises(exercises, path.basename(snapshotPath));
 }
 
+console.log("Applying Pro enrichment...");
+const PRO_SNAPSHOT_PATH = path.join("scripts", "sources", "exercisedbpro-snapshot.json");
+if (existsSync(PRO_SNAPSHOT_PATH)) {
+  const proEntries = JSON.parse(await readFile(PRO_SNAPSHOT_PATH, "utf8"));
+  let enriched = 0;
+  let added = 0;
+  for (const entry of proEntries) {
+    if (!entry?.id) continue;
+    if (byId.has(entry.id)) {
+      byId.set(entry.id, mergeExercise(byId.get(entry.id), entry));
+      enriched++;
+    } else {
+      byId.set(entry.id, entry);
+      added++;
+    }
+  }
+  console.log(`  Pro enrichment: ${enriched} enriched, ${added} new`);
+} else {
+  console.log("  Pro snapshot not found — skipping (run scripts/ingest/ingest-exercisedbpro.mjs first)");
+}
+
+// Demote front_delts from primary to secondary on pressing exercises.
+// The RP volume landmark model treats front delt volume from pressing as indirect;
+// mavHigh:8 is calibrated for direct front delt work only.
+const PRESSING_PATTERN = /\b(press|push[-\s]?up|fly|flye|dip|bench)\b/i;
+let frontDeltsCorrected = 0;
+for (const [id, exercise] of byId) {
+  const isPressing = PRESSING_PATTERN.test(exercise.name);
+  if (!isPressing) continue;
+  const primaryIdx = exercise.muscles.primary.indexOf("front delts");
+  if (primaryIdx === -1) continue;
+  // Move front delts from primary to secondary
+  exercise.muscles.primary.splice(primaryIdx, 1);
+  if (!exercise.muscles.secondary.includes("front delts")) {
+    exercise.muscles.secondary.push("front delts");
+  }
+  frontDeltsCorrected++;
+}
+if (frontDeltsCorrected > 0) {
+  console.log(`  Taxonomy: demoted front_delts→secondary on ${frontDeltsCorrected} pressing exercises`);
+}
+
 const catalog = [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 
 function renderTypeScriptWrapper() {

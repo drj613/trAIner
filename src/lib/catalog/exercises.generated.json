@@ -668,13 +668,13 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "biceps",
         "rotator cuff",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -1034,14 +1034,14 @@
     "muscles": {
       "primary": [
         "glutes",
-        "quads",
-        "front delts"
+        "quads"
       ],
       "secondary": [
         "calves",
         "hamstrings",
         "lower back",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -1056,13 +1056,13 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "abs",
         "biceps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -1077,14 +1077,14 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "abs",
         "lower back",
         "rear delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -4055,12 +4055,12 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -4204,11 +4204,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -4223,11 +4223,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -4243,11 +4243,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "rotator cuff"
+        "rotator cuff",
+        "front delts"
       ]
     },
     "tags": []
@@ -4319,11 +4319,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -5696,12 +5696,12 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "rotator cuff",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -8439,11 +8439,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -9494,11 +9494,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -11023,11 +11023,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -11043,11 +11043,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "rotator cuff"
+        "rotator cuff",
+        "front delts"
       ]
     },
     "tags": []
@@ -15164,11 +15164,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -15529,11 +15529,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -19664,11 +19664,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -19683,11 +19683,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -19703,11 +19703,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "rotator cuff"
+        "rotator cuff",
+        "front delts"
       ]
     },
     "tags": []
@@ -19743,11 +19743,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -20257,11 +20257,11 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -22640,11 +22640,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -22729,11 +22729,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -28912,7 +28912,6 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "side delts",
         "triceps"
       ],
@@ -28920,7 +28919,8 @@
         "abs",
         "obliques",
         "rotator cuff",
-        "traps"
+        "traps",
+        "front delts"
       ]
     },
     "tags": []
@@ -28955,13 +28955,13 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "chest",
-        "front delts"
+        "chest"
       ],
       "secondary": [
         "abs",
         "obliques",
-        "rotator cuff"
+        "rotator cuff",
+        "front delts"
       ]
     },
     "tags": []
@@ -31331,7 +31331,6 @@
       "primary": [
         "glutes",
         "lower back",
-        "front delts",
         "adductors"
       ],
       "secondary": [
@@ -31340,7 +31339,8 @@
         "hamstrings",
         "side delts",
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -32393,16 +32393,15 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "glutes",
         "lower back",
         "quads",
         "side delts",
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -32448,9 +32447,7 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "abs",
         "glutes",
@@ -32458,7 +32455,8 @@
         "lower back",
         "quads",
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -32506,11 +32504,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -32526,11 +32524,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -32546,11 +32544,11 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
-        "abs"
+        "abs",
+        "front delts"
       ]
     },
     "tags": []
@@ -32566,12 +32564,12 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
         "abs",
-        "forearms"
+        "forearms",
+        "front delts"
       ]
     },
     "tags": []
@@ -34770,13 +34768,13 @@
     "muscles": {
       "primary": [
         "chest",
-        "front delts",
         "triceps"
       ],
       "secondary": [
         "abs",
         "forearms",
-        "side delts"
+        "side delts",
+        "front delts"
       ]
     },
     "tags": []
@@ -37318,12 +37316,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37337,12 +37334,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37356,12 +37352,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37401,12 +37396,12 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37786,12 +37781,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37805,12 +37799,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -37844,12 +37837,11 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -38905,13 +38897,12 @@
     "equipment": [],
     "movementPatterns": [],
     "muscles": {
-      "primary": [
-        "front delts"
-      ],
+      "primary": [],
       "secondary": [
         "forearms",
         "side delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -43758,12 +43749,12 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "traps",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -48752,14 +48743,14 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "abs",
         "lower back",
         "rear delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
@@ -48774,14 +48765,14 @@
     "movementPatterns": [],
     "muscles": {
       "primary": [
-        "front delts",
         "side delts"
       ],
       "secondary": [
         "abs",
         "lower back",
         "rear delts",
-        "triceps"
+        "triceps",
+        "front delts"
       ]
     },
     "tags": []
