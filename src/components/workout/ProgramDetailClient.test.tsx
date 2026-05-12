@@ -256,6 +256,123 @@ describe("ProgramDetailClient V2 — swap exercise", () => {
     expect(screen.queryByText("Review changes")).not.toBeInTheDocument();
     expect(mockSaveProgram).not.toHaveBeenCalled();
   });
+
+  it("saving 'This week' replaces an existing same-week override rather than accumulating", async () => {
+    const programWithOverride = {
+      ...mockProgram,
+      overrides: [
+        {
+          id: "existing-override",
+          scope: "week" as const,
+          programId: "p1",
+          weekNumber: 1,
+          replacement: mockProgram.days[0],
+          reason: "previous edit",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    };
+    (programRepo.get as jest.Mock).mockResolvedValueOnce(programWithOverride);
+
+    renderClient();
+    await waitForLoad();
+    fireEvent.click(screen.getByText("Upper A"));
+    await waitFor(() => expect(screen.getByText("Squat")).toBeInTheDocument());
+    fireEvent.click(screen.getAllByTitle("Swap from catalogue")[0]);
+    fireEvent.click(screen.getByText("Pick Romanian DL"));
+    await waitFor(() => expect(screen.getByText("Review changes")).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText(/This week/i));
+    fireEvent.click(screen.getByRole("button", { name: /Apply changes/i }));
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+
+    const saved = mockSaveProgram.mock.calls[0][0];
+    expect(saved.overrides).toHaveLength(1);
+    expect(saved.overrides[0].id).not.toBe("existing-override");
+    expect(saved.overrides[0].weekNumber).toBe(1);
+  });
+
+  it("'This week' radio is disabled when the day has no weekNumber", async () => {
+    const programNoWeek = {
+      ...mockProgram,
+      days: [
+        { ...mockProgram.days[0], weekNumber: undefined },
+        ...mockProgram.days.slice(1),
+      ],
+    };
+    (programRepo.get as jest.Mock).mockResolvedValueOnce(programNoWeek);
+
+    renderClient();
+    await waitForLoad();
+    fireEvent.click(screen.getByText("Upper A"));
+    await waitFor(() => expect(screen.getByText("Squat")).toBeInTheDocument());
+    fireEvent.click(screen.getAllByTitle("Swap from catalogue")[0]);
+    fireEvent.click(screen.getByText("Pick Romanian DL"));
+    await waitFor(() => expect(screen.getByText("Review changes")).toBeInTheDocument());
+    const thisWeekRadio = screen.getByLabelText(/This week/i) as HTMLInputElement;
+    expect(thisWeekRadio.disabled).toBe(true);
+  });
+});
+
+describe("ProgramDetailClient V2 — override interactions", () => {
+  it("saving 'Whole routine' clears any existing same-week overrides", async () => {
+    const programWithOverride = {
+      ...mockProgram,
+      overrides: [
+        {
+          id: "existing-override",
+          scope: "week" as const,
+          programId: "p1",
+          weekNumber: 1,
+          replacement: mockProgram.days[0],
+          reason: "previous edit",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    };
+    (programRepo.get as jest.Mock).mockResolvedValueOnce(programWithOverride);
+
+    renderClient();
+    await waitForLoad();
+    fireEvent.click(screen.getByText("Upper A"));
+    await waitFor(() => expect(screen.getByText("Squat")).toBeInTheDocument());
+    fireEvent.click(screen.getAllByTitle("Swap from catalogue")[0]);
+    fireEvent.click(screen.getByText("Pick Romanian DL"));
+    await waitFor(() => expect(screen.getByText("Review changes")).toBeInTheDocument());
+    // "Whole routine" is the default scope
+    fireEvent.click(screen.getByRole("button", { name: /Apply changes/i }));
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+
+    const saved = mockSaveProgram.mock.calls[0][0];
+    expect(saved.overrides).toHaveLength(0);
+  });
+
+  it("shows a warning in the confirm modal when a week override will be cleared", async () => {
+    const programWithOverride = {
+      ...mockProgram,
+      overrides: [
+        {
+          id: "existing-override",
+          scope: "week" as const,
+          programId: "p1",
+          weekNumber: 1,
+          replacement: mockProgram.days[0],
+          reason: "previous edit",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    };
+    (programRepo.get as jest.Mock).mockResolvedValueOnce(programWithOverride);
+
+    renderClient();
+    await waitForLoad();
+    fireEvent.click(screen.getByText("Upper A"));
+    await waitFor(() => expect(screen.getByText("Squat")).toBeInTheDocument());
+    fireEvent.click(screen.getAllByTitle("Swap from catalogue")[0]);
+    fireEvent.click(screen.getByText("Pick Romanian DL"));
+    await waitFor(() => expect(screen.getByText("Review changes")).toBeInTheDocument());
+    // Modal opens with scope=base (default). A week override exists for Wk 1.
+    expect(screen.getByText(/week override.*cleared/i)).toBeInTheDocument();
+  });
 });
 
 describe("ProgramDetailClient V2 — AI modify", () => {

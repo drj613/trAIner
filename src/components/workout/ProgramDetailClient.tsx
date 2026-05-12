@@ -401,6 +401,7 @@ function RoutineConfirmModal({
   onAccept,
   onDiscard,
   saveError,
+  hasWeekOverride,
 }: {
   pending: PendingChange;
   scope: "base" | "week";
@@ -408,6 +409,7 @@ function RoutineConfirmModal({
   onAccept: () => void;
   onDiscard: () => void;
   saveError: string | null;
+  hasWeekOverride?: boolean;
 }) {
   const diffs = diffDays(pending.original, pending.replacement);
   const weekDisabled = pending.original.weekNumber === undefined;
@@ -480,6 +482,20 @@ function RoutineConfirmModal({
           </label>
         </div>
 
+        {scope === "base" && hasWeekOverride && (
+          <p style={{
+            margin: 0,
+            padding: "6px 16px",
+            fontSize: 11,
+            color: "var(--warn)",
+            fontFamily: "var(--font-mono)",
+            borderBottom: "1px solid var(--line)",
+            flexShrink: 0,
+          }}>
+            ⚠ A week override exists and will be cleared.
+          </p>
+        )}
+
         {/* Diff */}
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <DiffReview
@@ -534,6 +550,13 @@ export function ProgramDetailClient({ id }: { id: string }) {
     () => (program ? buildWeekGrid(getRenderableDays(program)) : []),
     [program],
   );
+
+  const hasWeekOverride = useMemo(() => {
+    if (!pendingChange || !program) return false;
+    return program.overrides.some(
+      (o) => o.scope === "week" && o.weekNumber === pendingChange.original.weekNumber,
+    );
+  }, [pendingChange, program]);
 
   // Pointer drag for week pager
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -606,7 +629,14 @@ export function ProgramDetailClient({ id }: { id: string }) {
       const { original, replacement } = pendingChange;
       let updated: ProgramDocument;
       if (scope === "base") {
-        updated = { ...program, days: program.days.map((d) => d.id === replacement.id ? replacement : d) };
+        const cleared = program.overrides.filter(
+          (o) => !(o.scope === "week" && o.weekNumber === original.weekNumber),
+        );
+        updated = {
+          ...program,
+          days: program.days.map((d) => d.id === replacement.id ? replacement : d),
+          overrides: cleared,
+        };
       } else {
         const override = {
           id: crypto.randomUUID(),
@@ -617,7 +647,10 @@ export function ProgramDetailClient({ id }: { id: string }) {
           reason: "Modified from routine view",
           createdAt: new Date().toISOString(),
         };
-        updated = { ...program, overrides: [...program.overrides, override] };
+        const filtered = program.overrides.filter(
+          (o) => !(o.scope === "week" && o.weekNumber === original.weekNumber),
+        );
+        updated = { ...program, overrides: [...filtered, override] };
       }
       await saveProgram(updated);
       setProgram(updated);
@@ -703,6 +736,8 @@ export function ProgramDetailClient({ id }: { id: string }) {
                   onAddEx={(sectionId) => setReplaceTarget({ kind: "add", day, sectionId })}
                   onCommitName={(sectionId, exId, name) => openConfirm(day, buildRenameDay(day, sectionId, exId, name))}
                   onModifyDay={() => setAiModalDay(day)}
+                  // TODO: navigates to today's session regardless of which day was expanded.
+                  // Fix when day-number-based scheduling replaces calendar-day matching.
                   onStart={() => navigate(`/programs/${id}/log`)}
                 />
               ))}
@@ -744,6 +779,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           onAccept={handleAccept}
           onDiscard={() => { setPendingChange(null); setSaveError(null); }}
           saveError={saveError}
+          hasWeekOverride={hasWeekOverride}
         />
       )}
 
