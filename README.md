@@ -66,11 +66,12 @@ bun run build
 
 ## Exercise Catalog
 
-The bundled catalog merges three sources:
+The bundled catalog merges four sources:
 
 - [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) — fetched at build time
 - [wger](https://github.com/wger-project/wger) fixture snapshot (`scripts/sources/wger-snapshot.json`)
 - [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb) snapshot via RapidAPI (`scripts/sources/exercisedb-snapshot.json`)
+- **ExerciseDB Pro** — richer muscle/equipment metadata applied as an enrichment pass over the merged catalog (`scripts/sources/exercisedbpro-snapshot.json`)
 
 Local aliases and additions live in `scripts/catalog-local-overrides.json`. The generated output is `src/lib/catalog/exercises.generated.json`; `src/lib/catalog/exercises.ts` is a small typed wrapper used by the app.
 
@@ -91,3 +92,15 @@ RAPIDAPI_KEY=<your-key> bun run catalog:ingest:exercisedb
 ```
 
 Commit the updated snapshot file(s) and re-run `catalog:build`.
+
+### Re-ingest ExerciseDB Pro (one-time, requires local data)
+
+ExerciseDB Pro was ingested from a locally downloaded dataset. If the source file is available:
+
+```bash
+# Requires exerciseDBpro720px/exerciseData_complete.json at the repo root
+# Also requires exercises.generated.json to exist — run catalog:build first
+bun scripts/ingest/ingest-exercisedbpro.mjs
+```
+
+This writes `scripts/sources/exercisedbpro-snapshot.json` and a review file (`exercisedbpro-review.txt`) listing uncertain matches. Commit the snapshot and re-run `catalog:build`.
