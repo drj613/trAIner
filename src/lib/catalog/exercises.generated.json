@@ -5173,27 +5173,40 @@
   },
   {
     "id": "barbell-full-zercher-squat",
-    "name": "barbell full zercher squat",
-    "aliases": [],
+    "name": "Barbell Full Zercher Squat",
+    "aliases": [
+      "full zercher squat",
+      "deep zercher squat"
+    ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "rack"
     ],
     "movementPatterns": [
+      "squat",
       "strength"
     ],
     "muscles": {
       "primary": [
-        "glutes"
+        "quads",
+        "glutes",
+        "adductors"
       ],
       "secondary": [
-        "quads",
         "hamstrings",
-        "calves",
-        "core"
+        "upper back",
+        "core",
+        "biceps",
+        "lower back",
+        "quads",
+        "calves"
       ]
     },
     "tags": [
-      "strength"
+      "strength",
+      "lower",
+      "squat",
+      "zercher"
     ]
   },
   {
@@ -5358,27 +5371,39 @@
   },
   {
     "id": "barbell-high-bar-squat",
-    "name": "barbell high bar squat",
-    "aliases": [],
+    "name": "High Bar Back Squat",
+    "aliases": [
+      "high bar squat",
+      "high bar back squat",
+      "olympic squat",
+      "athletic squat",
+      "high-bar squat"
+    ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "rack"
     ],
     "movementPatterns": [
+      "squat",
       "strength"
     ],
     "muscles": {
       "primary": [
+        "quads",
         "glutes"
       ],
       "secondary": [
-        "quads",
         "hamstrings",
+        "adductors",
+        "core",
         "calves",
-        "core"
+        "quads"
       ]
     },
     "tags": [
-      "strength"
+      "strength",
+      "lower",
+      "squat"
     ]
   },
   {
@@ -5648,26 +5673,41 @@
   },
   {
     "id": "barbell-low-bar-squat",
-    "name": "barbell low bar squat",
-    "aliases": [],
+    "name": "Low Bar Back Squat",
+    "aliases": [
+      "low bar squat",
+      "low bar back squat",
+      "powerlifting squat",
+      "low-bar squat"
+    ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "rack"
     ],
     "movementPatterns": [
+      "squat",
       "strength"
     ],
     "muscles": {
       "primary": [
-        "glutes"
+        "glutes",
+        "hamstrings",
+        "quads"
       ],
       "secondary": [
+        "adductors",
+        "lower back",
+        "core",
+        "calves",
         "quads",
-        "hamstrings",
-        "calves"
+        "hamstrings"
       ]
     },
     "tags": [
-      "strength"
+      "strength",
+      "lower",
+      "squat",
+      "powerlifting"
     ]
   },
   {
@@ -7754,27 +7794,41 @@
   },
   {
     "id": "barbell-zercher-squat",
-    "name": "barbell zercher squat",
-    "aliases": [],
+    "name": "Barbell Zercher Squat",
+    "aliases": [
+      "zercher squat",
+      "barbell zercher",
+      "z squat"
+    ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "rack"
     ],
     "movementPatterns": [
+      "squat",
       "strength"
     ],
     "muscles": {
       "primary": [
-        "glutes"
+        "quads",
+        "glutes",
+        "adductors"
       ],
       "secondary": [
-        "quads",
         "hamstrings",
-        "calves",
-        "core"
+        "upper back",
+        "core",
+        "biceps",
+        "lower back",
+        "quads",
+        "calves"
       ]
     },
     "tags": [
-      "strength"
+      "strength",
+      "lower",
+      "squat",
+      "zercher"
     ]
   },
   {
@@ -17648,6 +17702,38 @@
     },
     "tags": [
       "legs"
+    ]
+  },
+  {
+    "id": "copenhagen-plank",
+    "name": "Copenhagen Plank",
+    "aliases": [
+      "copenhagen side plank",
+      "adductor side plank",
+      "CPP"
+    ],
+    "equipment": [
+      "bodyweight",
+      "bench"
+    ],
+    "movementPatterns": [
+      "isometric"
+    ],
+    "muscles": {
+      "primary": [
+        "adductors"
+      ],
+      "secondary": [
+        "core",
+        "glutes",
+        "abductors"
+      ]
+    },
+    "tags": [
+      "strength",
+      "isometric",
+      "prehab",
+      "unilateral"
     ]
   },
   {
@@ -64578,6 +64664,386 @@
     ]
   },
   {
+    "id": "ssb-anderson-squat",
+    "name": "SSB Anderson Squat",
+    "aliases": [
+      "SSB pin squat",
+      "safety bar Anderson squat",
+      "safety bar pin squat",
+      "Anderson squat"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "upper back",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-back-squat",
+    "name": "Safety Bar Back Squat",
+    "aliases": [
+      "SSB squat",
+      "SSB back squat",
+      "safety squat",
+      "yoke bar squat",
+      "safety bar squat",
+      "safety squat bar squat"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes",
+        "upper back"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core",
+        "lower back",
+        "calves"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-box-squat",
+    "name": "Safety Bar Box Squat",
+    "aliases": [
+      "SSB box squat",
+      "safety bar box squat"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack",
+      "box"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "upper back",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-bulgarian-split-squat",
+    "name": "Safety Bar Bulgarian Split Squat",
+    "aliases": [
+      "SSB Bulgarian split squat",
+      "SSB RFESS",
+      "safety bar RFESS",
+      "safety bar rear-foot elevated split squat",
+      "SSB rear-foot elevated split squat"
+    ],
+    "equipment": [
+      "safety bar",
+      "bench"
+    ],
+    "movementPatterns": [
+      "squat",
+      "lunge"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "adductors",
+        "upper back",
+        "core",
+        "hip flexors"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "unilateral",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-good-morning",
+    "name": "Safety Bar Good Morning",
+    "aliases": [
+      "SSB good morning",
+      "safety bar good morning",
+      "safety squat bar good morning"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack"
+    ],
+    "movementPatterns": [
+      "hinge"
+    ],
+    "muscles": {
+      "primary": [
+        "hamstrings",
+        "glutes",
+        "lower back"
+      ],
+      "secondary": [
+        "upper back",
+        "core",
+        "calves"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "hinge",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-hatfield-squat",
+    "name": "Hatfield Squat",
+    "aliases": [
+      "SSB Hatfield squat",
+      "safety bar Hatfield squat",
+      "hands-free squat",
+      "self-spotting squat",
+      "Hatfield"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes",
+        "adductors"
+      ],
+      "secondary": [
+        "hamstrings",
+        "calves",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-jm-press",
+    "name": "Safety Bar JM Press",
+    "aliases": [
+      "SSB JM press",
+      "safety bar JM press",
+      "JM press"
+    ],
+    "equipment": [
+      "safety bar",
+      "bench"
+    ],
+    "movementPatterns": [
+      "horizontal press"
+    ],
+    "muscles": {
+      "primary": [
+        "triceps"
+      ],
+      "secondary": [
+        "chest",
+        "front delts"
+      ]
+    },
+    "tags": [
+      "strength",
+      "upper",
+      "triceps",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-lunge",
+    "name": "Safety Bar Lunge",
+    "aliases": [
+      "SSB lunge",
+      "safety bar lunge",
+      "SSB walking lunge",
+      "SSB reverse lunge",
+      "SSB forward lunge"
+    ],
+    "equipment": [
+      "safety bar"
+    ],
+    "movementPatterns": [
+      "lunge"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "adductors",
+        "calves",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "unilateral",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-reverse-front-squat",
+    "name": "Safety Bar Reverse Front Squat",
+    "aliases": [
+      "SSB reverse front squat",
+      "reversed SSB squat",
+      "safety bar front squat",
+      "SSB front squat"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "upper back",
+        "core"
+      ],
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-seated-good-morning",
+    "name": "Safety Bar Seated Good Morning",
+    "aliases": [
+      "SSB seated good morning",
+      "seated SSB good morning",
+      "safety bar seated good morning"
+    ],
+    "equipment": [
+      "safety bar",
+      "rack",
+      "bench"
+    ],
+    "movementPatterns": [
+      "hinge"
+    ],
+    "muscles": {
+      "primary": [
+        "hamstrings",
+        "glutes",
+        "lower back"
+      ],
+      "secondary": [
+        "upper back",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "hinge",
+      "ssb"
+    ]
+  },
+  {
+    "id": "ssb-step-up",
+    "name": "Safety Bar Step-Up",
+    "aliases": [
+      "SSB step up",
+      "safety bar step up",
+      "SSB step-up"
+    ],
+    "equipment": [
+      "safety bar",
+      "box"
+    ],
+    "movementPatterns": [
+      "lunge"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "calves",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "unilateral",
+      "ssb"
+    ]
+  },
+  {
     "id": "stability-ball-crunch-full-range-hands-behind-head",
     "name": "stability ball crunch (full range hands behind head)",
     "aliases": [
@@ -70816,6 +71282,40 @@
     ]
   },
   {
+    "id": "wall-assisted-lateral-handstand-walk",
+    "name": "Wall-Assisted Lateral Handstand Walk",
+    "aliases": [
+      "handstand walk wall-assisted lateral",
+      "lateral handstand walk",
+      "wall handstand lateral walk",
+      "handstand walk (wall-assisted, lateral)"
+    ],
+    "equipment": [
+      "bodyweight"
+    ],
+    "movementPatterns": [
+      "skill",
+      "isometric"
+    ],
+    "muscles": {
+      "primary": [
+        "shoulders",
+        "triceps"
+      ],
+      "secondary": [
+        "upper back",
+        "core",
+        "wrists",
+        "forearms"
+      ]
+    },
+    "tags": [
+      "skill",
+      "calisthenics",
+      "upper"
+    ]
+  },
+  {
     "id": "wall-balls",
     "name": "Wall balls",
     "aliases": [],
@@ -73094,32 +73594,239 @@
     "tags": []
   },
   {
-    "id": "zercher-squats",
-    "name": "Zercher Squats",
-    "aliases": [],
+    "id": "zercher-carry",
+    "name": "Zercher Carry",
+    "aliases": [
+      "zercher walk",
+      "sandbag zercher carry",
+      "zercher loaded carry"
+    ],
     "equipment": [
       "barbell"
     ],
     "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
+      "loaded carry"
     ],
     "muscles": {
       "primary": [
-        "quads"
+        "core",
+        "upper back"
       ],
       "secondary": [
-        "calves",
         "glutes",
-        "hamstrings"
+        "hamstrings",
+        "calves",
+        "biceps",
+        "lower back"
       ]
     },
     "tags": [
       "strength",
-      "expert",
-      "compound",
-      "push"
+      "functional",
+      "loaded-carry",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-deadlift",
+    "name": "Zercher Deadlift",
+    "aliases": [
+      "zercher pull",
+      "zercher deadlift from floor",
+      "zercher DL"
+    ],
+    "equipment": [
+      "barbell"
+    ],
+    "movementPatterns": [
+      "hinge"
+    ],
+    "muscles": {
+      "primary": [
+        "hamstrings",
+        "glutes",
+        "quads"
+      ],
+      "secondary": [
+        "lower back",
+        "upper back",
+        "biceps",
+        "core"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "hinge",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-good-morning",
+    "name": "Zercher Good Morning",
+    "aliases": [
+      "zercher GM",
+      "zercher good mornings"
+    ],
+    "equipment": [
+      "barbell",
+      "rack"
+    ],
+    "movementPatterns": [
+      "hinge"
+    ],
+    "muscles": {
+      "primary": [
+        "hamstrings",
+        "glutes",
+        "lower back"
+      ],
+      "secondary": [
+        "upper back",
+        "core",
+        "biceps"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "hinge",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-lunge",
+    "name": "Zercher Lunge",
+    "aliases": [
+      "zercher walking lunge",
+      "zercher reverse lunge",
+      "zercher forward lunge"
+    ],
+    "equipment": [
+      "barbell"
+    ],
+    "movementPatterns": [
+      "lunge"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "adductors",
+        "core",
+        "upper back",
+        "biceps"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "unilateral",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-march",
+    "name": "Zercher March",
+    "aliases": [
+      "zercher high-knee march",
+      "zercher marching"
+    ],
+    "equipment": [
+      "barbell"
+    ],
+    "movementPatterns": [
+      "loaded carry"
+    ],
+    "muscles": {
+      "primary": [
+        "hip flexors",
+        "core"
+      ],
+      "secondary": [
+        "glutes",
+        "upper back",
+        "biceps"
+      ]
+    },
+    "tags": [
+      "strength",
+      "functional",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-split-squat",
+    "name": "Zercher Split Squat",
+    "aliases": [
+      "zercher Bulgarian split squat",
+      "zercher RFESS",
+      "zercher rear-foot elevated split squat"
+    ],
+    "equipment": [
+      "barbell"
+    ],
+    "movementPatterns": [
+      "squat",
+      "lunge"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "adductors",
+        "core",
+        "upper back",
+        "biceps"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "unilateral",
+      "zercher"
+    ]
+  },
+  {
+    "id": "zercher-squats",
+    "name": "Zercher Squat",
+    "aliases": [
+      "zercher squats",
+      "zercher",
+      "z squat"
+    ],
+    "equipment": [
+      "barbell",
+      "rack"
+    ],
+    "movementPatterns": [
+      "squat"
+    ],
+    "muscles": {
+      "primary": [
+        "quads",
+        "glutes",
+        "adductors"
+      ],
+      "secondary": [
+        "hamstrings",
+        "upper back",
+        "core",
+        "biceps",
+        "lower back"
+      ]
+    },
+    "tags": [
+      "strength",
+      "lower",
+      "squat",
+      "zercher"
     ]
   },
   {

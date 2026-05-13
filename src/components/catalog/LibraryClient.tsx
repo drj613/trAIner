@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 // ─── Grouping ─────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ function ExerciseRow({ item }: { item: ExerciseCatalogItem }) {
               textOverflow: "ellipsis",
             }}
           >
-            {item.name}
+            {toTitleCase(item.name)}
           </div>
           <div
             style={{

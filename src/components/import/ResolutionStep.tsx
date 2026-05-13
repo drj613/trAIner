@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { exerciseCatalog } from "@/lib/catalog/exercises";
-import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
 import { CUSTOM_ID, type ResolutionItem } from "@/lib/import/resolution";
 import type { UserExerciseDocument } from "@/lib/programs/types";
 
@@ -170,7 +170,7 @@ export function ResolutionStep({
                     className="text-sm font-semibold"
                     style={{ color: "var(--accent)" }}
                   >
-                    {getResolvedName(item.path)}
+                    {toTitleCase(getResolvedName(item.path))}
                   </p>
                   <button
                     type="button"
@@ -294,7 +294,7 @@ function PendingCard({
               >
                 ○
               </span>
-              <span className="flex-1">{s.name}</span>
+              <span className="flex-1">{toTitleCase(s.name)}</span>
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0"
                 style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
@@ -325,29 +325,39 @@ function PendingCard({
             </button>
           )}
         </div>
-        {searchQuery &&
-          searchResults.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
-              style={{ background: "var(--bg-2)", borderColor: "var(--line)" }}
-              onClick={() => onSelect(r.id)}
-            >
-              <span className="flex-1">{r.name}</span>
-              {r.isUser && (
-                <span
-                  className="text-[10px] px-1 rounded font-mono shrink-0"
-                  style={{
-                    background: "var(--accent-soft)",
-                    color: "var(--accent)",
-                  }}
-                >
-                  yours
-                </span>
-              )}
-            </button>
-          ))}
+        {searchQuery && searchResults.length > 0 && (
+          <div
+            className="rounded flex flex-col gap-1"
+            style={{
+              background: "var(--bg-3)",
+              border: "1px solid var(--line)",
+              padding: "4px",
+            }}
+          >
+            {searchResults.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
+                style={{ background: "var(--bg-1)", borderColor: "var(--line)" }}
+                onClick={() => onSelect(r.id)}
+              >
+                <span className="flex-1">{toTitleCase(r.name)}</span>
+                {r.isUser && (
+                  <span
+                    className="text-[10px] px-1 rounded font-mono shrink-0"
+                    style={{
+                      background: "var(--accent-soft)",
+                      color: "var(--accent)",
+                    }}
+                  >
+                    yours
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
         {showCreate && (
           <button
             type="button"

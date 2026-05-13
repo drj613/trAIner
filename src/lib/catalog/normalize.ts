@@ -1,3 +1,7 @@
+export function toTitleCase(value: string): string {
+  return value.replace(/(?<![a-zA-Z])[a-z]/g, (c) => c.toUpperCase());
+}
+
 export function normalizeExerciseName(value: string) {
   return value
     .toLowerCase()

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, X, Check } from "lucide-react";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 type Props = {
   onAdd: (items: ExerciseCatalogItem[]) => void;
@@ -134,7 +135,7 @@ export function ExercisePickerSheet({ onAdd, onClose }: Props) {
                   {sel && <Check size={12} style={{ color: "var(--bg-1)" }} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.name}</p>
+                  <p className="text-sm font-medium truncate">{toTitleCase(item.name)}</p>
                   <p
                     className="text-[10px] truncate"
                     style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}

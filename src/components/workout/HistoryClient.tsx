@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
+import { toTitleCase } from "@/lib/catalog/normalize";
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ function ExerciseDetail({
         <h2
           style={{ margin: 0, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--fg)" }}
         >
-          {ex.name}
+          {toTitleCase(ex.name)}
         </h2>
         <div
           style={{
@@ -532,7 +533,7 @@ export function HistoryClient() {
                     marginBottom: 3,
                   }}
                 >
-                  <span>{ex.name}</span>
+                  <span>{toTitleCase(ex.name)}</span>
                   <TrendArrow dir={ex.trend} />
                 </div>
                 <div

@@ -6,6 +6,7 @@ import { Plus, Pencil, ChevronRight, Trash2, X } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 import type {
   ProgramDocument,
   ProgramDay,
@@ -321,7 +322,7 @@ function DayEditorStep({
                 g.exercises.map((ex) => (
                   <div key={ex.id} className="flex items-center gap-2 py-1.5 border-b" style={{ borderColor: "var(--line)" }}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{ex.name}</p>
+                      <p className="text-sm font-medium truncate">{toTitleCase(ex.name)}</p>
                       <p className="text-[10px]" style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
                         {ex.muscles[0] ?? "—"} · {ex.equipment[0] ?? "—"}
                       </p>

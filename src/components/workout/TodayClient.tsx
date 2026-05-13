@@ -19,6 +19,7 @@ import { getRenderableDays } from "@/lib/programs/overrides";
 import { ExerciseReplaceSheet } from "./ExerciseReplaceSheet";
 import { swapExercise } from "@/lib/workout/exerciseSwap";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 function localDateString(): string {
   const d = new Date();
@@ -116,7 +117,7 @@ const ExerciseRow = memo(function ExerciseRow({
       <div style={{ marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
           <span style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", flex: 1 }}>
-            {exercise.name}
+            {toTitleCase(exercise.name)}
           </span>
           <button
             className="btn ghost"

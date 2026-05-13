@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 type Props = {
   onSelect: (item: ExerciseCatalogItem) => void;
@@ -124,7 +125,7 @@ export function ExerciseReplaceSheet({ onSelect, onClose }: Props) {
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.name}</p>
+                  <p className="text-sm font-medium truncate">{toTitleCase(item.name)}</p>
                   <p
                     className="text-[10px] truncate"
                     style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}

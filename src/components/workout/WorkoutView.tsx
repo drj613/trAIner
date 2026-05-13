@@ -1,4 +1,5 @@
 import type { ProgramDay, ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 type Props = {
   program: ProgramDocument;
@@ -27,7 +28,7 @@ export function WorkoutView({ program, day, recentLogs = [] }: Props) {
                 <article key={exercise.id} className="border-t border-[var(--line)] pt-3 first:border-t-0 first:pt-0">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-bold">{exercise.name}</h3>
+                      <h3 className="font-bold">{toTitleCase(exercise.name)}</h3>
                       <p className="text-sm muted">
                         {[exercise.sets ? `${exercise.sets} sets` : undefined, exercise.reps, exercise.load, exercise.rest ? `rest ${exercise.rest}` : undefined]
                           .filter(Boolean)
