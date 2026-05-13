@@ -1,0 +1,418 @@
+ExerciseDBPro uncertain matches (0.60–0.80 Jaccard) — review manually
+Add correct mappings to scripts/catalog-local-overrides.json as { "id": "<existing-slug>", ... }
+Generated: 2026-05-12T18:48:43.578Z
+
+score  Pro name                             → Existing match
+0.75   archer push up                       → Archer Push Up – Rings
+0.75   assisted standing pull-up            → Assisted Pull-Up
+0.75   band hip lift                        → Hip Lift with Band
+0.75   barbell bench front squat            → Front Barbell Squat
+0.75   barbell floor calf raise             → Calf Raise – Barbell
+0.75   barbell front chest squat            → Front Barbell Squat
+0.75   barbell full zercher squat           → Barbell Full Squat
+0.75   barbell good morning                 → Seated Good Morning – Barbell
+0.75   barbell jm bench press               → Barbell Bench Press
+0.75   barbell lying preacher curl          → Preacher Curl – Barbell
+0.75   barbell lying triceps extension      → Barbell Triceps Extension
+0.75   barbell press sit-up                 → Press Sit-Up
+0.75   barbell rear delt raise              → Rear Delt Raise
+0.75   barbell reverse preacher curl        → Preacher Curl – Barbell
+0.75   barbell seated overhead press        → Overhead Barbell Press
+0.75   barbell standing bradford press      → Standing Bradford Press
+0.75   barbell standing concentration curl  → Standing Concentration Curl
+0.75   barbell wide squat                   → Wide Stance Barbell Squat
+0.75   bodyweight drop jump squat           → Jump Squat – Bodyweight
+0.75   bodyweight standing calf raise       → Standing Calf Raise
+0.75   cable alternate shoulder press       → Cable Shoulder Press
+0.75   cable cross-over variation           → Cable Cross-over
+0.75   cable decline press                  → Cable Chest Press - Decline
+0.75   cable front shoulder raise           → Front Cable Raise
+0.75   cable low fly                        → Low Chest Fly – Cable
+0.75   cable low seated row                 → Seated Cable Row
+0.75   cable lying bicep curl               → lying bicep curl
+0.75   cable middle fly                     → Cable Fly Middle Chest
+0.75   cable reverse preacher curl          → Cable Preacher Curl
+0.75   cable reverse wrist curl             → Cable Wrist Curl
+0.75   cable rope seated row                → Seated Cable Row
+0.75   cable seated chest press             → Cable Chest Press
+0.75   cable seated overhead curl           → Overhead Cable Curl
+0.75   cable standing calf raise            → Standing Calf Raise
+0.75   cable standing fly                   → Standing Chest Fly – Cable
+0.75   cable tuck reverse crunch            → Cable Reverse Crunch
+0.75   dumbbell alternate preacher curl     → Dumbbell Preacher Curl
+0.75   dumbbell bench seated press          → Bench Press – Dumbbell
+0.75   dumbbell incline alternate press     → Incline Dumbbell Press
+0.75   dumbbell incline biceps curl         → Dumbbell Incline Curl
+0.75   dumbbell incline hammer curl         → Dumbbell Incline Curl
+0.75   dumbbell incline hammer press        → Incline Dumbbell Press
+0.75   dumbbell incline raise               → Dumbbell Incline Shoulder Raise
+0.75   dumbbell incline triceps extension   → Dumbbell Triceps Extension
+0.75   dumbbell incline twisted flyes       → Incline Dumbbell Flyes
+0.75   dumbbell lying triceps extension     → Dumbbell Triceps Extension
+0.75   dumbbell rear delt raise             → Rear Delt Raise
+0.75   dumbbell reverse bench press         → Bench Press – Dumbbell
+0.75   dumbbell reverse preacher curl       → Dumbbell Preacher Curl
+0.75   dumbbell rotation reverse fly        → Reverse Fly – Dumbbell
+0.75   dumbbell seated alternate press      → Seated Dumbbell Press
+0.75   dumbbell seated bent over triceps extension → Seated Bent-Over One-Arm Dumbbell Triceps Extension
+0.75   dumbbell seated bicep curl           → Dumbbell Bicep Curl
+0.75   dumbbell seated hammer curl          → Hammer Curl – Dumbbell
+0.75   dumbbell seated lateral raise        → Lateral Raise – Dumbbell
+0.75   dumbbell seated one leg calf raise - hammer grip → Dumbbell Seated One-Leg Calf Raise
+0.75   dumbbell seated one leg calf raise - palm up → Dumbbell Seated One-Leg Calf Raise
+0.75   dumbbell seated preacher curl        → Dumbbell Preacher Curl
+0.75   dumbbell seated triceps extension    → Dumbbell Triceps Extension
+0.75   dumbbell standing concentration curl → Dumbbell Concentration Curl
+0.75   dumbbell standing overhead press     → Standing Dumbbell Press
+0.75   dumbbell standing preacher curl      → Dumbbell Preacher Curl
+0.75   dumbbell twisting bench press        → Bench Press – Dumbbell
+0.75   dumbbell zottman preacher curl       → Dumbbell Preacher Curl
+0.75   hanging leg hip raise                → Hanging Leg Raise
+0.75   hanging oblique knee raise           → Hanging Knee Raise
+0.75   hanging straight leg raise           → Hanging Leg Raise
+0.75   incline scapula push up              → Incline Push-Up
+0.75   kettlebell alternating renegade row  → Alternating Kettlebell Row
+0.75   kettlebell front squat               → Double Kettlebell Front Squat
+0.75   kettlebell lunge pass through        → Lunge Pass Through
+0.75   kettlebell plyo push-up              → Plyo Push-up
+0.75   lever lying leg curl                 → Lying Leg Curl
+0.75   lever seated calf raise              → Seated Calf Raise
+0.75   lever seated hip abduction           → Seated Hip Abduction
+0.75   lever seated hip adduction           → Seated Hip Adduction
+0.75   lever seated leg curl                → Seated Leg Curl
+0.75   lever standing calf raise            → Standing Calf Raise
+0.75   lever t bar row                      → Row – T-Bar
+0.75   lunge with twist                     → Lunge with Twist Stretch
+0.75   lying elbow to knee                  → Elbow to Knee
+0.75   lying leg-hip raise                  → Hip Raise, Lying
+0.75   machine inner chest press            → Chest Press – Machine
+0.75   medicine ball chest push from 3 point stance → Chest Push from 3 point stance
+0.75   medicine ball overhead slam          → Slam – Medicine Ball
+0.75   mixed grip chin-up                   → Mixed Grip Chin
+0.75   olympic barbell triceps extension    → Barbell Triceps Extension
+0.75   one leg squat                        → One Leg Barbell Squat
+0.75   push-up (wall)                       → Push-Up Against Wall
+0.75   push-up close-grip off dumbbell      → Close-Grip Push-Up off of a Dumbbell
+0.75   side hip abduction                   → Side Lying Hip Abduction
+0.75   side push neck stretch               → Side Neck Stretch
+0.75   side wrist pull stretch              → Side Wrist Pull
+0.75   smith bench press                    → Bench Press – Smith Machine
+0.75   smith decline bench press            → Decline Smith Press
+0.75   smith hip raise                      → Smith Machine Hip Raise
+0.75   smith leg press                      → Smith Machine Leg Press
+0.75   smith machine bicep curl             → Machine Bicep Curl
+0.75   smith machine reverse decline close grip bench press → Smith Machine Close-Grip Bench Press
+0.75   smith standing military press        → Standing Military Press
+0.75   smith upright row                    → Smith Machine Upright Row
+0.75   standing calves calf stretch         → Standing Calf Stretch
+0.75   standing single leg curl             → Standing Leg Curl
+0.75   weighted decline sit-up              → Decline Sit-Up
+0.75   wide hand push up                    → Push-Up Wide
+0.75   world greatest stretch               → World's Greatest Stretch
+0.71   barbell reverse grip decline bench press → Wide-Grip Decline Barbell Bench Press
+0.71   barbell reverse grip incline bench press → Barbell Incline Bench Press - Medium Grip
+0.71   cable standing one arm triceps extension → Standing One-Arm Dumbbell Triceps Extension
+0.71   calf push stretch with hands against wall → Calf Stretch Hands Against Wall
+0.71   dumbbell one arm lateral raise       → Dumbbell Lying One-Arm Rear Lateral Raise
+0.71   dumbbell one arm shoulder press v. 2 → Dumbbell One-Arm Shoulder Press
+0.71   dumbbell one arm triceps extension (on bench) → Dumbbell One-Arm Triceps Extension
+0.71   dumbbell single leg deadlift with stepbox support → Single-Leg Deadlift with Dumbbell
+0.71   ez bar seated close grip concentration curl → Close-Grip EZ Bar Curl
+0.71   ez-barbell standing wide grip biceps curl → Wide-Grip Standing Barbell Curl
+0.71   medicine ball chest push with run release → Chest Push with Run Release
+0.71   single leg calf raise (on a dumbbell) → Calf Raise On A Dumbbell
+0.71   smith seated one leg calf raise      → Dumbbell Seated One-Leg Calf Raise
+0.71   smith wide grip decline bench press  → Wide-Grip Decline Barbell Bench Press
+0.71   standing hamstring and calf stretch with strap → Standing Hamstring and Calf Stretch
+0.67   assisted sit-up                      → Sit-Up
+0.67   assisted standing triceps extension (with towel) → Standing Towel Triceps Extension
+0.67   assisted wide-grip chest dip (kneeling) → Assisted Chest Dip (kneeling)
+0.67   band bicycle crunch                  → Bicycle Crunch
+0.67   band concentration curl              → Concentration Curl
+0.67   band pull through                    → Pull Through
+0.67   band single leg split squat          → Smith Single-Leg Split Squat
+0.67   band step-up                         → Step-Up
+0.67   band v-up                            → V-Up
+0.67   barbell bench squat                  → Barbell Squat
+0.67   barbell decline pullover             → Pullover – Barbell
+0.67   barbell drag curl                    → Barbell Curl
+0.67   barbell incline row                  → Row – Barbell
+0.67   barbell jefferson squat              → Barbell Squat
+0.67   barbell jump squat                   → Barbell Squat
+0.67   barbell lateral lunge                → Barbell Lunge
+0.67   barbell lying close-grip press       → Close-Grip Barbell Bench Press
+0.67   barbell lying close-grip triceps extension → Lying Close-Grip Barbell Triceps Extension Behind The Head
+0.67   barbell one arm bent over row        → Bent Over Barbell Row
+0.67   barbell overhead squat               → Barbell Squat
+0.67   barbell pendlay row                  → Pendlay Row
+0.67   barbell pin presses                  → Pin Presses
+0.67   barbell rack pull                    → Rack Pull
+0.67   barbell rear lunge                   → Barbell Lunge
+0.67   barbell reverse wrist curl v. 2      → Barbell Reverse Wrist Curl
+0.67   barbell reverse grip bent over row   → Bent Over Barbell Row
+0.67   barbell seated behind head military press → Seated Barbell Military Press
+0.67   barbell seated overhead triceps extension → Standing Overhead Barbell Triceps Extension
+0.67   barbell side split squat v. 2        → Barbell Side Split Squat
+0.67   barbell single leg split squat       → Smith Single-Leg Split Squat
+0.67   barbell speed squat                  → Barbell Squat
+0.67   barbell standing reverse grip curl   → Close-Grip Standing Barbell Curl
+0.67   barbell standing rocking leg calf raise → Rocking Standing Calf Raise
+0.67   barbell step-up                      → Step-Up
+0.67   barbell zercher squat                → Barbell Squat
+0.67   basic toe touch                      → Toe Touch
+0.67   bench pull-ups                       → Pull-ups
+0.67   biceps pull-up                       → Pull-Up
+0.67   cable bench press                    → Bench Press
+0.67   cable decline fly                    → Cable Fly
+0.67   cable drag curl                      → Cable Curl
+0.67   cable high pulley overhead tricep extension → Overhead Cable Tricep Extension
+0.67   cable incline fly                    → Cable Fly
+0.67   cable kickback                       → Cable Tricep Kickback
+0.67   cable kneeling crunch                → Cable Crunch
+0.67   cable lying fly                      → Cable Fly
+0.67   cable lying triceps extension v. 2   → Cable Lying Triceps Extension
+0.67   cable one arm bent over row          → One Arm Bent Row
+0.67   cable one arm lateral raise          → Lying One-Arm Lateral Raise
+0.67   cable one arm preacher curl          → One Arm Dumbbell Preacher Curl
+0.67   cable one arm tricep pushdown        → Cable One Arm Tricep Extension
+0.67   cable pushdown                       → Cable Incline Pushdown
+0.67   cable pushdown (with rope attachment) → Tricep Pushdown – Cable With Rope
+0.67   cable rear delt row (with rope)      → Rear Delt Row – Cable
+0.67   cable reverse one arm curl           → Standing One-Arm Cable Curl
+0.67   cable rope hammer preacher curl      → Hammer Curl – Cable With Rope
+0.67   cable seated curl                    → Cable Curl
+0.67   cable seated twist                   → Twist – Cable
+0.67   cable shrug                          → Cable Shrug-In
+0.67   cable side crunch                    → Cable Crunch
+0.67   cable squatting curl                 → Cable Curl
+0.67   cable standing crunch                → Cable Crunch
+0.67   cable standing reverse grip one arm overhead tricep extension → One Arm Overhead Cable Tricep Extension
+0.67   cable straight arm pulldown (with rope) → Rope Straight-Arm Pulldown
+0.67   cable triceps pushdown (v-bar)       → Triceps Pushdown - V-Bar Attachment
+0.67   circles knee stretch                 → Knee Circles
+0.67   close-grip push-up (on knees)        → Close-Grip Push-Up
+0.67   deep push up                         → Push-Up
+0.67   diamond push-up                      → Push-Up
+0.67   drop push up                         → Drop Push
+0.67   dumbbell around pullover             → Dumbbell Pullover
+0.67   dumbbell bench squat                 → Dumbbell Squat
+0.67   dumbbell biceps curl                 → Curl – Dumbbell
+0.67   dumbbell cuban press                 → Cuban Press
+0.67   dumbbell decline shrug               → Dumbbell Shrug
+0.67   dumbbell finger curls                → Finger Curls
+0.67   dumbbell fly                         → Chest Fly – Dumbbell
+0.67   dumbbell high curl                   → Curl – Dumbbell
+0.67   dumbbell incline one arm press       → Dumbbell One-Arm Shoulder Press
+0.67   dumbbell incline rear lateral raise  → Dumbbell Lying Rear Lateral Raise
+0.67   dumbbell incline shrug               → Dumbbell Shrug
+0.67   dumbbell iron cross                  → Iron Cross
+0.67   dumbbell kickback                    → Tricep Dumbbell Kickback
+0.67   dumbbell lying one arm press         → Dumbbell One-Arm Shoulder Press
+0.67   dumbbell one arm bench fly           → One Arm Dumbbell Bench Press
+0.67   dumbbell one arm bent-over row       → Dumbbell Bent Over Row
+0.67   dumbbell one arm prone curl          → One Arm Dumbbell Preacher Curl
+0.67   dumbbell one arm seated neutral wrist curl → Seated One-Arm Dumbbell Palms-Down Wrist Curl
+0.67   dumbbell one arm standing curl       → One Arm Dumbbell Preacher Curl
+0.67   dumbbell one arm wrist curl          → One Arm Dumbbell Preacher Curl
+0.67   dumbbell over bench one arm wrist curl → Standing One-Arm Dumbbell Curl Over Incline Bench
+0.67   dumbbell palm rotational bent over row → Dumbbell Bent Over Row
+0.67   dumbbell palms in incline bench press → Incline Bench Press – Dumbbell
+0.67   dumbbell plyo squat                  → Dumbbell Squat
+0.67   dumbbell seated alternate front raise → Seated Incline Front Raise – Dumbbell
+0.67   dumbbell seated shoulder press (parallel grip) → Seated Shoulder Press – Dumbbell
+0.67   dumbbell single leg split squat      → Smith Single-Leg Split Squat
+0.67   dumbbell standing front raise above head → Standing Dumbbell Straight-Arm Front Delt Raise Above Head
+0.67   dumbbell standing one arm reverse curl → Standing Dumbbell Reverse Curl
+0.67   dumbbell step-up                     → Step-Up
+0.67   dumbbell supported squat             → Dumbbell Squat
+0.67   dumbbell tate press                  → Tate Press
+0.67   dumbbell upright shoulder external rotation → Horizontal External Shoulder Rotation – Dumbbell
+0.67   dumbbell zottman curl                → Curl – Dumbbell
+0.67   ez barbell close-grip curl           → Close-Grip EZ Bar Curl
+0.67   ez barbell curl                      → Barbell Curl
+0.67   ez barbell decline triceps extension → Decline EZ Bar Triceps Extension
+0.67   front lever reps                     → Front Lever
+0.67   glute bridge march                   → Glute Bridge
+0.67   gorilla chin                         → Gorilla Chin/Crunch
+0.67   half sit-up                          → Sit-Up
+0.67   iron cross stretch                   → Iron Cross
+0.67   jump squat                           → Freehand Jump Squat
+0.67   kettlebell bent press                → Bent Press
+0.67   kettlebell goblet squat              → Goblet Squat
+0.67   l-pull-up                            → Pull-Up
+0.67   landmine 180                         → Landmine 180's
+0.67   lever back extension                 → Back Extension
+0.67   lever calf press                     → Calf Press
+0.67   lever chest press                    → Chest Press
+0.67   lever chest press                    → Chest Press
+0.67   lever front pulldown                 → Front Lever
+0.67   lever high row                       → High Row
+0.67   lever leg extension                  → Leg Extension
+0.67   lever one arm bent over row          → One Arm Bent Row
+0.67   lever one arm shoulder press         → Dumbbell One-Arm Shoulder Press
+0.67   lever preacher curl                  → Preacher Curl
+0.67   lever reverse grip preacher curl     → Reverse Preacher Curl (Close Grip)
+0.67   lever reverse hyperextension         → Reverse Hyperextension
+0.67   march sit (wall)                     → Wall-sit
+0.67   medicine ball catch and overhead throw → Catch and Overhead Throw
+0.67   medicine ball chest push multiple response → Chest Push (multiple response)
+0.67   medicine ball chest push single response → Chest Push (single response)
+0.67   medicine ball close grip push up     → Close-Grip Push-Up
+0.67   oblique crunches floor               → Oblique Crunches
+0.67   overhead triceps stretch             → Overhead Stretch
+0.67   pelvic tilt                          → Standing Pelvic Tilt
+0.67   push-up plus                         → Push-Up
+0.67   quads (bodyweight squat)             → Bodyweight Squat
+0.67   quarter sit-up                       → Sit-Up
+0.67   rear pull-up                         → Pull-Up
+0.67   reverse plank with leg lift          → Copenhagen Plank with Leg Lift
+0.67   rocking frog stretch                 → Frog Stretch
+0.67   roller reverse crunch                → Reverse Crunch
+0.67   runners stretch                      → Runners Lunge Stretch
+0.67   scapula push-up                      → Push-Up
+0.67   seated glute stretch                 → Seated Glute
+0.67   seated leg raise                     → Leg Raise
+0.67   side push-up                         → Push-Up
+0.67   sissy squat                          → Weighted Sissy Squat
+0.67   sled hack squat                      → Hack Squat
+0.67   smith chair squat                    → Chair Squat
+0.67   smith hack squat                     → Hack Squat
+0.67   smith one arm row                    → Smith Machine One-Arm Upright Row
+0.67   smith shoulder press                 → Smith Press
+0.67   smith sprint lunge                   → Lunge Sprint
+0.67   smith squat                          → Smith Machine Squat
+0.67   smith wide grip bench press          → Wide-Grip Barbell Bench Press
+0.67   stationary bike walk                 → Stationary Bike
+0.67   superman push-up                     → Push-Up
+0.67   suspended abdominal fallout          → Suspended Fallout
+0.67   three bench dip                      → Dip – Bench
+0.67   triceps dips floor                   → Floor dips
+0.67   triceps press                        → Cable Triceps Press
+0.67   twisted leg raise                    → Leg Raise
+0.67   twisted leg raise                    → Leg Raise
+0.67   two toe touch                        → Toe Touch
+0.67   walking lunge                        → Barbell Walking Lunge
+0.67   weighted front plank                 → Front Plank
+0.67   weighted muscle up                   → Muscle Up
+0.67   weighted russian twist               → Russian Twist
+0.67   weighted side bend (on stability ball) → Weighted Ball Side Bend
+0.67   weighted svend press                 → Svend Press
+0.64   ez bar lying close grip triceps extension behind head → Lying Close-Grip Barbell Triceps Extension Behind The Head
+0.63   cable rope high pulley overhead tricep extension → Overhead Tricep Extension – Cable With Rope
+0.63   cable side bend crunch (bosu ball)   → Bosu Ball Cable Crunch With Side Bends
+0.63   cable wide grip rear pulldown behind neck → Wide-Grip Pulldown Behind The Neck
+0.63   dumbbell lying one arm deltoid rear  → Dumbbell Lying One-Arm Rear Lateral Raise
+0.63   dumbbell over bench wrist curl       → Palms-Down Dumbbell Wrist Curl Over A Bench
+0.60   all fours squad stretch              → All Fours Quad Stretch
+0.60   assisted triceps dip (kneeling)      → Assisted Chest Dip (kneeling)
+0.60   band lying straight leg raise        → Lying Leg Raise
+0.60   band reverse wrist curl              → Barbell Reverse Wrist Curl
+0.60   barbell full squat (back pov)        → Barbell Back Squat
+0.60   barbell full squat (side pov)        → Barbell Full Squat
+0.60   barbell narrow stance squat          → Wide Stance Barbell Squat
+0.60   barbell one arm snatch               → One-Arm Kettlebell Snatch
+0.60   barbell prone incline curl           → Dumbbell Prone Incline Curl
+0.60   barbell reverse grip skullcrusher    → Reverse Grip Barbell Curls
+0.60   barbell rollerout from bench         → Barbell Rollout from Bench
+0.60   barbell single leg deadlift          → Romanian deadlift, single leg
+0.60   barbell split squat v. 2             → Split Squat – Barbell
+0.60   barbell standing back wrist curl     → Barbell Wrist Curl
+0.60   barbell standing wide military press → Standing Military Press
+0.60   barbell upright row v. 2             → Upright Barbell Row
+0.60   barbell upright row v. 3             → Upright Barbell Row
+0.60   barbell wide-grip upright row        → Upright Barbell Row
+0.60   barbell wrist curl v. 2              → Barbell Wrist Curl
+0.60   bodyweight kneeling triceps extension → Kneeling Cable Triceps Extension
+0.60   bodyweight side lying biceps curl    → Bodyweight Biceps Curl
+0.60   cable alternate triceps extension    → Cable Incline Triceps Extension
+0.60   cable cross-over lateral pulldown    → Cable Cross-over
+0.60   cable cross-over reverse fly         → Cable Cross-over
+0.60   cable high row (kneeling)            → Alternating High Cable Row
+0.60   cable incline bench press            → Barbell Incline Bench Press
+0.60   cable lying close-grip curl          → Lying Cable Curl
+0.60   cable one arm pulldown               → One Arm Lat Pulldown
+0.60   cable pull through (with rope)       → Cable Pull-Through
+0.60   cable reverse-grip pushdown          → Reverse Grip Triceps Pushdown
+0.60   cable rope crossover seated row      → Seated Cable Row
+0.60   cable rope elevated seated row       → Seated Cable Row
+0.60   cable standing back wrist curl       → Cable Wrist Curl
+0.60   cable standing inner curl            → Standing Biceps Cable Curl
+0.60   cable straight back seated row       → Seated Cable Row
+0.60   cable two arm tricep kickback        → Cable Tricep Kickback
+0.60   cable upper chest crossovers         → Cable Fly Upper Chest
+0.60   cambered bar lying row               → Lying Cambered Barbell Row
+0.60   close grip chin-up                   → Close-Grip Push-Up
+0.60   dumbbell alternate biceps curl       → Alternate Incline Dumbbell Curl
+0.60   dumbbell alternate seated hammer curl → Alternate Hammer Curl
+0.60   dumbbell arnold press v. 2           → Arnold Dumbbell Press
+0.60   dumbbell biceps curl reverse         → Standing Dumbbell Reverse Curl
+0.60   dumbbell decline hammer press        → Decline Bench Press – Dumbbell
+0.60   dumbbell forward lunge triceps extension → Dumbbell Triceps Extension
+0.60   dumbbell front raise v. 2            → Front Dumbbell Raise
+0.60   dumbbell full can lateral raise      → Lateral Raise – Dumbbell
+0.60   dumbbell hammer curl v. 2            → Hammer Curl – Dumbbell
+0.60   dumbbell incline curl v. 2           → Dumbbell Incline Curl
+0.60   dumbbell incline one arm fly         → Dumbbell Incline Fly
+0.60   dumbbell incline palm-in press       → Incline Dumbbell Press
+0.60   dumbbell incline t-raise             → Dumbbell Incline Shoulder Raise
+0.60   dumbbell incline y-raise             → Dumbbell Incline Shoulder Raise
+0.60   dumbbell lateral to front raise      → Front Dumbbell Raise
+0.60   dumbbell lunge with bicep curl       → Dumbbell Bicep Curl
+0.60   dumbbell lying alternate extension   → Lying Dumbbell Tricep Extension
+0.60   dumbbell lying pronation on floor    → Dumbbell Lying Pronation
+0.60   dumbbell lying single extension      → Lying Dumbbell Tricep Extension
+0.60   dumbbell lying supination on floor   → Dumbbell Lying Supination
+0.60   dumbbell lying wide curl             → Lying Supine Dumbbell Curl
+0.60   dumbbell one arm kickback            → One-Arm Dumbbell Row
+0.60   dumbbell one arm snatch              → One-Arm Dumbbell Row
+0.60   dumbbell over bench one arm neutral wrist curl → Standing One-Arm Dumbbell Curl Over Incline Bench
+0.60   dumbbell over bench one arm reverse wrist curl → Standing One-Arm Dumbbell Curl Over Incline Bench
+0.60   dumbbell pronate-grip triceps extension → Dumbbell Triceps Extension
+0.60   dumbbell reverse spider curl         → Standing Dumbbell Reverse Curl
+0.60   dumbbell reverse wrist curl          → Barbell Reverse Wrist Curl
+0.60   dumbbell seated alternate shoulder   → Seated Shoulder Press – Dumbbell
+0.60   dumbbell seated neutral wrist curl   → Seated Dumbbell Curl
+0.60   dumbbell single leg calf raise       → Single Dumbbell Raise
+0.60   dumbbell standing alternate overhead press → Standing Dumbbell Press
+0.60   dumbbell standing alternate raise    → Standing Dumbbell Calf Raise
+0.60   dumbbell standing alternating tricep kickback → Tricep Dumbbell Kickback
+0.60   dumbbell standing biceps curl        → Standing Biceps Cable Curl
+0.60   dumbbell standing zottman preacher curl → Dumbbell Preacher Curl
+0.60   dumbbell step-up split squat         → Dumbbell Split Squat
+0.60   dumbbell stiff leg deadlift          → Stiff-Legged Dumbbell Deadlift
+0.60   dumbbell upright row (back pov)      → Dumbbell upright-row
+0.60   exercise ball hip flexor stretch     → Hip Flexor Stretch
+0.60   ez barbell anti gravity press        → Anti-Gravity Press
+0.60   ez barbell jm bench press            → Barbell Bench Press
+0.60   ez barbell reverse grip curl         → Reverse Barbell Curl
+0.60   ez barbell seated triceps extension  → Barbell Triceps Extension
+0.60   full planche push-up                 → Pseudo Planche Push-up
+0.60   hanging straight leg hip raise       → Hanging Leg Raise
+0.60   incline push-up (on box)             → Incline Push-Up
+0.60   kettlebell alternating press on floor → Alternating Floor Press
+0.60   lever bent over row                  → Bent Over Barbell Row
+0.60   lever decline chest press            → Cable Chest Press - Decline
+0.60   lever incline chest press            → Cable Chest Press - Incline
+0.60   lever reverse t-bar row              → Row – T-Bar
+0.60   lever seated good morning            → Seated Good Morning – Barbell
+0.60   lever standing chest press           → Standing Cable Chest Press
+0.60   lying (side) quads stretch           → Side-Lying Floor Stretch
+0.60   medicine ball supine chest throw     → Supine Chest Throw
+0.60   one arm towel row                    → One Arm Bent Row
+0.60   pull up (neutral grip)               → Pull-Ups (Neutral Grip)
+0.60   push-up (bosu ball)                  → Push-Up – Medicine Ball
+0.60   resistance band seated hip abduction → Hip Abduction – Band
+0.60   reverse grip pull-up                 → Wide Grip Pull Up
+0.60   seated lower back stretch            → Chair Lower Back Stretch
+0.60   shoulder grip pull-up                → Wide Grip Pull Up
+0.60   side bridge hip abduction            → Side Lying Hip Abduction
+0.60   side lying hip adduction             → Side Lying Hip Abduction
+0.60   smith decline reverse-grip press     → Decline Smith Press
+0.60   smith incline reverse-grip press     → Incline Smith Press
+0.60   smith incline shoulder raises        → Smith Incline Shoulder Raise
+0.60   smith rear delt row                  → Barbell Rear Delt Row
+0.60   smith reverse-grip press             → Reverse Grip Bench Press
+0.60   smith standing leg calf raise        → Standing Calf Raise
+0.60   weighted hanging leg-hip raise       → Hanging Leg Raise
+0.60   weighted hyperextension (on stability ball) → Weighted Ball Hyperextension
+0.60   weighted one hand pull up            → Weighted Pull-Up
