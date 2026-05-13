@@ -102,7 +102,7 @@ export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
           {accepting ? "Applying changes to your workout" : ""}
         </span>
         <button type="button" className="btn ghost" onClick={onDiscard} style={{ flex: 1 }}>Discard</button>
-        <button type="button" className="btn primary" onClick={handleAccept} style={{ flex: 2 }}>Apply changes</button>
+        <button type="button" className="btn primary" onClick={handleAccept} disabled={accepting} style={{ flex: 2 }}>Apply changes</button>
       </div>
     </div>
   );

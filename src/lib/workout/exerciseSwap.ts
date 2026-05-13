@@ -1,4 +1,4 @@
-import type { ProgramDay } from "@/lib/programs/types";
+import type { ProgramDay, ProgramGroup } from "@/lib/programs/types";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 
 export function swapExercise(
@@ -34,5 +34,41 @@ export function swapExercise(
         }),
       })),
     })),
+  };
+}
+
+export function addExercise(
+  day: ProgramDay,
+  sectionId: string,
+  item: ExerciseCatalogItem,
+): ProgramDay {
+  const found = day.sections.some((s) => s.id === sectionId);
+  if (!found) return day;
+
+  return {
+    ...day,
+    sections: day.sections.map((section) => {
+      if (section.id !== sectionId) return section;
+      const newGroup: ProgramGroup = {
+        id: crypto.randomUUID(),
+        type: "single",
+        exercises: [
+          {
+            id: crypto.randomUUID(),
+            name: item.name,
+            canonicalExerciseId: item.id,
+            sets: 3,
+            reps: "8-10",
+            tags: {
+              primary: item.muscles.primary,
+              secondary: item.muscles.secondary,
+              incidental: [],
+              modifiers: [],
+            },
+          },
+        ],
+      };
+      return { ...section, groups: [...section.groups, newGroup] };
+    }),
   };
 }
