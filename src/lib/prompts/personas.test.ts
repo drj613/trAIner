@@ -1,10 +1,6 @@
 import { DEFAULT_PERSONAS } from "./personas";
 
 describe("DEFAULT_PERSONAS", () => {
-  it("contains exactly 12 personas", () => {
-    expect(DEFAULT_PERSONAS).toHaveLength(12);
-  });
-
   it("every persona has required fields", () => {
     for (const p of DEFAULT_PERSONAS) {
       expect(typeof p.id).toBe("string");

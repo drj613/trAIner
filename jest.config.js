@@ -14,6 +14,7 @@ module.exports = {
   testPathIgnorePatterns: [
     "<rootDir>/node_modules/",
     "<rootDir>/.worktrees/",
+    "<rootDir>/.claude/",
     "<rootDir>/e2e/",
   ],
 };
