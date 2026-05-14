@@ -120,9 +120,22 @@ For programs longer than one week:
 - \`overrides\` lists only the weeks that deviate (e.g. deload week, peak week, test week). Weeks without an override automatically repeat the base template.
 - Omit \`weeks\` and \`overrides\` for single-week programs.`;
 
+  const conversationMode = `## Output mode
+
+Default to conversational mode. Ask clarifying questions, surface tradeoffs between approaches, propose options, and discuss programming choices with the athlete. Do NOT emit the routine JSON during this phase — not as a preview, not partially, not wrapped in fences. Conversation only.
+
+When the athlete types \`GENERATE IT\` (exactly those words, all caps) — and only then — switch to emit-only mode for that single response:
+- Output ONLY the routine JSON described below.
+- No markdown code fences. No preamble like "Here's your routine:". No commentary after the JSON.
+- The first character of your response must be \`{\` and the last must be \`}\`.
+
+After emitting the JSON, return to conversational mode for any follow-up messages. If the athlete asks for changes, discuss them conversationally until they type \`GENERATE IT\` again.
+
+At the end of every conversational message, append one line: \`Say GENERATE IT (all caps) when you're ready for the final routine.\``;
+
   return [
-    "## Output schema",
-    "Respond with valid JSON only. No markdown fences. No explanation outside JSON.",
+    conversationMode,
+    "## Routine JSON schema (used only when emitting after GENERATE IT)",
     "You MUST use the exact field names shown below. Do not rename or restructure the hierarchy.",
     "  - Top level: `title`, `days`, and optionally `weeks` + `overrides`",
     "  - Each day: `day` (number), `title`, `sections`",
@@ -134,6 +147,23 @@ For programs longer than one week:
     constraints,
     "Structural skeleton (all real content should replace the placeholder strings):",
     JSON.stringify(skeleton, null, 2),
+  ].join("\n");
+}
+
+export function buildRecoveryPrompt(errorMessage?: string): string {
+  const reason = errorMessage
+    ? `The previous response could not be imported. Error: ${errorMessage}`
+    : "The previous response was not valid routine JSON.";
+  return [
+    reason,
+    "",
+    "Please re-emit ONLY the routine as raw JSON, matching the schema you were given earlier in this conversation. Strict rules:",
+    "- No markdown code fences (no ```json, no ```).",
+    "- No preamble, no commentary, no explanation outside the JSON.",
+    "- First character must be `{`, last character must be `}`.",
+    "- Use the exact field names from the schema. Do not rename or restructure.",
+    "",
+    "If you need to ask a question or discuss anything, do that in a separate message after this one — this message must contain only the JSON.",
   ].join("\n");
 }
 

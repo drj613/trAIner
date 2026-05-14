@@ -58,38 +58,38 @@ describe("exercise catalog", () => {
 
 describe("user exercise matching", () => {
   const userExercises = [
-    { id: "user-abc123", name: "Copenhagen Plank", createdAt: "2026-05-06T00:00:00Z" },
+    { id: "user-abc123", name: "Moon Plank", createdAt: "2026-05-06T00:00:00Z" },
   ];
   const userAliases = [
     {
       id: "alias-1",
-      alias: "Copenhagen Side Plank",
-      normalizedAlias: "copenhagen side plank",
+      alias: "Moon Side Plank",
+      normalizedAlias: "moon side plank",
       canonicalExerciseId: "user-abc123",
       createdAt: "2026-05-06T00:00:00Z",
     },
   ];
 
   it("resolves a user exercise via a saved alias", () => {
-    const result = matchExercise("Copenhagen Side Plank", userAliases, userExercises);
+    const result = matchExercise("Moon Side Plank", userAliases, userExercises);
     expect(result).toMatchObject({
       kind: "matched",
-      item: { id: "user-abc123", name: "Copenhagen Plank" },
+      item: { id: "user-abc123", name: "Moon Plank" },
       via: "user-alias",
     });
   });
 
   it("resolves a user exercise by exact normalized name when no alias exists", () => {
-    const result = matchExercise("Copenhagen Plank", [], userExercises);
+    const result = matchExercise("Moon Plank", [], userExercises);
     expect(result).toMatchObject({
       kind: "matched",
-      item: { id: "user-abc123", name: "Copenhagen Plank" },
+      item: { id: "user-abc123", name: "Moon Plank" },
       via: "user-exercise",
     });
   });
 
   it("returns unmatched when user exercises are empty and no catalog match", () => {
-    const result = matchExercise("Copenhagen Side Plank", [], []);
+    const result = matchExercise("Moon Side Plank", [], []);
     expect(result.kind).toBe("unmatched");
   });
 });

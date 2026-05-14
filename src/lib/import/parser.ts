@@ -11,9 +11,10 @@ export type ImportReview = {
 };
 
 export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
+  const cleaned = stripJsonWrapper(input);
   let payload: unknown;
   try {
-    payload = JSON.parse(input);
+    payload = JSON.parse(cleaned);
   } catch {
     throw new Error("The pasted content is not valid JSON.");
   }
@@ -23,6 +24,16 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
   }
 
   return normalizePayload(payload, profileSnapshot, aliases, userExercises);
+}
+
+export function stripJsonWrapper(input: string): string {
+  const trimmed = input.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i);
+  if (fenced) return fenced[1].trim();
+  const first = trimmed.indexOf("{");
+  const last = trimmed.lastIndexOf("}");
+  if (first > 0 && last > first) return trimmed.slice(first, last + 1);
+  return trimmed;
 }
 
 export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {

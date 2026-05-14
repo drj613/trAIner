@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save } from "lucide-react";
+import { Copy, Save } from "lucide-react";
 import { parseProgramJson, type ImportReview } from "@/lib/import/parser";
+import { buildRecoveryPrompt } from "@/lib/prompts/builder";
 import {
   extractUnresolvedExercises,
   applyResolutions,
@@ -142,9 +143,24 @@ export function ImportClient() {
           onChange={(e) => setJson(e.target.value)}
         />
         {parseError && (
-          <p className="text-sm" style={{ color: "var(--bad, red)" }}>
-            {parseError}
-          </p>
+          <div className="stack" style={{ gap: 6 }}>
+            <p className="text-sm" style={{ color: "var(--bad, red)" }}>
+              {parseError}
+            </p>
+            <button
+              type="button"
+              className="button secondary"
+              onClick={() => {
+                const prompt = buildRecoveryPrompt(parseError);
+                void navigator.clipboard.writeText(prompt).catch(() => {});
+              }}
+            >
+              <Copy size={14} /> Copy recovery prompt for your AI chat
+            </button>
+            <p className="text-xs muted">
+              Paste this back into the same ChatGPT/Claude conversation to ask for a clean JSON re-emit.
+            </p>
+          </div>
         )}
         <button
           type="button"

@@ -1,4 +1,4 @@
-import { buildProfileBlock, buildRoutineBlock, buildConstraintsBlock, buildSchemaBlock, assemblePrompt } from "./builder";
+import { buildProfileBlock, buildRoutineBlock, buildConstraintsBlock, buildSchemaBlock, buildRecoveryPrompt, assemblePrompt } from "./builder";
 import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
 
 const profile: ProfileDocument = {
@@ -122,6 +122,30 @@ describe("buildSchemaBlock", () => {
   });
   it("instructs the LLM to omit weeks and overrides for single-week programs", () => {
     expect(buildSchemaBlock()).toMatch(/omit.*week|single.week|single-week/i);
+  });
+  it("defaults to conversational mode (does not demand immediate JSON output)", () => {
+    const block = buildSchemaBlock();
+    expect(block).toMatch(/conversational mode/i);
+  });
+  it("gates JSON emission on the GENERATE IT trigger", () => {
+    expect(buildSchemaBlock()).toContain("GENERATE IT");
+  });
+  it("forbids partial/preview JSON during conversation", () => {
+    expect(buildSchemaBlock()).toMatch(/do not emit.*json|not.*even partially|not as a preview/i);
+  });
+});
+
+describe("buildRecoveryPrompt", () => {
+  it("instructs the model to re-emit JSON only", () => {
+    expect(buildRecoveryPrompt()).toMatch(/only.*JSON|JSON.*only/i);
+  });
+  it("forbids markdown code fences", () => {
+    expect(buildRecoveryPrompt()).toMatch(/no.*fence|```/i);
+  });
+  it("includes the supplied error message when provided", () => {
+    expect(buildRecoveryPrompt("Unexpected token x at position 4")).toContain(
+      "Unexpected token x at position 4"
+    );
   });
 });
 

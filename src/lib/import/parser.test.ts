@@ -241,4 +241,31 @@ describe("parseProgramJson error messages", () => {
   it("throws a JSON parse error for invalid JSON", () => {
     expect(() => parseProgramJson("not json")).toThrow(/not valid JSON/);
   });
+
+  it("strips ```json fenced output before parsing", () => {
+    const fenced = "```json\n" + JSON.stringify({
+      title: "Fenced Program",
+      sections: [{ type: "strength", exercise_groups: [{ exercises: [{ name: "Squat" }] }] }],
+    }) + "\n```";
+    const review = parseProgramJson(fenced);
+    expect(review.program.title).toBe("Fenced Program");
+  });
+
+  it("strips plain ``` fences without language tag", () => {
+    const fenced = "```\n" + JSON.stringify({
+      title: "Bare Fence",
+      sections: [{ type: "strength", exercise_groups: [{ exercises: [{ name: "Squat" }] }] }],
+    }) + "\n```";
+    const review = parseProgramJson(fenced);
+    expect(review.program.title).toBe("Bare Fence");
+  });
+
+  it("trims leading preamble text before the first JSON brace", () => {
+    const wrapped = 'Here is your routine:\n\n' + JSON.stringify({
+      title: "Preamble Test",
+      sections: [{ type: "strength", exercise_groups: [{ exercises: [{ name: "Squat" }] }] }],
+    });
+    const review = parseProgramJson(wrapped);
+    expect(review.program.title).toBe("Preamble Test");
+  });
 });
