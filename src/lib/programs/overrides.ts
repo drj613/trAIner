@@ -17,14 +17,17 @@ function applyOverride(days: ProgramDay[], override: ProgramOverride): ProgramDa
     return days.map((day) => {
       if (day.weekNumber !== override.weekNumber) return day;
       const match = replacements.find((replacement) => replacement.dayNumber === day.dayNumber);
-      // M4: preserve the original day's id
-      return match ? { ...match, id: day.id } : day;
+      // Preserve the slot's structural identity (id + week/day placement); the override only supplies content.
+      return match ? { ...match, id: day.id, weekNumber: day.weekNumber, dayNumber: day.dayNumber } : day;
     });
   }
 
   if (override.scope === "day" && override.dayId) {
-    // M4: preserve the original day's id
-    return days.map((day) => (day.id === override.dayId ? { ...replacements[0], id: day.id } : day));
+    return days.map((day) =>
+      day.id === override.dayId
+        ? { ...replacements[0], id: day.id, weekNumber: day.weekNumber, dayNumber: day.dayNumber }
+        : day
+    );
   }
 
   return days;

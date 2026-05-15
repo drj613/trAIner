@@ -46,6 +46,37 @@ describe("program overrides", () => {
     expect(overriddenDay.id).toBe(baseDay.id); // original id preserved, not llm-generated-uuid
   });
 
+  it("preserves the slot's weekNumber when a week-scope replacement omits it", () => {
+    const baseDay = demoProgram.days[0];
+    const expandedWeek4: ProgramDay = { ...baseDay, id: "wk4-day1", weekNumber: 4, dayNumber: 1 };
+    const replacementMissingWeek: ProgramDay = {
+      ...baseDay,
+      id: "replacement-id",
+      title: "Deload Day",
+      weekNumber: undefined,
+      dayNumber: 1,
+    };
+    const program: ProgramDocument = {
+      ...demoProgram,
+      days: [expandedWeek4],
+      overrides: [
+        {
+          id: "override-wk4",
+          scope: "week",
+          programId: demoProgram.id,
+          weekNumber: 4,
+          replacement: [replacementMissingWeek],
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    const days = getRenderableDays(program);
+    expect(days[0].title).toBe("Deload Day");
+    expect(days[0].weekNumber).toBe(4);
+    expect(days[0].dayNumber).toBe(1);
+  });
+
   it("M5: day-scope overrides win over week-scope overrides targeting the same day", () => {
     const baseDay = demoProgram.days[0];
     const weekReplacement: ProgramDay = {
