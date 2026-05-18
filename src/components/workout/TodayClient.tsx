@@ -1,11 +1,11 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftRight, CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
-import { serialiseSets, hydrateFromLog } from "@/lib/workout/sessionState";
+import { serialiseSets, hydrateFromLog, applyEntryNotes } from "@/lib/workout/sessionState";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
@@ -36,17 +36,21 @@ function cellId(exId: string, i: number) {
 const ExerciseRow = memo(function ExerciseRow({
   exercise,
   cells,
+  note,
   onCellChange,
   onAddSet,
   onOpenHistory,
   onReplaceExercise,
+  onNoteChange,
 }: {
   exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
   cells: string[];
+  note: string;
   onCellChange: (i: number, v: string) => void;
   onAddSet: () => void;
   onOpenHistory: () => void;
   onReplaceExercise: () => void;
+  onNoteChange: (v: string) => void;
 }) {
   const prescription = [
     exercise.sets ? `${exercise.sets}×` : "",
@@ -105,7 +109,17 @@ const ExerciseRow = memo(function ExerciseRow({
               marginTop: 3,
             }}
           >
-            <span style={{ color: "var(--fg-4)" }}>note</span>{" "}
+            <span
+              style={{
+                color: "var(--fg-4)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: 9,
+                marginRight: 4,
+              }}
+            >
+              prescribed
+            </span>
             <span>{exercise.notes}</span>
           </div>
         )}
@@ -151,6 +165,38 @@ const ExerciseRow = memo(function ExerciseRow({
           <Plus size={12} aria-hidden />
         </button>
       </div>
+      <details style={{ marginTop: 6 }} open={!!note}>
+        <summary
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--fg-4)",
+            cursor: "pointer",
+            listStyle: "none",
+            userSelect: "none",
+          }}
+        >
+          {note ? "note ▾" : "+ add note"}
+        </summary>
+        <textarea
+          value={note}
+          onChange={(e) => onNoteChange(e.target.value)}
+          rows={2}
+          placeholder="Your note about this set (felt good, ouch, etc.)"
+          style={{
+            width: "100%",
+            marginTop: 4,
+            background: "var(--bg-2)",
+            color: "var(--fg)",
+            border: "1px solid var(--line)",
+            borderRadius: 4,
+            padding: "4px 6px",
+            fontFamily: "inherit",
+            fontSize: 12,
+            resize: "vertical",
+          }}
+        />
+      </details>
     </div>
   );
 });
@@ -158,17 +204,21 @@ const ExerciseRow = memo(function ExerciseRow({
 function SectionCard({
   section,
   cells,
+  notes,
   onCellChange,
   onAddSet,
   onOpenHistory,
   onReplaceExercise,
+  onNoteChange,
 }: {
   section: ProgramSection;
   cells: CellMap;
+  notes: Record<string, string>;
   onCellChange: (exId: string, i: number, v: string) => void;
   onAddSet: (exId: string) => void;
   onOpenHistory: (exerciseName: string, exerciseId: string) => void;
   onReplaceExercise: (exerciseId: string) => void;
+  onNoteChange: (exId: string, v: string) => void;
 }) {
   const { cls, glyph } = sectionKind(section.type);
   return (
@@ -210,10 +260,12 @@ function SectionCard({
               key={ex.id}
               exercise={ex}
               cells={cells[ex.id] ?? [""]}
+              note={notes[ex.id] ?? ""}
               onCellChange={(i, v) => onCellChange(ex.id, i, v)}
               onAddSet={() => onAddSet(ex.id)}
               onOpenHistory={() => onOpenHistory(ex.name, ex.id)}
               onReplaceExercise={() => onReplaceExercise(ex.id)}
+              onNoteChange={(v) => onNoteChange(ex.id, v)}
             />
           ))}
         </GroupRail>
@@ -281,6 +333,7 @@ function WorkoutProgress({
 
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const logIdRef = useRef<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -322,16 +375,19 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         if (cancelled || !log) return;
         logIdRef.current = log.id;
         const hydrated: CellMap = {};
+        const hydratedNotes: Record<string, string> = {};
         for (const entry of log.entries) {
           hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
+          if (entry.notes) hydratedNotes[entry.exerciseId] = entry.notes;
         }
         setCells((prev) => ({ ...prev, ...hydrated }));
+        setNotes((prev) => ({ ...prev, ...hydratedNotes }));
       })
       .catch((e) => console.error("[logRepo] hydration failed", e));
     return () => { cancelled = true; };
   }, [program.id, day.id]);
 
-  async function saveCells(currentCells: CellMap) {
+  async function saveCells({ cells: c, notes: n }: { cells: CellMap; notes: Record<string, string> }) {
     const today = localDateString();
     if (!logIdRef.current) {
       const existing = await logRepo.getForDay(program.id, day.id, today);
@@ -345,11 +401,14 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         }
       }
     }
-    const entries = Object.entries(currentCells).map(([exerciseId, vals]) => ({
-      exerciseId,
-      exerciseName: exerciseNameMap.get(exerciseId),
-      sets: serialiseSets(vals),
-    }));
+    const entries = Object.entries(c).map(([exerciseId, vals]) => {
+      const base = {
+        exerciseId,
+        exerciseName: exerciseNameMap.get(exerciseId),
+        sets: serialiseSets(vals),
+      };
+      return applyEntryNotes(base, n[exerciseId] ?? "");
+    });
     await logRepo.save({
       id: logIdRef.current,
       programId: program.id,
@@ -359,7 +418,8 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     });
   }
 
-  const { status: autoSaveStatus, flush } = useDebouncedAutoSave(cells, saveCells, 1500);
+  const autoSavePayload = useMemo(() => ({ cells, notes }), [cells, notes]);
+  const { status: autoSaveStatus, flush } = useDebouncedAutoSave(autoSavePayload, saveCells, 1500);
 
   useEffect(() => {
     return () => { void flush(); };
@@ -401,6 +461,10 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
   const handleAddSet = useCallback((exId: string) => {
     setCells((prev) => addSet(prev, exId));
+  }, []);
+
+  const handleNoteChange = useCallback((exId: string, v: string) => {
+    setNotes((prev) => ({ ...prev, [exId]: v }));
   }, []);
 
   const handleReplaceExercise = useCallback((exId: string) => setReplaceTarget(exId), []);
@@ -512,10 +576,12 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           key={section.id}
           section={section}
           cells={cells}
+          notes={notes}
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}
           onReplaceExercise={handleReplaceExercise}
+          onNoteChange={handleNoteChange}
         />
       ))}
 

@@ -66,3 +66,22 @@ export function hydrateFromLog(entry: WorkoutLogEntry, prescribedSets?: number):
   }
   return out;
 }
+
+/**
+ * Pull the free-text notes off a log entry, defaulting to "" when absent.
+ */
+export function extractEntryNotes(entry: { notes?: string }): string {
+  return entry.notes ?? "";
+}
+
+/**
+ * Return a copy of `entry` with `notes` applied. Empty / whitespace-only
+ * strings drop the field entirely so we don't persist meaningless data.
+ */
+export function applyEntryNotes<T extends object>(entry: T, notes: string): T & { notes?: string } {
+  if (!notes.trim()) {
+    const { notes: _drop, ...rest } = entry as T & { notes?: string };
+    return rest as T;
+  }
+  return { ...entry, notes };
+}

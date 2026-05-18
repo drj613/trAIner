@@ -1,4 +1,4 @@
-import { parseCellToSet, serialiseSets, hydrateFromLog } from "./sessionState";
+import { parseCellToSet, serialiseSets, hydrateFromLog, extractEntryNotes, applyEntryNotes } from "./sessionState";
 import type { WorkoutSetLog, WorkoutLogEntry } from "@/lib/programs/types";
 
 describe("parseCellToSet", () => {
@@ -107,5 +107,28 @@ describe("round-trip: serialiseSets → hydrateFromLog", () => {
       sets: serialiseSets(cells),
     };
     expect(hydrateFromLog(log)).toEqual(["65x10", "", "60x8"]);
+  });
+});
+
+describe("extractEntryNotes / applyEntryNotes", () => {
+  it("extractEntryNotes returns the notes string from a log entry", () => {
+    const entry = { exerciseId: "e1", sets: [], notes: "felt strong today" };
+    expect(extractEntryNotes(entry)).toBe("felt strong today");
+  });
+
+  it("extractEntryNotes returns empty string when entry has no notes", () => {
+    expect(extractEntryNotes({ exerciseId: "e1", sets: [] })).toBe("");
+  });
+
+  it("applyEntryNotes writes notes onto an entry", () => {
+    const entry = { exerciseId: "e1", sets: [] };
+    expect(applyEntryNotes(entry, "ouch right shoulder")).toEqual({
+      exerciseId: "e1", sets: [], notes: "ouch right shoulder",
+    });
+  });
+
+  it("applyEntryNotes drops the field for empty strings", () => {
+    const entry = { exerciseId: "e1", sets: [], notes: "stale" };
+    expect(applyEntryNotes(entry, "")).toEqual({ exerciseId: "e1", sets: [] });
   });
 });

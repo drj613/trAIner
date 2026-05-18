@@ -122,6 +122,7 @@ export type WorkoutLogEntry = {
   exerciseName?: string;
   canonicalExerciseId?: ID;
   sets: WorkoutSetLog[];
+  notes?: string;
 };
 
 export type WorkoutSetLog = {

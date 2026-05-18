@@ -137,4 +137,20 @@ describe("TodayClient auto-save", () => {
     });
     jest.useRealTimers();
   });
+
+  it("persists per-exercise notes in the saved log", async () => {
+    jest.useFakeTimers();
+    mockProfile = {
+      id: "local-profile", name: "Alex", goals: [], equipment: [], constraints: [],
+      trainingAge: "", defaultDaysPerWeek: 4, updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    mockPrograms = [program as unknown as ProfileDocument];
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    await user.click(await screen.findByText(/add note/i));
+    await user.type(screen.getByPlaceholderText(/your note about this set/i), "felt strong");
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    expect(saveMock.mock.calls.at(-1)![0].entries[0].notes).toBe("felt strong");
+    jest.useRealTimers();
+  });
 });
