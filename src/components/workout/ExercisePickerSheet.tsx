@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search, X, Check } from "lucide-react";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import { useVisualViewport } from "@/lib/ui/useVisualViewport";
 
 type Props = {
   onAdd: (items: ExerciseCatalogItem[]) => void;
@@ -14,6 +15,11 @@ export function ExercisePickerSheet({ onAdd, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const { height: vvHeight, ready: vvReady } = useVisualViewport();
+  const sheetMaxHeight = vvReady && vvHeight !== undefined
+    ? Math.min(vvHeight - 8, vvHeight * 0.92)
+    : undefined;
 
   const muscles = useMemo(() => {
     const all = exerciseCatalog.flatMap((e) => e.muscles.primary);
@@ -59,7 +65,7 @@ export function ExercisePickerSheet({ onAdd, onClose }: Props) {
       <div
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col"
         style={{
-          maxHeight: "70vh",
+          maxHeight: sheetMaxHeight ?? "70dvh",
           background: "var(--bg-1)",
           borderTop: "1px solid var(--line)",
           borderRadius: "12px 12px 0 0",
