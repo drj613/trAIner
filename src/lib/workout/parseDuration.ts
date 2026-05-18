@@ -1,8 +1,8 @@
 const MMSS = /(\d+):(\d{1,2})/;
-const RANGE_S = /(\d+)\s*(?:-|to)\s*(\d+)\s*(?:s\b|sec|seconds)/i;
-const RANGE_M = /(\d+)\s*(?:-|to)\s*(\d+)\s*(?:m\b|min|minutes)/i;
-const SINGLE_S = /(\d+)\s*(?:s\b|sec|seconds)/i;
-const SINGLE_M = /(\d+)\s*(?:m\b|min|minutes)/i;
+const RANGE_S = /(\d+)\s*(?:-|to)\s*(\d+)\s*(?:s(?:ec(?:onds?)?)?\b)/i;
+const RANGE_M = /(\d+)\s*(?:-|to)\s*(\d+)\s*(?:m(?:in(?:utes?)?)?\b)/i;
+const SINGLE_S = /(\d+)\s*(?:s(?:ec(?:onds?)?)?\b)/i;
+const SINGLE_M = /(\d+)\s*(?:m(?:in(?:utes?)?)?\b)/i;
 const BARE_INT = /^\s*(\d+)\s*$/;
 
 export function parseDuration(input: string): number | undefined {

@@ -12,4 +12,6 @@ describe("parseDuration", () => {
   it("returns undefined for unknown formats", () => { expect(parseDuration("no time here")).toBeUndefined(); });
   it("returns undefined for empty string", () => { expect(parseDuration("")).toBeUndefined(); });
   it("treats bare number as seconds", () => { expect(parseDuration("90")).toBe(90); });
+  it("does not match '2mine' as 120 seconds", () => { expect(parseDuration("2mine")).toBeUndefined(); });
+  it("does not match '1secs' as 1 second", () => { expect(parseDuration("1secs")).toBeUndefined(); });
 });
