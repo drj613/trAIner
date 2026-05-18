@@ -44,6 +44,13 @@ jest.mock("@/lib/storage/logRepo", () => ({
   },
 }));
 
+jest.mock("@/lib/storage/programRepo", () => ({
+  programRepo: {
+    get: jest.fn().mockResolvedValue(null),
+    save: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 beforeEach(() => {
   mockProfile = undefined;
   mockPrograms = [];
@@ -113,6 +120,31 @@ describe("TodayClient format guide", () => {
     expect(details?.textContent).toMatch(/70×8/);
     expect(details?.textContent).toMatch(/skip/);
     expect(details?.textContent).toMatch(/pain/);
+  });
+});
+
+describe("TodayClient exercise edit", () => {
+  it("saves a day-scoped override when the user edits a prescription", async () => {
+    const saveProgram = jest.fn().mockResolvedValue(undefined);
+    jest.spyOn(require("@/lib/storage/programRepo").programRepo, "get").mockResolvedValue(program);
+    jest.spyOn(require("@/lib/storage/programRepo").programRepo, "save").mockImplementation(saveProgram);
+    mockProfile = {
+      id: "local-profile", name: "Alex", goals: [], equipment: [], constraints: [],
+      trainingAge: "", defaultDaysPerWeek: 4, updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    mockPrograms = [program as unknown as ProfileDocument];
+    const user = userEvent.setup();
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    const editBtn = await screen.findByRole("button", { name: /edit prescription for bench press/i });
+    await user.click(editBtn);
+    await user.clear(screen.getByLabelText(/reps/i));
+    await user.type(screen.getByLabelText(/reps/i), "5");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(saveProgram).toHaveBeenCalledWith(expect.objectContaining({
+      overrides: expect.arrayContaining([
+        expect.objectContaining({ scope: "day", dayId: "day-1" }),
+      ]),
+    }));
   });
 });
 

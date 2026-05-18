@@ -2,13 +2,14 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeftRight, CheckCircle, Download, History, Plus, Sparkles } from "lucide-react";
+import { ArrowLeftRight, CheckCircle, Download, History, Pencil, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
+import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog, applyEntryNotes } from "@/lib/workout/sessionState";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
-import type { ProgramDocument, ProgramDay, ProgramSection } from "@/lib/programs/types";
+import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
 import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
@@ -17,6 +18,7 @@ import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { ExerciseReplaceSheet } from "./ExerciseReplaceSheet";
+import { ExerciseEditSheet } from "./ExerciseEditSheet";
 import { swapExercise } from "@/lib/workout/exerciseSwap";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
@@ -41,6 +43,7 @@ const ExerciseRow = memo(function ExerciseRow({
   onAddSet,
   onOpenHistory,
   onReplaceExercise,
+  onEdit,
   onNoteChange,
 }: {
   exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
@@ -50,6 +53,7 @@ const ExerciseRow = memo(function ExerciseRow({
   onAddSet: () => void;
   onOpenHistory: () => void;
   onReplaceExercise: () => void;
+  onEdit: () => void;
   onNoteChange: (v: string) => void;
 }) {
   const prescription = [
@@ -83,6 +87,16 @@ const ExerciseRow = memo(function ExerciseRow({
             type="button"
           >
             <History size={13} aria-hidden />
+          </button>
+          <button
+            className="btn ghost"
+            onClick={onEdit}
+            style={{ padding: "3px 6px", flexShrink: 0 }}
+            aria-label={`Edit prescription for ${exercise.name}`}
+            title="Edit prescription"
+            type="button"
+          >
+            <Pencil size={13} aria-hidden />
           </button>
           <button
             className="btn ghost"
@@ -209,6 +223,7 @@ function SectionCard({
   onAddSet,
   onOpenHistory,
   onReplaceExercise,
+  onEdit,
   onNoteChange,
 }: {
   section: ProgramSection;
@@ -218,6 +233,7 @@ function SectionCard({
   onAddSet: (exId: string) => void;
   onOpenHistory: (exerciseName: string, exerciseId: string) => void;
   onReplaceExercise: (exerciseId: string) => void;
+  onEdit: (exercise: ProgramExercise) => void;
   onNoteChange: (exId: string, v: string) => void;
 }) {
   const { cls, glyph } = sectionKind(section.type);
@@ -265,6 +281,7 @@ function SectionCard({
               onAddSet={() => onAddSet(ex.id)}
               onOpenHistory={() => onOpenHistory(ex.name, ex.id)}
               onReplaceExercise={() => onReplaceExercise(ex.id)}
+              onEdit={() => onEdit(ex)}
               onNoteChange={(v) => onNoteChange(ex.id, v)}
             />
           ))}
@@ -340,12 +357,14 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   const saving = useRef(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { refresh } = useLocalData();
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
     rows: ExerciseSessionRow[];
   } | null>(null);
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<ProgramExercise | null>(null);
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
     try {
@@ -357,6 +376,9 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     }
   }
 
+  // Hydration only re-runs when program or day identity changes.
+  // Day-scoped prescription edits keep both ids stable (see overrides.ts),
+  // so the user's in-progress cells survive an edit.
   useEffect(() => {
     let cancelled = false;
     const today = localDateString();
@@ -468,6 +490,39 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   }, []);
 
   const handleReplaceExercise = useCallback((exId: string) => setReplaceTarget(exId), []);
+
+  const handleEditExercise = useCallback((ex: ProgramExercise) => setEditTarget(ex), []);
+
+  async function applyExerciseEdit(patch: Partial<ProgramExercise>) {
+    if (!editTarget) return;
+    const fresh = await programRepo.get(program.id);
+    if (!fresh) return;
+    const patchedDay: ProgramDay = {
+      ...day,
+      sections: day.sections.map((s) => ({
+        ...s,
+        groups: s.groups.map((g) => ({
+          ...g,
+          exercises: g.exercises.map((e) => e.id === editTarget.id ? { ...e, ...patch } : e),
+        })),
+      })),
+    };
+    const filteredOverrides = fresh.overrides.filter(
+      (o) => !(o.scope === "day" && o.dayId === day.id),
+    );
+    const newOverride = {
+      id: crypto.randomUUID(),
+      scope: "day" as const,
+      programId: program.id,
+      dayId: day.id,
+      replacement: patchedDay,
+      reason: "Edited from Today",
+      createdAt: new Date().toISOString(),
+    };
+    await programRepo.save({ ...fresh, overrides: [...filteredOverrides, newOverride] });
+    await refresh();
+    setEditTarget(null);
+  }
 
   function handleApplyReplacement(replacement: ProgramDay) {
     const stored = storePendingDiff(program.id, day, replacement);
@@ -581,6 +636,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}
           onReplaceExercise={handleReplaceExercise}
+          onEdit={handleEditExercise}
           onNoteChange={handleNoteChange}
         />
       ))}
@@ -603,6 +659,13 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         <ExerciseReplaceSheet
           onSelect={handleReplaceConfirm}
           onClose={() => setReplaceTarget(null)}
+        />
+      )}
+      {editTarget && (
+        <ExerciseEditSheet
+          exercise={editTarget}
+          onSave={applyExerciseEdit}
+          onClose={() => setEditTarget(null)}
         />
       )}
 
