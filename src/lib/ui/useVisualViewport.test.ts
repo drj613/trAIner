@@ -45,6 +45,15 @@ describe("useVisualViewport", () => {
     expect(result.current.height).toBe(400);
   });
 
+  it("also updates when the scroll event fires (iOS Safari keyboard transitions)", () => {
+    const { result } = renderHook(() => useVisualViewport());
+    act(() => {
+      (window.visualViewport as unknown as { height: number }).height = 350;
+      listeners["scroll"]?.forEach((fn) => fn(new Event("scroll")));
+    });
+    expect(result.current.height).toBe(350);
+  });
+
   it("returns ready=false and a falsy height when visualViewport is unavailable", () => {
     Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
     const { result } = renderHook(() => useVisualViewport());

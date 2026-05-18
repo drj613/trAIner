@@ -8,7 +8,8 @@ export type VisualViewportState = {
 };
 
 /**
- * Tracks the height of `window.visualViewport`. Updates on resize.
+ * Tracks the height of `window.visualViewport`. Updates on resize and scroll
+ * (iOS Safari fires `scroll` — not `resize` — during keyboard transitions and pinch-zoom).
  * Returns `ready: false` on SSR or in browsers without the VisualViewport API,
  * so callers can fall back to `100dvh` or similar.
  */
@@ -26,7 +27,11 @@ export function useVisualViewport(): VisualViewportState {
     }
     update();
     vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
   return state;
