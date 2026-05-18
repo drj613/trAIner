@@ -4,6 +4,7 @@ import { programRepo } from "@/lib/storage/programRepo";
 import { logRepo } from "@/lib/storage/logRepo";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
+import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
 
 // Fix 2: Deep validation helpers
@@ -26,7 +27,8 @@ export async function exportBackup(): Promise<BackupDocument> {
     programs: await programRepo.list(),
     logs: await logRepo.list(),
     aliases: await aliasRepo.list(),
-    userExercises: await userExerciseRepo.list()
+    userExercises: await userExerciseRepo.list(),
+    bodyweight: await bodyweightRepo.list(),
   };
 }
 
@@ -72,23 +74,35 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     }
   }
 
+  // bodyweight is optional (old backups may not have it)
+  if (doc["bodyweight"] !== undefined) {
+    if (!isArrayOfObjects(doc["bodyweight"])) {
+      throw new Error("Invalid backup: 'bodyweight' must be an array of objects.");
+    }
+    if (!hasIds(doc["bodyweight"])) {
+      throw new Error("Invalid backup: 'bodyweight' entries must have string ids.");
+    }
+  }
+
   const b = backup as BackupDocument;
 
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises"], "readwrite");
+  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises", "bodyweight"], "readwrite");
 
   tx.objectStore("profile").clear();
   tx.objectStore("programs").clear();
   tx.objectStore("logs").clear();
   tx.objectStore("aliases").clear();
   tx.objectStore("userExercises").clear();
+  tx.objectStore("bodyweight").clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);
   for (const l of b.logs) tx.objectStore("logs").put(l);
   for (const a of b.aliases) tx.objectStore("aliases").put(a);
   for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
+  for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);
 
   await tx.done;
 }

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { logRepo } from "@/lib/storage/logRepo";
+import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
 import { buildHeatmapCells } from "@/lib/analytics/trainingHeatmap";
 import { TrainingHeatmap } from "./TrainingHeatmap";
+import { BodyweightSparkline } from "./BodyweightSparkline";
 import type { HeatmapCell } from "@/lib/analytics/trainingHeatmap";
-import type { ProfileDocument } from "@/lib/programs/types";
+import type { BodyweightEntry, ProfileDocument } from "@/lib/programs/types";
 
 type EditingSection =
   | "name" | "body" | "history" | "goals"
@@ -235,6 +237,7 @@ function ProfileCard({
 export function ProfileClient() {
   const { profile, loading, saveProfile } = useLocalData();
   const [heatmapCells, setHeatmapCells] = useState<HeatmapCell[][] | null>(null);
+  const [bodyweight, setBodyweight] = useState<BodyweightEntry[]>([]);
   const [editingSection, setEditingSection] = useState<EditingSection>(null);
   const [draft, setDraft] = useState<ProfileDocument | null>(null);
   const [saving, setSaving] = useState(false);
@@ -245,6 +248,10 @@ export function ProfileClient() {
       const today = new Date().toISOString().slice(0, 10);
       setHeatmapCells(buildHeatmapCells(logs, today));
     });
+  }, []);
+
+  useEffect(() => {
+    bodyweightRepo.list().then(setBodyweight);
   }, []);
 
   const isCreating = !loading && !profile;
@@ -457,6 +464,8 @@ export function ProfileClient() {
       </div>
 
       {heatmapCells && <TrainingHeatmap cells={heatmapCells} />}
+
+      <BodyweightSparkline entries={bodyweight} />
 
       <ProfileCard
         label="Body"

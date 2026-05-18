@@ -25,6 +25,7 @@ import { toTitleCase } from "@/lib/catalog/normalize";
 import { GroupRail } from "./GroupRail";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
+import { BodyweightWidget } from "./BodyweightWidget";
 
 function localDateString(): string {
   const d = new Date();
@@ -631,6 +632,8 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
           </div>
         </details>
       </div>
+
+      <BodyweightWidget />
 
       {/* Sections */}
       {day.sections.map((section) => (

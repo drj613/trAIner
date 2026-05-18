@@ -162,6 +162,13 @@ export type ExerciseSuggestion = {
   score: number;
 };
 
+export type BodyweightEntry = {
+  id: ISODate;
+  value: number;
+  unit: "kg" | "lb";
+  recordedAt: ISODate;
+};
+
 export type BackupDocument = {
   version: 1;
   exportedAt: ISODate;
@@ -170,6 +177,7 @@ export type BackupDocument = {
   logs: WorkoutLogDocument[];
   aliases: AliasDocument[];
   userExercises?: UserExerciseDocument[];
+  bodyweight?: BodyweightEntry[];
 };
 
 export const emptyTags = (): ProgramExercise["tags"] => ({

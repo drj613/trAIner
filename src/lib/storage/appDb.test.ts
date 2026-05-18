@@ -1,10 +1,11 @@
 import { deleteDB } from "idb";
-import { DB_NAME, resetDbConnection } from "./appDb";
+import { DB_NAME, getDb, resetDbConnection } from "./appDb";
 import { aliasRepo } from "./aliasRepo";
 import { logRepo } from "./logRepo";
 import { profileRepo } from "./profileRepo";
 import { programRepo } from "./programRepo";
 import { userExerciseRepo } from "./userExerciseRepo";
+import { bodyweightRepo } from "./bodyweightRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
@@ -133,5 +134,57 @@ describe("logRepo.getForDay", () => {
     await logRepo.save(log);
     const result = await logRepo.getForDay("prog-1", "day-1", today);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("DB v4 — bodyweight store", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("v4 upgrade creates the bodyweight store without dropping existing data", async () => {
+    const db = await getDb();
+    expect(db.objectStoreNames.contains("bodyweight")).toBe(true);
+  });
+
+  it("round-trips bodyweight entries through export → restore", async () => {
+    await bodyweightRepo.save({
+      id: "2026-05-18",
+      value: 80,
+      unit: "kg",
+      recordedAt: "2026-05-18T10:00:00.000Z",
+    });
+    await programRepo.save(demoProgram);
+    const backup = await exportBackup();
+    expect(backup.bodyweight).toHaveLength(1);
+    expect(backup.bodyweight?.[0].value).toBe(80);
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(backup);
+
+    const restored = await bodyweightRepo.list();
+    expect(restored).toHaveLength(1);
+    expect(restored[0].value).toBe(80);
+  });
+
+  it("restores a backup without a bodyweight field (backwards compatibility)", async () => {
+    await programRepo.save(demoProgram);
+    const backup = await exportBackup();
+    const oldBackup = { ...backup, bodyweight: undefined };
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(oldBackup);
+
+    expect(await bodyweightRepo.list()).toHaveLength(0);
   });
 });
