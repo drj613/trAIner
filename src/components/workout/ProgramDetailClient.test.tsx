@@ -1,5 +1,4 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { ProgramDetailClient } from "./ProgramDetailClient";
 import { programRepo } from "@/lib/storage/programRepo";
@@ -467,7 +466,6 @@ describe("ProgramDetailClient V2 — inline name editing", () => {
 
 describe("ProgramDetailClient V2 — group rail in routine view", () => {
   it("renders SUPERSET label inside an expanded day card", async () => {
-    const user = userEvent.setup();
     (programRepo.get as jest.Mock).mockResolvedValue({
       id: "p1",
       title: "Test",
@@ -497,12 +495,6 @@ describe("ProgramDetailClient V2 — group rail in routine view", () => {
         <ProgramDetailClient id="p1" />
       </MemoryRouter>
     );
-    // Wait for load and expand the day card.
-    // The existing tests use fireEvent.click to side-step jsdom's missing
-    // setPointerCapture, so keep userEvent referenced (Step 6 plan requirement)
-    // but trigger the click with fireEvent for compatibility with the day-card
-    // pointer-drag handler.
-    void user; // referenced to satisfy plan's "userEvent.setup()" expectation
     const header = await screen.findByText("Push");
     fireEvent.click(header);
     expect(await screen.findByText(/SUPERSET · rest 90s/)).toBeInTheDocument();
