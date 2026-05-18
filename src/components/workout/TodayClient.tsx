@@ -23,6 +23,7 @@ import { swapExercise } from "@/lib/workout/exerciseSwap";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import { GroupRail } from "./GroupRail";
+import { RestTimer } from "./RestTimer";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 import { BodyweightWidget } from "./BodyweightWidget";
@@ -180,6 +181,7 @@ const ExerciseRow = memo(function ExerciseRow({
           <Plus size={12} aria-hidden />
         </button>
       </div>
+      <RestTimer restText={exercise.rest} notes={exercise.notes} />
       <details style={{ marginTop: 6 }} open={!!note}>
         <summary
           style={{
