@@ -365,6 +365,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
   } | null>(null);
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<ProgramExercise | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
     try {
@@ -495,33 +496,39 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
   async function applyExerciseEdit(patch: Partial<ProgramExercise>) {
     if (!editTarget) return;
-    const fresh = await programRepo.get(program.id);
-    if (!fresh) return;
-    const patchedDay: ProgramDay = {
-      ...day,
-      sections: day.sections.map((s) => ({
-        ...s,
-        groups: s.groups.map((g) => ({
-          ...g,
-          exercises: g.exercises.map((e) => e.id === editTarget.id ? { ...e, ...patch } : e),
+    setEditError(null);
+    try {
+      const fresh = await programRepo.get(program.id);
+      if (!fresh) return;
+      const patchedDay: ProgramDay = {
+        ...day,
+        sections: day.sections.map((s) => ({
+          ...s,
+          groups: s.groups.map((g) => ({
+            ...g,
+            exercises: g.exercises.map((e) => e.id === editTarget.id ? { ...e, ...patch } : e),
+          })),
         })),
-      })),
-    };
-    const filteredOverrides = fresh.overrides.filter(
-      (o) => !(o.scope === "day" && o.dayId === day.id),
-    );
-    const newOverride = {
-      id: crypto.randomUUID(),
-      scope: "day" as const,
-      programId: program.id,
-      dayId: day.id,
-      replacement: patchedDay,
-      reason: "Edited from Today",
-      createdAt: new Date().toISOString(),
-    };
-    await programRepo.save({ ...fresh, overrides: [...filteredOverrides, newOverride] });
-    await refresh();
-    setEditTarget(null);
+      };
+      const filteredOverrides = fresh.overrides.filter(
+        (o) => !(o.scope === "day" && o.dayId === day.id),
+      );
+      const newOverride = {
+        id: crypto.randomUUID(),
+        scope: "day" as const,
+        programId: program.id,
+        dayId: day.id,
+        replacement: patchedDay,
+        reason: "Edited from Today",
+        createdAt: new Date().toISOString(),
+      };
+      await programRepo.save({ ...fresh, overrides: [...filteredOverrides, newOverride] });
+      await refresh();
+      setEditTarget(null);
+    } catch (e) {
+      console.error("[applyExerciseEdit] save failed", e);
+      setEditError("Failed to save. Please try again.");
+    }
   }
 
   function handleApplyReplacement(replacement: ProgramDay) {
@@ -665,7 +672,8 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         <ExerciseEditSheet
           exercise={editTarget}
           onSave={applyExerciseEdit}
-          onClose={() => setEditTarget(null)}
+          onClose={() => { setEditTarget(null); setEditError(null); }}
+          error={editError}
         />
       )}
 

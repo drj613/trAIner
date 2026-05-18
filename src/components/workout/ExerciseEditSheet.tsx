@@ -6,9 +6,10 @@ type Props = {
   exercise: ProgramExercise;
   onSave: (patch: Partial<ProgramExercise>) => void;
   onClose: () => void;
+  error?: string | null;
 };
 
-export function ExerciseEditSheet({ exercise, onSave, onClose }: Props) {
+export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
   const [sets, setSets] = useState<string>(exercise.sets?.toString() ?? "");
   const [reps, setReps] = useState<string>(exercise.reps ?? "");
   const [load, setLoad] = useState<string>(exercise.load ?? "");
@@ -73,6 +74,11 @@ export function ExerciseEditSheet({ exercise, onSave, onClose }: Props) {
             className="input w-full"
           />
         </Field>
+        {error && (
+          <p role="alert" style={{ color: "var(--bad)", fontSize: 12, marginBottom: 8 }}>
+            {error}
+          </p>
+        )}
         <button type="button" className="button w-full mt-3" onClick={submit}>
           Save
         </button>
