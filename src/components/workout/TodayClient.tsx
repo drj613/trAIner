@@ -21,6 +21,7 @@ import { swapExercise } from "@/lib/workout/exerciseSwap";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import { GroupRail } from "./GroupRail";
+import { resolveNextDay } from "@/lib/workout/dayResolver";
 
 function localDateString(): string {
   const d = new Date();
@@ -536,42 +537,14 @@ export function TodayClient() {
     }
 
     setDayResolving(true);
-    const today = localDateString();
     let cancelled = false;
 
     logRepo
       .listForProgram(activeProgram.id)
       .then((logs) => {
         if (cancelled) return;
-
-        // Check if there is already a log for today
-        const todayLog = logs.find((l) => l.performedAt.slice(0, 10) === today);
-        if (todayLog) {
-          const todayDay = days.find((d) => d.id === todayLog.dayId);
-          setResolvedDay(todayDay ?? days[0]);
-          setDayResolving(false);
-          return;
-        }
-
-        // Find the most recently logged day and advance to the next one,
-        // walking back through sorted logs to handle cases where the last
-        // logged day was removed from the program after editing.
-        if (logs.length > 0) {
-          const sortedLogs = [...logs].sort(
-            (a, b) => b.performedAt.localeCompare(a.performedAt)
-          );
-          const dayIds = new Set(days.map((d) => d.id));
-          const validLog = sortedLogs.find((log) => dayIds.has(log.dayId));
-          if (validLog) {
-            const idx = days.findIndex((d) => d.id === validLog.dayId);
-            setResolvedDay(days[(idx + 1) % days.length]);
-            setDayResolving(false);
-            return;
-          }
-        }
-
-        // No valid previous day found (no logs, or last day was removed from program) — start at day 0
-        setResolvedDay(days[0]);
+        const today = localDateString();
+        setResolvedDay(resolveNextDay(days, logs, today));
         setDayResolving(false);
       })
       .catch((e) => {
