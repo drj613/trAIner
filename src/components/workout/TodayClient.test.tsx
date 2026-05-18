@@ -47,6 +47,7 @@ jest.mock("@/lib/storage/logRepo", () => ({
 beforeEach(() => {
   mockProfile = undefined;
   mockPrograms = [];
+  saveMock.mockClear();
 });
 
 describe("TodayClient", () => {

@@ -61,4 +61,18 @@ describe("useDebouncedAutoSave", () => {
     await act(async () => { jest.advanceTimersByTime(1000); });
     expect(result.current.status).toBe("error");
   });
+
+  it("flush() saves immediately and cancels the pending timer", async () => {
+    const save = jest.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(({ v }) => useDebouncedAutoSave(v, save, 1000), {
+      initialProps: { v: "a" },
+    });
+    rerender({ v: "b" });
+    await act(async () => { await result.current.flush(); });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("b");
+    // Ensure the still-armed timer doesn't fire a second save
+    await act(async () => { jest.advanceTimersByTime(2000); });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
 });

@@ -246,7 +246,6 @@ function WorkoutProgress({
       <div style={{ display: "flex", alignItems: "center", padding: "8px 12px", gap: 10 }}>
         <span
           role="status"
-          aria-live="polite"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -321,6 +320,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
       .getForDay(program.id, day.id, today)
       .then((log) => {
         if (cancelled || !log) return;
+        logIdRef.current = log.id;
         const hydrated: CellMap = {};
         for (const entry of log.entries) {
           hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
@@ -359,14 +359,19 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     });
   }
 
-  const { status: autoSaveStatus } = useDebouncedAutoSave(cells, saveCells, 1500);
+  const { status: autoSaveStatus, flush } = useDebouncedAutoSave(cells, saveCells, 1500);
+
+  useEffect(() => {
+    return () => { void flush(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function finishWorkout() {
     if (saving.current) return;
     saving.current = true;
     setSaveError(null);
     try {
-      await saveCells(cells);
+      await flush();
       const allCells = Object.values(cells).flat();
       const totalSets = allCells.length;
       const completedSets = allCells.filter((v) => classifyCell(v) !== "empty").length;
