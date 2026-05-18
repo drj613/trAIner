@@ -20,62 +20,11 @@ import { ExerciseReplaceSheet } from "./ExerciseReplaceSheet";
 import { swapExercise } from "@/lib/workout/exerciseSwap";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import { GroupRail } from "./GroupRail";
 
 function localDateString(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function GroupRail({
-  type,
-  label,
-  children,
-}: {
-  type: string;
-  label?: string;
-  children: React.ReactNode;
-}) {
-  if (type === "single") return <div>{children}</div>;
-  const kindLabel =
-    { superset: "SUPERSET", circuit: "CIRCUIT", "giant-set": "GIANT SET" }[type] ??
-    type.toUpperCase();
-  return (
-    <div style={{ position: "relative", paddingLeft: 14, paddingTop: 4 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          fontFamily: "var(--font-mono)",
-          fontSize: 9.5,
-          letterSpacing: "0.14em",
-          color: "var(--fg-3)",
-          textTransform: "uppercase",
-          padding: "6px 10px 4px",
-        }}
-      >
-        <span style={{ width: 8, height: 1, background: "var(--line-2)" }} />
-        <span>
-          {kindLabel}
-          {label ? ` · ${label}` : ""}
-        </span>
-        <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
-      </div>
-      {/* vertical bracket */}
-      <div
-        style={{
-          position: "absolute",
-          left: 6,
-          top: 26,
-          bottom: 12,
-          width: 2,
-          background: "var(--line-2)",
-          borderRadius: 1,
-        }}
-      />
-      <div>{children}</div>
-    </div>
-  );
 }
 
 function cellId(exId: string, i: number) {
@@ -253,7 +202,7 @@ function SectionCard({
 
       {/* groups */}
       {section.groups.map((group) => (
-        <GroupRail key={group.id} type={group.type}>
+        <GroupRail key={group.id} type={group.type} notes={group.notes}>
           {group.exercises.map((ex) => (
             <ExerciseRow
               key={ex.id}

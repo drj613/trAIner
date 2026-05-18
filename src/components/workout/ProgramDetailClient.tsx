@@ -17,6 +17,7 @@ import { LlmAnalysisSheet } from "@/components/analysis/LlmAnalysisSheet";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { ExerciseReplaceSheet } from "./ExerciseReplaceSheet";
 import { DiffReview } from "./DiffReview";
+import { GroupRail } from "./GroupRail";
 import type { ProgramDay, ProgramDocument, ProgramSection } from "@/lib/programs/types";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 
@@ -331,20 +332,27 @@ function DayCard({
           {day.sections.map((section, si) => (
             <div key={section.id}>
               <SectionHeader section={section} />
-              {section.groups.flatMap((group, gi) =>
-                group.exercises.map((ex, ei) => (
-                  <ExerciseRow
-                    key={ex.id}
-                    exercise={ex}
-                    index={`${si + 1}.${ei + 1}`}
-                    last={gi === section.groups.length - 1 && ei === group.exercises.length - 1}
-                    onSwap={() => onSwapEx(ex.id)}
-                    onAi={onAiEx}
-                    onDelete={() => onDeleteEx(section.id, ex.id)}
-                    onCommitName={(name) => onCommitName(section.id, ex.id, name)}
-                  />
-                ))
-              )}
+              {section.groups.map((group, gi) => (
+                <GroupRail
+                  key={group.id}
+                  type={group.type}
+                  notes={group.notes}
+                  density="compact"
+                >
+                  {group.exercises.map((ex, ei) => (
+                    <ExerciseRow
+                      key={ex.id}
+                      exercise={ex}
+                      index={`${si + 1}.${ei + 1}`}
+                      last={gi === section.groups.length - 1 && ei === group.exercises.length - 1}
+                      onSwap={() => onSwapEx(ex.id)}
+                      onAi={onAiEx}
+                      onDelete={() => onDeleteEx(section.id, ex.id)}
+                      onCommitName={(name) => onCommitName(section.id, ex.id, name)}
+                    />
+                  ))}
+                </GroupRail>
+              ))}
               <button
                 className="btn ghost"
                 onClick={() => onAddEx(section.id)}
