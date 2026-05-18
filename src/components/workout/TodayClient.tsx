@@ -22,6 +22,7 @@ import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import { GroupRail } from "./GroupRail";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
+import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 
 function localDateString(): string {
   const d = new Date();
@@ -221,7 +222,17 @@ function SectionCard({
   );
 }
 
-function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish: () => void; saved: boolean }) {
+function WorkoutProgress({
+  cells,
+  onFinish,
+  saved,
+  autoSaveStatus,
+}: {
+  cells: CellMap;
+  onFinish: () => void;
+  saved: boolean;
+  autoSaveStatus: "idle" | "saving" | "saved" | "error";
+}) {
   let total = 0, done = 0;
   for (const vals of Object.values(cells)) {
     for (const v of vals) { total++; if (classifyCell(v) !== "empty") done++; }
@@ -233,6 +244,27 @@ function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish:
         <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "var(--accent)", transition: "width .3s" }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", padding: "8px 12px", gap: 10 }}>
+        <span
+          role="status"
+          aria-live="polite"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color:
+              autoSaveStatus === "error"
+                ? "var(--bad)"
+                : autoSaveStatus === "saving"
+                ? "var(--fg-3)"
+                : autoSaveStatus === "saved"
+                ? "var(--good)"
+                : "var(--fg-4)",
+          }}
+        >
+          {autoSaveStatus === "saving" && "saving…"}
+          {autoSaveStatus === "saved" && "saved"}
+          {autoSaveStatus === "error" && "save failed"}
+          {autoSaveStatus === "idle" && ""}
+        </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", flex: 1 }}>
           {done}/{total} <span style={{ color: "var(--fg-4)" }}>· {pct}%</span>
         </span>
@@ -250,6 +282,7 @@ function WorkoutProgress({ cells, onFinish, saved }: { cells: CellMap; onFinish:
 
 function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
+  const logIdRef = useRef<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
@@ -298,40 +331,46 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
     return () => { cancelled = true; };
   }, [program.id, day.id]);
 
+  async function saveCells(currentCells: CellMap) {
+    const today = localDateString();
+    if (!logIdRef.current) {
+      const existing = await logRepo.getForDay(program.id, day.id, today);
+      logIdRef.current = existing?.id ?? crypto.randomUUID();
+    }
+    const exerciseNameMap = new Map<string, string>();
+    for (const section of day.sections) {
+      for (const group of section.groups) {
+        for (const ex of group.exercises) {
+          exerciseNameMap.set(ex.id, ex.name);
+        }
+      }
+    }
+    const entries = Object.entries(currentCells).map(([exerciseId, vals]) => ({
+      exerciseId,
+      exerciseName: exerciseNameMap.get(exerciseId),
+      sets: serialiseSets(vals),
+    }));
+    await logRepo.save({
+      id: logIdRef.current,
+      programId: program.id,
+      dayId: day.id,
+      performedAt: new Date().toISOString(),
+      entries,
+    });
+  }
+
+  const { status: autoSaveStatus } = useDebouncedAutoSave(cells, saveCells, 1500);
+
   async function finishWorkout() {
     if (saving.current) return;
     saving.current = true;
     setSaveError(null);
     try {
-      const today = localDateString();
-      const existing = await logRepo.getForDay(program.id, day.id, today);
-      // Build a flat lookup of exerciseId -> name for H3
-      const exerciseNameMap = new Map<string, string>();
-      for (const section of day.sections) {
-        for (const group of section.groups) {
-          for (const ex of group.exercises) {
-            exerciseNameMap.set(ex.id, ex.name);
-          }
-        }
-      }
-      const entries = Object.entries(cells).map(([exerciseId, vals]) => ({
-        exerciseId,
-        exerciseName: exerciseNameMap.get(exerciseId),
-        sets: serialiseSets(vals),
-      }));
-      await logRepo.save({
-        id: existing?.id ?? crypto.randomUUID(),
-        programId: program.id,
-        dayId: day.id,
-        performedAt: new Date().toISOString(),
-        entries,
-      });
-
+      await saveCells(cells);
       const allCells = Object.values(cells).flat();
       const totalSets = allCells.length;
       const completedSets = allCells.filter((v) => classifyCell(v) !== "empty").length;
       const exerciseCount = Object.keys(cells).length;
-
       await trackWorkoutEvent({
         type: "workout_saved",
         programId: program.id,
@@ -341,7 +380,6 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         totalSets,
         completedSets,
       });
-
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -476,7 +514,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         />
       ))}
 
-      <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} />
+      <WorkoutProgress cells={cells} onFinish={finishWorkout} saved={saved} autoSaveStatus={autoSaveStatus} />
       {saveError && (
         <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "4px 12px", margin: 0 }}>
           {saveError}

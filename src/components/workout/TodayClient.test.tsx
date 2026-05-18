@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { TodayClient } from "./TodayClient";
 import type { ProfileDocument } from "@/lib/programs/types";
@@ -33,10 +34,13 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
   }),
 }));
 
+const saveMock = jest.fn().mockResolvedValue(undefined);
+
 jest.mock("@/lib/storage/logRepo", () => ({
   logRepo: {
     listForProgram: jest.fn().mockResolvedValue([]),
     getForDay: jest.fn().mockResolvedValue(null),
+    save: (...args: unknown[]) => saveMock(...args),
   },
 }));
 
@@ -108,5 +112,28 @@ describe("TodayClient format guide", () => {
     expect(details?.textContent).toMatch(/70×8/);
     expect(details?.textContent).toMatch(/skip/);
     expect(details?.textContent).toMatch(/pain/);
+  });
+});
+
+describe("TodayClient auto-save", () => {
+  it("auto-saves cells after debounce delay", async () => {
+    jest.useFakeTimers();
+    mockProfile = {
+      id: "local-profile", name: "Alex", goals: [], equipment: [], constraints: [],
+      trainingAge: "", defaultDaysPerWeek: 4, updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    mockPrograms = [program as unknown as ProfileDocument];
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    const cells = await screen.findAllByRole("textbox");
+    await user.type(cells[0], "60x10");
+    // SetCell commits onBlur (see SetCell.tsx) — tab away to flush the onChange.
+    await user.tab();
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    expect(saveMock).toHaveBeenCalledTimes(1);
+    expect(saveMock.mock.calls[0][0].entries[0].sets[0]).toEqual({
+      setNumber: 1, weight: 60, reps: 10,
+    });
+    jest.useRealTimers();
   });
 });
