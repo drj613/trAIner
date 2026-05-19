@@ -351,7 +351,7 @@ function WorkoutProgress({
   );
 }
 
-function TodayWorkout({ program, day }: { program: ProgramDocument; day: ProgramDay }) {
+function TodayWorkout({ program, day, onFinish }: { program: ProgramDocument; day: ProgramDay; onFinish: () => void }) {
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [notes, setNotes] = useState<Record<string, string>>({});
   const logIdRef = useRef<string | null>(null);
@@ -472,7 +472,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
         completedSets,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      setTimeout(() => onFinish(), 800);
     } catch (e) {
       console.error("[finishWorkout] save failed", e);
       setSaveError("Failed to save workout. Please try again.");
@@ -696,7 +696,7 @@ function TodayWorkout({ program, day }: { program: ProgramDocument; day: Program
 
 export function TodayClient() {
   const { programs, profile, loading, refresh } = useLocalData();
-  const [resolvedDay, setResolvedDay] = useState<import("@/lib/programs/types").ProgramDay | undefined>(undefined);
+  const [resolvedDay, setResolvedDay] = useState<ProgramDay | undefined>(undefined);
   const [dayResolving, setDayResolving] = useState(true);
 
   useEffect(() => {
@@ -705,6 +705,15 @@ export function TodayClient() {
   }, []);
 
   const activeProgram = programs.find((p) => p.active) ?? programs[0];
+
+  const handleFinish = useCallback(() => {
+    if (!activeProgram || !resolvedDay) return;
+    const days = getRenderableDays(activeProgram);
+    const idx = days.findIndex((d) => d.id === resolvedDay.id);
+    if (idx === -1) return;
+    setResolvedDay(days[(idx + 1) % days.length]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProgram?.id, resolvedDay?.id]);
 
   useEffect(() => {
     if (loading) return;
@@ -840,7 +849,7 @@ export function TodayClient() {
   return (
     <>
       {banner}
-      <TodayWorkout program={activeProgram} day={resolvedDay} />
+      <TodayWorkout key={resolvedDay.id} program={activeProgram} day={resolvedDay} onFinish={handleFinish} />
     </>
   );
 }

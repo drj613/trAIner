@@ -4,18 +4,43 @@ import { MemoryRouter } from "react-router-dom";
 import { TodayClient } from "./TodayClient";
 import type { ProfileDocument } from "@/lib/programs/types";
 
+const makeExercise = (id: string, name: string) => ({
+  id, name, sets: 3, reps: "8-10",
+  tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+});
+
 const program = {
   id: "p1", title: "Test", source: "import" as const, active: true,
   days: [{
     id: "day-1", dayNumber: 1, title: "Push",
     sections: [{
       id: "s1", name: "Main", type: "strength" as const,
-      groups: [{ id: "g1", type: "single" as const, exercises: [{
-        id: "e1", name: "Bench Press", sets: 3, reps: "8-10",
-        tags: { primary: ["chest"], secondary: [], incidental: [], modifiers: [] }
-      }]}]
+      groups: [{ id: "g1", type: "single" as const, exercises: [makeExercise("e1", "Bench Press")] }]
     }]
   }],
+  overrides: [],
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
+const twoDay = {
+  id: "p2", title: "Two Day", source: "import" as const, active: true,
+  days: [
+    {
+      id: "day-1", dayNumber: 1, title: "Push",
+      sections: [{
+        id: "s1", name: "Main", type: "strength" as const,
+        groups: [{ id: "g1", type: "single" as const, exercises: [makeExercise("e1", "Bench Press")] }]
+      }],
+    },
+    {
+      id: "day-2", dayNumber: 2, title: "Pull",
+      sections: [{
+        id: "s2", name: "Main", type: "strength" as const,
+        groups: [{ id: "g2", type: "single" as const, exercises: [makeExercise("e2", "Pull-Up")] }]
+      }],
+    },
+  ],
   overrides: [],
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
@@ -49,6 +74,10 @@ jest.mock("@/lib/storage/programRepo", () => ({
     get: jest.fn().mockResolvedValue(null),
     save: jest.fn().mockResolvedValue(undefined),
   },
+}));
+
+jest.mock("@/lib/analytics/analyticsSeam", () => ({
+  trackWorkoutEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
 beforeEach(() => {
@@ -183,6 +212,47 @@ describe("TodayClient auto-save", () => {
     await user.type(screen.getByPlaceholderText(/your note about this set/i), "felt strong");
     await act(async () => { jest.advanceTimersByTime(1500); });
     expect(saveMock.mock.calls.at(-1)![0].entries[0].notes).toBe("felt strong");
+    jest.useRealTimers();
+  });
+});
+
+describe("TodayClient finish and advance", () => {
+  it("shows day 1 initially when there are no logs", async () => {
+    mockPrograms = [twoDay as unknown as ProfileDocument];
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    expect(await screen.findByRole("heading", { level: 1, name: "Push" })).toBeInTheDocument();
+  });
+
+  it("advances to the next day after pressing Finish workout", async () => {
+    jest.useFakeTimers();
+    mockPrograms = [twoDay as unknown as ProfileDocument];
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    await screen.findByRole("heading", { level: 1, name: "Push" });
+
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    await act(async () => { jest.advanceTimersByTime(800); });
+
+    expect(screen.getByRole("heading", { level: 1, name: "Pull" })).toBeInTheDocument();
+    jest.useRealTimers();
+  });
+
+  it("wraps from the last day back to day 1", async () => {
+    jest.useFakeTimers();
+    // Seed a log for day-1 yesterday so the resolver starts on day-2
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    require("@/lib/storage/logRepo").logRepo.listForProgram.mockResolvedValueOnce([
+      { id: "l1", programId: "p2", dayId: "day-1", performedAt: `${yesterday}T10:00:00.000Z`, entries: [] },
+    ]);
+    mockPrograms = [twoDay as unknown as ProfileDocument];
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    await screen.findByRole("heading", { level: 1, name: "Pull" }); // starts on day-2
+
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    await act(async () => { jest.advanceTimersByTime(800); });
+
+    expect(screen.getByRole("heading", { level: 1, name: "Push" })).toBeInTheDocument();
     jest.useRealTimers();
   });
 });
