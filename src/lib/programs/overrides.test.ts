@@ -1,5 +1,5 @@
 import { demoProgram } from "./sample";
-import { getRenderableDays } from "./overrides";
+import { getRenderableDays, dedupOverrides } from "./overrides";
 import type { ProgramDocument, ProgramDay, ProgramOverride } from "./types";
 
 describe("program overrides", () => {
@@ -119,18 +119,6 @@ describe("program overrides", () => {
 });
 
 describe("override deduplication at save time", () => {
-  function dedupAndAppend(
-    existing: ProgramOverride[],
-    next: ProgramOverride,
-  ): ProgramOverride[] {
-    const filtered = existing.filter((o) => {
-      if (o.scope !== next.scope) return true;
-      if (next.scope === "day") return o.dayId !== next.dayId;
-      return o.weekNumber !== next.weekNumber;
-    });
-    return [...filtered, next];
-  }
-
   it("applying a day-scope override twice results in a single override for that day", () => {
     const baseDay = demoProgram.days[0];
     const ov1: ProgramOverride = {
@@ -143,7 +131,8 @@ describe("override deduplication at save time", () => {
       dayId: baseDay.id, replacement: { ...baseDay, title: "Second Pass" },
       createdAt: new Date().toISOString(),
     };
-    const after = dedupAndAppend(dedupAndAppend([], ov1), ov2);
+    const afterFirst = [...dedupOverrides([], ov1), ov1];
+    const after = [...dedupOverrides(afterFirst, ov2), ov2];
     expect(after).toHaveLength(1);
     expect(after[0].id).toBe("ov-2");
   });
@@ -159,7 +148,7 @@ describe("override deduplication at save time", () => {
       weekNumber: 2, replacement: { ...demoProgram.days[0], title: "Deload" },
       createdAt: new Date().toISOString(),
     };
-    const after = dedupAndAppend([ov1], ov2);
+    const after = [...dedupOverrides([ov1], ov2), ov2];
     expect(after).toHaveLength(1);
     expect(after[0].id).toBe("wk-2");
   });
@@ -169,7 +158,7 @@ describe("override deduplication at save time", () => {
     const d1 = demoProgram.days[1] ?? { ...d0, id: "day-alt" };
     const ov1: ProgramOverride = { id: "a", scope: "day", programId: demoProgram.id, dayId: d0.id, replacement: d0, createdAt: new Date().toISOString() };
     const ov2: ProgramOverride = { id: "b", scope: "day", programId: demoProgram.id, dayId: d1.id, replacement: d1, createdAt: new Date().toISOString() };
-    const after = dedupAndAppend([ov1], ov2);
+    const after = [...dedupOverrides([ov1], ov2), ov2];
     expect(after).toHaveLength(2);
   });
 });

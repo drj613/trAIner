@@ -1,5 +1,16 @@
 import type { ProgramDay, ProgramDocument, ProgramOverride } from "./types";
 
+export function dedupOverrides(
+  overrides: ProgramOverride[],
+  incoming: ProgramOverride,
+): ProgramOverride[] {
+  return overrides.filter((o) => {
+    if (o.scope !== incoming.scope) return true;
+    if (incoming.scope === "day") return o.dayId !== incoming.dayId;
+    return o.weekNumber !== incoming.weekNumber;
+  });
+}
+
 export function getRenderableDays(program: ProgramDocument): ProgramDay[] {
   // M5: apply week-scope overrides first, then day-scope so day-level wins
   const sorted = [...program.overrides].sort((a, b) => {

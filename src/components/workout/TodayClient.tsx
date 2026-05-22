@@ -548,11 +548,11 @@ function TodayWorkout({ program, day, onFinish }: { program: ProgramDocument; da
     navigate(`/programs/${program.id}/diff`);
   }
 
-  function handleReplaceConfirm(item: ExerciseCatalogItem) {
+  async function handleReplaceConfirm(item: ExerciseCatalogItem) {
     if (!replaceTarget) return;
     const newDay = swapExercise(day, replaceTarget, item);
-    setReplaceTarget(null); // clear before navigate — keep sync if handleApplyReplacement ever becomes async
-    handleApplyReplacement(newDay);
+    setReplaceTarget(null);
+    await handleApplyReplacement(newDay);
   }
 
   return (

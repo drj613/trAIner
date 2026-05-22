@@ -6,6 +6,7 @@ import { DiffReview } from "@/components/workout/DiffReview";
 import { diffDays } from "@/lib/workout/programDiff";
 import { loadPendingDiff, clearPendingDiff } from "@/lib/workout/pendingDiff";
 import type { ProgramDay } from "@/lib/programs/types";
+import { dedupOverrides } from "@/lib/programs/overrides";
 
 export function DiffPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,11 +56,7 @@ export function DiffPage() {
               reason: "Modified with AI",
               createdAt: new Date().toISOString(),
             };
-      const deduped = program.overrides.filter((o) => {
-        if (o.scope !== override.scope) return true;
-        if (override.scope === "day") return o.dayId !== override.dayId;
-        return o.weekNumber !== override.weekNumber;
-      });
+      const deduped = dedupOverrides(program.overrides, override);
       await saveProgram({ ...program, overrides: [...deduped, override] });
       clearPendingDiff();
       navigate("/today", { replace: true });
