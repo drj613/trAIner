@@ -8,9 +8,9 @@ import { RoutinesIndexClient } from "@/components/workout/RoutinesIndexClient";
 import { RoutineBuilderClient } from "@/components/workout/RoutineBuilderClient";
 import { ProgramDetailClient } from "@/components/workout/ProgramDetailClient";
 import { EditClient } from "@/components/workout/EditClient";
-import { LogClient } from "@/components/workout/LogClient";
 import { DiffPage } from "@/components/workout/DiffPage";
 import { ProgramMapClient } from "@/components/workout/ProgramMapClient";
+import { WorkoutDayClient } from "@/components/workout/WorkoutDayClient";
 import { HistoryClient } from "@/components/workout/HistoryClient";
 import { LibraryClient } from "@/components/catalog/LibraryClient";
 import { ImportClient } from "@/components/import/ImportClient";
@@ -28,14 +28,13 @@ function EditRoute() {
   return <EditClient programId={id!} />;
 }
 
-function LogRoute() {
-  const { id } = useParams<{ id: string }>();
-  return <LogClient programId={id!} />;
-}
-
 function MapRoute() {
   const { id } = useParams<{ id: string }>();
   return <ProgramMapClient programId={id!} />;
+}
+
+function WorkoutDayRoute() {
+  return <WorkoutDayClient />;
 }
 
 export default function App() {
@@ -51,7 +50,7 @@ export default function App() {
               <Route path="/programs/new" element={<RoutineBuilderClient />} />
               <Route path="/programs/:id" element={<ProgramDetailRoute />} />
               <Route path="/programs/:id/edit" element={<EditRoute />} />
-              <Route path="/programs/:id/log" element={<LogRoute />} />
+              <Route path="/programs/:id/days/:dayId" element={<WorkoutDayRoute />} />
               <Route path="/programs/:id/diff" element={<DiffPage />} />
               <Route path="/programs/:id/map" element={<MapRoute />} />
               <Route path="/history" element={<HistoryClient />} />
