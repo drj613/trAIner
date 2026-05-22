@@ -55,7 +55,12 @@ export function DiffPage() {
               reason: "Modified with AI",
               createdAt: new Date().toISOString(),
             };
-      await saveProgram({ ...program, overrides: [...program.overrides, override] });
+      const deduped = program.overrides.filter((o) => {
+        if (o.scope !== override.scope) return true;
+        if (override.scope === "day") return o.dayId !== override.dayId;
+        return o.weekNumber !== override.weekNumber;
+      });
+      await saveProgram({ ...program, overrides: [...deduped, override] });
       clearPendingDiff();
       navigate("/today", { replace: true });
     } catch (e) {

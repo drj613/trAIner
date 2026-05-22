@@ -132,6 +132,23 @@ describe("addExercise", () => {
     expect(tags.modifiers).toEqual([]);
   });
 
+  it("swapExercise reuses the original exercise id, not the catalog item id", () => {
+    const original = mockDay.sections[0].groups[0].exercises[0];
+    const result = swapExercise(mockDay, original.id, catalogItem);
+    const swapped = result.sections[0].groups[0].exercises[0];
+    expect(swapped.id).toBe(original.id);
+    expect(swapped.id).not.toBe(catalogItem.id);
+  });
+
+  it("addExercise new exercise id is not any pre-existing exercise id in the day", () => {
+    const existingIds = mockDay.sections.flatMap((s) =>
+      s.groups.flatMap((g) => g.exercises.map((e) => e.id))
+    );
+    const result = addExercise(mockDay, "sec-1", catalogItem);
+    const newId = result.sections[0].groups[1].exercises[0].id;
+    expect(existingIds).not.toContain(newId);
+  });
+
   it("returns original day reference when sectionId is not found", () => {
     const result = addExercise(mockDay, "sec-999", catalogItem);
     expect(result).toBe(mockDay);
