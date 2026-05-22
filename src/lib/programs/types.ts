@@ -117,6 +117,9 @@ export type WorkoutLogDocument = {
   // field without writing it. The day resolver uses it to advance past
   // completed days; absence means the workout is still in progress.
   completedAt?: ISODate;
+  skippedAt?: ISODate;
+  skipReason?: string;
+  dayNote?: string;
   entries: WorkoutLogEntry[];
   notes?: string;
 };

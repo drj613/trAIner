@@ -3,7 +3,7 @@ import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, P
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -97,6 +97,12 @@ export function getDb() {
             }
             cursor = await cursor.continue();
           }
+        }
+
+        // v5 → v6: dayNote, skippedAt, skipReason added as optional fields on logs.
+        // No migration needed; existing records are valid as-is.
+        if (oldVersion < 6) {
+          // intentionally empty — optional fields, no schema change
         }
       }
     }).then((db) => {

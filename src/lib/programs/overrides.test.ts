@@ -1,6 +1,6 @@
 import { demoProgram } from "./sample";
-import { getRenderableDays } from "./overrides";
-import type { ProgramDocument, ProgramDay } from "./types";
+import { getRenderableDays, dedupOverrides } from "./overrides";
+import type { ProgramDocument, ProgramDay, ProgramOverride } from "./types";
 
 describe("program overrides", () => {
   it("layers a day override without mutating the base day", () => {
@@ -115,5 +115,50 @@ describe("program overrides", () => {
     const days = getRenderableDays(program);
     // Day-scope should win regardless of insertion order
     expect(days[0].title).toBe("Day Override Title");
+  });
+});
+
+describe("override deduplication at save time", () => {
+  it("applying a day-scope override twice results in a single override for that day", () => {
+    const baseDay = demoProgram.days[0];
+    const ov1: ProgramOverride = {
+      id: "ov-1", scope: "day", programId: demoProgram.id,
+      dayId: baseDay.id, replacement: { ...baseDay, title: "First Pass" },
+      createdAt: new Date().toISOString(),
+    };
+    const ov2: ProgramOverride = {
+      id: "ov-2", scope: "day", programId: demoProgram.id,
+      dayId: baseDay.id, replacement: { ...baseDay, title: "Second Pass" },
+      createdAt: new Date().toISOString(),
+    };
+    const afterFirst = [...dedupOverrides([], ov1), ov1];
+    const after = [...dedupOverrides(afterFirst, ov2), ov2];
+    expect(after).toHaveLength(1);
+    expect(after[0].id).toBe("ov-2");
+  });
+
+  it("applying a week-scope override twice results in a single override for that week", () => {
+    const ov1: ProgramOverride = {
+      id: "wk-1", scope: "week", programId: demoProgram.id,
+      weekNumber: 2, replacement: demoProgram.days[0],
+      createdAt: new Date().toISOString(),
+    };
+    const ov2: ProgramOverride = {
+      id: "wk-2", scope: "week", programId: demoProgram.id,
+      weekNumber: 2, replacement: { ...demoProgram.days[0], title: "Deload" },
+      createdAt: new Date().toISOString(),
+    };
+    const after = [...dedupOverrides([ov1], ov2), ov2];
+    expect(after).toHaveLength(1);
+    expect(after[0].id).toBe("wk-2");
+  });
+
+  it("overrides for different days are both kept", () => {
+    const d0 = demoProgram.days[0];
+    const d1 = demoProgram.days[1] ?? { ...d0, id: "day-alt" };
+    const ov1: ProgramOverride = { id: "a", scope: "day", programId: demoProgram.id, dayId: d0.id, replacement: d0, createdAt: new Date().toISOString() };
+    const ov2: ProgramOverride = { id: "b", scope: "day", programId: demoProgram.id, dayId: d1.id, replacement: d1, createdAt: new Date().toISOString() };
+    const after = [...dedupOverrides([ov1], ov2), ov2];
+    expect(after).toHaveLength(2);
   });
 });
