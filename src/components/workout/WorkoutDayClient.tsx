@@ -471,11 +471,15 @@ function WorkoutBody({
   day,
   days,
   dayIndex,
+  aiModalOpen,
+  onAiModalClose,
 }: {
   program: ProgramDocument;
   day: ProgramDay;
   days: ProgramDay[];
   dayIndex: number;
+  aiModalOpen: boolean;
+  onAiModalClose: () => void;
 }) {
   const navigate = useNavigate();
   const { refresh } = useLocalData();
@@ -489,7 +493,6 @@ function WorkoutBody({
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
-  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
@@ -695,7 +698,7 @@ function WorkoutBody({
       alert("Unable to store changes temporarily. Please try again or check your browser settings.");
       return;
     }
-    setAiModalOpen(false);
+    onAiModalClose();
     navigate(`/programs/${program.id}/diff`);
   }
 
@@ -772,7 +775,7 @@ function WorkoutBody({
           currentDay={day}
           programId={program.id}
           onApply={handleApplyReplacement}
-          onClose={() => setAiModalOpen(false)}
+          onClose={onAiModalClose}
         />
       )}
     </div>
@@ -785,6 +788,7 @@ export function WorkoutDayClient() {
   const { id: programId, dayId } = useParams<{ id: string; dayId: string }>();
   const navigate = useNavigate();
   const { programs } = useLocalData();
+  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const program = programs.find((p) => p.id === programId);
   const days = program ? getRenderableDays(program) : [];
@@ -863,7 +867,7 @@ export function WorkoutDayClient() {
           <button
             type="button"
             className="btn ghost"
-            onClick={() => {/* AI modal is inside WorkoutBody */}}
+            onClick={() => setAiModalOpen(true)}
             style={{ padding: "4px 8px", gap: 4, display: "flex", alignItems: "center" }}
             aria-label="Modify with AI"
             title="Modify with AI"
@@ -914,6 +918,8 @@ export function WorkoutDayClient() {
         day={day}
         days={days}
         dayIndex={dayIndex}
+        aiModalOpen={aiModalOpen}
+        onAiModalClose={() => setAiModalOpen(false)}
       />
     </div>
   );
