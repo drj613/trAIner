@@ -744,9 +744,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
                   onAddEx={(sectionId) => setReplaceTarget({ kind: "add", day, sectionId })}
                   onCommitName={(sectionId, exId, name) => openConfirm(day, buildRenameDay(day, sectionId, exId, name))}
                   onModifyDay={() => setAiModalDay(day)}
-                  // TODO: navigates to today's session regardless of which day was expanded.
-                  // Fix when day-number-based scheduling replaces calendar-day matching.
-                  onStart={() => navigate(`/programs/${id}/log`)}
+                  onStart={() => navigate(`/programs/${id}/days/${day.id}`)}
                 />
               ))}
             </div>
