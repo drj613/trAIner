@@ -12,7 +12,6 @@ import {
   Settings,
   UserRound,
   Wand2,
-  WifiOff,
   X,
 } from "lucide-react";
 
@@ -82,16 +81,6 @@ function NavDrawer({
               <span style={{ color: "var(--accent)" }}>tr</span>AI
               <span style={{ color: "var(--accent)" }}>ner</span>
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--fg-3)",
-                marginTop: 2,
-              }}
-            >
-              local workspace · offline-first
-            </div>
           </div>
           <button
             className="btn ghost"
@@ -135,35 +124,6 @@ function NavDrawer({
           })}
         </div>
 
-        {/* footer */}
-        <div
-          style={{
-            padding: 10,
-            borderTop: "1px solid var(--line)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--fg-3)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}
-        >
-          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <WifiOff size={11} aria-hidden /> offline-only · static PWA
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                background: "var(--good)",
-                display: "inline-block",
-              }}
-            />
-            local · all data on this device
-          </span>
-        </div>
       </nav>
     </div>
   );
