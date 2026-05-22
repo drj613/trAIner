@@ -3,7 +3,7 @@ import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, P
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -48,7 +48,7 @@ let dbInstance: IDBPDatabase<TrainerDb> | undefined;
 export function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
+      async upgrade(db, oldVersion, _newVersion, tx) {
         // v0 → v1: create all initial stores
         if (oldVersion < 1) {
           db.createObjectStore("profile", { keyPath: "id" });
@@ -80,6 +80,22 @@ export function getDb() {
         if (oldVersion < 4) {
           if (!db.objectStoreNames.contains("bodyweight")) {
             db.createObjectStore("bodyweight", { keyPath: "id" });
+          }
+        }
+
+        // v4 → v5: backfill completedAt on pre-existing logs.
+        // Before this version, every saved log was effectively a finished
+        // workout (no autosave-only logs existed beyond a ~2-day window).
+        // Treat any log lacking completedAt as completed at its performedAt.
+        if (oldVersion < 5 && oldVersion >= 1) {
+          const store = tx.objectStore("logs");
+          let cursor = await store.openCursor();
+          while (cursor) {
+            const log = cursor.value as WorkoutLogDocument;
+            if (!log.completedAt) {
+              await cursor.update({ ...log, completedAt: log.performedAt });
+            }
+            cursor = await cursor.continue();
           }
         }
       }

@@ -113,6 +113,10 @@ export type WorkoutLogDocument = {
   programId: ID;
   dayId: ID;
   performedAt: ISODate;
+  // Set only when the user taps "Finish workout". Autosave preserves this
+  // field without writing it. The day resolver uses it to advance past
+  // completed days; absence means the workout is still in progress.
+  completedAt?: ISODate;
   entries: WorkoutLogEntry[];
   notes?: string;
 };

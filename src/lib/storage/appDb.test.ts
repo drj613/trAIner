@@ -1,4 +1,4 @@
-import { deleteDB } from "idb";
+import { deleteDB, openDB } from "idb";
 import { DB_NAME, getDb, resetDbConnection } from "./appDb";
 import { aliasRepo } from "./aliasRepo";
 import { logRepo } from "./logRepo";
@@ -186,5 +186,83 @@ describe("DB v4 — bodyweight store", () => {
     await restoreBackup(oldBackup);
 
     expect(await bodyweightRepo.list()).toHaveLength(0);
+  });
+});
+
+describe("DB v5 — completedAt backfill", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("backfills completedAt = performedAt for existing logs on upgrade", async () => {
+    // Seed a v4 database with a log that has no completedAt.
+    const v4 = await openDB(DB_NAME, 4, {
+      upgrade(db) {
+        db.createObjectStore("profile", { keyPath: "id" });
+        db.createObjectStore("programs", { keyPath: "id" });
+        const logs = db.createObjectStore("logs", { keyPath: "id" });
+        logs.createIndex("by-program", "programId");
+        logs.createIndex("by-day", "dayId");
+        const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+        aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+        aliases.createIndex("by-exercise", "canonicalExerciseId");
+        db.createObjectStore("backups", { keyPath: "id" });
+        db.createObjectStore("metrics", { keyPath: "exerciseId" });
+        db.createObjectStore("userExercises", { keyPath: "id" });
+        db.createObjectStore("bodyweight", { keyPath: "id" });
+      },
+    });
+    await v4.put("logs", {
+      id: "legacy-1",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-05-10T10:00:00.000Z",
+      entries: [],
+    });
+    v4.close();
+
+    // Trigger the v5 upgrade via the real getDb().
+    const db = await getDb();
+    const log = await db.get("logs", "legacy-1");
+    expect(log?.completedAt).toBe("2026-05-10T10:00:00.000Z");
+  });
+
+  it("does not overwrite an existing completedAt", async () => {
+    const v4 = await openDB(DB_NAME, 4, {
+      upgrade(db) {
+        db.createObjectStore("profile", { keyPath: "id" });
+        db.createObjectStore("programs", { keyPath: "id" });
+        const logs = db.createObjectStore("logs", { keyPath: "id" });
+        logs.createIndex("by-program", "programId");
+        logs.createIndex("by-day", "dayId");
+        const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+        aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+        aliases.createIndex("by-exercise", "canonicalExerciseId");
+        db.createObjectStore("backups", { keyPath: "id" });
+        db.createObjectStore("metrics", { keyPath: "exerciseId" });
+        db.createObjectStore("userExercises", { keyPath: "id" });
+        db.createObjectStore("bodyweight", { keyPath: "id" });
+      },
+    });
+    await v4.put("logs", {
+      id: "already-completed",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-05-10T10:00:00.000Z",
+      // Stored under an `as any` shape because v4's type didn't include completedAt.
+      completedAt: "2026-05-10T11:00:00.000Z",
+      entries: [],
+    } as never);
+    v4.close();
+
+    const db = await getDb();
+    const log = await db.get("logs", "already-completed");
+    expect(log?.completedAt).toBe("2026-05-10T11:00:00.000Z");
   });
 });

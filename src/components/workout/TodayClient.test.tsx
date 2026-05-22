@@ -239,10 +239,17 @@ describe("TodayClient finish and advance", () => {
 
   it("wraps from the last day back to day 1", async () => {
     jest.useFakeTimers();
-    // Seed a log for day-1 yesterday so the resolver starts on day-2
+    // Seed a completed log for day-1 yesterday so the resolver starts on day-2
     const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     require("@/lib/storage/logRepo").logRepo.listForProgram.mockResolvedValueOnce([
-      { id: "l1", programId: "p2", dayId: "day-1", performedAt: `${yesterday}T10:00:00.000Z`, entries: [] },
+      {
+        id: "l1",
+        programId: "p2",
+        dayId: "day-1",
+        performedAt: `${yesterday}T10:00:00.000Z`,
+        completedAt: `${yesterday}T11:00:00.000Z`,
+        entries: [],
+      },
     ]);
     mockPrograms = [twoDay as unknown as ProfileDocument];
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

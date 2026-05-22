@@ -413,12 +413,13 @@ function TodayWorkout({ program, day, onFinish }: { program: ProgramDocument; da
     return () => { cancelled = true; };
   }, [program.id, day.id]);
 
-  async function saveCells({ cells: c, notes: n }: { cells: CellMap; notes: Record<string, string> }) {
+  async function saveCells(
+    { cells: c, notes: n }: { cells: CellMap; notes: Record<string, string> },
+    { markCompleted = false }: { markCompleted?: boolean } = {},
+  ) {
     const today = localDateString();
-    if (!logIdRef.current) {
-      const existing = await logRepo.getForDay(program.id, day.id, today);
-      logIdRef.current = existing?.id ?? crypto.randomUUID();
-    }
+    const existing = await logRepo.getForDay(program.id, day.id, today);
+    logIdRef.current = existing?.id ?? logIdRef.current ?? crypto.randomUUID();
     const exerciseNameMap = new Map<string, string>();
     for (const section of day.sections) {
       for (const group of section.groups) {
@@ -439,7 +440,8 @@ function TodayWorkout({ program, day, onFinish }: { program: ProgramDocument; da
       id: logIdRef.current,
       programId: program.id,
       dayId: day.id,
-      performedAt: new Date().toISOString(),
+      performedAt: existing?.performedAt ?? new Date().toISOString(),
+      completedAt: markCompleted ? new Date().toISOString() : existing?.completedAt,
       entries,
     });
   }
@@ -458,6 +460,7 @@ function TodayWorkout({ program, day, onFinish }: { program: ProgramDocument; da
     setSaveError(null);
     try {
       await flush();
+      await saveCells({ cells, notes }, { markCompleted: true });
       const allCells = Object.values(cells).flat();
       const totalSets = allCells.length;
       const completedSets = allCells.filter((v) => classifyCell(v) !== "empty").length;
