@@ -146,6 +146,29 @@ describe("WorkoutDayClient skip day", () => {
   });
 });
 
+describe("WorkoutDayClient skip flush regression", () => {
+  it("unmount flush after skip does not clobber skippedAt", async () => {
+    jest.useFakeTimers();
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    // Skip the day
+    await user.click(screen.getByRole("button", { name: /skip day/i }));
+    await user.type(screen.getByPlaceholderText(/reason.*optional/i), "too tired");
+    await user.click(screen.getByRole("button", { name: /skip →/i }));
+
+    // The skip save call should have skippedAt
+    const skipSave = saveMock.mock.calls.find(
+      (call) => call[0].skippedAt !== undefined
+    );
+    expect(skipSave).toBeDefined();
+    expect(skipSave![0].skipReason).toBe("too tired");
+
+    jest.useRealTimers();
+  });
+});
+
 describe("WorkoutDayClient day note", () => {
   it("clicking Day note button reveals a textarea", async () => {
     renderOnDay("day-1");

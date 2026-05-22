@@ -574,9 +574,9 @@ function WorkoutBody({
       dayId: day.id,
       performedAt: existing?.performedAt ?? new Date().toISOString(),
       completedAt: shouldComplete ? new Date().toISOString() : existing?.completedAt,
-      ...(skippedAt ? { skippedAt } : {}),
-      ...(skipReason ? { skipReason } : {}),
-      ...(dn ? { dayNote: dn } : {}),
+      skippedAt: skippedAt ?? existing?.skippedAt,
+      skipReason: skipReason ?? existing?.skipReason,
+      dayNote: dn || existing?.dayNote || undefined,
       entries,
     });
   }
