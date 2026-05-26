@@ -310,6 +310,7 @@ function WorkoutBottomBar({
   onSkipDay,
   onSkipConfirm,
   onSkipCancel,
+  alreadyComplete,
 }: {
   cells: CellMap;
   onFinish: () => void;
@@ -323,6 +324,7 @@ function WorkoutBottomBar({
   onSkipDay: () => void;
   onSkipConfirm: (reason: string) => void;
   onSkipCancel: () => void;
+  alreadyComplete: boolean;
 }) {
   const [skipReason, setSkipReason] = useState("");
 
@@ -452,12 +454,19 @@ function WorkoutBottomBar({
         </button>
         <button
           type="button"
-          className={`btn ${pct === 100 ? "primary" : ""}`}
+          className={`btn ${pct === 100 && !alreadyComplete ? "primary" : ""}`}
           onClick={onFinish}
-          aria-label="Finish workout"
+          disabled={alreadyComplete}
+          aria-label={alreadyComplete ? "Completed" : "Finish workout"}
           style={{ fontSize: 12 }}
         >
-          {saved ? <><CheckCircle size={13} /> Saved</> : "Finish workout"}
+          {alreadyComplete ? (
+            <><CheckCircle size={13} /> Completed</>
+          ) : saved ? (
+            <><CheckCircle size={13} /> Saved</>
+          ) : (
+            "Finish workout"
+          )}
         </button>
       </div>
     </div>
@@ -492,6 +501,7 @@ function WorkoutBody({
   const logIdRef = useRef<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [alreadyComplete, setAlreadyComplete] = useState(false);
   const saving = useRef(false);
 
   const [historyDrawer, setHistoryDrawer] = useState<{
@@ -549,6 +559,21 @@ function WorkoutBody({
         if (log.dayNote) setDayNote(log.dayNote);
       })
       .catch((e) => console.error("[logRepo] hydration failed", e));
+    return () => { cancelled = true; };
+  }, [program.id, day.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    logRepo
+      .listForDay(day.id)
+      .then((logs) => {
+        if (cancelled) return;
+        const hasCompleted = logs.some(
+          (l) => l.programId === program.id && !!l.completedAt,
+        );
+        setAlreadyComplete(hasCompleted);
+      })
+      .catch((e) => console.error("[logRepo] alreadyComplete check failed", e));
     return () => { cancelled = true; };
   }, [program.id, day.id]);
 
@@ -758,6 +783,7 @@ function WorkoutBody({
         onSkipDay={() => setSkipMode(true)}
         onSkipConfirm={handleSkip}
         onSkipCancel={() => setSkipMode(false)}
+        alreadyComplete={alreadyComplete}
       />
 
       {saveError && (

@@ -242,6 +242,68 @@ describe("WorkoutDayClient canonical id persistence", () => {
   });
 });
 
+describe("WorkoutDayClient already-completed day", () => {
+  it("Finish button is disabled and labeled 'Completed' when a completed log exists", async () => {
+    listForDayMock.mockResolvedValueOnce([
+      {
+        id: "prior-log",
+        programId: "p1",
+        dayId: "day-1",
+        performedAt: "2026-04-10T09:00:00.000Z",
+        completedAt: "2026-04-10T10:00:00.000Z",
+        entries: [],
+      },
+    ]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const finishButton = await screen.findByRole("button", { name: /completed/i });
+    expect(finishButton).toBeDisabled();
+    // The default label "Finish workout" must not be present.
+    expect(screen.queryByRole("button", { name: /finish workout/i })).not.toBeInTheDocument();
+  });
+
+  it("Finish button is enabled when no completed log exists", async () => {
+    listForDayMock.mockResolvedValueOnce([]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
+    expect(finishButton).not.toBeDisabled();
+  });
+
+  it("ignores completed logs from other programs", async () => {
+    listForDayMock.mockResolvedValueOnce([
+      {
+        id: "other-prog-log",
+        programId: "other-program",
+        dayId: "day-1",
+        performedAt: "2026-04-10T09:00:00.000Z",
+        completedAt: "2026-04-10T10:00:00.000Z",
+        entries: [],
+      },
+    ]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
+    expect(finishButton).not.toBeDisabled();
+  });
+
+  it("ignores incomplete logs (no completedAt)", async () => {
+    listForDayMock.mockResolvedValueOnce([
+      {
+        id: "in-progress-log",
+        programId: "p1",
+        dayId: "day-1",
+        performedAt: "2026-04-10T09:00:00.000Z",
+        entries: [],
+      },
+    ]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
+    expect(finishButton).not.toBeDisabled();
+  });
+});
+
 describe("WorkoutDayClient history button after exercise change", () => {
   it("history dialog shows entries matching the slot's current canonical id", async () => {
     // Two logs: one under the old slot id, one under a different slot but same canonical id.
