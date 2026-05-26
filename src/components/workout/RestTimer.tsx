@@ -18,6 +18,8 @@ export function RestTimer({ restText, notes }: Props) {
   const [seconds, setSeconds] = useState<number | undefined>(initial);
   const [remaining, setRemaining] = useState<number>(initial ?? 0);
   const [running, setRunning] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>("");
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -38,37 +40,73 @@ export function RestTimer({ restText, notes }: Props) {
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [running]);
 
-  if (seconds === undefined) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-        <input
-          type="number"
-          placeholder="seconds"
-          min={5}
-          max={600}
-          className="input"
-          style={{ width: 80, fontSize: 12 }}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (Number.isFinite(n) && n > 0) {
-              setSeconds(n); setRemaining(n);
-            }
-          }}
-        />
-      </div>
-    );
+  function startEditing() {
+    setDraft(seconds !== undefined ? String(seconds) : "");
+    setEditing(true);
   }
+
+  function commitEdit() {
+    const n = Number(draft);
+    if (Number.isFinite(n) && n >= 1 && n <= 600) {
+      setSeconds(n);
+      setRemaining(n);
+      setEditing(false);
+    }
+    // else: stay in edit mode; user can correct or press Escape
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+  }
+
+  const display = seconds === undefined ? "--:--" : fmt(remaining);
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, minWidth: 36 }}>
-        {fmt(remaining)}
-      </span>
+      {editing ? (
+        <input
+          type="number"
+          placeholder="seconds"
+          min={1}
+          max={600}
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+            else if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+          }}
+          onBlur={commitEdit}
+          className="input"
+          style={{ width: 80, fontSize: 12 }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={running ? undefined : startEditing}
+          disabled={running}
+          aria-label={seconds === undefined ? "Set rest duration" : "Edit rest duration"}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            minWidth: 36,
+            background: "none",
+            border: "none",
+            padding: 0,
+            color: "var(--fg)",
+            cursor: running ? "default" : "pointer",
+            textAlign: "left",
+          }}
+        >
+          {display}
+        </button>
+      )}
       <button
         type="button"
         className="btn ghost"
         aria-label={running ? "Pause" : "Start"}
         onClick={() => setRunning((r) => !r)}
+        disabled={seconds === undefined}
         style={{ padding: "3px 6px" }}
       >
         {running ? <Pause size={12} /> : <Play size={12} />}
@@ -77,7 +115,8 @@ export function RestTimer({ restText, notes }: Props) {
         type="button"
         className="btn ghost"
         aria-label="Reset"
-        onClick={() => { setRunning(false); setRemaining(seconds); }}
+        onClick={() => { setRunning(false); if (seconds !== undefined) setRemaining(seconds); }}
+        disabled={seconds === undefined}
         style={{ padding: "3px 6px" }}
       >
         <RotateCcw size={12} />
