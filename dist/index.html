@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2f6fdf" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/trAIner/manifest.webmanifest" />
+    <link rel="icon" href="/trAIner/icon-192.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,8 +13,23 @@
       rel="stylesheet"
     />
     <title>trAIner</title>
-    <script type="module" crossorigin src="/assets/index-CNYYwk1d.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BDaB2n-w.css">
+    <script>
+      // Restore path encoded by 404.html (GitHub Pages SPA routing)
+      (function () {
+        var q = window.location.search;
+        if (q && q.indexOf("?p=") === 0) {
+          var decoded = decodeURIComponent(q.slice(3).replace(/&h=.*$/, ""));
+          var hash = q.match(/&h=(.*)$/);
+          window.history.replaceState(
+            null,
+            null,
+            decoded + (hash ? "#" + hash[1] : "")
+          );
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/trAIner/assets/index-CVPjuxNL.js"></script>
+    <link rel="stylesheet" crossorigin href="/trAIner/assets/index-S0CvMRx2.css">
   </head>
   <body>
     <div id="root"></div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "trainer-app-shell-v1";
+const CACHE_NAME = "trainer-app-shell-v2";
 const APP_SHELL = ["/", "/today", "/programs", "/import", "/profile", "/prompts", "/settings", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -26,7 +26,12 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           return response;
         })
-        .catch(() => caches.match("/today"));
+        .catch((err) => {
+          if (event.request.mode === "navigate") {
+            return caches.match("/today");
+          }
+          throw err;
+        });
     })
   );
 });
