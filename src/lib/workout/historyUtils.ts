@@ -18,12 +18,20 @@ function setVolume(s: WorkoutSetLog): number {
 export function aggregateExerciseHistory(
   logs: WorkoutLogDocument[],
   exerciseId: string,
+  canonicalExerciseId?: string,
   limit = 8,
 ): ExerciseSessionRow[] {
   const rows: ExerciseSessionRow[] = [];
 
   for (const log of logs) {
-    const entry = log.entries.find((e) => e.exerciseId === exerciseId);
+    const entry = log.entries.find((e) => {
+      // Prefer canonical-id match when both sides supply one.
+      if (canonicalExerciseId && e.canonicalExerciseId) {
+        return e.canonicalExerciseId === canonicalExerciseId;
+      }
+      // Legacy / pre-canonical fallback: slot-id match.
+      return e.exerciseId === exerciseId;
+    });
     if (!entry) continue;
 
     rows.push({
