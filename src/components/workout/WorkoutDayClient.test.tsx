@@ -1,4 +1,4 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { WorkoutDayClient } from "./WorkoutDayClient";
@@ -118,6 +118,9 @@ describe("WorkoutDayClient skip day", () => {
   it("tapping Skip day shows the inline reason input", async () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
+    );
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /skip day/i }));
     expect(screen.getByPlaceholderText(/reason.*optional/i)).toBeInTheDocument();
@@ -126,6 +129,9 @@ describe("WorkoutDayClient skip day", () => {
   it("confirming skip writes completedAt and skippedAt", async () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
+    );
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /skip day/i }));
     await user.click(screen.getByRole("button", { name: /skip →/i }));
@@ -142,6 +148,9 @@ describe("WorkoutDayClient skip day", () => {
   it("skip reason persists in the log", async () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
+    );
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /skip day/i }));
     await user.type(screen.getByPlaceholderText(/reason.*optional/i), "knee pain");
@@ -158,6 +167,9 @@ describe("WorkoutDayClient skip flush regression", () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
+    );
 
     // Skip the day
     await user.click(screen.getByRole("button", { name: /skip day/i }));
@@ -205,6 +217,9 @@ describe("WorkoutDayClient finish workout", () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
     await act(async () => { jest.advanceTimersByTime(800); });
     expect(await screen.findByRole("heading", { level: 1, name: "Pull Day" })).toBeInTheDocument();
@@ -216,6 +231,9 @@ describe("WorkoutDayClient finish workout", () => {
     renderOnDay("day-2");
     await screen.findByRole("heading", { level: 1, name: "Pull Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
     await act(async () => { jest.advanceTimersByTime(800); });
     expect(await screen.findByRole("heading", { level: 1, name: "Push Day" })).toBeInTheDocument();
@@ -229,6 +247,9 @@ describe("WorkoutDayClient canonical id persistence", () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
     await act(async () => { jest.advanceTimersByTime(800); });
     const finishSave = saveMock.mock.calls.find(
@@ -266,8 +287,9 @@ describe("WorkoutDayClient already-completed day", () => {
     listForDayMock.mockResolvedValueOnce([]);
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
-    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
-    expect(finishButton).not.toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
   });
 
   it("ignores completed logs from other programs", async () => {
@@ -283,8 +305,9 @@ describe("WorkoutDayClient already-completed day", () => {
     ]);
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
-    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
-    expect(finishButton).not.toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
   });
 
   it("ignores incomplete logs (no completedAt)", async () => {
@@ -299,8 +322,40 @@ describe("WorkoutDayClient already-completed day", () => {
     ]);
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
-    const finishButton = await screen.findByRole("button", { name: /finish workout/i });
-    expect(finishButton).not.toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+  });
+});
+
+describe("WorkoutDayClient locked-day Skip button", () => {
+  it("Skip day button is disabled when a completed log exists", async () => {
+    listForDayMock.mockResolvedValueOnce([
+      {
+        id: "prior-log",
+        programId: "p1",
+        dayId: "day-1",
+        performedAt: "2026-04-10T09:00:00.000Z",
+        completedAt: "2026-04-10T10:00:00.000Z",
+        entries: [],
+      },
+    ]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // Wait for the listForDay query to resolve and the lock to engage.
+    await screen.findByRole("button", { name: /completed/i });
+    const skipButton = screen.getByRole("button", { name: /skip day/i });
+    expect(skipButton).toBeDisabled();
+  });
+
+  it("Skip day button is enabled when no completed log exists", async () => {
+    listForDayMock.mockResolvedValueOnce([]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // Wait for the listForDay query to resolve and the lock to clear.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
+    );
   });
 });
 

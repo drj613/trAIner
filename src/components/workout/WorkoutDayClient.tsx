@@ -324,9 +324,10 @@ function WorkoutBottomBar({
   onSkipDay: () => void;
   onSkipConfirm: (reason: string) => void;
   onSkipCancel: () => void;
-  alreadyComplete: boolean;
+  alreadyComplete: boolean | undefined;
 }) {
   const [skipReason, setSkipReason] = useState("");
+  const locked = alreadyComplete === true || alreadyComplete === undefined;
 
   // Reset reason when skip mode exits
   useEffect(() => {
@@ -447,6 +448,7 @@ function WorkoutBottomBar({
           type="button"
           className="btn ghost"
           onClick={onSkipDay}
+          disabled={locked}
           aria-label="Skip day"
           style={{ fontSize: 11 }}
         >
@@ -454,13 +456,13 @@ function WorkoutBottomBar({
         </button>
         <button
           type="button"
-          className={`btn ${pct === 100 && !alreadyComplete ? "primary" : ""}`}
+          className={`btn ${pct === 100 && !locked ? "primary" : ""}`}
           onClick={onFinish}
-          disabled={alreadyComplete}
-          aria-label={alreadyComplete ? "Completed" : "Finish workout"}
+          disabled={locked}
+          aria-label={alreadyComplete === true ? "Completed" : "Finish workout"}
           style={{ fontSize: 12 }}
         >
-          {alreadyComplete ? (
+          {alreadyComplete === true ? (
             <><CheckCircle size={13} /> Completed</>
           ) : saved ? (
             <><CheckCircle size={13} /> Saved</>
@@ -501,7 +503,7 @@ function WorkoutBody({
   const logIdRef = useRef<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [alreadyComplete, setAlreadyComplete] = useState(false);
+  const [alreadyComplete, setAlreadyComplete] = useState<boolean | undefined>(undefined);
   const saving = useRef(false);
 
   const [historyDrawer, setHistoryDrawer] = useState<{
