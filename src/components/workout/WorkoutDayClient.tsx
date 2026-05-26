@@ -504,8 +504,17 @@ function WorkoutBody({
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
     try {
+      // Resolve the slot's current canonical exercise id from the day template.
+      let canonicalExerciseId: string | undefined;
+      for (const section of day.sections) {
+        for (const group of section.groups) {
+          for (const ex of group.exercises) {
+            if (ex.id === exerciseId) canonicalExerciseId = ex.canonicalExerciseId;
+          }
+        }
+      }
       const logs = await logRepo.listForProgram(program.id);
-      const rows = aggregateExerciseHistory(logs, exerciseId);
+      const rows = aggregateExerciseHistory(logs, exerciseId, canonicalExerciseId);
       setHistoryDrawer({ exerciseName, rows });
     } catch (e) {
       console.error("[history] failed to load exercise history", e);
@@ -552,19 +561,28 @@ function WorkoutBody({
     const existing = await logRepo.getForDay(program.id, day.id, today);
     logIdRef.current = existing?.id ?? logIdRef.current ?? crypto.randomUUID();
     const exerciseNameMap = new Map<string, string>();
+    const exerciseCanonicalMap = new Map<string, string | undefined>();
     for (const section of day.sections) {
       for (const group of section.groups) {
         for (const ex of group.exercises) {
           exerciseNameMap.set(ex.id, ex.name);
+          exerciseCanonicalMap.set(ex.id, ex.canonicalExerciseId);
         }
       }
     }
     const entries = Object.entries(c).map(([exerciseId, vals]) => {
-      const base = {
+      const canonicalExerciseId = exerciseCanonicalMap.get(exerciseId);
+      const base: {
+        exerciseId: string;
+        exerciseName?: string;
+        canonicalExerciseId?: string;
+        sets: ReturnType<typeof serialiseSets>;
+      } = {
         exerciseId,
         exerciseName: exerciseNameMap.get(exerciseId),
         sets: serialiseSets(vals),
       };
+      if (canonicalExerciseId) base.canonicalExerciseId = canonicalExerciseId;
       return applyEntryNotes(base, n[exerciseId] ?? "");
     });
     const shouldComplete = markCompleted || !!skippedAt;

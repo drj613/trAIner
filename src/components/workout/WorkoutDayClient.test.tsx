@@ -4,8 +4,9 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import type { ProgramDocument } from "@/lib/programs/types";
 
-const makeExercise = (id: string, name: string) => ({
+const makeExercise = (id: string, name: string, canonicalExerciseId?: string) => ({
   id, name, sets: 3, reps: "8-10",
+  canonicalExerciseId,
   tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
 });
 
@@ -16,14 +17,14 @@ const twoDay: ProgramDocument = {
       id: "day-1", dayNumber: 1, title: "Push Day",
       sections: [{
         id: "s1", name: "Main", type: "strength",
-        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press")] }],
+        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press", "cat-bench")] }],
       }],
     },
     {
       id: "day-2", dayNumber: 2, title: "Pull Day",
       sections: [{
         id: "s2", name: "Main", type: "strength",
-        groups: [{ id: "g2", type: "single", exercises: [makeExercise("e2", "Pull-Up")] }],
+        groups: [{ id: "g2", type: "single", exercises: [makeExercise("e2", "Pull-Up", "cat-pullup")] }],
       }],
     },
   ],
@@ -47,10 +48,13 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
 }));
 
 const saveMock = jest.fn().mockResolvedValue(undefined);
+const listForDayMock = jest.fn().mockResolvedValue([]);
+const listForProgramMock = jest.fn().mockResolvedValue([]);
 
 jest.mock("@/lib/storage/logRepo", () => ({
   logRepo: {
-    listForProgram: jest.fn().mockResolvedValue([]),
+    listForProgram: (...args: unknown[]) => listForProgramMock(...args),
+    listForDay: (...args: unknown[]) => listForDayMock(...args),
     getForDay: jest.fn().mockResolvedValue(null),
     save: (...args: unknown[]) => saveMock(...args),
   },
@@ -81,6 +85,8 @@ beforeEach(() => {
   saveMock.mockClear();
   refreshMock.mockClear();
   saveProgramMock.mockClear();
+  listForDayMock.mockClear().mockResolvedValue([]);
+  listForProgramMock.mockClear().mockResolvedValue([]);
 });
 
 describe("WorkoutDayClient header", () => {
@@ -214,5 +220,54 @@ describe("WorkoutDayClient finish workout", () => {
     await act(async () => { jest.advanceTimersByTime(800); });
     expect(await screen.findByRole("heading", { level: 1, name: "Push Day" })).toBeInTheDocument();
     jest.useRealTimers();
+  });
+});
+
+describe("WorkoutDayClient canonical id persistence", () => {
+  it("Finish workout saves canonicalExerciseId on each entry", async () => {
+    jest.useFakeTimers();
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    await act(async () => { jest.advanceTimersByTime(800); });
+    const finishSave = saveMock.mock.calls.find(
+      (call) => call[0].completedAt !== undefined && call[0].dayId === "day-1",
+    );
+    expect(finishSave).toBeDefined();
+    expect(finishSave![0].entries[0]).toEqual(
+      expect.objectContaining({ exerciseId: "e1", canonicalExerciseId: "cat-bench" }),
+    );
+    jest.useRealTimers();
+  });
+});
+
+describe("WorkoutDayClient history button after exercise change", () => {
+  it("history dialog shows entries matching the slot's current canonical id", async () => {
+    // Two logs: one under the old slot id, one under a different slot but same canonical id.
+    listForProgramMock.mockResolvedValueOnce([
+      {
+        id: "log-old", programId: "p1", dayId: "day-1",
+        performedAt: "2026-04-01T09:00:00.000Z",
+        entries: [
+          { exerciseId: "e1", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 80, reps: 5 }] },
+        ],
+      },
+      {
+        id: "log-other", programId: "p1", dayId: "day-1",
+        performedAt: "2026-04-08T09:00:00.000Z",
+        entries: [
+          { exerciseId: "some-other-slot", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 90, reps: 5 }] },
+        ],
+      },
+    ]);
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /history for bench press/i }));
+    const dialog = await screen.findByRole("dialog", { name: /history for bench press/i });
+    // Both logs should surface because they share canonicalExerciseId "cat-bench".
+    expect(dialog).toHaveTextContent("90x5");
+    expect(dialog).toHaveTextContent("80x5");
   });
 });
