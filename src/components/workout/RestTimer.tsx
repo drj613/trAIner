@@ -47,7 +47,7 @@ export function RestTimer({ restText, notes }: Props) {
 
   function commitEdit() {
     const n = Number(draft);
-    if (Number.isFinite(n) && n >= 1 && n <= 600) {
+    if (Number.isFinite(n) && Number.isInteger(n) && n >= 1 && n <= 600) {
       setSeconds(n);
       setRemaining(n);
       setEditing(false);
@@ -69,6 +69,7 @@ export function RestTimer({ restText, notes }: Props) {
           placeholder="seconds"
           min={1}
           max={600}
+          step={1}
           autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

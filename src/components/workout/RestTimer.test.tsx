@@ -86,4 +86,16 @@ describe("RestTimer", () => {
     await user.keyboard("{Escape}");
     expect(screen.getByText(/1:00/)).toBeInTheDocument();
   });
+
+  it("rejects a decimal value and stays in edit mode", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<RestTimer restText="" />);
+    await user.click(screen.getByRole("button", { name: /set rest duration/i }));
+    const input = screen.getByPlaceholderText(/seconds/i);
+    await user.type(input, "1.5");
+    await user.keyboard("{Enter}");
+    // Still in edit mode — input is present, no time display.
+    expect(screen.getByPlaceholderText(/seconds/i)).toBeInTheDocument();
+    expect(screen.queryByText(/0:01/)).not.toBeInTheDocument();
+  });
 });
