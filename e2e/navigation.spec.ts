@@ -29,7 +29,9 @@ test.describe("Navigation", () => {
 
   for (const route of routes) {
     test(`${route} renders without error`, async ({ page }) => {
-      await page.goto(route);
+      // Strip the leading slash: an origin-relative goto would bypass the
+      // /trAIner/ base path and hit Vite's "wrong base URL" page instead.
+      await page.goto(route.slice(1));
       await expect(page.getByRole("main")).toBeVisible();
     });
   }

@@ -7,6 +7,7 @@ import { logRepo } from "@/lib/storage/logRepo";
 import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog, applyEntryNotes } from "@/lib/workout/sessionState";
+import { localDateString, logLocalDate, sessionLogId } from "@/lib/workout/localDate";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
@@ -27,11 +28,6 @@ import { RestTimer } from "./RestTimer";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 import { BodyweightWidget } from "./BodyweightWidget";
 
-function localDateString(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
 }
@@ -42,6 +38,7 @@ const ExerciseRow = memo(function ExerciseRow({
   exercise,
   cells,
   note,
+  readOnly,
   onCellChange,
   onAddSet,
   onOpenHistory,
@@ -52,6 +49,7 @@ const ExerciseRow = memo(function ExerciseRow({
   exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
   cells: string[];
   note: string;
+  readOnly: boolean;
   onCellChange: (i: number, v: string) => void;
   onAddSet: () => void;
   onOpenHistory: () => void;
@@ -154,6 +152,7 @@ const ExerciseRow = memo(function ExerciseRow({
               id={cellId(exercise.id, i)}
               value={val}
               prescribed={prescribedStr}
+              readOnly={readOnly}
               onChange={(v) => onCellChange(i, v)}
               onNext={() => {
                 const nextEl = document.getElementById(cellId(exercise.id, i + 1));
@@ -165,22 +164,24 @@ const ExerciseRow = memo(function ExerciseRow({
             />
           );
         })}
-        <button
-          className="cell empty"
-          onClick={onAddSet}
-          style={{
-            minWidth: 28,
-            width: 28,
-            padding: 0,
-            cursor: "pointer",
-            color: "var(--fg-3)",
-            border: "1px dashed var(--line)",
-          }}
-          title="Add set"
-          aria-label="Add set"
-        >
-          <Plus size={12} aria-hidden />
-        </button>
+        {!readOnly && (
+          <button
+            className="cell empty"
+            onClick={onAddSet}
+            style={{
+              minWidth: 28,
+              width: 28,
+              padding: 0,
+              cursor: "pointer",
+              color: "var(--fg-3)",
+              border: "1px dashed var(--line)",
+            }}
+            title="Add set"
+            aria-label="Add set"
+          >
+            <Plus size={12} aria-hidden />
+          </button>
+        )}
       </div>
       <RestTimer restText={exercise.rest} notes={exercise.notes} />
       <details style={{ marginTop: 6 }} open={!!note}>
@@ -198,6 +199,7 @@ const ExerciseRow = memo(function ExerciseRow({
         </summary>
         <textarea
           value={note}
+          readOnly={readOnly}
           onChange={(e) => onNoteChange(e.target.value)}
           rows={2}
           placeholder="Your note about this set (felt good, ouch, etc.)"
@@ -225,6 +227,7 @@ function SectionCard({
   section,
   cells,
   notes,
+  readOnly,
   onCellChange,
   onAddSet,
   onOpenHistory,
@@ -235,6 +238,7 @@ function SectionCard({
   section: ProgramSection;
   cells: CellMap;
   notes: Record<string, string>;
+  readOnly: boolean;
   onCellChange: (exId: string, i: number, v: string) => void;
   onAddSet: (exId: string) => void;
   onOpenHistory: (exerciseName: string, exerciseId: string) => void;
@@ -281,6 +285,7 @@ function SectionCard({
               exercise={ex}
               cells={cells[ex.id] ?? [""]}
               note={notes[ex.id] ?? ""}
+              readOnly={readOnly}
               onCellChange={(i, v) => onCellChange(ex.id, i, v)}
               onAddSet={() => onAddSet(ex.id)}
               onOpenHistory={() => onOpenHistory(ex.name, ex.id)}
@@ -505,6 +510,13 @@ function WorkoutBody({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [alreadyComplete, setAlreadyComplete] = useState<boolean | undefined>(undefined);
   const saving = useRef(false);
+  // "loading" until hydration resolves; "active" = an editable session
+  // (today's, or a resumed in-progress one); "viewing" = read-only display of
+  // the most recent completed/skipped session from an earlier date.
+  const [sessionMode, setSessionMode] = useState<"loading" | "active" | "viewing">("loading");
+  const sessionModeRef = useRef(sessionMode);
+  sessionModeRef.current = sessionMode;
+  const [viewedDate, setViewedDate] = useState<string | null>(null);
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
@@ -533,7 +545,15 @@ function WorkoutBody({
     }
   }
 
-  // Hydrate from existing log
+  // Resolve which session this visit shows and hydrate from it.
+  //
+  //   1. A log for (program, day, today's local date) → that's today's
+  //      session; resume it (locked when already completed/skipped today).
+  //   2. Else, the most recent log for the day:
+  //        - completed/skipped → read-only view of that historical session,
+  //          with the option to start a fresh one;
+  //        - in progress (e.g. started last night) → resume it.
+  //   3. Else → fresh, empty, editable session.
   useEffect(() => {
     let cancelled = false;
     const today = localDateString();
@@ -545,37 +565,47 @@ function WorkoutBody({
         }
       }
     }
-    logRepo
-      .getForDay(program.id, day.id, today)
-      .then((log) => {
-        if (cancelled || !log) return;
-        logIdRef.current = log.id;
-        const hydrated: CellMap = {};
-        const hydratedNotes: Record<string, string> = {};
-        for (const entry of log.entries) {
-          hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
-          if (entry.notes) hydratedNotes[entry.exerciseId] = entry.notes;
-        }
-        setCells((prev) => ({ ...prev, ...hydrated }));
-        setNotes((prev) => ({ ...prev, ...hydratedNotes }));
-        if (log.dayNote) setDayNote(log.dayNote);
-      })
-      .catch((e) => console.error("[logRepo] hydration failed", e));
-    return () => { cancelled = true; };
-  }, [program.id, day.id]);
+    (async () => {
+      const logs = (await logRepo.listForDay(day.id)).filter(
+        (l) => l.programId === program.id,
+      );
+      if (cancelled) return;
 
-  useEffect(() => {
-    let cancelled = false;
-    logRepo
-      .listForDay(day.id)
-      .then((logs) => {
-        if (cancelled) return;
-        const hasCompleted = logs.some(
-          (l) => l.programId === program.id && !!l.completedAt,
-        );
-        setAlreadyComplete(hasCompleted);
-      })
-      .catch((e) => console.error("[logRepo] alreadyComplete check failed", e));
+      const sorted = [...logs].sort((a, b) => b.performedAt.localeCompare(a.performedAt));
+      const todayLog = sorted.find((l) => logLocalDate(l) === today);
+      const target = todayLog ?? sorted[0];
+
+      if (!target) {
+        setAlreadyComplete(false);
+        setSessionMode("active");
+        return;
+      }
+
+      const hydrated: CellMap = {};
+      const hydratedNotes: Record<string, string> = {};
+      for (const entry of target.entries) {
+        hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
+        if (entry.notes) hydratedNotes[entry.exerciseId] = entry.notes;
+      }
+      setCells((prev) => ({ ...prev, ...hydrated }));
+      setNotes((prev) => ({ ...prev, ...hydratedNotes }));
+      if (target.dayNote) setDayNote(target.dayNote);
+
+      const targetDone = !!target.completedAt || !!target.skippedAt;
+      if (todayLog) {
+        logIdRef.current = todayLog.id;
+        setAlreadyComplete(targetDone);
+        setSessionMode("active");
+      } else if (targetDone) {
+        setViewedDate(logLocalDate(target));
+        setAlreadyComplete(true);
+        setSessionMode("viewing");
+      } else {
+        logIdRef.current = target.id;
+        setAlreadyComplete(false);
+        setSessionMode("active");
+      }
+    })().catch((e) => console.error("[logRepo] session hydration failed", e));
     return () => { cancelled = true; };
   }, [program.id, day.id]);
 
@@ -583,10 +613,14 @@ function WorkoutBody({
     { cells: c, notes: n, dayNote: dn }: { cells: CellMap; notes: Record<string, string>; dayNote: string },
     options?: { markCompleted?: boolean; skippedAt?: string; skipReason?: string },
   ) {
+    // A read-only historical view (and the pre-hydration window) must never
+    // write — autosave flushes fire on unmount for every visited day.
+    if (sessionModeRef.current !== "active") return;
     const { markCompleted = false, skippedAt, skipReason } = options ?? {};
     const today = localDateString();
-    const existing = await logRepo.getForDay(program.id, day.id, today);
-    logIdRef.current = existing?.id ?? logIdRef.current ?? crypto.randomUUID();
+    const existing = logIdRef.current
+      ? await logRepo.get(logIdRef.current)
+      : await logRepo.getForDay(program.id, day.id, today);
     const exerciseNameMap = new Map<string, string>();
     const exerciseCanonicalMap = new Map<string, string | undefined>();
     for (const section of day.sections) {
@@ -612,12 +646,21 @@ function WorkoutBody({
       if (canonicalExerciseId) base.canonicalExerciseId = canonicalExerciseId;
       return applyEntryNotes(base, n[exerciseId] ?? "");
     });
+    // Don't create a log for a session with nothing in it (merely opening a
+    // day page is not a workout). Completing or skipping is always recorded.
+    const isEmptySession =
+      entries.every((e) => e.sets.length === 0 && !e.notes) && !dn.trim();
+    if (!existing && isEmptySession && !markCompleted && !skippedAt) return;
+    // Deterministic id: concurrent first-saves of the same (program, day,
+    // local date) converge on one record instead of minting duplicates.
+    logIdRef.current = existing?.id ?? logIdRef.current ?? sessionLogId(program.id, day.id, today);
     const shouldComplete = markCompleted || !!skippedAt;
     await logRepo.save({
       id: logIdRef.current,
       programId: program.id,
       dayId: day.id,
       performedAt: existing?.performedAt ?? new Date().toISOString(),
+      performedDate: existing ? logLocalDate(existing) : today,
       completedAt: shouldComplete ? new Date().toISOString() : existing?.completedAt,
       skippedAt: skippedAt ?? existing?.skippedAt,
       skipReason: skipReason ?? existing?.skipReason,
@@ -681,6 +724,17 @@ function WorkoutBody({
     } catch (e) {
       console.error("[handleSkip] save failed", e);
     }
+  }
+
+  // Leave the read-only historical view and begin a fresh session for today.
+  function startNewSession() {
+    logIdRef.current = null;
+    setCells(buildInitialCells(day));
+    setNotes({});
+    setDayNote("");
+    setViewedDate(null);
+    setAlreadyComplete(false);
+    setSessionMode("active");
   }
 
   const handleCellChange = useCallback((exId: string, i: number, v: string) => {
@@ -756,6 +810,37 @@ function WorkoutBody({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {/* Historical session banner */}
+      {sessionMode === "viewing" && viewedDate && (
+        <div
+          role="status"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 12px",
+            marginBottom: 12,
+            background: "var(--bg-2)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r)",
+            fontSize: 12,
+            color: "var(--fg-2)",
+          }}
+        >
+          <span style={{ flex: 1, fontFamily: "var(--font-mono)" }}>
+            Viewing completed session from {viewedDate}
+          </span>
+          <button
+            type="button"
+            className="btn"
+            onClick={startNewSession}
+            style={{ fontSize: 12, whiteSpace: "nowrap" }}
+          >
+            Start new session
+          </button>
+        </div>
+      )}
+
       {/* Sections */}
       {day.sections.map((section) => (
         <SectionCard
@@ -763,6 +848,7 @@ function WorkoutBody({
           section={section}
           cells={cells}
           notes={notes}
+          readOnly={sessionMode === "viewing"}
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}

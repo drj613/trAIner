@@ -323,17 +323,25 @@ export function ProgramDetailClient({ id }: { id: string }) {
 
   // Pointer drag for week pager
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef({ startX: 0, dx: 0, dragging: false, width: 0 });
+  const dragRef = useRef({ startX: 0, dx: 0, dragging: false, width: 0, captured: false });
 
   function onPointerDown(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("button, input, textarea, a")) return;
-    dragRef.current = { startX: e.clientX, dx: 0, dragging: true, width: scrollerRef.current?.clientWidth ?? 375 };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // Don't capture the pointer yet: capturing on pointerdown retargets the
+    // eventual `click` to this scroller, swallowing taps on day cards.
+    // Capture only once real horizontal movement makes this a drag.
+    dragRef.current = { startX: e.clientX, dx: 0, dragging: true, width: scrollerRef.current?.clientWidth ?? 375, captured: false };
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!dragRef.current.dragging) return;
-    dragRef.current.dx = e.clientX - dragRef.current.startX;
-    setDragDX(dragRef.current.dx);
+    const dx = e.clientX - dragRef.current.startX;
+    if (!dragRef.current.captured) {
+      if (Math.abs(dx) < 8) return; // still a tap, leave clicks alone
+      dragRef.current.captured = true;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    dragRef.current.dx = dx;
+    setDragDX(dx);
   }
   function onPointerUp() {
     if (!dragRef.current.dragging) return;

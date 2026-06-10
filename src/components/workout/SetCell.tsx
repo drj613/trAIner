@@ -23,9 +23,10 @@ type Props = {
   onChange: (v: string) => void;
   onNext?: () => void;
   autoFocus?: boolean;
+  readOnly?: boolean;
 };
 
-export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocus }: Props) {
+export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocus, readOnly }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const isReverting = useRef(false);
   const { draft: v, editing, setDraft: setV, startEditing, commit, revert } = useEditableValue(value, onChange);
@@ -63,6 +64,7 @@ export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocu
       }}
       onKeyDown={onKey}
       autoFocus={autoFocus}
+      readOnly={readOnly}
       style={{ width: 70, height: 30, fontSize: 13 }}
       aria-label={`Set value${prescribed ? ` (${prescribed})` : ""}`}
     />

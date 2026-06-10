@@ -29,8 +29,10 @@ test.describe("RoutineAnalysisCard", () => {
     // Program rows are <button> elements with the program title as text
     const firstProgramBtn = sharedPage.getByRole("button", { name: /e2e test program/i }).first();
     await firstProgramBtn.click();
-    // Wait for the program detail page to load
-    await expect(sharedPage.getByRole("heading").first()).toBeVisible({
+    // Wait for the program detail page to load (it renders the title as a
+    // styled div, not a heading element).
+    await sharedPage.waitForURL(/\/programs\/[^/]+$/);
+    await expect(sharedPage.getByText("E2E Test Program")).toBeVisible({
       timeout: 10000,
     });
   });

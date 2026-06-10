@@ -1,3 +1,8 @@
+// Pin a non-UTC timezone so local-vs-UTC date handling is exercised
+// deterministically (the app stores UTC timestamps but keys sessions by
+// the user's local calendar date).
+process.env.TZ = process.env.TZ || "America/New_York";
+
 /** @type {import('jest').Config} */
 module.exports = {
   setupFiles: ["fake-indexeddb/auto"],

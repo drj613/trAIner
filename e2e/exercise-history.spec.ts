@@ -85,7 +85,9 @@ test.describe("Exercise history", () => {
 
     // Finish workout and wait for saved confirmation
     await sharedPage.getByRole("button", { name: /finish workout/i }).click();
-    await expect(sharedPage.getByText(/saved/i)).toBeVisible({ timeout: 3000 });
+    await expect(
+      sharedPage.getByRole("button", { name: /finish workout/i }),
+    ).toHaveText(/saved/i, { timeout: 3000 });
 
     // Open history for first exercise (Banded Face Pulls)
     await openHistoryDrawer(sharedPage);
@@ -108,20 +110,18 @@ test.describe("Exercise history", () => {
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
 
-    // Also log a set for a second exercise (Pull-Up) and verify its label
+    // Also log a second set on the same exercise and verify its label too
     const inputs = sharedPage.locator('input[id^="cell-"]');
     const secondInput = inputs.nth(1);
     await secondInput.fill("85x3");
     await secondInput.blur();
+    // The cell autosave is debounced (1.5s) — wait for it to flush to IDB.
+    await sharedPage.waitForTimeout(1700);
     await waitForIdb(sharedPage);
 
-    await sharedPage.getByRole("button", { name: /finish workout/i }).click();
-    await expect(sharedPage.getByText(/saved/i)).toBeVisible({ timeout: 3000 });
-
-    // Open history for second exercise (Pull-Up) and verify "85x3" is visible
-    const historyButtons = sharedPage.getByRole("button", { name: /history for/i });
-    await historyButtons.nth(1).click();
-    await expect(sharedPage.getByRole("dialog")).toBeVisible();
+    // Both set labels should appear in the session row
+    await openHistoryDrawer(sharedPage);
+    await expect(sharedPage.getByRole("dialog").getByText("80x5")).toBeVisible();
     await expect(sharedPage.getByRole("dialog").getByText("85x3")).toBeVisible();
 
     await sharedPage.keyboard.press("Escape");
@@ -130,10 +130,10 @@ test.describe("Exercise history", () => {
 
   // 7. volume column shows calculated total
   test("volume column shows calculated total", async () => {
-    // Open history for first exercise (Banded Face Pulls: 80x5 = 400 volume)
+    // Session volume from tests 5–6: 80x5 + 85x3 = 655
     await openHistoryDrawer(sharedPage);
     await expect(
-      sharedPage.getByRole("dialog").getByText("400", { exact: true })
+      sharedPage.getByRole("dialog").getByText("655", { exact: true })
     ).toBeVisible();
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });

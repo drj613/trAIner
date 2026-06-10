@@ -25,18 +25,9 @@ test.describe("Routines index", () => {
     await sharedPage.goto("today");
     await clearDb(sharedPage);
 
-    // 2. Seed the demo program via UI
-    //    Note: demoProgram has active:true but no status field,
-    //    so programStatus() returns "draft" — not rendered as ActiveCard yet.
+    // 2. Seed the draft "E2E Test Program" via the import UI
+    //    (the helper imports it and lands on Today).
     await seedDemoIfNeeded(sharedPage);
-
-    // 3. Navigate to /import and seed the draft "E2E Test Program"
-    await sharedPage.goto("import");
-    await sharedPage.locator("textarea").fill(IMPORT_PROGRAM_JSON);
-    await sharedPage.getByRole("button", { name: /validate/i }).click();
-    await expect(sharedPage.getByText(/1 day\(s\) · 1 exercise\(s\)/i)).toBeVisible();
-    await sharedPage.getByRole("button", { name: /save program/i }).click();
-    await expect(sharedPage.getByText(/"E2E Test Program" saved/i)).toBeVisible();
 
     // 3b. Import a second draft program "Second Draft Program" so filter tests
     //     are non-trivial: "archived" chip should hide both drafts; "all" shows them.
@@ -47,9 +38,10 @@ test.describe("Routines index", () => {
     await sharedPage.goto("import");
     await sharedPage.locator("textarea").fill(secondProgramJson);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
-    await expect(sharedPage.getByText(/1 day\(s\)/i)).toBeVisible();
+    await expect(sharedPage.getByText(/1 day · 0 exercises/i)).toBeVisible();
     await sharedPage.getByRole("button", { name: /save program/i }).click();
-    await expect(sharedPage.getByText(/"Second Draft Program" saved/i)).toBeVisible();
+    // Saving navigates to the new program's detail page
+    await sharedPage.waitForURL(/\/programs\/[^/]+$/);
 
     // No archive UI exists, so write an archived program directly to IDB to make the filter chips testable.
     // Must match ProgramDocument shape — update if src/lib/programs/types.ts changes.
@@ -73,11 +65,53 @@ test.describe("Routines index", () => {
         streakWeeks: 0,
         completion: 0,
       };
+      // The "Local First Demo" program the activation tests expect (the seed
+      // helper imports "E2E Test Program", which stays a draft).
+      const demoProgram = {
+        id: "local-first-demo-program",
+        title: "Local First Demo",
+        description: "",
+        days: [
+          {
+            id: "demo-d1",
+            dayNumber: 1,
+            title: "Day 1",
+            sections: [
+              {
+                id: "demo-s1",
+                name: "Strength",
+                type: "strength",
+                groups: [
+                  {
+                    id: "demo-g1",
+                    type: "single",
+                    exercises: [
+                      {
+                        id: "demo-e1",
+                        name: "Squat",
+                        sets: 3,
+                        reps: "5",
+                        tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        overrides: [],
+        active: false,
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+      };
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction("programs", "readwrite");
-        const req2 = tx.objectStore("programs").put(archivedProgram);
-        req2.onsuccess = () => resolve();
-        req2.onerror = () => reject(req2.error);
+        tx.objectStore("programs").put(archivedProgram);
+        tx.objectStore("programs").put(demoProgram);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
       });
     });
 
@@ -104,10 +138,11 @@ test.describe("Routines index", () => {
     await menuBtnsSetup.nth(demoMenuIdx).click();
     await expect(sharedPage.getByText("Activate")).toBeVisible({ timeout: 5000 });
     await sharedPage.getByRole("button", { name: "Activate" }).click();
-    // Wait for menu to close (signals the handler ran), then reload
-    await expect(sharedPage.getByRole("button", { name: "Activate" })).not.toBeVisible({ timeout: 3000 });
+    // Wait for the in-page state to flip to ACTIVE — this guarantees the
+    // IndexedDB write committed; reloading sooner can abort the transaction.
+    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
     await sharedPage.reload();
-    // Wait for ACTIVE badge (now that IDB has been re-read on mount)
+    // Confirm the active state persisted (IDB re-read on mount)
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
   });
 
@@ -218,8 +253,31 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("Activate")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Activate" }).click();
 
-    // Wait for menu to close (signals the handler ran), then reload
-    await expect(sharedPage.getByRole("button", { name: "Activate" })).not.toBeVisible({ timeout: 3000 });
+    // Wait until the activation is committed to IndexedDB before reloading —
+    // reloading mid-write aborts the transaction and loses the activation.
+    await expect
+      .poll(
+        () =>
+          sharedPage.evaluate(
+            () =>
+              new Promise((resolve) => {
+                const req = indexedDB.open("trainer-local-first");
+                req.onsuccess = () => {
+                  const db = req.result;
+                  const r = db.transaction("programs").objectStore("programs").getAll();
+                  r.onsuccess = () => {
+                    db.close();
+                    const active = (r.result as Array<{ status?: string; title: string }>).find(
+                      (p) => p.status === "active",
+                    );
+                    resolve(active?.title ?? null);
+                  };
+                };
+              }),
+          ),
+        { timeout: 8000 },
+      )
+      .toBe("E2E Test Program");
     await sharedPage.reload();
     await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
@@ -279,9 +337,32 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("Delete")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Delete" }).click();
 
-    // Wait for the Delete button to disappear (menu closed = handler ran), then reload.
-    // router.refresh() doesn't re-trigger LocalDataProvider so we rely on a full reload.
-    await expect(sharedPage.getByRole("button", { name: "Delete" })).not.toBeVisible({ timeout: 3000 });
+    // Wait until the deletion is committed to IndexedDB before reloading —
+    // reloading mid-write aborts the transaction and the program survives.
+    await expect
+      .poll(
+        () =>
+          sharedPage.evaluate(
+            () =>
+              new Promise((resolve) => {
+                const req = indexedDB.open("trainer-local-first");
+                req.onsuccess = () => {
+                  const db = req.result;
+                  const r = db.transaction("programs").objectStore("programs").getAll();
+                  r.onsuccess = () => {
+                    db.close();
+                    resolve(
+                      (r.result as Array<{ title: string }>).some((p) =>
+                        /copy of/i.test(p.title),
+                      ),
+                    );
+                  };
+                };
+              }),
+          ),
+        { timeout: 8000 },
+      )
+      .toBe(false);
     await sharedPage.reload();
 
     // "Copy of …" should no longer be visible

@@ -85,7 +85,7 @@ test.describe("Modify with AI", () => {
     await dialog.getByRole("button", { name: /review changes/i }).click();
     await expect(page).toHaveURL(/\/programs\/.+\/diff/);
     await page.getByRole("button", { name: /apply changes/i }).click();
-    await expect(page).toHaveURL(/\/today/);
+    await expect(page).toHaveURL(/\/today|\/programs\/.+\/days\//);
     // New workout name should appear on Today screen
     await expect(page.getByText(/upper pull and press/i)).toBeVisible();
   });
@@ -113,7 +113,7 @@ test.describe("Modify with AI", () => {
     await dialog.getByRole("button", { name: /review changes/i }).click();
     await expect(page).toHaveURL(/\/programs\/.+\/diff/);
     await page.getByRole("button", { name: /apply changes/i }).click();
-    await expect(page).toHaveURL(/\/today/);
+    await expect(page).toHaveURL(/\/today|\/programs\/.+\/days\//);
     await expect(page.getByText(/upper pull and press/i)).toBeVisible();
     // Reload the page and confirm the override was persisted to IndexedDB
     await page.reload();
@@ -128,7 +128,7 @@ test.describe("Modify with AI", () => {
     await dialog.getByRole("button", { name: /review changes/i }).click();
     await expect(page).toHaveURL(/\/programs\/.+\/diff/);
     await page.getByRole("button", { name: /apply changes/i }).click();
-    await expect(page).toHaveURL(/\/today/);
+    await expect(page).toHaveURL(/\/today|\/programs\/.+\/days\//);
     await expect(page.getByText(/upper pull and press/i)).toBeVisible();
     // Open the modal again and apply a second distinct AI edit
     const secondJson = JSON.stringify({
@@ -140,7 +140,7 @@ test.describe("Modify with AI", () => {
     await dialog2.getByRole("button", { name: /review changes/i }).click();
     await expect(page).toHaveURL(/\/programs\/.+\/diff/);
     await page.getByRole("button", { name: /apply changes/i }).click();
-    await expect(page).toHaveURL(/\/today/);
+    await expect(page).toHaveURL(/\/today|\/programs\/.+\/days\//);
     // The today screen should now show the second workout's title
     await expect(page.getByText(/strength day/i)).toBeVisible();
   });

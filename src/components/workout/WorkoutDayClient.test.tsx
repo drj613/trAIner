@@ -55,7 +55,8 @@ jest.mock("@/lib/storage/logRepo", () => ({
   logRepo: {
     listForProgram: (...args: unknown[]) => listForProgramMock(...args),
     listForDay: (...args: unknown[]) => listForDayMock(...args),
-    getForDay: jest.fn().mockResolvedValue(null),
+    getForDay: jest.fn().mockResolvedValue(undefined),
+    get: jest.fn().mockResolvedValue(undefined),
     save: (...args: unknown[]) => saveMock(...args),
   },
 }));

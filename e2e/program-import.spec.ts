@@ -54,17 +54,21 @@ test.describe("Program import", () => {
     const textarea = sharedPage.locator("textarea");
     await textarea.fill(IMPORT_PROGRAM_JSON);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
-    // Confirm step shows day(s) and exercise(s) summary
-    await expect(sharedPage.getByText(/1 day\(s\) · 1 exercise\(s\)/i)).toBeVisible();
+    // An exercise-resolution step may appear before the confirm step.
+    const reviewBtn = sharedPage.getByRole("button", { name: /review import/i });
+    if (await reviewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await reviewBtn.click();
+    }
+    // Confirm step shows the day and exercise summary
+    await expect(sharedPage.getByText(/1 day · 1 exercise/i)).toBeVisible();
   });
 
   // 5. save program persists to IndexedDB
   test("save program persists to IndexedDB", async () => {
     await sharedPage.getByRole("button", { name: /save program/i }).click();
-    // After saving, success message appears on the paste step
-    await expect(
-      sharedPage.getByText(/"E2E Test Program" saved/i),
-    ).toBeVisible();
+    // Saving navigates to the new program's detail page
+    await sharedPage.waitForURL(/\/programs\/[^/]+$/);
+    await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
   });
 
   // 6. imported program appears on programs list (persistence)
@@ -83,8 +87,8 @@ test.describe("Program import", () => {
     // Wait for navigation to the program detail page
     await sharedPage.waitForURL(/\/programs\/[^/]+$/);
     const programId = sharedPage.url().split("/programs/")[1].split("?")[0];
-    // Navigate directly to the map
-    await sharedPage.goto(`/programs/${programId}/map`);
+    // Navigate directly to the map (relative path to respect the base URL)
+    await sharedPage.goto(`programs/${programId}/map`);
     await expect(sharedPage.getByText(/week 1/i)).toBeVisible();
     await expect(sharedPage.getByText("Day 1")).toBeVisible();
   });

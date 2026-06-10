@@ -1,9 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { localDateOf } from "@/lib/workout/localDate";
 import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -103,6 +104,30 @@ export function getDb() {
         // No migration needed; existing records are valid as-is.
         if (oldVersion < 6) {
           // intentionally empty — optional fields, no schema change
+        }
+
+        // v6 → v7: session-identity hardening.
+        //  - Backfill performedDate (the local calendar date the session
+        //    belongs to) from performedAt, using the device timezone.
+        //  - Delete phantom logs: an autosave bug used to write an empty log
+        //    whenever a day page was merely visited. A log with no recorded
+        //    sets, no notes, and no completion/skip marker carries zero
+        //    information and only pollutes history and session lookup.
+        if (oldVersion < 7 && oldVersion >= 1) {
+          const store = tx.objectStore("logs");
+          let cursor = await store.openCursor();
+          while (cursor) {
+            const log = cursor.value as WorkoutLogDocument;
+            const hasData =
+              !!log.completedAt || !!log.skippedAt || !!log.dayNote || !!log.notes ||
+              (log.entries ?? []).some((e) => (e.sets?.length ?? 0) > 0 || !!e.notes);
+            if (!hasData) {
+              await cursor.delete();
+            } else if (!log.performedDate) {
+              await cursor.update({ ...log, performedDate: localDateOf(log.performedAt) });
+            }
+            cursor = await cursor.continue();
+          }
         }
       }
     }).then((db) => {

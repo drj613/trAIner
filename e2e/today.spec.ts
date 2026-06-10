@@ -7,8 +7,8 @@ test.describe("Today screen", () => {
     await page.goto("today");
   });
 
-  test("shows import prompt when no program exists", async ({ page }) => {
-    await expect(page.getByText(/import a program/i)).toBeVisible();
+  test("shows onboarding steps when no program exists", async ({ page }) => {
+    await expect(page.getByText(/no active program yet/i)).toBeVisible();
   });
 
   test("shows workout after importing a program", async ({ page }) => {

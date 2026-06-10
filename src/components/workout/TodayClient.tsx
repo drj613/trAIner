@@ -6,11 +6,7 @@ import { logRepo } from "@/lib/storage/logRepo";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
-
-function localDateString(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { localDateString } from "@/lib/workout/localDate";
 
 export function TodayClient() {
   const { programs, profile, loading } = useLocalData();

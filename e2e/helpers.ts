@@ -19,6 +19,10 @@ export async function seedDemoIfNeeded(page: Page) {
   }
   await page.getByRole("button", { name: /save program/i }).click({ timeout: 10000 });
   await page.waitForTimeout(500);
+  // Honour the documented contract: end on the Today screen with workout
+  // content visible (saving an import lands on the program detail page).
+  await page.goto("today");
+  await page.locator('input[id^="cell-"]').first().waitFor({ state: "visible", timeout: 10000 });
 }
 
 /**

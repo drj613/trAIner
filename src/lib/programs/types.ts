@@ -113,6 +113,12 @@ export type WorkoutLogDocument = {
   programId: ID;
   dayId: ID;
   performedAt: ISODate;
+  // Local calendar date (YYYY-MM-DD) the session belongs to, captured in the
+  // user's timezone at save time. performedAt is UTC, so its date component
+  // can disagree with the local date near midnight; this field is the source
+  // of truth for "which day's session is this". Optional because legacy logs
+  // predate it (v7 migration backfills, reads fall back via logLocalDate).
+  performedDate?: string;
   // Set only when the user taps "Finish workout". Autosave preserves this
   // field without writing it. The day resolver uses it to advance past
   // completed days; absence means the workout is still in progress.

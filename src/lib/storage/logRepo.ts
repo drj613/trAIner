@@ -1,9 +1,14 @@
 import { getDb } from "./appDb";
+import { logLocalDate } from "@/lib/workout/localDate";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 
 export const logRepo = {
   async list() {
     return (await getDb()).getAll("logs");
+  },
+
+  async get(id: string) {
+    return (await getDb()).get("logs", id);
   },
 
   async listForProgram(programId: string) {
@@ -18,13 +23,13 @@ export const logRepo = {
     await (await getDb()).put("logs", log);
   },
 
-  // Dates are stored and compared in UTC. Users west of UTC may see today's
-  // workout listed under tomorrow's UTC date, but retrieval still works correctly
-  // because both the stored performedAt and the query date are UTC.
+  // A session is keyed by the user's LOCAL calendar date. performedAt is a
+  // UTC ISO timestamp whose date component can disagree with the local date
+  // near midnight, so matching is done via logLocalDate (performedDate when
+  // present, else performedAt converted to the local date) — never by raw
+  // string prefix.
   async getForDay(programId: string, dayId: string, date: string): Promise<WorkoutLogDocument | undefined> {
     const all = await (await getDb()).getAllFromIndex("logs", "by-day", dayId);
-    return all.find(
-      (l) => l.programId === programId && l.performedAt.startsWith(date),
-    );
+    return all.find((l) => l.programId === programId && logLocalDate(l) === date);
   },
 };
