@@ -25,20 +25,27 @@ all of which the Profile page already collects.
 
 ## Scope
 
-Three tracks, as chosen by the user:
+Four tracks, as chosen by the user:
 
 1. **Context plumbing + injuries fix** — send the profile data already collected;
-   fix the injuries→prompt disconnect. **Profile fields only — no log-derived data.**
+   fix the injuries→prompt disconnect; add an ad-hoc (temporary) injuries input in
+   the builder. **Profile fields only — no log-derived data.**
 2. **Generation-prompt upgrades** — stronger emitted-program requirements;
    rationale + self-audit in the chat phase; prompt hygiene.
-3. **Builder UX** — profile-completeness nudge + per-field include toggles.
+3. **Builder UX** — profile-completeness nudge, per-field include toggles, and the
+   ad-hoc injuries input.
+4. **JSON parser hardening + recovery prompt** — make the importer tolerant of the
+   common LLM JSON breakers via a focused, heavily-tested sanitizer; type-branch the
+   recovery prompt. This functionality is core, so test coverage is a first-class goal.
 
 ### Out of scope (explicitly)
 
 - Log-derived strength data / e1RM snapshot (rejected: anchoring risk — a workout
   log implicitly carries program structure the model can parrot, the exact failure
   the user already hit).
-- Importer / JSON-parsing hardening; recovery-prompt changes.
+- The full `<<CONTINUE>>` truncation-stitching / segmented-emit protocol (we detect
+  truncation and prompt a clean re-emit, but do not stitch partial responses).
+- `jsonrepair` or any JSON-repair dependency (we hand-roll a focused sanitizer).
 - Verbalized Sampling ("propose N distinct designs") variety step.
 - Token estimate; prompt presets / versioning.
 
@@ -110,8 +117,13 @@ prepends the block header, and joins. Returns `""` when no fields render.
   has the identical injuries bug. One-line fix (`injuries ?? constraints`) so the
   "analyze my routine" tool stops dropping injuries too. The rest of that prompt
   is out of scope.
+- **Ad-hoc injuries:** the constraints block merges profile injuries with an
+  ephemeral, builder-local injuries list (see Track 3). Chronic injuries live in the
+  profile; temporary ones (e.g. "tweaked lower back this week") are typed in the
+  builder and not persisted.
 - **Remove** the old `buildProfileBlock` / `buildConstraintsBlock` from
-  `builder.ts` (replaced by the registry assemblers).
+  `builder.ts` (replaced by the registry assemblers). The constraints assembler
+  accepts an optional extra-injuries list to merge in.
 
 ## Track 2 — generation-prompt upgrades
 
@@ -158,6 +170,60 @@ In `PromptBuilderClient.tsx`:
   field that is enabled-but-empty, e.g. *"Not yet in your prompt: Injuries,
   Schedule — add them in Profile →"* linking to `/profile`. Reuses the existing
   warning-banner styling. Hidden when nothing is missing.
+- **Ad-hoc injuries input:** an ephemeral free-text chips input (mirroring the
+  persona ephemeral edits), shown near the constraints toggle. Its entries are merged
+  with `profile.injuries ?? profile.constraints` when the `injuries` field is enabled,
+  feeding the constraints block. The nudge treats injuries as present when *either*
+  profile injuries or ad-hoc entries exist. State is component-local and resets on reload.
+
+## Track 4 — JSON parser hardening + recovery prompt
+
+New module `src/lib/import/sanitizeJson.ts` — a focused, dependency-free sanitizer,
+applied at every surface that parses pasted LLM JSON.
+
+### `sanitizeJson(raw: string): string`
+
+Pipeline, each step independently tested:
+
+1. `stripFences` — remove ```` ```json … ``` ```` wrappers (existing regex).
+2. `sliceBraces` — slice from the first `{` to the last `}`. **Fixes a current bug:**
+   `stripJsonWrapper` only slices when `first > 0`, so JSON at index 0 followed by
+   trailing prose ("…}  Let me know if…") is left un-sliced and fails to parse. The
+   new version slices whenever both braces exist.
+3. `normalizeQuotes` — replace typographic quotes (U+201C/D → `"`, U+2018/19 → `'`).
+   A global replace is safe for this schema (no legitimate curly quotes in routine
+   data); frontier models substitute these and resist instructions not to, so we
+   normalize unconditionally rather than trust the prompt.
+4. `stripComments` — remove `//` and `/* */` comments, **string-aware** (one
+   left-to-right pass tracking in-string state + escapes) so `//` inside a notes
+   string or URL is preserved.
+5. `removeTrailingCommas` — string-aware removal of `,` before `}`/`]`.
+
+### `parseLooseJson(raw): { ok: true; value: unknown } | { ok: false; reason }`
+
+Runs `sanitizeJson` then `JSON.parse`. On failure, classifies `reason`:
+`"empty"` | `"truncated"` (unbalanced braces/brackets via a string-aware scan) |
+`"syntax"`. Single entry point for both paste surfaces.
+
+### Wiring
+
+- `parseProgramJson` (`src/lib/import/parser.ts`) uses `parseLooseJson` instead of
+  `stripJsonWrapper` + raw `JSON.parse`, and folds its existing `"not-object"` /
+  `"no-days"` checks into the same reason space.
+- `ModifyAiModal.tsx:80` (the second paste surface, currently a bare
+  `JSON.parse(json.trim())`) routes through `parseLooseJson` too.
+
+### Recovery prompt (type-branched)
+
+`buildRecoveryPrompt(reason, detail?)` replaces the generic version. Branches:
+
+- `truncated` — "Your JSON appears cut off. Re-emit the COMPLETE program as one
+  minified JSON object…"
+- `syntax` — generic re-emit + "straight ASCII quotes, no fences, no trailing
+  commas/comments, first char `{`, last `}`".
+- `not-object` / `no-days` — restate the required top-level shape (a `days` array).
+
+`ImportClient` passes the classified `reason` through.
 
 ## Testing
 
@@ -176,6 +242,20 @@ Following the project's test-first approach for bugs (reproduce, then fix):
   field and links to `/profile`; toggling a field off removes its text from the
   generated prompt.
 - **`llmPrompt`:** small assertion that injuries reach `formatProfile` output.
+- **`sanitizeJson.test.ts`** (new — the priority suite, since this is core):
+  - Each transform in isolation: fences (with/without the `json` tag), trailing prose
+    after `}`, leading preamble, single + double typographic quotes, line + block
+    comments, trailing commas in objects and arrays.
+  - **String-safety:** `//`, `/* */`, commas-before-brace, and curly quotes that appear
+    *inside* string values are preserved, not mangled (including escaped quotes).
+  - Combinations (fences + smart quotes + trailing comma together).
+  - Valid JSON passes through byte-stable.
+  - Truncation: cut-off/unbalanced input classified `"truncated"`; empty → `"empty"`.
+  - A corpus of realistic "LLM mistake" routine blobs parses to the right object.
+- **`parser.test.ts`:** parseProgramJson succeeds on sanitizer-repaired input; the
+  trailing-prose-at-index-0 bug now imports; reason classification is correct.
+- **`builder.test.ts` (recovery):** `buildRecoveryPrompt` returns branch-appropriate
+  text for each `reason`.
 
 ## Files touched
 
@@ -188,6 +268,13 @@ Following the project's test-first approach for bugs (reproduce, then fix):
   assembly, synthesis-block wording.
 - `src/components/prompts/PromptBuilderClient.test.tsx` — update.
 - `src/lib/analysis/llmPrompt.ts` — one-line injuries fix.
+- `src/lib/import/sanitizeJson.ts` — **new** (sanitizer + `parseLooseJson`).
+- `src/lib/import/sanitizeJson.test.ts` — **new** (priority test suite).
+- `src/lib/import/parser.ts` — use `parseLooseJson`; classify failure reasons.
+- `src/lib/import/parser.test.ts` — extend.
+- `src/components/workout/ModifyAiModal.tsx` — route paste through `parseLooseJson`.
+- `src/components/import/ImportClient.tsx` — pass classified reason to recovery prompt.
+- `src/lib/prompts/builder.ts` — also: `buildRecoveryPrompt` becomes type-branched.
 
 ## Appendix — draft prompt wording
 
