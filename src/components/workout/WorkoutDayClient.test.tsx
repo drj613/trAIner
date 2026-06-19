@@ -50,9 +50,11 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
 const saveMock = jest.fn().mockResolvedValue(undefined);
 const listForDayMock = jest.fn().mockResolvedValue([]);
 const listForProgramMock = jest.fn().mockResolvedValue([]);
+const listMock = jest.fn().mockResolvedValue([]);
 
 jest.mock("@/lib/storage/logRepo", () => ({
   logRepo: {
+    list: (...args: unknown[]) => listMock(...args),
     listForProgram: (...args: unknown[]) => listForProgramMock(...args),
     listForDay: (...args: unknown[]) => listForDayMock(...args),
     getForDay: jest.fn().mockResolvedValue(undefined),
@@ -88,6 +90,7 @@ beforeEach(() => {
   saveProgramMock.mockClear();
   listForDayMock.mockClear().mockResolvedValue([]);
   listForProgramMock.mockClear().mockResolvedValue([]);
+  listMock.mockClear().mockResolvedValue([]);
 });
 
 describe("WorkoutDayClient header", () => {
@@ -363,7 +366,8 @@ describe("WorkoutDayClient locked-day Skip button", () => {
 describe("WorkoutDayClient history button after exercise change", () => {
   it("history dialog shows entries matching the slot's current canonical id", async () => {
     // Two logs: one under the old slot id, one under a different slot but same canonical id.
-    listForProgramMock.mockResolvedValueOnce([
+    // History reads all logs (logRepo.list) so an exercise's sessions follow it across routines.
+    listMock.mockResolvedValueOnce([
       {
         id: "log-old", programId: "p1", dayId: "day-1",
         performedAt: "2026-04-01T09:00:00.000Z",

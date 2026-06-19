@@ -537,7 +537,7 @@ function WorkoutBody({
           }
         }
       }
-      const logs = await logRepo.listForProgram(program.id);
+      const logs = await logRepo.list();
       const rows = aggregateExerciseHistory(logs, exerciseId, canonicalExerciseId);
       setHistoryDrawer({ exerciseName, rows });
     } catch (e) {

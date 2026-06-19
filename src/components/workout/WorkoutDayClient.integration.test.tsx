@@ -9,7 +9,7 @@
  * jest.config.js pins TZ=America/New_York so the local-vs-UTC calendar
  * boundary (~8pm–midnight local) is reproducible.
  */
-import { render, screen, act, waitFor } from "@testing-library/react";
+import { render, screen, act, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -19,8 +19,9 @@ import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import { logRepo } from "@/lib/storage/logRepo";
 import type { ProgramDocument } from "@/lib/programs/types";
 
-const makeExercise = (id: string, name: string) => ({
+const makeExercise = (id: string, name: string, canonicalExerciseId?: string) => ({
   id, name, sets: 2, reps: "5",
+  ...(canonicalExerciseId ? { canonicalExerciseId } : {}),
   tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
 });
 
@@ -31,7 +32,7 @@ const program: ProgramDocument = {
       id: "day-1", dayNumber: 1, title: "Push Day",
       sections: [{
         id: "s1", name: "Main", type: "strength",
-        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press")] }],
+        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press", "canon-bench")] }],
       }],
     },
     {
@@ -247,6 +248,45 @@ describe("historical sessions", () => {
     expect(logs).toHaveLength(1);
     expect(logs[0].id).toBe("in-progress");
     expect(logs[0].entries[0].sets).toHaveLength(2);
+  });
+
+  it("history follows the exercise across routines (matched by canonical id)", async () => {
+    // A completed session under a DIFFERENT program ("p0", an earlier routine)
+    // for an exercise whose canonical id matches the current routine's slot.
+    // A new routine has a new program.id, so scoping history to program.id
+    // would hide this prior session.
+    await logRepo.save({
+      id: "prior-routine-session",
+      programId: "p0", // different program / earlier routine
+      dayId: "old-day",
+      performedAt: "2026-05-01T22:00:00.000Z",
+      completedAt: "2026-05-01T23:00:00.000Z",
+      entries: [
+        {
+          exerciseId: "old-slot-id", // legacy slot id, won't collide
+          exerciseName: "Bench Press",
+          canonicalExerciseId: "canon-bench", // matches p1/day-1/e1
+          sets: [
+            { setNumber: 1, weight: 120, reps: 5 },
+            { setNumber: 2, weight: 110, reps: 4 },
+          ],
+        },
+      ],
+    });
+
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay(); // renders program p1, day-1 (slot e1 → canon-bench)
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+
+    await user.click(
+      screen.getByRole("button", { name: /history for bench press/i }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    // The prior routine's session must appear in this routine's history.
+    await waitFor(() => expect(within(dialog).getByText("2026-05-01")).toBeInTheDocument());
+    expect(within(dialog).getByText("120x5")).toBeInTheDocument();
   });
 
   it("Start new session on a previously-completed day begins a fresh editable session", async () => {
