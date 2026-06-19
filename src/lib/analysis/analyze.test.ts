@@ -37,9 +37,9 @@ describe("analyzeProgram", () => {
     expect(zeroSetWarnings).toHaveLength(0);
   });
 
-  it("uses max weekly volume across weeks, not sum", () => {
-    // A program where week1 has 4 chest sets and week2 has 2 chest sets
-    // The result should be 4 sets (max), not 6 (sum) or 2 (week1-hardcode)
+  it("uses median weekly volume across weeks, not sum or max", () => {
+    // A program where week1 has 4 chest sets and week2 has 2 chest sets.
+    // Median of [4, 2] sorted = [2, 4] → 3.0. Max would be 4, sum would be 6.
     const twoWeekProgram: ProgramDocument = {
       id: "program-test", title: "Test", source: "import", active: true,
       overrides: [], createdAt: "2025-01-01T00:00:00.000Z", updatedAt: "2025-01-01T00:00:00.000Z",
@@ -60,6 +60,13 @@ describe("analyzeProgram", () => {
     };
     const result = analyzeProgram(twoWeekProgram);
     const chestVolume = result.muscleVolumes.find((m) => m.muscle === "chest");
-    expect(chestVolume?.effectiveSets).toBe(4); // max of 4 and 2, not 4+2=6
+    expect(chestVolume?.effectiveSets).toBeCloseTo(3.0, 1); // median of [2, 4], not max=4 or sum=6
+  });
+
+  it("uses the typical (median) week, not the peak, for weekly volume", () => {
+    // multiWeekProgram bench (chest primary) sets per week: 3, 4, 5, 2 → sorted [2,3,4,5] → median 3.5; max would be 5.
+    const result = analyzeProgram(multiWeekProgram);
+    const chest = result.muscleVolumes.find((m) => m.muscle === "chest");
+    expect(chest?.effectiveSets).toBeCloseTo(3.5, 1);
   });
 });
