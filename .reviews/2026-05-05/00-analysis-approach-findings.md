@@ -3,6 +3,14 @@ Date: 2026-05-05
 Source reviews: 06–09 (fitness domain specialists), plus analysis-calibration observations from 03  
 Scope: `src/lib/analysis/` — fitness-domain correctness, analytical framework validity
 
+> ⚠️ **Status (2026-06-19): the "Recommended Resolution Paths" / decided roadmap below was largely NOT
+> implemented.** Tier 2 (load parser) and Tier 3 (goal-aware analysis, frequency, style detection) never
+> shipped; several Tier-1 items (neutral movement-pattern display, single-week penalty removal) are also
+> still open. Goal coherence was *removed* rather than replaced, making the engine more goal-blind. A
+> fresh audit cross-checking design-vs-shipped and verifying every threshold against current S&C evidence
+> is at [`../2026-06-19/00-analysis-framework-evidence-audit.md`](../2026-06-19/00-analysis-framework-evidence-audit.md).
+> The fitness-domain *analysis* below remains accurate; only the implementation-status assumptions are stale.
+
 These findings are about *what the analysis system assumes good training looks like*, not about code bugs in the strict sense. A different severity scale applies: **Misleading** = produces actively wrong guidance for real users. **Questionable** = may mislead in common scenarios. **Acceptable** = reasonable simplification with known limitations. **Sound** = grounded in fitness science.
 
 ---

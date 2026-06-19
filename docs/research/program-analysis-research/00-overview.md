@@ -1,5 +1,11 @@
 # Program Analysis Algorithm — Research Overview
 
+> ⚠️ **Status (2026-06-19): this doc describes DESIGN INTENT, not the shipped engine.**
+> Several capabilities below were never wired: goal "fingerprint"/inference, training-age-adjusted
+> landmarks, a `frequency` dimension, and goal-aware scoring. The shipped engine is goal-blind and
+> set-count-only. For the current implemented state + an evidence audit of every threshold, see
+> [`.reviews/2026-06-19/00-analysis-framework-evidence-audit.md`](../../../.reviews/2026-06-19/00-analysis-framework-evidence-audit.md).
+
 ## Purpose
 
 A client-side JS algorithm that analyzes workout routines and produces:
