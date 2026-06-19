@@ -31,6 +31,12 @@ describe("analyzeProgram", () => {
     expect(result.periodization.deloadDetected).toBe(true);
   });
 
+  it("does not emit below-maintenance warnings for untrained muscles", () => {
+    const result = analyzeProgram(imbalancedProgram);
+    const zeroSetWarnings = result.warnings.filter((w) => /0 sets\/week/.test(w.message));
+    expect(zeroSetWarnings).toHaveLength(0);
+  });
+
   it("uses max weekly volume across weeks, not sum", () => {
     // A program where week1 has 4 chest sets and week2 has 2 chest sets
     // The result should be 4 sets (max), not 6 (sum) or 2 (week1-hardcode)

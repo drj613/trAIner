@@ -44,7 +44,7 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
   const overall = computeOverallScore(dimensions);
 
   const warnings = [
-    ...muscleVolumes.filter((r) => r.severity !== "green").map((r) => ({
+    ...muscleVolumes.filter((r) => r.severity !== "green" && r.effectiveSets > 0).map((r) => ({
       severity: r.severity,
       dimension: "volume" as const,
       message: `${formatMuscleName(r.muscle)}: ${r.effectiveSets} sets/week — ${r.label}`,

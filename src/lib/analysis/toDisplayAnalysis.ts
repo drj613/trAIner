@@ -68,8 +68,9 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     mavLo: mv.landmarks.mavLow,
     mavHi: mv.landmarks.mavHigh,
     mrv: mv.landmarks.mrv,
-    status: mv.severity,
-    flag: mv.effectiveSets > mv.landmarks.mrv ? "above_mrv"
+    status: mv.effectiveSets === 0 ? "untrained" : mv.severity,
+    flag: mv.effectiveSets === 0 ? undefined
+        : mv.effectiveSets > mv.landmarks.mrv ? "above_mrv"
         : mv.effectiveSets < mv.landmarks.mev ? "below_mev"
         : undefined,
   }));

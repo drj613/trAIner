@@ -112,7 +112,7 @@ export type MuscleDisplay = {
   mavLo: number;
   mavHi: number;
   mrv: number;
-  status: "green" | "yellow" | "red";
+  status: "green" | "yellow" | "red" | "untrained";
   flag?: string;
 };
 

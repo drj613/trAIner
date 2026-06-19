@@ -3,21 +3,26 @@
 import { useState } from "react";
 import type { DisplayAnalysis } from "@/lib/analysis/types";
 
-type AnyStatus = "good" | "warn" | "bad" | "green" | "yellow" | "red";
+type AnyStatus = "good" | "warn" | "bad" | "green" | "yellow" | "red" | "untrained";
 
 const STATUS_FG: Record<AnyStatus, string> = {
-  good:   "var(--good, #7fc77a)",
-  green:  "var(--good, #7fc77a)",
-  warn:   "var(--warn, #e6b664)",
-  yellow: "var(--warn, #e6b664)",
-  bad:    "var(--bad, #e07b6a)",
-  red:    "var(--bad, #e07b6a)",
+  good:      "var(--good, #7fc77a)",
+  green:     "var(--good, #7fc77a)",
+  warn:      "var(--warn, #e6b664)",
+  yellow:    "var(--warn, #e6b664)",
+  bad:       "var(--bad, #e07b6a)",
+  red:       "var(--bad, #e07b6a)",
+  untrained: "var(--fg-4)",
 };
 
 const STATUS_BG: Record<AnyStatus, string> = {
-  good: "rgba(127,199,122,0.10)", green: "rgba(127,199,122,0.10)",
-  warn: "rgba(230,182,100,0.10)", yellow: "rgba(230,182,100,0.10)",
-  bad: "rgba(224,123,106,0.10)", red: "rgba(224,123,106,0.10)",
+  good:      "rgba(127,199,122,0.10)",
+  green:     "rgba(127,199,122,0.10)",
+  warn:      "rgba(230,182,100,0.10)",
+  yellow:    "rgba(230,182,100,0.10)",
+  bad:       "rgba(224,123,106,0.10)",
+  red:       "rgba(224,123,106,0.10)",
+  untrained: "transparent",
 };
 
 function sc(s: string): string { return STATUS_FG[s as AnyStatus] ?? "var(--fg-3)"; }
