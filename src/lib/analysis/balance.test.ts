@@ -127,4 +127,15 @@ describe("analyzeBalance", () => {
     expect(result.quadHamRatio).not.toBeNull();
     expect(result.quadHamRatio!).toBeCloseTo(1.0, 1);
   });
+
+  it("does not emit severity warnings for missing movement patterns", () => {
+    // imbalancedProgram is a chest-only bro split — it has no rows, pull-ups, hinges, or squats,
+    // so "vertical_pull" (among others) is missing. Pattern coverage is informational now.
+    // Note: startingStrengthProgram covers all 6 patterns via tag-based fallback (Barbell Row
+    // primary ["lats","upper_back"] triggers vertical_pull heuristic), so imbalancedProgram
+    // is the reliable fixture for missing patterns.
+    const result = analyzeBalance(imbalancedProgram.days);
+    expect(result.movementPatternsMissing).toContain("vertical_pull");
+    expect(result.warnings.some((w) => /movement pattern/i.test(w.message))).toBe(false);
+  });
 });

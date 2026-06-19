@@ -152,20 +152,6 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
   const movementPatternsCovered = allPatterns.filter((p) => patternsFound.has(p));
   const movementPatternsMissing = allPatterns.filter((p) => !patternsFound.has(p));
 
-  if (movementPatternsMissing.length >= 2) {
-    warnings.push({
-      severity: "red",
-      dimension: "balance",
-      message: `Missing movement patterns: ${movementPatternsMissing.join(", ")}`,
-    });
-  } else if (movementPatternsMissing.length === 1) {
-    warnings.push({
-      severity: "yellow",
-      dimension: "balance",
-      message: `Missing movement pattern: ${movementPatternsMissing[0]}`,
-    });
-  }
-
   return {
     pushPullRatio,
     upperLowerRatio,

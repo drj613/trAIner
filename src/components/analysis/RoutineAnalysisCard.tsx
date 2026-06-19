@@ -147,6 +147,9 @@ const MOVEMENT_PATTERN_LABELS: Record<string, string> = {
 function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"]; patterns: DisplayAnalysis["patterns"] }) {
   return (
     <div>
+      <div style={{ fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4, marginBottom: 6 }}>
+        Volume-balance heuristics — not injury-risk metrics. Goal-specific programs may diverge intentionally.
+      </div>
       {ratios.map((r) => (
         <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--line)" }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: sc(r.verdict), flexShrink: 0 }} />

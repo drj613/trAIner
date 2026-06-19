@@ -103,7 +103,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
       verdict: ratioVerdict(b.chestBackRatio, bt.chestBack),
       target: "0.67–1.0",
       detail: b.chestBackRatio !== null && b.chestBackRatio < bt.chestBack.idealMin
-        ? "Back-emphasized — healthy for shoulder integrity." : undefined,
+        ? "Back-emphasized — common and generally fine." : undefined,
     },
   ];
 
