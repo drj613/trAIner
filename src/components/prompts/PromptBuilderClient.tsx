@@ -6,24 +6,21 @@ import { ArrowRight, Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
   buildProfileBlock,
-  buildRoutineBlock,
   buildConstraintsBlock,
   buildSchemaBlock,
   assemblePrompt,
 } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 
-type BlockKey = "profile" | "routine" | "constraints" | "schema";
+type BlockKey = "profile" | "constraints" | "schema";
 
 export function PromptBuilderClient() {
-  const { profile, programs, loading } = useLocalData();
-  const program = programs[0];
+  const { profile, loading } = useLocalData();
 
   const [selectedIds, setSelectedIds] = useState<string[]>(["rp"]);
   const [editedBlocks, setEditedBlocks] = useState<Record<string, string>>({});
   const [blocks, setBlocks] = useState<Record<BlockKey, boolean>>({
     profile: true,
-    routine: true,
     constraints: true,
     schema: true,
   });
@@ -56,12 +53,11 @@ export function PromptBuilderClient() {
 
     const sectionBlocks: string[] = [];
     if (blocks.profile && profile) sectionBlocks.push(buildProfileBlock(profile));
-    if (blocks.routine) sectionBlocks.push(buildRoutineBlock(program));
     if (blocks.constraints && profile) sectionBlocks.push(buildConstraintsBlock(profile));
     if (blocks.schema) sectionBlocks.push(buildSchemaBlock());
 
     return assemblePrompt([synthesisBlock, ...personaBlocks, ...sectionBlocks]);
-  }, [selectedPersonas, editedBlocks, blocks, profile, program]);
+  }, [selectedPersonas, editedBlocks, blocks, profile]);
 
   return (
     <div className="stack">
@@ -130,7 +126,6 @@ export function PromptBuilderClient() {
           {(
             [
               ["profile", "Profile block"],
-              ["routine", "Routine structure block"],
               ["constraints", "Constraints block"],
               ["schema", "Output schema block"],
             ] as [BlockKey, string][]

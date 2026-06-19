@@ -1,5 +1,5 @@
-import { buildProfileBlock, buildRoutineBlock, buildConstraintsBlock, buildSchemaBlock, buildRecoveryPrompt, assemblePrompt } from "./builder";
-import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
+import { buildProfileBlock, buildConstraintsBlock, buildSchemaBlock, buildRecoveryPrompt, assemblePrompt } from "./builder";
+import type { ProfileDocument } from "@/lib/programs/types";
 
 const profile: ProfileDocument = {
   id: "local-profile",
@@ -41,69 +41,6 @@ describe("buildConstraintsBlock", () => {
   });
   it("returns empty string when constraints is empty", () => {
     expect(buildConstraintsBlock({ ...profile, constraints: [] })).toBe("");
-  });
-});
-
-const routineWithDays: ProgramDocument = {
-  id: "p2",
-  title: "Full Body 3x",
-  source: "manual",
-  active: true,
-  days: [
-    {
-      id: "d1",
-      dayNumber: 1,
-      title: "Day A",
-      sections: [
-        {
-          id: "s1",
-          type: "strength",
-          name: "Main Lifts",
-          groups: [
-            {
-              id: "g1",
-              type: "single",
-              exercises: [
-                {
-                  id: "e1",
-                  name: "Squat",
-                  sets: 3,
-                  reps: "5",
-                  load: "80% 1RM",
-                  tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  overrides: [],
-  createdAt: "2024-01-01",
-  updatedAt: "2024-01-01",
-};
-
-describe("buildRoutineBlock", () => {
-  it("returns empty string when program is undefined", () => {
-    expect(buildRoutineBlock(undefined)).toBe("");
-  });
-  it("includes program title when provided", () => {
-    const prog = { id: "p1", title: "PPL Program" } as unknown as ProgramDocument;
-    expect(buildRoutineBlock(prog)).toContain("PPL Program");
-  });
-  it("includes exercise names in the output (C5)", () => {
-    const block = buildRoutineBlock(routineWithDays);
-    expect(block).toContain("Squat");
-  });
-  it("includes section name in the output (C5)", () => {
-    const block = buildRoutineBlock(routineWithDays);
-    expect(block).toContain("Main Lifts");
-  });
-  it("includes sets and reps in the output (C5)", () => {
-    const block = buildRoutineBlock(routineWithDays);
-    expect(block).toContain("3 sets");
-    expect(block).toContain("× 5");
   });
 });
 

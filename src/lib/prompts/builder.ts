@@ -18,28 +18,6 @@ export function buildConstraintsBlock(profile: ProfileDocument): string {
   return lines.join("\n");
 }
 
-export function buildRoutineBlock(program: ProgramDocument | undefined): string {
-  if (!program) return "";
-  const lines = ["## Current Routine", `Name: ${program.title}`];
-  if (!program.days || program.days.length === 0) return lines.join("\n");
-  for (const day of program.days) {
-    lines.push(`\n### ${day.title}`);
-    for (const section of day.sections) {
-      lines.push(`**${section.name}** (${section.type})`);
-      for (const group of section.groups) {
-        for (const ex of group.exercises) {
-          const parts = [`- ${ex.name}`];
-          if (ex.sets) parts.push(`${ex.sets} sets`);
-          if (ex.reps) parts.push(`× ${ex.reps}`);
-          if (ex.load) parts.push(`@ ${ex.load}`);
-          lines.push(parts.join(" "));
-        }
-      }
-    }
-  }
-  return lines.join("\n");
-}
-
 export function buildSchemaBlock(): string {
   const exDay = {
     day: 1,
