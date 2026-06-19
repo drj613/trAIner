@@ -896,6 +896,14 @@ These are the design-heavy items from the audit. They involve product decisions 
 4. **Landmark recalibration.** The evidence-based value changes (biceps MEV down, rear-delt/quad/chest/calf MEVs up) — a scored-impact product decision.
 5. **Prompt-builder reconciliation.** One canonical builder (the richer goal-aware content currently in `LlmAnalysisSheet`'s inline `buildPrompt`), one volume table shared with `thresholds.ts`.
 
+### Follow-ups surfaced during execution (not done here)
+
+Discovered by the per-task and final code reviews while executing this plan; deliberately left for later:
+
+- **Warning/score double-counting in periodization & balance scoring.** The periodization warning *conditions* (`periodization.ts`) and the score *penalties* (`score.ts`) encode the same predicates in two places, and a "no deload" situation is penalized twice — once by the explicit `-20` and again by the `-5`-per-yellow-warning that the same condition pushed. Pre-existing (Tasks 6/7 only narrowed when the gates fire). Fix: derive penalties from `result.warnings`, or return structured flags that `score.ts` maps without re-deriving conditions. Touches scoring semantics → belongs with the goal-aware/recalibration pass.
+- **Volume dimension note counts untrained muscles in the denominator.** `toDisplayAnalysis.ts` shows "N of {muscleVolumes.length} muscles in MAV range" using the full muscle list, while the volume *score* excludes untrained (`score.ts`). A program training 8 muscles well can read "8 of 19 in MAV range" yet score an A. More visible now that untrained is a first-class state. Fix alongside the goal-aware work (the denominator should reflect intended-to-train muscles).
+- **`detectIntensityProgression` rep-fallback is undocumented.** The pct branch uses `p1 - p0 >= 5` (rising load) while the rep fallback uses `r0 - r1 >= 2` (falling reps = rising intensity); a one-line comment on the rep branch would prevent a future "is this a bug?" read.
+
 ---
 
 ## Self-review (completed by plan author)
