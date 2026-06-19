@@ -53,7 +53,6 @@ export function scoreBalanceDimension(result: BalanceResult): DimensionScore {
 
 export function scorePeriodizationDimension(result: PeriodizationResult): DimensionScore {
   let score = 100;
-  if (result.weeksDetected <= 1) score -= 30;
   if (!result.deloadDetected && !result.peakDetected && result.weeksDetected >= 4) score -= 20;
   if (
     result.volumePattern === "static" &&

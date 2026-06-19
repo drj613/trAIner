@@ -1,4 +1,4 @@
-import { scoreVolumeDimension } from "./score";
+import { scoreVolumeDimension, scorePeriodizationDimension } from "./score";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
 
@@ -33,4 +33,17 @@ describe("scoreVolumeDimension", () => {
 
     expect(bScore.score).toBeGreaterThan(iScore.score);
   });
+});
+
+it("does not heavily penalize single-week programs", () => {
+  const result = {
+    weeksDetected: 1,
+    volumePattern: "static" as const,
+    deloadDetected: false,
+    peakDetected: false,
+    intensityProgression: "unknown" as const,
+    warnings: [{ severity: "yellow" as const, dimension: "periodization", message: "Single-week program" }],
+  };
+  const score = scorePeriodizationDimension(result);
+  expect(score.score).toBeGreaterThanOrEqual(90); // only the -5 yellow warning, no -30
 });
