@@ -1,0 +1,42 @@
+trAIner
+Copyright (C) 2026 DJ
+
+================================================================================
+SOURCE CODE LICENSE
+================================================================================
+
+The source code of this project is licensed under the GNU General Public
+License, version 3 (GPL-3.0). See the LICENSE file for the full text.
+
+This applies to all original source code in this repository, including (but
+not limited to) the contents of src/, scripts/, e2e/, and configuration files.
+
+================================================================================
+THIRD-PARTY EXERCISE DATA — NOT COVERED BY THE GPL
+================================================================================
+
+The exercise dataset and exercise animations/images used by this application
+(e.g. the data ingested via scripts/ingest/ and the catalog built from it) are
+NOT part of the GPL-licensed source code and are NOT distributed under the GPL.
+
+This data is proprietary third-party content obtained under a separate
+commercial license. Under that license:
+
+  PERMITTED:
+    - Lifetime commercial usage rights
+    - Use in mobile apps, SaaS platforms, and websites
+    - Displaying the exercise animations inside an application
+
+  NOT PERMITTED:
+    - Redistribution of the raw dataset or animations as a standalone library
+    - Reselling the dataset as a standalone product
+
+Nothing in the GPL-3.0 license that covers this project's source code grants
+you any rights to the exercise data. The data is excluded from that grant.
+
+The exercise data is included in this repository only so that the application
+can function. It remains proprietary third-party content. If you fork or
+redistribute this project, you may NOT extract the dataset or animations and
+redistribute them as a standalone library or product, and you may NOT resell
+the dataset. Your use of the data is governed by the original vendor's license,
+not by the GPL.

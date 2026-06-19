@@ -2,6 +2,17 @@
 
 trAIner is a local-first workout PWA for one person on one device. It turns routines from human trainers or external LLMs into structured, editable, loggable workouts that work offline after install.
 
+## License
+
+The **source code** is licensed under the [GNU General Public License v3.0](LICENSE).
+
+The **exercise data and animations** are **not** covered by the GPL. They are
+proprietary third-party content used under a separate commercial license that
+permits use inside this app but prohibits redistributing the raw dataset or
+animations as a standalone library or product, or reselling them. The data is
+included here only so the app can function — it is not offered as a reusable
+standalone dataset. See [NOTICE](NOTICE) for details.
+
 ## Using the App
 
 ### Getting started
