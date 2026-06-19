@@ -64,6 +64,8 @@ export type PeriodizationResult = {
   weeksDetected: number;
   volumePattern: "static" | "increasing" | "wave" | "decreasing";
   deloadDetected: boolean;
+  peakDetected: boolean;
+  intensityProgression: "rising" | "flat" | "unknown";
   warnings: Warning[];
 };
 

@@ -54,8 +54,14 @@ export function scoreBalanceDimension(result: BalanceResult): DimensionScore {
 export function scorePeriodizationDimension(result: PeriodizationResult): DimensionScore {
   let score = 100;
   if (result.weeksDetected <= 1) score -= 30;
-  if (!result.deloadDetected && result.weeksDetected >= 4) score -= 20;
-  if (result.volumePattern === "static" && result.weeksDetected > 1) score -= 20;
+  if (!result.deloadDetected && !result.peakDetected && result.weeksDetected >= 4) score -= 20;
+  if (
+    result.volumePattern === "static" &&
+    result.weeksDetected > 1 &&
+    result.intensityProgression !== "rising"
+  ) {
+    score -= 20;
+  }
   score -= result.warnings.filter((w) => w.severity === "red").length * 15;
   score -= result.warnings.filter((w) => w.severity === "yellow").length * 5;
   score = Math.max(0, Math.min(100, score));
