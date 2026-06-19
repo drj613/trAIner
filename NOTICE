@@ -6,7 +6,8 @@ SOURCE CODE LICENSE
 ================================================================================
 
 The source code of this project is licensed under the GNU General Public
-License, version 3 (GPL-3.0). See the LICENSE file for the full text.
+License, either version 3 of the License, or (at your option) any later
+version (GPL-3.0-or-later). See the LICENSE file for the full text.
 
 This applies to all original source code in this repository, including (but
 not limited to) the contents of src/, scripts/, e2e/, and configuration files.

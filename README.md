@@ -4,7 +4,7 @@ trAIner is a local-first workout PWA for one person on one device. It turns rout
 
 ## License
 
-The **source code** is licensed under the [GNU General Public License v3.0](LICENSE).
+The **source code** is licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
 The **exercise data and animations** are **not** covered by the GPL. They are
 proprietary third-party content used under a separate commercial license that
