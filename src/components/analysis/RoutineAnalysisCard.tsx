@@ -366,6 +366,13 @@ export function RoutineAnalysisCard({
         <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
       </button>
 
+      <div style={{
+        padding: "0 12px 8px", fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4,
+      }}>
+        Calibrated for general &amp; hypertrophy training. Strength, powerlifting &amp; Olympic
+        programs may score low by design — use the AI prompt for goal-aware review.
+      </div>
+
       {/* Chips row — dimension chips + coverage chip */}
       <div style={{ display: "flex", gap: 4, padding: "0 10px 10px", overflowX: "auto" }}>
         {analysis.dimensions.map((d) => (

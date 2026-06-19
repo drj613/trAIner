@@ -1,5 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RoutineAnalysisCard } from "./RoutineAnalysisCard";
+import { analyzeProgram } from "@/lib/analysis/analyze";
+import { toDisplayAnalysis } from "@/lib/analysis/toDisplayAnalysis";
+import { balancedProgram } from "@/lib/analysis/fixtures";
 
 const mockAnalysis = {
   durationMs: 184,
@@ -62,7 +65,15 @@ describe("RoutineAnalysisCard", () => {
     const onOpenPrompt = jest.fn();
     render(<RoutineAnalysisCard analysis={mockAnalysis} onOpenPrompt={onOpenPrompt} />);
     fireEvent.click(screen.getByText("Hypertrophy-focused upper/lower split"));
-    fireEvent.click(screen.getByText(/AI prompt/));
+    fireEvent.click(screen.getByRole("button", { name: /AI prompt/ }));
     expect(onOpenPrompt).toHaveBeenCalled();
+  });
+
+  it("states the grade is calibrated for general/hypertrophy training", () => {
+    const analysis = toDisplayAnalysis(analyzeProgram(balancedProgram), 0);
+    render(<RoutineAnalysisCard analysis={analysis} onOpenPrompt={() => {}} />);
+    expect(
+      screen.getByText(/calibrated for general .* hypertrophy training/i),
+    ).toBeInTheDocument();
   });
 });
