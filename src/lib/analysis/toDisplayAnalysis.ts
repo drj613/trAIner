@@ -51,7 +51,11 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
       ? `Sessions ${Math.min(...result.sessions.map((s) => s.estimatedMinutes))}–${Math.max(...result.sessions.map((s) => s.estimatedMinutes))} min`
       : "No sessions",
     balance: `Push:pull ${b.pushPullRatio?.toFixed(2) ?? "—"}:1`,
-    periodization: result.periodization.deloadDetected ? "Deload week detected" : "No deload week present",
+    periodization: result.periodization.peakDetected
+      ? "Peak week detected"
+      : result.periodization.deloadDetected
+        ? "Deload week detected"
+        : "No deload week present",
   };
 
   const dimensions: DimensionDisplay[] = [

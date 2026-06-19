@@ -172,11 +172,11 @@ function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"];
               <div key={id} style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 7px",
                 borderRadius: "var(--r-sm, 4px)",
-                background: ok ? sb("good") : sb("warn"),
-                border: `1px solid ${ok ? sc("good") : sc("warn")}`,
+                background: ok ? sb("good") : "var(--bg-2)",
+                border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : sc("warn") }}>{ok ? "✓" : "!"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--warn)" }}>{label}</span>
+                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
@@ -207,11 +207,11 @@ function CoveragePanel({ muscles, patterns }: {
               <div key={id} style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 7px",
                 borderRadius: "var(--r-sm, 4px)",
-                background: ok ? sb("good") : sb("warn"),
-                border: `1px solid ${ok ? sc("good") : sc("warn")}`,
+                background: ok ? sb("good") : "var(--bg-2)",
+                border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : sc("warn") }}>{ok ? "✓" : "!"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--warn)" }}>{label}</span>
+                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
