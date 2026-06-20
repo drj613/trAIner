@@ -2,6 +2,16 @@ import { matchExercise } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
+import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
+
+export class ImportError extends Error {
+  reason: RecoveryReason;
+  constructor(reason: RecoveryReason, message: string) {
+    super(message);
+    this.name = "ImportError";
+    this.reason = reason;
+  }
+}
 
 type ImportPayload = Record<string, unknown>;
 
@@ -11,29 +21,20 @@ export type ImportReview = {
 };
 
 export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
-  const cleaned = stripJsonWrapper(input);
-  let payload: unknown;
-  try {
-    payload = JSON.parse(cleaned);
-  } catch {
-    throw new Error("The pasted content is not valid JSON.");
+  const result = parseLooseJson(input);
+  if (!result.ok) {
+    const message =
+      result.reason === "empty"
+        ? "Paste the AI's JSON response first."
+        : result.reason === "truncated"
+          ? "The pasted JSON looks cut off — paste the full response."
+          : "The pasted content is not valid JSON.";
+    throw new ImportError(result.reason, message);
   }
-
-  if (!isRecord(payload)) {
-    throw new Error("The pasted JSON must be an object.");
+  if (!isRecord(result.value)) {
+    throw new ImportError("not-object", "The pasted JSON must be an object.");
   }
-
-  return normalizePayload(payload, profileSnapshot, aliases, userExercises);
-}
-
-export function stripJsonWrapper(input: string): string {
-  const trimmed = input.trim();
-  const fenced = trimmed.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/i);
-  if (fenced) return fenced[1].trim();
-  const first = trimmed.indexOf("{");
-  const last = trimmed.lastIndexOf("}");
-  if (first > 0 && last > first) return trimmed.slice(first, last + 1);
-  return trimmed;
+  return normalizePayload(result.value, profileSnapshot, aliases, userExercises);
 }
 
 export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
@@ -44,8 +45,9 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   const baseDays = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
 
   if (baseDays.length === 0) {
-    throw new Error(
-      'No workout days found. Make sure you\'re pasting the complete AI response — it should contain a "days" array. Go to Prompts to regenerate the prompt if needed.'
+    throw new ImportError(
+      "no-days",
+      'No workout days found. Make sure you\'re pasting the complete AI response — it should contain a "days" array.'
     );
   }
 

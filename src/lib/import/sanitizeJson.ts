@@ -39,7 +39,7 @@ function sliceBraces(s: string): string {
 }
 
 function normalizeQuotes(s: string): string {
-  return s.replace(/[""]/g, '"').replace(/['']/g, "'");
+  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
 }
 
 function stripComments(s: string): string {
