@@ -78,6 +78,21 @@ For programs longer than one week:
 - \`overrides\` lists only the weeks that deviate (e.g. deload week, peak week, test week). Weeks without an override automatically repeat the base template.
 - Omit \`weeks\` and \`overrides\` for single-week programs.`;
 
+  const programRequirements = `## Program requirements
+Every routine you emit must include:
+- A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".
+- Periodization with a planned deload — organize multi-week programs into a mesocycle (accumulate volume/intensity across weeks, then a deload week at ~50% volume). Express week-to-week changes using \`weeks\` + \`overrides\`.
+- A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
+- A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
+
+  const outputContract = `## Output contract (when emitting after GENERATE IT)
+Output a single JSON object so the app can import it directly:
+- The first character of your reply is \`{\` and the last is \`}\`.
+- Use the exact field names and structure from the schema above.
+- Use straight ASCII quotes.
+
+Emit only the JSON object — no markdown code fences, no preamble, no commentary before or after.`;
+
   const conversationMode = `## Output mode
 
 Default to conversational coaching. Ask clarifying questions, surface tradeoffs between approaches, and discuss programming choices with the athlete. Keep the routine JSON out of this phase entirely — discussing in prose keeps the design flexible and easy to revise.
@@ -106,6 +121,8 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     constraints,
     "Structural skeleton (all real content should replace the placeholder strings):",
     JSON.stringify(skeleton, null, 2),
+    programRequirements,
+    outputContract,
   ].join("\n");
 }
 

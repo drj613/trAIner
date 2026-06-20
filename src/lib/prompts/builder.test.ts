@@ -31,6 +31,25 @@ describe("buildSchemaBlock", () => {
   it("gates JSON emission on the GENERATE IT trigger", () => {
     expect(buildSchemaBlock()).toContain("GENERATE IT");
   });
+  it("requires a numeric progression scheme and a deload", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("progression");
+    expect(b).toContain("deload");
+    expect(b).toMatch(/double progression|load step|%/);
+  });
+  it("requires a warmup every session and balanced patterns", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("warmup");
+    expect(b).toMatch(/movement pattern|push.*pull/);
+  });
+  it("ends with the output contract (first char {, last char })", () => {
+    const b = buildSchemaBlock();
+    const contractIndex = b.indexOf("Output contract");
+    expect(contractIndex).toBeGreaterThan(-1);
+    // contract is the final section
+    expect(b.indexOf("Program requirements")).toBeLessThan(contractIndex);
+    expect(b.trimEnd().endsWith("before or after.")).toBe(true);
+  });
 });
 
 describe("buildRecoveryPrompt", () => {
