@@ -16,15 +16,20 @@ describe("buildSchemaBlock", () => {
   it("instructs the LLM to omit weeks and overrides for single-week programs", () => {
     expect(buildSchemaBlock()).toMatch(/omit.*week|single.week|single-week/i);
   });
-  it("defaults to conversational mode (does not demand immediate JSON output)", () => {
-    const block = buildSchemaBlock();
-    expect(block).toMatch(/conversational mode/i);
+  it("defaults to conversational coaching", () => {
+    expect(buildSchemaBlock().toLowerCase()).toContain("conversational coaching");
+  });
+  it("keeps reasoning in chat and out of the JSON", () => {
+    expect(buildSchemaBlock()).toMatch(/keep the routine JSON out of this phase|keep all reasoning/i);
+  });
+  it("requires a pre-emit self-audit of volume, balance, warmups, and injuries", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("self-audit");
+    expect(b).toContain("warmup");
+    expect(b).toMatch(/injur|equipment/);
   });
   it("gates JSON emission on the GENERATE IT trigger", () => {
     expect(buildSchemaBlock()).toContain("GENERATE IT");
-  });
-  it("forbids partial/preview JSON during conversation", () => {
-    expect(buildSchemaBlock()).toMatch(/do not emit.*json|not.*even partially|not as a preview/i);
   });
 });
 
