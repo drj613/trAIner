@@ -1,3 +1,5 @@
+import type { RecoveryReason } from "@/lib/import/sanitizeJson";
+
 export function buildSchemaBlock(): string {
   const exDay = {
     day: 1,
@@ -126,20 +128,42 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
   ].join("\n");
 }
 
-export function buildRecoveryPrompt(errorMessage?: string): string {
-  const reason = errorMessage
-    ? `The previous response could not be imported. Error: ${errorMessage}`
-    : "The previous response was not valid routine JSON.";
+export function buildRecoveryPrompt(reason: RecoveryReason, detail?: string): string {
+  const contract = [
+    "Re-emit ONLY the routine as raw JSON, matching the schema from earlier in this conversation:",
+    "- The first character must be `{` and the last must be `}`.",
+    "- Use straight ASCII quotes, no markdown code fences, no comments, and no trailing commas.",
+    "- No preamble or commentary before or after the JSON.",
+    "- Use the exact field names from the schema; do not rename or restructure.",
+  ];
+
+  let lead: string;
+  switch (reason) {
+    case "truncated":
+      lead =
+        "The previous JSON looks cut off (it ends mid-structure), so it could not be imported. Re-emit the COMPLETE program as a single minified JSON object (no pretty-printing) so it fits in one message.";
+      break;
+    case "not-object":
+      lead =
+        "The previous response parsed but was not a JSON object. The top level must be a single JSON object containing a `days` array.";
+      break;
+    case "no-days":
+      lead =
+        "The previous JSON had no workout days. The top level must include a `days` array, and each day must contain `sections`.";
+      break;
+    default:
+      lead = detail
+        ? `The previous response could not be imported (${detail}).`
+        : "The previous response was not valid routine JSON.";
+      break;
+  }
+
   return [
-    reason,
+    lead,
     "",
-    "Please re-emit ONLY the routine as raw JSON, matching the schema you were given earlier in this conversation. Strict rules:",
-    "- No markdown code fences (no ```json, no ```).",
-    "- No preamble, no commentary, no explanation outside the JSON.",
-    "- First character must be `{`, last character must be `}`.",
-    "- Use the exact field names from the schema. Do not rename or restructure.",
+    ...contract,
     "",
-    "If you need to ask a question or discuss anything, do that in a separate message after this one — this message must contain only the JSON.",
+    "If you need to discuss anything, do that in a separate message after this one — this message must contain only the JSON.",
   ].join("\n");
 }
 

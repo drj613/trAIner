@@ -53,16 +53,23 @@ describe("buildSchemaBlock", () => {
 });
 
 describe("buildRecoveryPrompt", () => {
-  it("instructs the model to re-emit JSON only", () => {
-    expect(buildRecoveryPrompt()).toMatch(/only.*JSON|JSON.*only/i);
+  it("always instructs JSON-only, no fences, straight quotes", () => {
+    const p = buildRecoveryPrompt("syntax");
+    expect(p).toMatch(/only.*JSON|JSON.*only/i);
+    expect(p).toMatch(/no.*fence/i);
+    expect(p).toMatch(/straight.*quote/i);
   });
-  it("forbids markdown code fences", () => {
-    expect(buildRecoveryPrompt()).toMatch(/no.*fence|```/i);
+  it("gives a truncation-specific lead and asks for minified output", () => {
+    const p = buildRecoveryPrompt("truncated");
+    expect(p.toLowerCase()).toContain("cut off");
+    expect(p.toLowerCase()).toContain("minified");
   });
-  it("includes the supplied error message when provided", () => {
-    expect(buildRecoveryPrompt("Unexpected token x at position 4")).toContain(
-      "Unexpected token x at position 4"
-    );
+  it("explains the required shape for not-object / no-days", () => {
+    expect(buildRecoveryPrompt("no-days").toLowerCase()).toContain("days");
+    expect(buildRecoveryPrompt("not-object").toLowerCase()).toContain("object");
+  });
+  it("includes the supplied detail when provided", () => {
+    expect(buildRecoveryPrompt("syntax", "Unexpected token x")).toContain("Unexpected token x");
   });
 });
 
