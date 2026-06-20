@@ -5,11 +5,27 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
-  buildProfileBlock,
-  buildConstraintsBlock,
   buildSchemaBlock,
   assemblePrompt,
 } from "@/lib/prompts/builder";
+import type { ProfileDocument } from "@/lib/programs/types";
+
+// TODO(prompt-builder-impl): rewire to field registry in next task
+function buildProfileBlock(profile: ProfileDocument): string {
+  return [
+    "## Profile",
+    `Name: ${profile.name}`,
+    `Training age: ${profile.trainingAge ?? "unknown"}`,
+    `Days per week: ${profile.defaultDaysPerWeek ?? "unknown"}`,
+    `Goals: ${profile.goals.join(", ")}`,
+    `Equipment: ${profile.equipment.join(", ")}`,
+  ].join("\n");
+}
+
+function buildConstraintsBlock(profile: ProfileDocument): string {
+  if (!profile.constraints || profile.constraints.length === 0) return "";
+  return ["## Constraints", ...profile.constraints.map((c) => `- ${c}`)].join("\n");
+}
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 
 type BlockKey = "profile" | "constraints" | "schema";

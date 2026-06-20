@@ -1,23 +1,3 @@
-import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
-
-export function buildProfileBlock(profile: ProfileDocument): string {
-  const lines = [
-    "## Profile",
-    `Name: ${profile.name}`,
-    `Training age: ${profile.trainingAge ?? "unknown"}`,
-    `Days per week: ${profile.defaultDaysPerWeek ?? "unknown"}`,
-    `Goals: ${profile.goals.join(", ")}`,
-    `Equipment: ${profile.equipment.join(", ")}`,
-  ];
-  return lines.join("\n");
-}
-
-export function buildConstraintsBlock(profile: ProfileDocument): string {
-  if (!profile.constraints || profile.constraints.length === 0) return "";
-  const lines = ["## Constraints", ...profile.constraints.map((c) => `- ${c}`)];
-  return lines.join("\n");
-}
-
 export function buildSchemaBlock(): string {
   const exDay = {
     day: 1,
