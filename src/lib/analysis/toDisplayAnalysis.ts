@@ -45,13 +45,21 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
   const dims = result.dimensions;
   const b = result.balance;
 
+  // Only trained muscles are scored (see scoreVolumeDimension), so the note's
+  // numerator AND denominator must exclude untrained (0-set) muscles to stay coherent.
+  const trainedVolumes = result.muscleVolumes.filter((m) => m.effectiveSets > 0);
+
   const dimNotes: Record<string, string> = {
-    volume: `${result.muscleVolumes.filter((m) => m.severity === "green").length} of ${result.muscleVolumes.length} muscles in MAV range`,
+    volume: `${trainedVolumes.filter((m) => m.severity === "green").length} of ${trainedVolumes.length} muscles in MAV range`,
     session: result.sessions.length > 0
       ? `Sessions ${Math.min(...result.sessions.map((s) => s.estimatedMinutes))}–${Math.max(...result.sessions.map((s) => s.estimatedMinutes))} min`
       : "No sessions",
     balance: `Push:pull ${b.pushPullRatio?.toFixed(2) ?? "—"}:1`,
-    periodization: result.periodization.deloadDetected ? "Deload week detected" : "No deload week present",
+    periodization: result.periodization.peakDetected
+      ? "Peak week detected"
+      : result.periodization.deloadDetected
+        ? "Deload week detected"
+        : "No deload week present",
   };
 
   const dimensions: DimensionDisplay[] = [
@@ -68,8 +76,9 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     mavLo: mv.landmarks.mavLow,
     mavHi: mv.landmarks.mavHigh,
     mrv: mv.landmarks.mrv,
-    status: mv.severity,
-    flag: mv.effectiveSets > mv.landmarks.mrv ? "above_mrv"
+    status: mv.effectiveSets === 0 ? "untrained" : mv.severity,
+    flag: mv.effectiveSets === 0 ? undefined
+        : mv.effectiveSets > mv.landmarks.mrv ? "above_mrv"
         : mv.effectiveSets < mv.landmarks.mev ? "below_mev"
         : undefined,
   }));
@@ -102,7 +111,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
       verdict: ratioVerdict(b.chestBackRatio, bt.chestBack),
       target: "0.67–1.0",
       detail: b.chestBackRatio !== null && b.chestBackRatio < bt.chestBack.idealMin
-        ? "Back-emphasized — healthy for shoulder integrity." : undefined,
+        ? "Back-emphasized — common and generally fine." : undefined,
     },
   ];
 

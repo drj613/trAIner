@@ -86,13 +86,6 @@ export function repMidpoint(reps: string | undefined): number | null {
   return range ? (range.low + range.high) / 2 : null;
 }
 
-export function isCompound(exercise: ProgramExercise, catalogItem?: ExerciseCatalogItem): boolean {
-  const tags = catalogItem?.tags ?? [];
-  if (tags.includes("compound")) return true;
-  if (tags.includes("isolation")) return false;
-  return exercise.tags.primary.length >= 2;
-}
-
 export type MovementCategory = "push" | "pull" | "legs" | "other";
 
 const PUSH_PATTERNS = new Set(["horizontal press", "push", "shoulder flexion", "overhead"]);

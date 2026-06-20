@@ -55,9 +55,3 @@ export const DIMENSION_WEIGHTS = {
 
 export const DEFAULT_SETS = 3;
 
-export const TRAINING_AGE_MULTIPLIER: Record<string, number> = {
-  beginner:     0.7,
-  intermediate: 1.0,
-  advanced:     1.25,
-};
-

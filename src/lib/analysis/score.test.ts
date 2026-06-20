@@ -1,4 +1,4 @@
-import { scoreVolumeDimension } from "./score";
+import { scoreVolumeDimension, scorePeriodizationDimension } from "./score";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
 
@@ -32,5 +32,57 @@ describe("scoreVolumeDimension", () => {
     const iScore = scoreVolumeDimension(scoreVolume(iVols));
 
     expect(bScore.score).toBeGreaterThan(iScore.score);
+  });
+});
+
+it("does not heavily penalize single-week programs", () => {
+  const result = {
+    weeksDetected: 1,
+    volumePattern: "static" as const,
+    deloadDetected: false,
+    peakDetected: false,
+    intensityProgression: "unknown" as const,
+    warnings: [{ severity: "yellow" as const, dimension: "periodization", message: "Single-week program" }],
+  };
+  const score = scorePeriodizationDimension(result);
+  expect(score.score).toBeGreaterThanOrEqual(90); // only the -5 yellow warning, no -30
+});
+
+describe("scorePeriodizationDimension (de-double-counted)", () => {
+  it("penalizes a missing deload exactly once (no double-count)", () => {
+    const result = {
+      weeksDetected: 4,
+      volumePattern: "wave" as const,
+      deloadDetected: false,
+      peakDetected: false,
+      intensityProgression: "flat" as const,
+      warnings: [{ severity: "yellow" as const, dimension: "periodization", message: "No deload week detected — ..." }],
+    };
+    // -20 for missing deload only; NOT -20 -5.
+    expect(scorePeriodizationDimension(result).score).toBe(80);
+  });
+
+  it("scores a single-week program at 100 (no periodization penalty)", () => {
+    const result = {
+      weeksDetected: 1,
+      volumePattern: "static" as const,
+      deloadDetected: false,
+      peakDetected: false,
+      intensityProgression: "unknown" as const,
+      warnings: [{ severity: "yellow" as const, dimension: "periodization", message: "Single-week program — ..." }],
+    };
+    expect(scorePeriodizationDimension(result).score).toBe(100);
+  });
+
+  it("does not penalize a peak week (peak ≠ missing deload)", () => {
+    const result = {
+      weeksDetected: 4,
+      volumePattern: "wave" as const,
+      deloadDetected: false,
+      peakDetected: true,
+      intensityProgression: "rising" as const,
+      warnings: [],
+    };
+    expect(scorePeriodizationDimension(result).score).toBe(100);
   });
 });

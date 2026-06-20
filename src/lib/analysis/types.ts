@@ -64,6 +64,8 @@ export type PeriodizationResult = {
   weeksDetected: number;
   volumePattern: "static" | "increasing" | "wave" | "decreasing";
   deloadDetected: boolean;
+  peakDetected: boolean;
+  intensityProgression: "rising" | "flat" | "unknown";
   warnings: Warning[];
 };
 
@@ -112,7 +114,7 @@ export type MuscleDisplay = {
   mavLo: number;
   mavHi: number;
   mrv: number;
-  status: "green" | "yellow" | "red";
+  status: "green" | "yellow" | "red" | "untrained";
   flag?: string;
 };
 

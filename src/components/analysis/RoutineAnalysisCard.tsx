@@ -3,21 +3,26 @@
 import { useState } from "react";
 import type { DisplayAnalysis } from "@/lib/analysis/types";
 
-type AnyStatus = "good" | "warn" | "bad" | "green" | "yellow" | "red";
+type AnyStatus = "good" | "warn" | "bad" | "green" | "yellow" | "red" | "untrained";
 
 const STATUS_FG: Record<AnyStatus, string> = {
-  good:   "var(--good, #7fc77a)",
-  green:  "var(--good, #7fc77a)",
-  warn:   "var(--warn, #e6b664)",
-  yellow: "var(--warn, #e6b664)",
-  bad:    "var(--bad, #e07b6a)",
-  red:    "var(--bad, #e07b6a)",
+  good:      "var(--good, #7fc77a)",
+  green:     "var(--good, #7fc77a)",
+  warn:      "var(--warn, #e6b664)",
+  yellow:    "var(--warn, #e6b664)",
+  bad:       "var(--bad, #e07b6a)",
+  red:       "var(--bad, #e07b6a)",
+  untrained: "var(--fg-4)",
 };
 
 const STATUS_BG: Record<AnyStatus, string> = {
-  good: "rgba(127,199,122,0.10)", green: "rgba(127,199,122,0.10)",
-  warn: "rgba(230,182,100,0.10)", yellow: "rgba(230,182,100,0.10)",
-  bad: "rgba(224,123,106,0.10)", red: "rgba(224,123,106,0.10)",
+  good:      "rgba(127,199,122,0.10)",
+  green:     "rgba(127,199,122,0.10)",
+  warn:      "rgba(230,182,100,0.10)",
+  yellow:    "rgba(230,182,100,0.10)",
+  bad:       "rgba(224,123,106,0.10)",
+  red:       "rgba(224,123,106,0.10)",
+  untrained: "transparent",
 };
 
 function sc(s: string): string { return STATUS_FG[s as AnyStatus] ?? "var(--fg-3)"; }
@@ -142,6 +147,9 @@ const MOVEMENT_PATTERN_LABELS: Record<string, string> = {
 function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"]; patterns: DisplayAnalysis["patterns"] }) {
   return (
     <div>
+      <div style={{ fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4, marginBottom: 6 }}>
+        Volume-balance heuristics — not injury-risk metrics. Goal-specific programs may diverge intentionally.
+      </div>
       {ratios.map((r) => (
         <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--line)" }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: sc(r.verdict), flexShrink: 0 }} />
@@ -164,11 +172,11 @@ function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"];
               <div key={id} style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 7px",
                 borderRadius: "var(--r-sm, 4px)",
-                background: ok ? sb("good") : sb("warn"),
-                border: `1px solid ${ok ? sc("good") : sc("warn")}`,
+                background: ok ? sb("good") : "var(--bg-2)",
+                border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : sc("warn") }}>{ok ? "✓" : "!"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--warn)" }}>{label}</span>
+                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
@@ -199,11 +207,11 @@ function CoveragePanel({ muscles, patterns }: {
               <div key={id} style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 7px",
                 borderRadius: "var(--r-sm, 4px)",
-                background: ok ? sb("good") : sb("warn"),
-                border: `1px solid ${ok ? sc("good") : sc("warn")}`,
+                background: ok ? sb("good") : "var(--bg-2)",
+                border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : sc("warn") }}>{ok ? "✓" : "!"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--warn)" }}>{label}</span>
+                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
@@ -365,6 +373,13 @@ export function RoutineAnalysisCard({
         </div>
         <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
       </button>
+
+      <div style={{
+        padding: "0 12px 8px", fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4,
+      }}>
+        Calibrated for general &amp; hypertrophy training. Strength, powerlifting &amp; Olympic
+        programs may score low by design — use the AI prompt for goal-aware review.
+      </div>
 
       {/* Chips row — dimension chips + coverage chip */}
       <div style={{ display: "flex", gap: 4, padding: "0 10px 10px", overflowX: "auto" }}>

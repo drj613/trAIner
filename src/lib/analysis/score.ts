@@ -52,12 +52,19 @@ export function scoreBalanceDimension(result: BalanceResult): DimensionScore {
 }
 
 export function scorePeriodizationDimension(result: PeriodizationResult): DimensionScore {
+  // Periodization is scored by explicit conditions below — each issue is penalized
+  // exactly once. The matching warnings (in periodization.ts) are the user-facing
+  // mirror of these conditions, NOT a second deduction, so we do not also count them
+  // here (doing so previously double-counted no-deload/static and over-penalized).
   let score = 100;
-  if (result.weeksDetected <= 1) score -= 30;
-  if (!result.deloadDetected && result.weeksDetected >= 4) score -= 20;
-  if (result.volumePattern === "static" && result.weeksDetected > 1) score -= 20;
-  score -= result.warnings.filter((w) => w.severity === "red").length * 15;
-  score -= result.warnings.filter((w) => w.severity === "yellow").length * 5;
+  if (!result.deloadDetected && !result.peakDetected && result.weeksDetected >= 4) score -= 20;
+  if (
+    result.volumePattern === "static" &&
+    result.weeksDetected > 1 &&
+    result.intensityProgression !== "rising"
+  ) {
+    score -= 20;
+  }
   score = Math.max(0, Math.min(100, score));
   return { name: "Periodization", score, grade: scoreToGrade(score) };
 }

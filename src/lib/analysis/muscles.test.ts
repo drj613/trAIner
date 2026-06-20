@@ -3,7 +3,6 @@ import {
   mapMuscleExpanded,
   parseRepRange,
   repMidpoint,
-  isCompound,
   classifyMovement,
   detectMovementPatterns,
 } from "./muscles";
@@ -75,22 +74,6 @@ describe("repMidpoint", () => {
 
   it("returns the number for single rep", () => {
     expect(repMidpoint("5")).toBe(5);
-  });
-});
-
-describe("isCompound", () => {
-  it("returns true for exercises with compound tag", () => {
-    const mockCatalogItem = { tags: ["compound"], movementPatterns: [] } as any;
-    expect(isCompound(makeExercise(), mockCatalogItem)).toBe(true);
-  });
-
-  it("returns false for exercises with isolation tag", () => {
-    const mockCatalogItem = { tags: ["isolation"], movementPatterns: [] } as any;
-    expect(isCompound(makeExercise(), mockCatalogItem)).toBe(false);
-  });
-
-  it("infers compound from 2+ primary muscles", () => {
-    expect(isCompound(makeExercise({ tags: { primary: ["chest", "triceps"], secondary: [], incidental: [], modifiers: [] } }))).toBe(true);
   });
 });
 
