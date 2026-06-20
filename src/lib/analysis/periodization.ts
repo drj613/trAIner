@@ -55,6 +55,7 @@ function detectIntensityProgression(
   const p1 = weekAvgPct(lastDays);
   if (p0 !== null && p1 !== null) return p1 - p0 >= 5 ? "rising" : "flat";
 
+  // Fallback when loads aren't expressed as %1RM: falling rep midpoints imply rising intensity.
   const r0 = weekAvgReps(firstDays);
   const r1 = weekAvgReps(lastDays);
   if (r0 !== null && r1 !== null) return r0 - r1 >= 2 ? "rising" : "flat";

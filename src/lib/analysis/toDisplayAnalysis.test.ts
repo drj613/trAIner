@@ -120,4 +120,15 @@ describe("toDisplayAnalysis", () => {
     expect(quads?.status).toBe("untrained");
     expect(quads?.flag).toBeUndefined();
   });
+
+  it("volume note denominator counts only trained muscles", () => {
+    const result = analyzeProgram(imbalancedProgram);
+    const d = toDisplayAnalysis(result, 0);
+    const trainedCount = result.muscleVolumes.filter((m) => m.effectiveSets > 0).length;
+    const totalCount = result.muscleVolumes.length;
+    expect(trainedCount).toBeLessThan(totalCount); // sanity: there ARE untrained muscles
+    const volNote = d.dimensions.find((x) => x.id === "volume")?.note ?? "";
+    expect(volNote).toContain(`of ${trainedCount} muscles`);
+    expect(volNote).not.toContain(`of ${totalCount} muscles`);
+  });
 });

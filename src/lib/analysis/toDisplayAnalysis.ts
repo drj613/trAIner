@@ -45,8 +45,12 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
   const dims = result.dimensions;
   const b = result.balance;
 
+  // Only trained muscles are scored (see scoreVolumeDimension), so the note's
+  // numerator AND denominator must exclude untrained (0-set) muscles to stay coherent.
+  const trainedVolumes = result.muscleVolumes.filter((m) => m.effectiveSets > 0);
+
   const dimNotes: Record<string, string> = {
-    volume: `${result.muscleVolumes.filter((m) => m.severity === "green").length} of ${result.muscleVolumes.length} muscles in MAV range`,
+    volume: `${trainedVolumes.filter((m) => m.severity === "green").length} of ${trainedVolumes.length} muscles in MAV range`,
     session: result.sessions.length > 0
       ? `Sessions ${Math.min(...result.sessions.map((s) => s.estimatedMinutes))}–${Math.max(...result.sessions.map((s) => s.estimatedMinutes))} min`
       : "No sessions",
