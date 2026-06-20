@@ -1,6 +1,6 @@
 import { buildLlmAnalysisPrompt } from "./llmPrompt";
 import { balancedProgram } from "./fixtures";
-import type { ProfileDocument } from "@/lib/programs/types";
+import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
 
 const testProfile: ProfileDocument = {
   id: "local-profile",
@@ -42,5 +42,31 @@ describe("buildLlmAnalysisPrompt", () => {
     expect(prompt).toContain("Program Fingerprint");
     expect(prompt).toContain("Volume Analysis");
     expect(prompt).toContain("Balance Assessment");
+  });
+
+  it("includes injuries (not just legacy constraints) in the analysis prompt", () => {
+    const injuryProfile: ProfileDocument = {
+      id: "local-profile",
+      name: "Alex",
+      goals: [],
+      equipment: [],
+      constraints: [],
+      injuries: ["bad shoulder"],
+      preferences: [],
+      trainingAge: "",
+      defaultDaysPerWeek: 4,
+      updatedAt: "2026-01-01",
+    };
+    const program = {
+      id: "p1",
+      title: "Test",
+      source: "manual",
+      active: true,
+      days: [],
+      overrides: [],
+      createdAt: "2026-01-01",
+      updatedAt: "2026-01-01",
+    } as ProgramDocument;
+    expect(buildLlmAnalysisPrompt(program, injuryProfile)).toContain("bad shoulder");
   });
 });

@@ -77,7 +77,8 @@ function formatProfile(profile?: ProfileDocument): string {
   if (profile.defaultDaysPerWeek) lines.push(`- Days per week: ${profile.defaultDaysPerWeek}`);
   if (profile.goals?.length) lines.push(`- Goals: ${profile.goals.join(", ")}`);
   if (profile.equipment?.length) lines.push(`- Equipment: ${profile.equipment.join(", ")}`);
-  if (profile.constraints?.length) lines.push(`- Constraints: ${profile.constraints.join(", ")}`);
+  const limitations = profile.injuries?.length ? profile.injuries : profile.constraints;
+  if (limitations?.length) lines.push(`- Injuries & constraints: ${limitations.join(", ")}`);
   return lines.join("\n");
 }
 
