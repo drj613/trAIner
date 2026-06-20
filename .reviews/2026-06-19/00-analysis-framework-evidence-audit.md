@@ -18,6 +18,22 @@ framework, and (c) confirmed bugs. Read this before touching the analysis engine
 
 ---
 
+> **UPDATE — 2026-06-19 (merge `15c677e`):** The **correctness, honesty & intensity-foundation** subset of
+> this audit's findings is now **shipped on master**. Fixed: grade labeled general/hypertrophy-calibrated;
+> landmark monotonicity guard; single neutral "untrained" state for zero-set muscles; weekly volume by
+> *median* (typical) week not peak; `parseLoad` (%1RM/RPE/RIR/rep-max); **intensity-aware periodization**
+> (peak ≠ deload, rising ≠ static) — so the engine is no longer fully intensity-blind; dropped single-week
+> penalty; informational (neutral) movement-pattern coverage; dead code removed (`llmPrompt.ts`,
+> `isCompound`, `TRAINING_AGE_MULTIPLIER`); de-double-counted periodization scoring; trained-only volume
+> note. **Still open** (deliberately deferred to their own brainstorm + plan): the goal-aware engine
+> (per-goal landmarks/grade, training-style fingerprint, re-wired `trainingAgeMultiplier`), frequency
+> dimension, volume-counting convention, landmark *recalibration* (only the guard shipped, not new values),
+> prompt-builder reconciliation, full periodization↔score dedup. Plan +
+> per-finding mapping: `docs/superpowers/plans/2026-06-19-analysis-engine-correctness.md`. Sections below
+> describe the **pre-fix** state — cross-reference the plan for current status.
+
+---
+
 ## 1. Architecture (as shipped)
 
 Two tiers — a sound product split (`06-prior-art.md`: "diagnostic, not prescriptive"):
