@@ -22,6 +22,15 @@ export function PromptBuilderClient() {
     Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, true])),
   );
   const [schemaOn, setSchemaOn] = useState(true);
+  const [adhocInjuries, setAdhocInjuries] = useState<string[]>([]);
+  const [adhocInput, setAdhocInput] = useState("");
+
+  function addAdhocInjury() {
+    const v = adhocInput.trim();
+    if (!v || adhocInjuries.includes(v)) return;
+    setAdhocInjuries((prev) => [...prev, v]);
+    setAdhocInput("");
+  }
 
   function togglePersona(id: string) {
     setSelectedIds((prev) =>
@@ -37,8 +46,6 @@ export function PromptBuilderClient() {
     () => new Set(Object.entries(fieldOn).filter(([, v]) => v).map(([k]) => k)),
     [fieldOn],
   );
-
-  const adhocInjuries: string[] = []; // TEMP: replaced in B3
 
   const missing = useMemo(
     () =>
@@ -189,6 +196,45 @@ export function PromptBuilderClient() {
               <span className="text-sm flex-1">{f.label}</span>
             </label>
           ))}
+        </div>
+
+        <div className="panel stack" style={{ gap: 6 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Temporary injuries (this prompt only)</span>
+            <span className="tx-mono text-xs muted">ephemeral</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {adhocInjuries.map((item) => (
+              <span
+                key={item}
+                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                style={{ background: "var(--bg-3)", border: "1px solid var(--line)", color: "var(--fg-2)" }}
+              >
+                {item}
+                <button
+                  type="button"
+                  aria-label={`Remove ${item}`}
+                  onClick={() => setAdhocInjuries((prev) => prev.filter((i) => i !== item))}
+                  style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 1px" }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            <input
+              className="input flex-1"
+              style={{ fontSize: 12, padding: "3px 7px" }}
+              value={adhocInput}
+              placeholder="Add a temporary injury…"
+              onChange={(e) => setAdhocInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addAdhocInjury()}
+            />
+            <button type="button" className="button" style={{ fontSize: 11, padding: "2px 8px" }} onClick={addAdhocInjury}>
+              Add
+            </button>
+          </div>
         </div>
 
         <p className="tx-up mb-2 mt-3">Output</p>

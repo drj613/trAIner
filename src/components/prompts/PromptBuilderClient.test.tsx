@@ -82,3 +82,14 @@ describe("PromptBuilderClient nudge", () => {
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });
+
+describe("PromptBuilderClient ad-hoc injuries", () => {
+  it("merges a typed temporary injury into the constraints block", () => {
+    renderBuilder();
+    const input = screen.getByPlaceholderText(/temporary injury/i);
+    fireEvent.change(input, { target: { value: "tweaked lower back" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(screen.getByText(/- tweaked lower back/)).toBeInTheDocument();
+    expect(screen.getByText(/- bad knee/)).toBeInTheDocument(); // profile injury still present
+  });
+});
