@@ -12,7 +12,8 @@ describe("sanitizeJson — individual transforms", () => {
     expect(sanitizeJson('{"a":1}\n\nLet me know if you want changes!')).toBe('{"a":1}');
   });
   it("normalizes typographic quotes", () => {
-    expect(sanitizeJson('{"a":"b"}')).toBe('{"a":"b"}');
+    // curly quotes via \u escapes so the source can't be mangled to ASCII (keeps this test meaningful)
+    expect(sanitizeJson("{\u201Ca\u201D:\u201Cb\u201D}")).toBe('{"a":"b"}');
   });
   it("removes line and block comments", () => {
     // assert via JSON.parse: comment removal leaves incidental whitespace/newlines
@@ -41,7 +42,7 @@ describe("sanitizeJson — string safety", () => {
 
 describe("sanitizeJson — combinations & passthrough", () => {
   it("repairs fences + smart quotes + trailing comma together", () => {
-    const raw = '```json\n{"name":"A", "days":[1,2,],}\n```';
+    const raw = '```json\n{\u201Cname\u201D:\u201CA\u201D, "days":[1,2,],}\n```';
     expect(JSON.parse(sanitizeJson(raw))).toEqual({ name: "A", days: [1, 2] });
   });
   it("leaves already-valid JSON byte-stable", () => {

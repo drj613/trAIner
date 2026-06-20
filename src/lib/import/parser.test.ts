@@ -279,7 +279,7 @@ describe("parseProgramJson sanitizer integration", () => {
   });
 
   it("repairs smart quotes in pasted JSON", () => {
-    const raw = DAY.replace('"title":"A"', "“title”:“A”");
+    const raw = DAY.replace('"title":"A"', "\u201Ctitle\u201D:\u201CA\u201D");
     const { program } = parseProgramJson(raw);
     expect(program.days[0].title).toBe("A");
   });
