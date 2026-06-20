@@ -5,41 +5,22 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
-  buildSchemaBlock,
-  assemblePrompt,
-} from "@/lib/prompts/builder";
-import type { ProfileDocument } from "@/lib/programs/types";
-
-// TODO(prompt-builder-impl): rewire to field registry in next task
-function buildProfileBlock(profile: ProfileDocument): string {
-  return [
-    "## Profile",
-    `Name: ${profile.name}`,
-    `Training age: ${profile.trainingAge ?? "unknown"}`,
-    `Days per week: ${profile.defaultDaysPerWeek ?? "unknown"}`,
-    `Goals: ${profile.goals.join(", ")}`,
-    `Equipment: ${profile.equipment.join(", ")}`,
-  ].join("\n");
-}
-
-function buildConstraintsBlock(profile: ProfileDocument): string {
-  if (!profile.constraints || profile.constraints.length === 0) return "";
-  return ["## Constraints", ...profile.constraints.map((c) => `- ${c}`)].join("\n");
-}
+  buildProfileFieldsBlock,
+  buildConstraintsFieldsBlock,
+  PROFILE_FIELDS,
+} from "@/lib/prompts/profileFields";
+import { buildSchemaBlock, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
-
-type BlockKey = "profile" | "constraints" | "schema";
 
 export function PromptBuilderClient() {
   const { profile, loading } = useLocalData();
 
   const [selectedIds, setSelectedIds] = useState<string[]>(["rp"]);
   const [editedBlocks, setEditedBlocks] = useState<Record<string, string>>({});
-  const [blocks, setBlocks] = useState<Record<BlockKey, boolean>>({
-    profile: true,
-    constraints: true,
-    schema: true,
-  });
+  const [fieldOn, setFieldOn] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, true])),
+  );
+  const [schemaOn, setSchemaOn] = useState(true);
 
   function togglePersona(id: string) {
     setSelectedIds((prev) =>
@@ -47,14 +28,21 @@ export function PromptBuilderClient() {
     );
   }
 
-  function toggleBlock(key: BlockKey) {
-    setBlocks((prev) => ({ ...prev, [key]: !prev[key] }));
+  function toggleField(key: string) {
+    setFieldOn((prev) => ({ ...prev, [key]: !prev[key] }));
   }
+
+  const enabled = useMemo(
+    () => new Set(Object.entries(fieldOn).filter(([, v]) => v).map(([k]) => k)),
+    [fieldOn],
+  );
 
   const selectedPersonas = useMemo(
     () => DEFAULT_PERSONAS.filter((p) => selectedIds.includes(p.id)),
     [selectedIds]
   );
+
+  const adhocInjuries: string[] = []; // TEMP: replaced in B3
 
   const prompt = useMemo(() => {
     const personaBlocks = selectedPersonas.map((p) => {
@@ -68,12 +56,20 @@ export function PromptBuilderClient() {
         : "";
 
     const sectionBlocks: string[] = [];
-    if (blocks.profile && profile) sectionBlocks.push(buildProfileBlock(profile));
-    if (blocks.constraints && profile) sectionBlocks.push(buildConstraintsBlock(profile));
-    if (blocks.schema) sectionBlocks.push(buildSchemaBlock());
+    if (profile) {
+      sectionBlocks.push(buildProfileFieldsBlock(profile, enabled));
+      sectionBlocks.push(
+        buildConstraintsFieldsBlock(
+          profile,
+          enabled,
+          enabled.has("injuries") ? adhocInjuries : [],
+        ),
+      );
+    }
+    if (schemaOn) sectionBlocks.push(buildSchemaBlock());
 
     return assemblePrompt([synthesisBlock, ...personaBlocks, ...sectionBlocks]);
-  }, [selectedPersonas, editedBlocks, blocks, profile]);
+  }, [selectedPersonas, editedBlocks, enabled, schemaOn, profile, adhocInjuries]);
 
   return (
     <div className="stack">
@@ -137,29 +133,46 @@ export function PromptBuilderClient() {
       )}
 
       <section>
-        <p className="tx-up mb-2">Prompt blocks</p>
+        <p className="tx-up mb-2">Profile fields</p>
         <div className="stack">
-          {(
-            [
-              ["profile", "Profile block"],
-              ["constraints", "Constraints block"],
-              ["schema", "Output schema block"],
-            ] as [BlockKey, string][]
-          ).map(([key, label]) => (
-            <label
-              key={key}
-              className="flex items-center gap-3 panel cursor-pointer"
-            >
+          {PROFILE_FIELDS.filter((f) => f.group === "profile").map((f) => (
+            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
               <input
                 type="checkbox"
-                checked={blocks[key]}
-                onChange={() => toggleBlock(key)}
+                checked={fieldOn[f.key]}
+                onChange={() => toggleField(f.key)}
                 className="accent-[var(--accent)]"
               />
-              <span className="text-sm flex-1">{label}</span>
+              <span className="text-sm flex-1">{f.label}</span>
             </label>
           ))}
         </div>
+
+        <p className="tx-up mb-2 mt-3">Constraints</p>
+        <div className="stack">
+          {PROFILE_FIELDS.filter((f) => f.group === "constraints").map((f) => (
+            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
+              <input
+                type="checkbox"
+                checked={fieldOn[f.key]}
+                onChange={() => toggleField(f.key)}
+                className="accent-[var(--accent)]"
+              />
+              <span className="text-sm flex-1">{f.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <p className="tx-up mb-2 mt-3">Output</p>
+        <label className="flex items-center gap-3 panel cursor-pointer">
+          <input
+            type="checkbox"
+            checked={schemaOn}
+            onChange={() => setSchemaOn((v) => !v)}
+            className="accent-[var(--accent)]"
+          />
+          <span className="text-sm flex-1">Output schema block</span>
+        </label>
       </section>
 
       <section>
