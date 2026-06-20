@@ -93,3 +93,12 @@ describe("PromptBuilderClient ad-hoc injuries", () => {
     expect(screen.getByText(/- bad knee/)).toBeInTheDocument(); // profile injury still present
   });
 });
+
+describe("PromptBuilderClient multi-coach synthesis", () => {
+  it("instructs multi-coach prompts to resolve conflicts with explicit rules", () => {
+    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    // rp is selected by default; select a second persona to trigger synthesis
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
+  });
+});
