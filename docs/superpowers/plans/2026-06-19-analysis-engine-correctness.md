@@ -896,13 +896,21 @@ These are the design-heavy items from the audit. They involve product decisions 
 4. **Landmark recalibration.** The evidence-based value changes (biceps MEV down, rear-delt/quad/chest/calf MEVs up) — a scored-impact product decision.
 5. **Prompt-builder reconciliation.** One canonical builder (the richer goal-aware content currently in `LlmAnalysisSheet`'s inline `buildPrompt`), one volume table shared with `thresholds.ts`.
 
-### Follow-ups surfaced during execution (not done here)
+### Follow-ups surfaced during execution
 
-Discovered by the per-task and final code reviews while executing this plan; deliberately left for later:
+Discovered by the per-task and final code reviews while executing this plan.
 
-- **Warning/score double-counting in periodization & balance scoring.** The periodization warning *conditions* (`periodization.ts`) and the score *penalties* (`score.ts`) encode the same predicates in two places, and a "no deload" situation is penalized twice — once by the explicit `-20` and again by the `-5`-per-yellow-warning that the same condition pushed. Pre-existing (Tasks 6/7 only narrowed when the gates fire). Fix: derive penalties from `result.warnings`, or return structured flags that `score.ts` maps without re-deriving conditions. Touches scoring semantics → belongs with the goal-aware/recalibration pass.
-- **Volume dimension note counts untrained muscles in the denominator.** `toDisplayAnalysis.ts` shows "N of {muscleVolumes.length} muscles in MAV range" using the full muscle list, while the volume *score* excludes untrained (`score.ts`). A program training 8 muscles well can read "8 of 19 in MAV range" yet score an A. More visible now that untrained is a first-class state. Fix alongside the goal-aware work (the denominator should reflect intended-to-train muscles).
-- **`detectIntensityProgression` rep-fallback is undocumented.** The pct branch uses `p1 - p0 >= 5` (rising load) while the rep fallback uses `r0 - r1 >= 2` (falling reps = rising intensity); a one-line comment on the rep branch would prevent a future "is this a bug?" read.
+**Resolved in this branch (after the 9 tasks):**
+
+- ✅ **Absent movement-pattern chips no longer use warn styling.** Task 8 made coverage informational in the engine + copy, but the BalancePanel/CoveragePanel chips still painted absent patterns amber. They now mirror the neutral untrained-muscle tokens (`--bg-2` / `--line` / `--fg-4`, `–` glyph); covered patterns stay green. (commit `f68e650`)
+- ✅ **Periodization score double-counting removed.** A no-deload/static condition was charged twice — once by the explicit `-20` and again by the `-5`-per-yellow-warning the same condition pushed. `scorePeriodizationDimension` now scores by its explicit conditions alone (each issue once); the warnings remain the user-facing mirror. Net: no-deload/static 75→80, single-week 95→100 (fully realizing Task 7's "drop the score penalty"), peak 100. Balance/session scoring (correctly warning-driven) untouched. (commit `df8aa47`)
+- ✅ **Volume dimension note counts trained muscles only.** Numerator AND denominator now exclude untrained (0-set) muscles, matching `scoreVolumeDimension`, so the note can't read "8 of 19 in MAV range" next to an A. (commit `df8aa47`)
+- ✅ **`detectIntensityProgression` rep-fallback documented** — comment clarifies falling rep midpoints imply rising intensity. (commit `df8aa47`)
+- ✅ **Periodization dimension note is peak-aware** — reads "Peak week detected" for peaking programs instead of "No deload week present". (commit `f68e650`)
+
+**Still deferred (larger / product-semantics):**
+
+- **Full periodization↔score dedup.** The double-*counting* is fixed, but the conditions still live as parallel `if`s in `periodization.ts` (warnings) and `score.ts` (penalties), both reading the same `PeriodizationResult` flags. A structured "warning carries its own penalty weight" refactor would unify them; not worth a `Warning`-type change now. Revisit with the goal-aware/recalibration pass.
 
 ---
 
