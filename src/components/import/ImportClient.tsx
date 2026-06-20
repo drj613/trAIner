@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Copy, Save } from "lucide-react";
-import { parseProgramJson, type ImportReview } from "@/lib/import/parser";
+import { parseProgramJson, ImportError, type ImportReview } from "@/lib/import/parser";
+import type { RecoveryReason } from "@/lib/import/sanitizeJson";
 import { buildRecoveryPrompt } from "@/lib/prompts/builder";
 import {
   extractUnresolvedExercises,
@@ -27,6 +28,7 @@ export function ImportClient() {
   const [json, setJson] = useState("");
   const [review, setReview] = useState<ImportReview | undefined>();
   const [parseError, setParseError] = useState<string | null>(null);
+  const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("syntax");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
   const [userExercises, setUserExercises] = useState<UserExerciseDocument[]>([]);
@@ -71,7 +73,13 @@ export function ImportClient() {
         setStep("confirm");
       }
     } catch (err) {
-      setParseError(err instanceof Error ? err.message : "Parse error");
+      if (err instanceof ImportError) {
+        setRecoveryReason(err.reason);
+        setParseError(err.message);
+      } else {
+        setRecoveryReason("syntax");
+        setParseError(err instanceof Error ? err.message : "Parse error");
+      }
     }
   }
 
@@ -151,7 +159,7 @@ export function ImportClient() {
               type="button"
               className="button secondary"
               onClick={() => {
-                const prompt = buildRecoveryPrompt(parseError);
+                const prompt = buildRecoveryPrompt(recoveryReason, parseError ?? undefined);
                 void navigator.clipboard.writeText(prompt).catch(() => {});
               }}
             >
