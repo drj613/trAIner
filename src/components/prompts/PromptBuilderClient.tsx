@@ -8,6 +8,7 @@ import {
   buildProfileFieldsBlock,
   buildConstraintsFieldsBlock,
   PROFILE_FIELDS,
+  missingImportantFields,
 } from "@/lib/prompts/profileFields";
 import { buildSchemaBlock, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
@@ -37,12 +38,20 @@ export function PromptBuilderClient() {
     [fieldOn],
   );
 
+  const adhocInjuries: string[] = []; // TEMP: replaced in B3
+
+  const missing = useMemo(
+    () =>
+      profile
+        ? missingImportantFields(profile, enabled, enabled.has("injuries") ? adhocInjuries : [])
+        : [],
+    [profile, enabled, adhocInjuries],
+  );
+
   const selectedPersonas = useMemo(
     () => DEFAULT_PERSONAS.filter((p) => selectedIds.includes(p.id)),
     [selectedIds]
   );
-
-  const adhocInjuries: string[] = []; // TEMP: replaced in B3
 
   const prompt = useMemo(() => {
     const personaBlocks = selectedPersonas.map((p) => {
@@ -132,6 +141,25 @@ export function PromptBuilderClient() {
         </section>
       )}
 
+      {missing.length > 0 && (
+        <div
+          role="note"
+          style={{
+            padding: "10px 14px",
+            background: "color-mix(in srgb, var(--warn, #e6b664) 12%, var(--bg-2))",
+            border: "1px solid var(--warn, #e6b664)",
+            borderRadius: "var(--r, 6px)",
+            fontSize: 13,
+            color: "var(--fg)",
+            lineHeight: 1.5,
+          }}
+        >
+          Not yet in your prompt: {missing.map((f) => f.label).join(", ")}.{" "}
+          <Link to="/profile" style={{ color: "var(--accent)", fontWeight: 600 }}>
+            Add in Profile →
+          </Link>
+        </div>
+      )}
       <section>
         <p className="tx-up mb-2">Profile fields</p>
         <div className="stack">

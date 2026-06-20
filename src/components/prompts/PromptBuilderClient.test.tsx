@@ -65,3 +65,20 @@ describe("PromptBuilderClient field toggles", () => {
     expect(screen.queryByText(/Goals: Hypertrophy/)).not.toBeInTheDocument();
   });
 });
+
+describe("PromptBuilderClient nudge", () => {
+  it("nudges when an enabled important field is empty", () => {
+    mockProfile = { ...mockProfile!, injuries: [], schedule: [] };
+    renderBuilder();
+    const nudge = screen.getByRole("note");
+    expect(nudge).toHaveTextContent(/Injuries/);
+    expect(nudge).toHaveTextContent(/Schedule/);
+    expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile");
+  });
+
+  it("does not nudge when important fields are filled", () => {
+    mockProfile = { ...mockProfile!, schedule: ["Mon/Wed/Fri"] }; // injuries already set in beforeEach
+    renderBuilder();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});
