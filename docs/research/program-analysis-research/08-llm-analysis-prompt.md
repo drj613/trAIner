@@ -1,5 +1,7 @@
 # LLM Analysis Prompt — Conversational Routine Analysis
 
+> ⚠️ **Status (2026-06-19): this describes DESIGN INTENT, not the shipped engine.** The "Building the Prompt in JS" code here documents the DELETED `llmPrompt.ts`. The live builder is the inline `buildPrompt(analysis: DisplayAnalysis, programTitle)` in `src/components/analysis/LlmAnalysisSheet.tsx`, which takes the already-computed DisplayAnalysis (not raw program/catalog/profile) and does no template substitution. Shipped behavior + the design-vs-shipped delta: see `.reviews/2026-06-19/00-analysis-framework-evidence-audit.md`.
+
 ## Concept
 
 Two-tier analysis system:
@@ -245,5 +247,5 @@ Optionally, display the prompt in a modal with a textarea (like the existing pro
 ## Sources
 
 - All research from files 01-07 in this directory
-- Existing prompt builder pattern: `src/lib/prompts/builder.ts`
-- Existing prompt builder UI: `src/components/prompts/PromptBuilderClient.tsx`
+- Existing prompt builder pattern: `src/lib/prompts/builder.ts` *(this is the **workout-generation** prompt builder, NOT the analysis-prompt builder — the analysis prompt lives in `LlmAnalysisSheet.tsx`)*
+- Existing prompt builder UI: `src/components/prompts/PromptBuilderClient.tsx` *(workout-generation UI, not analysis)*

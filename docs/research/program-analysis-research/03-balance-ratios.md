@@ -95,6 +95,8 @@ A balanced program should cover all fundamental movement patterns weekly:
 
 Note: Carry/loaded movement is the 7th pattern and is beneficial but not essential. The 6 core patterns are the two pushes, two pulls, hinge, and squat.
 
+*Note: in the shipped engine, missing movement patterns are INFORMATIONAL only — `balance.ts` emits no severity warning for them.*
+
 ## Compound:Isolation Ratio
 
 ### Research-Based Targets by Goal
@@ -115,7 +117,7 @@ Use `tags` on exercises:
 
 ### Scoring
 
-Score relative to the inferred goal (see `04-goal-signatures.md`). If the goal can't be inferred, use the intermediate hypertrophy targets as default.
+Score relative to the inferred goal (see `04-goal-signatures.md`). If the goal can't be inferred, use the intermediate hypertrophy targets as default. *(not implemented — shipped balance.ts computes no compound:isolation ratio and no goal inference)*
 
 ## Joint Health Indicators
 

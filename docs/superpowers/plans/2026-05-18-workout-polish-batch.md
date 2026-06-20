@@ -1,5 +1,7 @@
 # Workout Polish Batch Implementation Plan
 
+> **Shipped 2026-05; retained as a historical record.** ⚠️ Some "current-state", file-path, or DB-version references below are now outdated: `appDb.ts` is now at DB_VERSION=7 (this plan describes the v3→v4 bodyweight migration); `WorkoutLogEntry.notes` now EXISTS in `src/lib/programs/types.ts`; and the workout logic these tasks direct at `TodayClient.tsx` has since moved to `WorkoutDayClient.tsx` (2026-05-22 navigation refactor). See current code for the present state.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship eight polish improvements to the workout flow: clearer supersets on the routine view, auto-save during a workout, editable session notes, in-place exercise editing on Today, Android keyboard fix in the catalogue sheets, verified routine-day progression, bodyweight tracking with a profile trend, and a rest timer driven by exercise notes.

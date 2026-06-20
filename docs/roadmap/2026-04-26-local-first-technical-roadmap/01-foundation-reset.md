@@ -1,5 +1,7 @@
 # Phase 1: Foundation Reset
 
+> **Status (2026-06): Phase 1 is COMPLETE — all five epics shipped as of 2026-05.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 ## Objective
 
 Reshape the current prototype into a maintainable technical base for the local-first workout workspace. This phase reduces architectural drag before deeper feature work compounds it.

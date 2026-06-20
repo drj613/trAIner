@@ -26,7 +26,7 @@ standalone dataset. See [NOTICE](NOTICE) for details.
 
 - Go to **Today** to see the routine scheduled for the current day.
 - Tap any set to log reps and weight. The app tracks your history across sessions.
-- **History** shows a full log of past workouts. **Profile** shows a training heatmap and per-muscle volume breakdown.
+- **History** shows a full log of past workouts. **Profile** shows the training heatmap and bodyweight history.
 
 ### Your data stays on your device
 

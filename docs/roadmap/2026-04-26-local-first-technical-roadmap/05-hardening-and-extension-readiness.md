@@ -1,5 +1,7 @@
 # Phase 5: Hardening and Extension Readiness
 
+> **Status (2026-06): Phase 5 largely shipped as of 2026-06 — Epics 21 (PWA), 22 (tests), 23 (fixtures/sample data), 25 (analytics seam) have implementations; Epic 24 (mobile performance/density pass) remains aspirational.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 ## Objective
 
 Make the app trustworthy in real use and structurally ready for future capabilities without prematurely implementing those future capabilities now.

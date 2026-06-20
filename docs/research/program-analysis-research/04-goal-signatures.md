@@ -1,5 +1,7 @@
 # Goal Inference from Routine Structure
 
+> ⚠️ **Status (2026-06-19): this describes DESIGN INTENT, not the shipped engine.** Goal inference / training-style fingerprinting was never implemented; the engine reads no user goal and the DisplayAnalysis fingerprint is a session-count placeholder. Shipped behavior + the design-vs-shipped delta: see `.reviews/2026-06-19/00-analysis-framework-evidence-audit.md`.
+
 ## Why Infer?
 
 User goals in the profile are free-text strings that can be anything ("I want to do handstands!", "feel better", "look good naked"). These are valuable for AI prompt generation but unreliable for programmatic alignment. Instead, the algorithm infers the *actual* training goal from the routine's structural fingerprint.

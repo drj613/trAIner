@@ -1,5 +1,7 @@
 # Phase 4: History, Overrides, and Power-User Control
 
+> **Status (2026-06): Phase 4 is COMPLETE — all five epics shipped as of 2026-05.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 ## Objective
 
 Add the long-term workflows that make the app useful beyond day-one logging: historical review, scoped program changes, replacement review, workspace exploration, and local control over data.

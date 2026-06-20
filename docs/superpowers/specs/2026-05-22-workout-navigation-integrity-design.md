@@ -1,5 +1,7 @@
 # Workout Navigation, Skip/Note, and Data Integrity
 
+> **Shipped 2026-05; retained as a historical record.** ⚠️ Some "current-state", file-path, or DB-version references below are now outdated: IDB is now at DB_VERSION=7; this spec's 'bump to v6' shipped as stated but a v7 migration (`performedDate` backfill + phantom-log cleanup) was added afterward. The navigation/edit-surface and race-fix/dedup designs described here are shipped. See current code for the present state.
+
 **Date:** 2026-05-22  
 **Status:** Approved
 

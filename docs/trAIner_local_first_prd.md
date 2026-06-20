@@ -53,6 +53,8 @@ The following are explicitly out of scope for this product:
 - gamification, avatars, or challenges
 - exercise video hosting
 - advanced analytics for v1
+
+> Note (2026-06): A hypertrophy-calibrated analysis engine was delivered post-PRD and has since shipped. See `docs/superpowers/plans/2026-06-19-analysis-engine-correctness.md`.
 - hosted SaaS deployment
 
 ## 4. Product Model
@@ -498,6 +500,8 @@ The app must:
 - billing
 - multi-user support
 - advanced analytics engine
+
+> Note (2026-06): A hypertrophy-calibrated analysis engine was delivered post-PRD and has since shipped. See `docs/superpowers/plans/2026-06-19-analysis-engine-correctness.md`.
 - social features
 - gamification
 - public SaaS deployment

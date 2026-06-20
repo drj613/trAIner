@@ -1,10 +1,12 @@
 # Local-First Technical Roadmap
 
+> **Status (2026-06): Phases 1–4 shipped (Epics 6–21) and most of Phase 5 (Epics 22, 23, 25); Epic 24 (mobile performance pass) remains aspirational. Epic numbers below are the original backlog.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 Date: 2026-04-26
 
 ## Purpose
 
-This roadmap defines the technical backlog required to evolve `trAIner` from its current local-first v1 prototype into a durable, high-density workout workspace that matches the product direction in [trAIner_local_first_prd.md](/home/dj/code/trAIner/docs/trAIner_local_first_prd.md) and the current mockup set in [docs/mockups](/home/dj/code/trAIner/docs/mockups).
+This roadmap defines the technical backlog required to evolve `trAIner` from its current local-first v1 prototype into a durable, high-density workout workspace that matches the product direction in [trAIner_local_first_prd.md](../trAIner_local_first_prd.md).
 
 The roadmap is intentionally phase-based and epic-sized:
 

@@ -46,7 +46,7 @@ From program structure:
 From user profile:
 - `trainingAge` (beginner, intermediate, advanced)
 - `defaultDaysPerWeek`
-- `goals` (free text — used for fingerprinting, not scoring)
+- `goals` (free text — used for fingerprinting, not scoring) *(not yet wired — engine reads no user profile)*
 - `equipment` and `constraints`
 
 ## Algorithm Dimensions
@@ -58,7 +58,7 @@ See individual research files for deep dives on each:
 | Volume adequacy | `01-volume-landmarks.md` | Sets/muscle/week against MEV-MAV-MRV thresholds |
 | Session structure | `02-session-constraints.md` | Exercise count, total sets, estimated duration, per-session muscle caps |
 | Balance | `03-balance-ratios.md` | Push:pull, upper:lower, anterior:posterior, movement pattern coverage |
-| Goal inference | `04-goal-signatures.md` | Structural fingerprint → probable training goal |
+| Goal inference | `04-goal-signatures.md` | Structural fingerprint → probable training goal | *(design intent — not shipped; engine scores only volume/session/balance/periodization)*
 | Scoring thresholds | `05-scoring-thresholds.md` | Concrete green/yellow/red thresholds for each metric |
 | Prior art | `06-prior-art.md` | How existing apps and research approach routine analysis |
 | Visualization | `07-visualization.md` | UI approaches for presenting analysis results |

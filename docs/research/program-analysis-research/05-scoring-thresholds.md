@@ -96,6 +96,7 @@ const trainingAgeMultiplier = {
   beginner:     0.7,   // expects ~70% of intermediate volume
   intermediate: 1.0,   // baseline
   advanced:     1.25,  // expects ~125% of intermediate volume
+  // NOT IMPLEMENTED — engine uses flat thresholds regardless of training age (TRAINING_AGE_MULTIPLIER was removed)
 };
 
 // Apply: adjusted_threshold = base_threshold * multiplier
@@ -190,6 +191,7 @@ const frequencyPerMuscle = {
   green:      { min: 1.5, max: 4.0, label: "Good frequency" },
   yellow_high:{ min: 4.0, max: 6.0, label: "Very high — acceptable for small muscles" },
   red_high:   { min: 6.0, label: "Excessive" },
+  // NOT IMPLEMENTED — there is no frequency dimension in the shipped engine
 };
 ```
 
@@ -218,6 +220,7 @@ const periodizationFlags = {
 Weighted average of dimension scores:
 
 ```js
+// DESIGN INTENT (not shipped) — original 5-dimension weights including goal_coherence:
 const dimensionWeights = {
   volume_adequacy:     0.30,  // Are muscles getting enough/not too much?
   session_structure:   0.20,  // Are sessions reasonable?
@@ -225,6 +228,13 @@ const dimensionWeights = {
   goal_coherence:      0.15,  // Does the structure match its inferred goal?
   periodization:       0.10,  // Multi-week structure quality
 };
+
+// ACTUAL SHIPPED weights from thresholds.ts DIMENSION_WEIGHTS (4 dimensions, no goal_coherence):
+// volume:      0.353
+// session:     0.235
+// balance:     0.294
+// periodization: 0.118
+// goal_coherence dimension was never implemented and does not exist in the shipped engine.
 ```
 
 Each dimension scored 0-100:

@@ -1,5 +1,7 @@
 # Phase 2: Core Workout Workspace
 
+> **Status (2026-06): Phase 2 is COMPLETE — all five epics shipped as of 2026-05.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 ## Objective
 
 Deliver the central user experience: opening the app, understanding today's workout instantly, making quick edits, and logging performance faster than a spreadsheet on a phone.

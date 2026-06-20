@@ -1,5 +1,7 @@
 # Workout Fixes Design — 2026-05-26
 
+> **Shipped 2026-05; retained as a historical record.** ⚠️ Some "current-state", file-path, or DB-version references below are now outdated: All three fixes shipped. ⚠️ The 'Problem' sections describe bugs that are now FIXED — `logRepo.getForDay` now uses `logLocalDate` (not a `performedAt` prefix); `WorkoutDayClient.saveCells` now persists `canonicalExerciseId`; `RestTimer` now uses editing/draft state. The cited line numbers no longer point at the buggy code. See current code for the present state.
+
 Three small fixes to workout-day UX:
 
 1. **Finish button on a completed day** — disable to prevent duplicate log creation.

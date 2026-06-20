@@ -1,5 +1,7 @@
 # Phase 3: Import, Prompting, and Program Shaping
 
+> **Status (2026-06): Phase 3 is COMPLETE — all five epics shipped as of 2026-05.** This roadmap is retained as the original plan; see `src/` for current implementation.
+
 ## Objective
 
 Make the external-LLM workflow reliable from prompt construction through import, normalization, review, and acceptance into the local workspace.
