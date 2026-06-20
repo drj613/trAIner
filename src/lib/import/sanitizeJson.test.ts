@@ -55,6 +55,9 @@ describe("parseLooseJson", () => {
     const r = parseLooseJson('```json\n{"a":1,}\n```');
     expect(r).toEqual({ ok: true, value: { a: 1 } });
   });
+  it("returns ok with the parsed value for already-valid JSON", () => {
+    expect(parseLooseJson('{"a":1,"b":[2,3]}')).toEqual({ ok: true, value: { a: 1, b: [2, 3] } });
+  });
   it("classifies empty input", () => {
     expect(parseLooseJson("   ")).toEqual({ ok: false, reason: "empty" });
   });
