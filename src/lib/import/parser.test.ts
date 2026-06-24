@@ -1,5 +1,5 @@
 import example from "@/test/fixtures/example-structure.json";
-import { normalizePayload, parseProgramJson } from "./parser";
+import { normalizePayload, parseProgramJson, ImportError } from "./parser";
 
 const minimalDay = (day: number, title: string) => ({
   day,
@@ -267,5 +267,38 @@ describe("parseProgramJson error messages", () => {
     });
     const review = parseProgramJson(wrapped);
     expect(review.program.title).toBe("Preamble Test");
+  });
+});
+
+const DAY = '{"days":[{"title":"A","sections":[{"name":"Main","type":"strength","groups":[{"type":"single","exercises":[{"name":"Squat","sets":3,"reps":"5"}]}]}]}]}';
+
+describe("parseProgramJson sanitizer integration", () => {
+  it("imports JSON that has trailing prose after the closing brace", () => {
+    const { program } = parseProgramJson(`${DAY}\n\nLet me know if you want tweaks!`);
+    expect(program.days.length).toBe(1);
+  });
+
+  it("repairs smart quotes in pasted JSON", () => {
+    const raw = DAY.replace('"title":"A"', "\u201Ctitle\u201D:\u201CA\u201D");
+    const { program } = parseProgramJson(raw);
+    expect(program.days[0].title).toBe("A");
+  });
+
+  it("throws ImportError with reason 'truncated' for cut-off JSON", () => {
+    expect.assertions(2);
+    try {
+      parseProgramJson('{"days":[{"title":"A"');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ImportError);
+      expect((e as ImportError).reason).toBe("truncated");
+    }
+  });
+
+  it("throws ImportError with reason 'no-days' when days are missing", () => {
+    try {
+      parseProgramJson('{"title":"Empty"}');
+    } catch (e) {
+      expect((e as ImportError).reason).toBe("no-days");
+    }
   });
 });

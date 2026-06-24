@@ -5,25 +5,32 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
-  buildProfileBlock,
-  buildConstraintsBlock,
-  buildSchemaBlock,
-  assemblePrompt,
-} from "@/lib/prompts/builder";
+  buildProfileFieldsBlock,
+  buildConstraintsFieldsBlock,
+  PROFILE_FIELDS,
+  missingImportantFields,
+} from "@/lib/prompts/profileFields";
+import { buildSchemaBlock, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
-
-type BlockKey = "profile" | "constraints" | "schema";
 
 export function PromptBuilderClient() {
   const { profile, loading } = useLocalData();
 
   const [selectedIds, setSelectedIds] = useState<string[]>(["rp"]);
   const [editedBlocks, setEditedBlocks] = useState<Record<string, string>>({});
-  const [blocks, setBlocks] = useState<Record<BlockKey, boolean>>({
-    profile: true,
-    constraints: true,
-    schema: true,
-  });
+  const [fieldOn, setFieldOn] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, true])),
+  );
+  const [schemaOn, setSchemaOn] = useState(true);
+  const [adhocInjuries, setAdhocInjuries] = useState<string[]>([]);
+  const [adhocInput, setAdhocInput] = useState("");
+
+  function addAdhocInjury() {
+    const v = adhocInput.trim();
+    if (!v || adhocInjuries.includes(v)) return;
+    setAdhocInjuries((prev) => [...prev, v]);
+    setAdhocInput("");
+  }
 
   function togglePersona(id: string) {
     setSelectedIds((prev) =>
@@ -31,9 +38,22 @@ export function PromptBuilderClient() {
     );
   }
 
-  function toggleBlock(key: BlockKey) {
-    setBlocks((prev) => ({ ...prev, [key]: !prev[key] }));
+  function toggleField(key: string) {
+    setFieldOn((prev) => ({ ...prev, [key]: !prev[key] }));
   }
+
+  const enabled = useMemo(
+    () => new Set(Object.entries(fieldOn).filter(([, v]) => v).map(([k]) => k)),
+    [fieldOn],
+  );
+
+  const missing = useMemo(
+    () =>
+      profile
+        ? missingImportantFields(profile, enabled, enabled.has("injuries") ? adhocInjuries : [])
+        : [],
+    [profile, enabled, adhocInjuries],
+  );
 
   const selectedPersonas = useMemo(
     () => DEFAULT_PERSONAS.filter((p) => selectedIds.includes(p.id)),
@@ -48,16 +68,24 @@ export function PromptBuilderClient() {
 
     const synthesisBlock =
       selectedPersonas.length > 1
-        ? `## Multi-Coach Synthesis\n\nYou are drawing on the combined expertise of ${selectedPersonas.length} coaches: ${selectedPersonas.map((p) => p.name).join(", ")}.\n\nWhen the athlete asks for a program or any significant programming decision, do not immediately produce a complete routine. Follow this two-step process:\n\n**Step 1 — Surface perspectives and tradeoffs.** Present each coach's position on the key programming variables at stake — volume, frequency, intensity, exercise selection, periodization structure. Where the coaches agree, note the consensus. Where they diverge, name the tradeoff clearly: what the athlete gains and gives up with each approach. Then invite the athlete to weigh in before committing to a final direction.\n\n**Step 2 — Synthesize a recommended approach.** Once the athlete has clarified their priorities, describe the integrated program you would build — in plain prose, not JSON. Explain how each coach's methodology shows up where its strengths are most relevant, rather than a watered-down average. Keep refining with the athlete as long as they have questions.\n\n**Step 3 — Emit the routine.** Only when the athlete types \`GENERATE IT\` (all caps) do you produce the JSON routine, following the Output mode rules below. Do not emit JSON before this trigger, even if Step 2 feels finalized.\n\nFor conversational questions that do not require a full program, respond directly while attributing perspectives by coach name wherever the methodologies meaningfully differ.`
+        ? `## Multi-Coach Synthesis\n\nYou are drawing on the combined expertise of ${selectedPersonas.length} coaches: ${selectedPersonas.map((p) => p.name).join(", ")}.\n\nWhen the athlete asks for a program or any significant programming decision, do not immediately produce a complete routine. Follow this two-step process:\n\n**Step 1 — Surface perspectives and tradeoffs.** Present each coach's position on the key programming variables at stake — volume, frequency, intensity, exercise selection, periodization structure. Where the coaches agree, note the consensus. Where they diverge, name the tradeoff clearly: what the athlete gains and gives up with each approach. Then invite the athlete to weigh in before committing to a final direction.\n\n**Step 2 — Synthesize a recommended approach.** Once the athlete has clarified their priorities, describe the integrated program you would build — in plain prose, not JSON. Explain how each coach's methodology shows up where its strengths are most relevant. Where two coaches genuinely conflict (e.g. hypertrophy volume vs. powerlifting recovery), resolve each conflict with an explicit rule rather than averaging them or splitting the difference. Keep refining with the athlete as long as they have questions.\n\n**Step 3 — Emit the routine.** Only when the athlete types \`GENERATE IT\` (all caps) do you produce the JSON routine, following the Output mode rules below. Do not emit JSON before this trigger, even if Step 2 feels finalized.\n\nFor conversational questions that do not require a full program, respond directly while attributing perspectives by coach name wherever the methodologies meaningfully differ.`
         : "";
 
     const sectionBlocks: string[] = [];
-    if (blocks.profile && profile) sectionBlocks.push(buildProfileBlock(profile));
-    if (blocks.constraints && profile) sectionBlocks.push(buildConstraintsBlock(profile));
-    if (blocks.schema) sectionBlocks.push(buildSchemaBlock());
+    if (profile) {
+      sectionBlocks.push(buildProfileFieldsBlock(profile, enabled));
+      sectionBlocks.push(
+        buildConstraintsFieldsBlock(
+          profile,
+          enabled,
+          enabled.has("injuries") ? adhocInjuries : [],
+        ),
+      );
+    }
+    if (schemaOn) sectionBlocks.push(buildSchemaBlock());
 
     return assemblePrompt([synthesisBlock, ...personaBlocks, ...sectionBlocks]);
-  }, [selectedPersonas, editedBlocks, blocks, profile]);
+  }, [selectedPersonas, editedBlocks, enabled, schemaOn, profile, adhocInjuries]);
 
   return (
     <div className="stack">
@@ -120,30 +148,105 @@ export function PromptBuilderClient() {
         </section>
       )}
 
+      {missing.length > 0 && (
+        <div
+          role="note"
+          style={{
+            padding: "10px 14px",
+            background: "color-mix(in srgb, var(--warn, #e6b664) 12%, var(--bg-2))",
+            border: "1px solid var(--warn, #e6b664)",
+            borderRadius: "var(--r, 6px)",
+            fontSize: 13,
+            color: "var(--fg)",
+            lineHeight: 1.5,
+          }}
+        >
+          Not yet in your prompt: {missing.map((f) => f.label).join(", ")}.{" "}
+          <Link to="/profile" style={{ color: "var(--accent)", fontWeight: 600 }}>
+            Add in Profile →
+          </Link>
+        </div>
+      )}
       <section>
-        <p className="tx-up mb-2">Prompt blocks</p>
+        <p className="tx-up mb-2">Profile fields</p>
         <div className="stack">
-          {(
-            [
-              ["profile", "Profile block"],
-              ["constraints", "Constraints block"],
-              ["schema", "Output schema block"],
-            ] as [BlockKey, string][]
-          ).map(([key, label]) => (
-            <label
-              key={key}
-              className="flex items-center gap-3 panel cursor-pointer"
-            >
+          {PROFILE_FIELDS.filter((f) => f.group === "profile").map((f) => (
+            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
               <input
                 type="checkbox"
-                checked={blocks[key]}
-                onChange={() => toggleBlock(key)}
+                checked={fieldOn[f.key]}
+                onChange={() => toggleField(f.key)}
                 className="accent-[var(--accent)]"
               />
-              <span className="text-sm flex-1">{label}</span>
+              <span className="text-sm flex-1">{f.label}</span>
             </label>
           ))}
         </div>
+
+        <p className="tx-up mb-2 mt-3">Constraints</p>
+        <div className="stack">
+          {PROFILE_FIELDS.filter((f) => f.group === "constraints").map((f) => (
+            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
+              <input
+                type="checkbox"
+                checked={fieldOn[f.key]}
+                onChange={() => toggleField(f.key)}
+                className="accent-[var(--accent)]"
+              />
+              <span className="text-sm flex-1">{f.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="panel stack" style={{ gap: 6 }}>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Temporary injuries (this prompt only)</span>
+            <span className="tx-mono text-xs muted">ephemeral</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {adhocInjuries.map((item) => (
+              <span
+                key={item}
+                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                style={{ background: "var(--bg-3)", border: "1px solid var(--line)", color: "var(--fg-2)" }}
+              >
+                {item}
+                <button
+                  type="button"
+                  aria-label={`Remove ${item}`}
+                  onClick={() => setAdhocInjuries((prev) => prev.filter((i) => i !== item))}
+                  style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 1px" }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            <input
+              className="input flex-1"
+              style={{ fontSize: 12, padding: "3px 7px" }}
+              value={adhocInput}
+              placeholder="Add a temporary injury…"
+              onChange={(e) => setAdhocInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addAdhocInjury()}
+            />
+            <button type="button" className="button" style={{ fontSize: 11, padding: "2px 8px" }} onClick={addAdhocInjury}>
+              Add
+            </button>
+          </div>
+        </div>
+
+        <p className="tx-up mb-2 mt-3">Output</p>
+        <label className="flex items-center gap-3 panel cursor-pointer">
+          <input
+            type="checkbox"
+            checked={schemaOn}
+            onChange={() => setSchemaOn((v) => !v)}
+            className="accent-[var(--accent)]"
+          />
+          <span className="text-sm flex-1">Output schema block</span>
+        </label>
       </section>
 
       <section>

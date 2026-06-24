@@ -1,9 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PromptBuilderClient } from "./PromptBuilderClient";
-import type { ProfileDocument } from "@/lib/storage/schema";
+import type { ProfileDocument } from "@/lib/programs/types";
 
-let mockProfile: ProfileDocument | undefined = undefined;
+let mockProfile: ProfileDocument | undefined;
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
   useLocalData: () => ({
@@ -16,19 +16,89 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
 }));
 
 beforeEach(() => {
-  mockProfile = undefined;
+  mockProfile = {
+    id: "local-profile",
+    name: "Alex",
+    goals: ["Hypertrophy"],
+    equipment: ["Full gym"],
+    constraints: [],
+    injuries: ["bad knee"],
+    preferences: [],
+    trainingAge: "5 years",
+    defaultDaysPerWeek: 4,
+    updatedAt: "2026-01-01",
+  };
 });
 
-describe("PromptBuilderClient", () => {
+function renderBuilder() {
+  return render(
+    <MemoryRouter>
+      <PromptBuilderClient />
+    </MemoryRouter>,
+  );
+}
+
+describe("PromptBuilderClient no-profile warning", () => {
   it("shows a no-profile warning when profile is undefined", () => {
-    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    mockProfile = undefined;
+    renderBuilder();
     expect(screen.getByText(/no profile found/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile");
   });
 
   it("does not show the warning when a profile exists", () => {
-    mockProfile = { id: "local-profile", name: "Alex", goals: [], equipment: [], constraints: [], injuries: [], preferences: [], trainingAge: "", defaultDaysPerWeek: 4, updatedAt: "2026-01-01T00:00:00.000Z" };
-    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    renderBuilder();
     expect(screen.queryByText(/no profile found/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("PromptBuilderClient field toggles", () => {
+  it("includes enabled profile fields in the generated prompt", () => {
+    renderBuilder();
+    expect(screen.getByText(/Goals: Hypertrophy/)).toBeInTheDocument();
+    expect(screen.getByText(/- bad knee/)).toBeInTheDocument();
+  });
+
+  it("removes a field's text when its toggle is switched off", () => {
+    renderBuilder();
+    fireEvent.click(screen.getByLabelText("Goals"));
+    expect(screen.queryByText(/Goals: Hypertrophy/)).not.toBeInTheDocument();
+  });
+});
+
+describe("PromptBuilderClient nudge", () => {
+  it("nudges when an enabled important field is empty", () => {
+    mockProfile = { ...mockProfile!, injuries: [], schedule: [] };
+    renderBuilder();
+    const nudge = screen.getByRole("note");
+    expect(nudge).toHaveTextContent(/Injuries/);
+    expect(nudge).toHaveTextContent(/Schedule/);
+    expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile");
+  });
+
+  it("does not nudge when important fields are filled", () => {
+    mockProfile = { ...mockProfile!, schedule: ["Mon/Wed/Fri"] }; // injuries already set in beforeEach
+    renderBuilder();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});
+
+describe("PromptBuilderClient ad-hoc injuries", () => {
+  it("merges a typed temporary injury into the constraints block", () => {
+    renderBuilder();
+    const input = screen.getByPlaceholderText(/temporary injury/i);
+    fireEvent.change(input, { target: { value: "tweaked lower back" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(screen.getByText(/- tweaked lower back/)).toBeInTheDocument();
+    expect(screen.getByText(/- bad knee/)).toBeInTheDocument(); // profile injury still present
+  });
+});
+
+describe("PromptBuilderClient multi-coach synthesis", () => {
+  it("instructs multi-coach prompts to resolve conflicts with explicit rules", () => {
+    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    // rp is selected by default; select a second persona to trigger synthesis
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
   });
 });

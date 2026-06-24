@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Check, Copy, X } from "lucide-react";
+import { parseLooseJson } from "@/lib/import/sanitizeJson";
 import { normalizePayload } from "@/lib/import/parser";
 import { remapExerciseIds } from "@/lib/workout/programDiff";
 import { useFocusTrap } from "@/lib/workout/useFocusTrap";
@@ -75,13 +76,16 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
 
   function handleApply() {
     setError(null);
-    let raw: unknown;
-    try {
-      raw = JSON.parse(json.trim());
-    } catch {
-      setError("Invalid JSON — paste the full output from your AI assistant.");
+    const result = parseLooseJson(json);
+    if (!result.ok) {
+      setError(
+        result.reason === "truncated"
+          ? "The pasted JSON looks cut off — paste the full output from your AI assistant."
+          : "Invalid JSON — paste the full output from your AI assistant.",
+      );
       return;
     }
+    const raw = result.value;
 
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
       setError("The pasted JSON must be an object.");

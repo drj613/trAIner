@@ -1,22 +1,4 @@
-import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
-
-export function buildProfileBlock(profile: ProfileDocument): string {
-  const lines = [
-    "## Profile",
-    `Name: ${profile.name}`,
-    `Training age: ${profile.trainingAge ?? "unknown"}`,
-    `Days per week: ${profile.defaultDaysPerWeek ?? "unknown"}`,
-    `Goals: ${profile.goals.join(", ")}`,
-    `Equipment: ${profile.equipment.join(", ")}`,
-  ];
-  return lines.join("\n");
-}
-
-export function buildConstraintsBlock(profile: ProfileDocument): string {
-  if (!profile.constraints || profile.constraints.length === 0) return "";
-  const lines = ["## Constraints", ...profile.constraints.map((c) => `- ${c}`)];
-  return lines.join("\n");
-}
+import type { RecoveryReason } from "@/lib/import/sanitizeJson";
 
 export function buildSchemaBlock(): string {
   const exDay = {
@@ -98,16 +80,32 @@ For programs longer than one week:
 - \`overrides\` lists only the weeks that deviate (e.g. deload week, peak week, test week). Weeks without an override automatically repeat the base template.
 - Omit \`weeks\` and \`overrides\` for single-week programs.`;
 
+  const programRequirements = `## Program requirements
+Every routine you emit must include:
+- A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".
+- Periodization with a planned deload — organize multi-week programs into a mesocycle (accumulate volume/intensity across weeks, then a deload week at ~50% volume). Express week-to-week changes using \`weeks\` + \`overrides\`.
+- A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
+- A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
+
+  const outputContract = `## Output contract (when emitting after GENERATE IT)
+Output a single JSON object so the app can import it directly:
+- The first character of your reply is \`{\` and the last is \`}\`.
+- Use the exact field names and structure from the schema above.
+- Use straight ASCII quotes.
+
+Emit only the JSON object — no markdown code fences, no preamble, no commentary before or after.`;
+
   const conversationMode = `## Output mode
 
-Default to conversational mode. Ask clarifying questions, surface tradeoffs between approaches, propose options, and discuss programming choices with the athlete. Do NOT emit the routine JSON during this phase — not as a preview, not partially, not wrapped in fences. Conversation only.
+Default to conversational coaching. Ask clarifying questions, surface tradeoffs between approaches, and discuss programming choices with the athlete. Keep the routine JSON out of this phase entirely — discussing in prose keeps the design flexible and easy to revise.
 
-When the athlete types \`GENERATE IT\` (exactly those words, all caps) — and only then — switch to emit-only mode for that single response:
-- Output ONLY the routine JSON described below.
-- No markdown code fences. No preamble like "Here's your routine:". No commentary after the JSON.
-- The first character of your response must be \`{\` and the last must be \`}\`.
+Before the athlete asks for the final routine, make sure you have done the following in the conversation, in prose:
+- Stated your key programming decisions: weekly volume per muscle group, intensity scheme (RIR/RPE or %1RM), the progression rule, and the deload plan.
+- Run a quick self-audit and fixed any issues — is per-muscle weekly volume within the ranges below? Is the week balanced across movement patterns (push/pull, all major patterns)? Does every session include a warmup? Does every exercise respect the athlete's equipment and injuries?
 
-After emitting the JSON, return to conversational mode for any follow-up messages. If the athlete asks for changes, discuss them conversationally until they type \`GENERATE IT\` again.
+When the athlete types \`GENERATE IT\` (exactly those words, all caps), switch to emit-only mode for that single response and output the routine JSON described below — and nothing else. Keep all reasoning, rationale, and audit notes in the conversation; the JSON itself carries only the program.
+
+After emitting, return to conversational coaching for any follow-up. If the athlete asks for changes, discuss them in prose until they type \`GENERATE IT\` again.
 
 At the end of every conversational message, append one line: \`Say GENERATE IT (all caps) when you're ready for the final routine.\``;
 
@@ -125,23 +123,47 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     constraints,
     "Structural skeleton (all real content should replace the placeholder strings):",
     JSON.stringify(skeleton, null, 2),
+    programRequirements,
+    outputContract,
   ].join("\n");
 }
 
-export function buildRecoveryPrompt(errorMessage?: string): string {
-  const reason = errorMessage
-    ? `The previous response could not be imported. Error: ${errorMessage}`
-    : "The previous response was not valid routine JSON.";
+export function buildRecoveryPrompt(reason: RecoveryReason, detail?: string): string {
+  const contract = [
+    "Re-emit ONLY the routine as raw JSON, matching the schema from earlier in this conversation:",
+    "- The first character must be `{` and the last must be `}`.",
+    "- Use straight ASCII quotes, no markdown code fences, no comments, and no trailing commas.",
+    "- No preamble or commentary before or after the JSON.",
+    "- Use the exact field names from the schema; do not rename or restructure.",
+  ];
+
+  let lead: string;
+  switch (reason) {
+    case "truncated":
+      lead =
+        "The previous JSON looks cut off (it ends mid-structure), so it could not be imported. Re-emit the COMPLETE program as a single minified JSON object (no pretty-printing) so it fits in one message.";
+      break;
+    case "not-object":
+      lead =
+        "The previous response parsed but was not a JSON object. The top level must be a single JSON object containing a `days` array.";
+      break;
+    case "no-days":
+      lead =
+        "The previous JSON had no workout days. The top level must include a `days` array, and each day must contain `sections`.";
+      break;
+    default:
+      lead = detail
+        ? `The previous response could not be imported (${detail}).`
+        : "The previous response was not valid routine JSON.";
+      break;
+  }
+
   return [
-    reason,
+    lead,
     "",
-    "Please re-emit ONLY the routine as raw JSON, matching the schema you were given earlier in this conversation. Strict rules:",
-    "- No markdown code fences (no ```json, no ```).",
-    "- No preamble, no commentary, no explanation outside the JSON.",
-    "- First character must be `{`, last character must be `}`.",
-    "- Use the exact field names from the schema. Do not rename or restructure.",
+    ...contract,
     "",
-    "If you need to ask a question or discuss anything, do that in a separate message after this one — this message must contain only the JSON.",
+    "If you need to discuss anything, do that in a separate message after this one — this message must contain only the JSON.",
   ].join("\n");
 }
 

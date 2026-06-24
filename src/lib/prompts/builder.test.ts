@@ -1,48 +1,4 @@
-import { buildProfileBlock, buildConstraintsBlock, buildSchemaBlock, buildRecoveryPrompt, assemblePrompt } from "./builder";
-import type { ProfileDocument } from "@/lib/programs/types";
-
-const profile: ProfileDocument = {
-  id: "local-profile",
-  name: "Test User",
-  goals: ["Build strength", "Lose fat"],
-  equipment: ["Full gym", "Home bands"],
-  constraints: ["Avoid full wrist pronation", "Max 75 min sessions"],
-  trainingAge: "5 years",
-  defaultDaysPerWeek: 4,
-  updatedAt: "2024-01-01",
-};
-
-describe("buildProfileBlock", () => {
-  it("contains the user name", () => {
-    expect(buildProfileBlock(profile)).toContain("Test User");
-  });
-  it("lists all goals", () => {
-    const block = buildProfileBlock(profile);
-    expect(block).toContain("Build strength");
-    expect(block).toContain("Lose fat");
-  });
-  it("lists all equipment", () => {
-    const block = buildProfileBlock(profile);
-    expect(block).toContain("Full gym");
-    expect(block).toContain("Home bands");
-  });
-  it("does not include constraints (handled by buildConstraintsBlock)", () => {
-    const block = buildProfileBlock(profile);
-    expect(block).not.toContain("Injuries & Constraints");
-    expect(block).not.toContain("Avoid full wrist pronation");
-  });
-});
-
-describe("buildConstraintsBlock", () => {
-  it("lists constraints when present", () => {
-    const block = buildConstraintsBlock(profile);
-    expect(block).toContain("Avoid full wrist pronation");
-    expect(block).toContain("Max 75 min sessions");
-  });
-  it("returns empty string when constraints is empty", () => {
-    expect(buildConstraintsBlock({ ...profile, constraints: [] })).toBe("");
-  });
-});
+import { buildSchemaBlock, buildRecoveryPrompt, assemblePrompt } from "./builder";
 
 describe("buildSchemaBlock", () => {
   it("mentions JSON in the output", () => {
@@ -60,29 +16,60 @@ describe("buildSchemaBlock", () => {
   it("instructs the LLM to omit weeks and overrides for single-week programs", () => {
     expect(buildSchemaBlock()).toMatch(/omit.*week|single.week|single-week/i);
   });
-  it("defaults to conversational mode (does not demand immediate JSON output)", () => {
-    const block = buildSchemaBlock();
-    expect(block).toMatch(/conversational mode/i);
+  it("defaults to conversational coaching", () => {
+    expect(buildSchemaBlock().toLowerCase()).toContain("conversational coaching");
+  });
+  it("keeps reasoning in chat and out of the JSON", () => {
+    expect(buildSchemaBlock()).toMatch(/keep the routine JSON out of this phase|keep all reasoning/i);
+  });
+  it("requires a pre-emit self-audit of volume, balance, warmups, and injuries", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("self-audit");
+    expect(b).toContain("warmup");
+    expect(b).toMatch(/injur|equipment/);
   });
   it("gates JSON emission on the GENERATE IT trigger", () => {
     expect(buildSchemaBlock()).toContain("GENERATE IT");
   });
-  it("forbids partial/preview JSON during conversation", () => {
-    expect(buildSchemaBlock()).toMatch(/do not emit.*json|not.*even partially|not as a preview/i);
+  it("requires a numeric progression scheme and a deload", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("progression");
+    expect(b).toContain("deload");
+    expect(b).toMatch(/double progression|load step|%/);
+  });
+  it("requires a warmup every session and balanced patterns", () => {
+    const b = buildSchemaBlock().toLowerCase();
+    expect(b).toContain("warmup");
+    expect(b).toMatch(/movement pattern|push.*pull/);
+  });
+  it("ends with the output contract (first char {, last char })", () => {
+    const b = buildSchemaBlock();
+    const contractIndex = b.indexOf("Output contract");
+    expect(contractIndex).toBeGreaterThan(-1);
+    // contract is the final section
+    expect(b.indexOf("Program requirements")).toBeLessThan(contractIndex);
+    expect(b.trimEnd().endsWith("before or after.")).toBe(true);
   });
 });
 
 describe("buildRecoveryPrompt", () => {
-  it("instructs the model to re-emit JSON only", () => {
-    expect(buildRecoveryPrompt()).toMatch(/only.*JSON|JSON.*only/i);
+  it("always instructs JSON-only, no fences, straight quotes", () => {
+    const p = buildRecoveryPrompt("syntax");
+    expect(p).toMatch(/only.*JSON|JSON.*only/i);
+    expect(p).toMatch(/no.*fence/i);
+    expect(p).toMatch(/straight.*quote/i);
   });
-  it("forbids markdown code fences", () => {
-    expect(buildRecoveryPrompt()).toMatch(/no.*fence|```/i);
+  it("gives a truncation-specific lead and asks for minified output", () => {
+    const p = buildRecoveryPrompt("truncated");
+    expect(p.toLowerCase()).toContain("cut off");
+    expect(p.toLowerCase()).toContain("minified");
   });
-  it("includes the supplied error message when provided", () => {
-    expect(buildRecoveryPrompt("Unexpected token x at position 4")).toContain(
-      "Unexpected token x at position 4"
-    );
+  it("explains the required shape for not-object / no-days", () => {
+    expect(buildRecoveryPrompt("no-days").toLowerCase()).toContain("days");
+    expect(buildRecoveryPrompt("not-object").toLowerCase()).toContain("object");
+  });
+  it("includes the supplied detail when provided", () => {
+    expect(buildRecoveryPrompt("syntax", "Unexpected token x")).toContain("Unexpected token x");
   });
 });
 
