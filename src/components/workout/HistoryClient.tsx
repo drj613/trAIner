@@ -5,6 +5,7 @@ import { ChevronLeft, Search, X } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import { formatSetLabel } from "@/lib/workout/historyUtils";
+import { logLocalDate } from "@/lib/workout/localDate";
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -42,11 +43,11 @@ function deriveTrend(volumes: number[]): "up" | "flat" | "down" {
   return "flat";
 }
 
-function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
+export function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
   const byExercise = new Map<string, { name: string; sessions: { date: string; sets: WorkoutSetLog[] }[] }>();
 
   for (const log of logs) {
-    const date = log.performedAt.slice(0, 10);
+    const date = logLocalDate(log);
     for (const entry of log.entries) {
       const key = entry.canonicalExerciseId ?? entry.exerciseId;
       if (!byExercise.has(key)) {
