@@ -3,12 +3,28 @@
 import { useEffect } from "react";
 import type { ExerciseSessionRow } from "@/lib/workout/historyUtils";
 import { useFocusTrap } from "@/lib/workout/useFocusTrap";
+import { classifyCell } from "./SetCell";
 
 type Props = {
   exerciseName: string;
   rows: ExerciseSessionRow[];
   onClose: () => void;
 };
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/**
+ * Format a local YYYY-MM-DD string as e.g. "Apr 22 (Wed)". Parse with local
+ * Date components (new Date(y, m-1, d)); never `new Date(str)`, which parses as
+ * UTC midnight and shifts the day/weekday in non-UTC zones.
+ */
+function formatSessionDate(localYmd: string): string {
+  const [y, m, d] = localYmd.split("-").map(Number);
+  if (!y || !m || !d) return localYmd;
+  const dt = new Date(y, m - 1, d);
+  return `${MONTHS[m - 1]} ${d} (${WEEKDAYS[dt.getDay()]})`;
+}
 
 export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
   const trapRef = useFocusTrap(true);
@@ -51,43 +67,57 @@ export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
             {rows.length} session{rows.length !== 1 ? "s" : ""} · last 8
           </p>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 0 16px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 0 16px" }}>
           {rows.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: "var(--fg-3)" }}>
               No history yet for this exercise.
             </div>
           ) : (
-            <>
-              <div style={{
-                display: "grid", gridTemplateColumns: "64px 1fr 64px",
-                padding: "8px 16px", fontFamily: "var(--font-mono)", fontSize: 10,
-                color: "var(--fg-4)", textTransform: "uppercase", letterSpacing: "0.08em",
-                borderBottom: "1px solid var(--line)",
-              }}>
-                <span>date</span><span>sets</span><span style={{ textAlign: "right" }}>vol</span>
-              </div>
-              {rows.map((row, i) => (
-                <div key={`${row.date}-${i}`} style={{
-                  display: "grid", gridTemplateColumns: "64px 1fr 64px",
-                  padding: "8px 16px", alignItems: "center",
+            rows.map((row, i) => (
+              <div
+                key={`${row.date}-${i}`}
+                style={{
+                  padding: "10px 16px",
                   borderBottom: i < rows.length - 1 ? "1px solid var(--line)" : "none",
+                }}
+              >
+                <div style={{
+                  display: "flex", alignItems: "baseline",
+                  justifyContent: "space-between", marginBottom: 6,
                 }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
-                    {row.date}
+                    {formatSessionDate(row.date)}
                   </span>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {row.sets.map((s, j) => (
-                      <span key={j} style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg)" }}>
-                        {s}
+                  {row.volume > 0 && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+                      <span style={{
+                        color: "var(--fg-4)", textTransform: "uppercase",
+                        letterSpacing: "0.08em", marginRight: 5,
+                      }}>
+                        vol
                       </span>
-                    ))}
-                  </div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)", textAlign: "right" }}>
-                    {row.volume > 0 ? row.volume.toLocaleString() : "—"}
-                  </span>
+                      <span style={{ color: "var(--fg-3)" }}>{row.volume.toLocaleString()}</span>
+                    </span>
+                  )}
                 </div>
-              ))}
-            </>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  {row.sets.map((s, j) => (
+                    <span
+                      key={j}
+                      className={`cell ${classifyCell(s)}`}
+                      style={{ cursor: "default", height: 26, fontSize: 12 }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                {row.note && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--fg-2)", lineHeight: 1.4 }}>
+                    {row.note}
+                  </p>
+                )}
+              </div>
+            ))
           )}
         </div>
       </div>

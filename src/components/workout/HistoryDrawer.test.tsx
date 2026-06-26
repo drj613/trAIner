@@ -14,10 +14,35 @@ describe("HistoryDrawer", () => {
     expect(screen.getByRole("heading", { name: /DB Bench Press/i })).toBeInTheDocument();
   });
 
-  it("renders session rows", () => {
+  it("renders session rows with the formatted local date", () => {
     render(<HistoryDrawer exerciseName="DB Bench Press" rows={rows} onClose={jest.fn()} />);
-    expect(screen.getByText("2026-04-22")).toBeInTheDocument();
+    expect(screen.getByText("Apr 22 (Wed)")).toBeInTheDocument();
     expect(screen.getByText("65x10")).toBeInTheDocument();
+  });
+
+  it("renders the per-session note when present", () => {
+    const rowsWithNote: ExerciseSessionRow[] = [
+      { date: "2026-04-22", sets: ["65x10"], note: "felt strong, go up", volume: 650 },
+    ];
+    render(<HistoryDrawer exerciseName="Bench" rows={rowsWithNote} onClose={jest.fn()} />);
+    expect(screen.getByText("felt strong, go up")).toBeInTheDocument();
+  });
+
+  it("renders raw-text set values as pills", () => {
+    const rawRows: ExerciseSessionRow[] = [
+      { date: "2026-04-22", sets: ["2.5kg x10", "40s hold"], volume: 0 },
+    ];
+    render(<HistoryDrawer exerciseName="Holds" rows={rawRows} onClose={jest.fn()} />);
+    expect(screen.getByText("2.5kg x10")).toBeInTheDocument();
+    expect(screen.getByText("40s hold")).toBeInTheDocument();
+  });
+
+  it("hides the volume label when volume is zero", () => {
+    const rawRows: ExerciseSessionRow[] = [
+      { date: "2026-04-22", sets: ["40s hold"], volume: 0 },
+    ];
+    render(<HistoryDrawer exerciseName="Holds" rows={rawRows} onClose={jest.fn()} />);
+    expect(screen.queryByText(/^vol$/i)).not.toBeInTheDocument();
   });
 
   it("calls onClose when backdrop clicked", async () => {
