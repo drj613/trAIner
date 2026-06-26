@@ -1,14 +1,23 @@
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
+import { logLocalDate } from "./localDate";
 
 export type ExerciseSessionRow = {
   date: string;
   sets: string[];
+  note?: string;
   volume: number;
 };
 
-function formatSet(s: WorkoutSetLog): string {
-  if (!s.weight) return s.reps ? `BWx${s.reps}` : "";
-  return s.reps ? `${s.weight}x${s.reps}` : String(s.weight);
+/**
+ * Label a logged set for display. Returns the raw cell verbatim when the value
+ * was unparseable free text (e.g. "2.5kg x10", "40s hold", "skip"); otherwise
+ * formats the numeric weight/reps with `sep` between them ("x" in the drawer,
+ * "×" on the analysis page).
+ */
+export function formatSetLabel(s: WorkoutSetLog, sep: string = "x"): string {
+  if (s.rawCell && s.rawCell.trim()) return s.rawCell;
+  if (!s.weight) return s.reps ? `BW${sep}${s.reps}` : "";
+  return s.reps ? `${s.weight}${sep}${s.reps}` : `${s.weight}`;
 }
 
 function setVolume(s: WorkoutSetLog): number {
@@ -35,8 +44,9 @@ export function aggregateExerciseHistory(
     if (!entry) continue;
 
     rows.push({
-      date: log.performedAt.slice(0, 10),
-      sets: entry.sets.map(formatSet).filter(Boolean),
+      date: logLocalDate(log),
+      sets: entry.sets.map((s) => formatSetLabel(s)).filter(Boolean),
+      note: entry.notes,
       volume: entry.sets.reduce((sum, s) => sum + setVolume(s), 0),
     });
   }
