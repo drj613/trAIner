@@ -10,14 +10,6 @@ async function openHistoryDrawer(page: Page) {
   await expect(page.getByRole("dialog")).toBeVisible();
 }
 
-async function closeDrawerIfOpen(page: Page) {
-  const dialog = page.getByRole("dialog");
-  if (await dialog.isVisible({ timeout: 500 }).catch(() => false)) {
-    await page.keyboard.press("Escape");
-    await expect(dialog).not.toBeVisible({ timeout: 2000 });
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Exercise History suite — serial mode so tests share seeded DB state
 // ---------------------------------------------------------------------------
