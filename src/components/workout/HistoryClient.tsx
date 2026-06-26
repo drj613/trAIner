@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import { formatSetLabel } from "@/lib/workout/historyUtils";
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -22,10 +23,7 @@ type ExerciseSummary = {
 // ─── Format ──────────────────────────────────────────────────────────────────
 
 function formatSet(s: WorkoutSetLog): string {
-  if (!s.weight && !s.reps) return "";
-  if (!s.weight) return `BW×${s.reps}`;
-  if (!s.reps) return `${s.weight}`;
-  return `${s.weight}×${s.reps}`;
+  return formatSetLabel(s, "×");
 }
 
 function setVolume(s: WorkoutSetLog): number {
