@@ -285,7 +285,8 @@ describe("historical sessions", () => {
 
     const dialog = await screen.findByRole("dialog");
     // The prior routine's session must appear in this routine's history.
-    await waitFor(() => expect(within(dialog).getByText("2026-05-01")).toBeInTheDocument());
+    // The drawer formats the local session date (2026-05-01 → "May 1 (Fri)").
+    await waitFor(() => expect(within(dialog).getByText("May 1 (Fri)")).toBeInTheDocument());
     expect(within(dialog).getByText("120x5")).toBeInTheDocument();
   });
 
