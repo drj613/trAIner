@@ -12,6 +12,7 @@ describe("HistoryDrawer", () => {
   it("renders exercise name as heading", () => {
     render(<HistoryDrawer exerciseName="DB Bench Press" rows={rows} onClose={jest.fn()} />);
     expect(screen.getByRole("heading", { name: /DB Bench Press/i })).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("renders session rows with the formatted local date", () => {

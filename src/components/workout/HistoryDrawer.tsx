@@ -21,7 +21,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  */
 function formatSessionDate(localYmd: string): string {
   const [y, m, d] = localYmd.split("-").map(Number);
-  if (!y || !m || !d) return localYmd;
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return localYmd;
   const dt = new Date(y, m - 1, d);
   return `${MONTHS[m - 1]} ${d} (${WEEKDAYS[dt.getDay()]})`;
 }
@@ -105,7 +105,7 @@ export function HistoryDrawer({ exerciseName, rows, onClose }: Props) {
                     <span
                       key={j}
                       className={`cell ${classifyCell(s)}`}
-                      style={{ cursor: "default", height: 26, fontSize: 12 }}
+                      style={{ cursor: "default", pointerEvents: "none", height: 26, fontSize: 12 }}
                     >
                       {s}
                     </span>
