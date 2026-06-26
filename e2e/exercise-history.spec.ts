@@ -92,9 +92,12 @@ test.describe("Exercise history", () => {
     // Open history for first exercise (Banded Face Pulls)
     await openHistoryDrawer(sharedPage);
 
-    // Expect a row with today's date in ISO YYYY-MM-DD format
-    const today = new Date().toISOString().slice(0, 10);
-    await expect(sharedPage.getByRole("dialog").getByText(today)).toBeVisible({ timeout: 3000 });
+    // Drawer now formats the local date as e.g. "Apr 22 (Wed)".
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const now = new Date();
+    const label = `${MONTHS[now.getMonth()]} ${now.getDate()} (${WEEKDAYS[now.getDay()]})`;
+    await expect(sharedPage.getByRole("dialog").getByText(label)).toBeVisible({ timeout: 3000 });
 
     // close drawer
     await sharedPage.keyboard.press("Escape");
