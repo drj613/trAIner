@@ -99,7 +99,7 @@ goalScope: {
 ## Mismatch nudge (info severity, never scored)
 
 Reuses the set-weighted heaviness from the residual-fixes Task 2:
-- goal ∈ {general, hypertrophy} AND ≥50% of typical-week sets are heavy →
+- goal ∈ {general, hypertrophy} AND ≥50% of all working sets (across all weeks) are heavy →
   "This reads like a strength block — consider setting the goal to Strength for a fairer read."
 - goal = strength AND zero heavy sets across all weeks →
   "Goal is Strength but no heavy (≥85% / ≤3RM / RPE≥9) work found — is the goal right?"
