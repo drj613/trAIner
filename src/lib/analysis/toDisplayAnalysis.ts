@@ -130,13 +130,20 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     msg: w.message,
   }));
 
+  // sessions has one entry per day across ALL weeks; divide by detected weeks
+  // to report training days per week. weeksDetected is always >= 1.
+  const daysPerWeek = Math.max(
+    1,
+    Math.round(result.sessions.length / Math.max(1, result.periodization.weeksDetected)),
+  );
+
   return {
     durationMs,
     overall: { score: result.overall.score, grade: result.overall.grade },
     fingerprint: {
-      primary: `${result.sessions.length}d/wk`,
+      primary: `${daysPerWeek}d/wk`,
       secondary: null,
-      label: `${result.sessions.length}-day program`,
+      label: `${daysPerWeek}-day program`,
     },
     dimensions,
     muscles,

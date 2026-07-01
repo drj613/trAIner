@@ -1,6 +1,6 @@
 import { toDisplayAnalysis } from "./toDisplayAnalysis";
 import type { AnalysisResult } from "./types";
-import { imbalancedProgram } from "./fixtures";
+import { imbalancedProgram, multiWeekProgram } from "./fixtures";
 import { analyzeProgram } from "./analyze";
 
 const makeResult = (): AnalysisResult => ({
@@ -130,5 +130,18 @@ describe("toDisplayAnalysis", () => {
     const volNote = d.dimensions.find((x) => x.id === "volume")?.note ?? "";
     expect(volNote).toContain(`of ${trainedCount} muscles`);
     expect(volNote).not.toContain(`of ${totalCount} muscles`);
+  });
+
+  it("fingerprint uses days per week, not total days across weeks", () => {
+    // multiWeekProgram: 4 weeks × 1 day/week = 4 session entries, but 1 day/wk
+    const d = toDisplayAnalysis(analyzeProgram(multiWeekProgram), 0);
+    expect(d.fingerprint.primary).toBe("1d/wk");
+    expect(d.fingerprint.label).toBe("1-day program");
+  });
+
+  it("fingerprint is unchanged for single-week programs", () => {
+    const d = toDisplayAnalysis(analyzeProgram(imbalancedProgram), 0);
+    expect(d.fingerprint.primary).toBe("2d/wk");
+    expect(d.fingerprint.label).toBe("2-day program");
   });
 });
