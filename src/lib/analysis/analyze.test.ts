@@ -104,4 +104,34 @@ describe("goal gating", () => {
     // undefined goal must be byte-equivalent to explicit "general"
     expect(result).toEqual(analyzeProgram({ ...startingStrengthProgram, goal: "general" }));
   });
+
+  it("nudges when a hypertrophy-goal program is mostly heavy work", () => {
+    const heavyDay = {
+      id: "hv-1", dayNumber: 1, weekNumber: 1, title: "Heavy",
+      sections: [{
+        id: "hv-s1", type: "strength" as const, name: "Main",
+        groups: [{
+          id: "hv-g1", type: "single" as const,
+          exercises: [{
+            id: "hv-e1", name: "Back Squat", sets: 5, reps: "2", load: "90%",
+            tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+          }],
+        }],
+      }],
+    };
+    const program = { ...startingStrengthProgram, days: [heavyDay], goal: "hypertrophy" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(true);
+  });
+
+  it("nudges when a strength-goal program has zero heavy work", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /no heavy/i.test(n.msg))).toBe(true);
+  });
+
+  it("no nudge when goal matches content", () => {
+    const result = analyzeProgram(startingStrengthProgram); // general goal, light-ish content
+    expect(result.notes).toEqual([]);
+  });
 });

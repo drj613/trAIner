@@ -29,6 +29,8 @@ export type GoalScope = {
   gradedDimensions: DimensionKey[];
 };
 
+export type AnalysisNote = { area: string; msg: string };
+
 export type Warning = {
   severity: Severity;
   dimension: string;
@@ -108,6 +110,7 @@ export type AnalysisResult = {
   warnings: Warning[];
   coverage: CoverageResult;
   goalScope: GoalScope;
+  notes: AnalysisNote[];
 };
 
 export type DimensionDisplay = {

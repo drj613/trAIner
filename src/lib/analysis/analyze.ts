@@ -1,11 +1,11 @@
 import type { ProgramDocument } from "@/lib/programs/types";
-import type { AnalysisResult, MuscleGroup, Warning, DimensionKey } from "./types";
+import type { AnalysisResult, MuscleGroup, Warning, DimensionKey, AnalysisNote } from "./types";
 import { DIMENSION_KEYS } from "./types";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { analyzeSessions } from "./session";
 import { analyzeBalance } from "./balance";
-import { analyzePeriodization } from "./periodization";
+import { analyzePeriodization, heavySetShare } from "./periodization";
 import { deriveCoverage } from "./coverage";
 import { GOAL_GATE_PROFILES } from "./thresholds";
 import {
@@ -69,10 +69,27 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
     ...(graded.has("periodization") ? periodization.warnings : []),
   ];
 
+  // Mismatch nudge: informational only, never scored. Uses the same
+  // set-weighted heaviness definition as peak-week detection.
+  const notes: AnalysisNote[] = [];
+  const share = heavySetShare(days);
+  if ((goal === "general" || goal === "hypertrophy") && share >= 0.5) {
+    notes.push({
+      area: "goal",
+      msg: "Most working sets are heavy (≥85% 1RM / ≤3RM / RPE 9+) — this reads like a strength block. Setting the routine goal to Strength gives a fairer read.",
+    });
+  }
+  if (goal === "strength" && share === 0) {
+    notes.push({
+      area: "goal",
+      msg: "Goal is Strength but no heavy work (≥85% 1RM / ≤3RM / RPE 9+) was found — is the goal right?",
+    });
+  }
+
   const coverage = deriveCoverage(muscleVolumes, balance);
 
   return {
-    overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage,
+    overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage, notes,
     goalScope: { goal, partial: gradedDimensions.length < DIMENSION_KEYS.length, gradedDimensions: [...gradedDimensions] },
   };
 }

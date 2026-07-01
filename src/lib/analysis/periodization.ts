@@ -25,18 +25,22 @@ function exerciseIsHeavy(exercise: ProgramExercise): boolean {
   return false;
 }
 
-function weekIsHeavy(weekDays: ProgramDay[]): boolean {
-  // Weigh by sets, not exercise count: in a volume-cut final week the heavy
-  // main lifts carry most sets even when accessories outnumber them.
+/** Set-weighted share of heavy work (≥85% 1RM / ≤3RM / RPE ≥ 9 / reps ≤ 3). */
+export function heavySetShare(days: ProgramDay[]): number {
   let totalSets = 0;
   let heavySets = 0;
-  for (const exercise of weekExercises(weekDays)) {
+  for (const exercise of weekExercises(days)) {
     const sets = getEffectiveSets(exercise);
     totalSets += sets;
     if (exerciseIsHeavy(exercise)) heavySets += sets;
   }
-  if (totalSets === 0) return false;
-  return heavySets / totalSets >= 0.5;
+  return totalSets === 0 ? 0 : heavySets / totalSets;
+}
+
+function weekIsHeavy(weekDays: ProgramDay[]): boolean {
+  // Weigh by sets, not exercise count: in a volume-cut final week the heavy
+  // main lifts carry most sets even when accessories outnumber them.
+  return heavySetShare(weekDays) >= 0.5;
 }
 
 function weekAvgPct(weekDays: ProgramDay[]): number | null {

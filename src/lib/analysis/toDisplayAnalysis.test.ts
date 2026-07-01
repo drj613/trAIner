@@ -42,6 +42,7 @@ const makeResult = (): AnalysisResult => ({
     partial: false,
     gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
   },
+  notes: [],
 });
 
 describe("toDisplayAnalysis", () => {
