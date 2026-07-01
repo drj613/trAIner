@@ -120,7 +120,9 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     exercises: s.exerciseCount,
     sets: s.totalSets,
     durationMin: s.estimatedMinutes,
-    status: s.warnings.length === 0 ? "good" : "warn",
+    status: s.warnings.some((w) => w.severity === "red") ? "bad"
+          : s.warnings.length > 0 ? "warn"
+          : "good",
     flag: s.warnings[0]?.message,
   }));
 

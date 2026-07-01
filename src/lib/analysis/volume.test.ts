@@ -1,4 +1,5 @@
 import type { ProgramDay } from "@/lib/programs/types";
+import type { MuscleGroup } from "./types";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
 
@@ -65,5 +66,14 @@ describe("scoreVolume", () => {
     const results = scoreVolume(volumes);
     const chest = results.find((r) => r.muscle === "chest")!;
     expect(["green", "yellow"]).toContain(chest.severity);
+  });
+
+  it("labels sets between MEV and MAV-low as lower-end productive, still green", () => {
+    // chest: mev 5, mavLow 6 — 5.5 sets sits in the gap
+    const volumes = new Map<MuscleGroup, number>([["chest", 5.5]]);
+    const results = scoreVolume(volumes);
+    const chest = results.find((r) => r.muscle === "chest")!;
+    expect(chest.severity).toBe("green");
+    expect(chest.label).toBe("Productive — lower end");
   });
 });

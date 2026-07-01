@@ -144,4 +144,17 @@ describe("toDisplayAnalysis", () => {
     expect(d.fingerprint.primary).toBe("2d/wk");
     expect(d.fingerprint.label).toBe("2-day program");
   });
+
+  it("maps sessions with red warnings to 'bad' status", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [{ severity: "red" as const, dimension: "session", message: "too long" }],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+  });
 });

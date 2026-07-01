@@ -62,6 +62,7 @@ function classifyVolume(
 ): { severity: Severity; label: string } {
   if (sets < lm.mv) return { severity: "red", label: "Below maintenance" };
   if (sets < lm.mev) return { severity: "yellow", label: "Maintenance only" };
+  if (sets < lm.mavLow) return { severity: "green", label: "Productive — lower end" };
   if (sets <= lm.mavHigh) return { severity: "green", label: "Productive range" };
   if (sets <= lm.mrv) return { severity: "yellow", label: "High — approaching limit" };
   return { severity: "red", label: "Excessive — recovery impaired" };
