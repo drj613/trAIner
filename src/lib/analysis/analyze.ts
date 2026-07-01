@@ -1,11 +1,12 @@
 import type { ProgramDocument } from "@/lib/programs/types";
-import type { AnalysisResult, MuscleGroup } from "./types";
+import type { AnalysisResult, MuscleGroup, Warning } from "./types";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { analyzeSessions } from "./session";
 import { analyzeBalance } from "./balance";
 import { analyzePeriodization } from "./periodization";
 import { deriveCoverage } from "./coverage";
+import { GOAL_GATE_PROFILES } from "./thresholds";
 import {
   computeOverallScore,
   scoreVolumeDimension,
@@ -46,22 +47,33 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
     periodization: scorePeriodizationDimension(periodization),
   };
 
-  const overall = computeOverallScore(dimensions);
+  const goal = program.goal ?? "general";
+  const gradedDimensions = GOAL_GATE_PROFILES[goal];
+  const graded = new Set<string>(gradedDimensions);
 
-  const warnings = [
-    ...muscleVolumes.filter((r) => r.severity !== "green" && r.effectiveSets > 0).map((r) => ({
+  const overall = computeOverallScore(dimensions, gradedDimensions);
+
+  const volumeWarnings: Warning[] = muscleVolumes
+    .filter((r) => r.severity !== "green" && r.effectiveSets > 0)
+    .map((r) => ({
       severity: r.severity,
       dimension: "volume" as const,
       message: `${formatMuscleName(r.muscle)}: ${r.effectiveSets} sets/week — ${r.label}`,
-    })),
-    ...sessions.flatMap((s) => s.warnings),
-    ...balance.warnings,
-    ...periodization.warnings,
+    }));
+
+  const warnings = [
+    ...(graded.has("volume") ? volumeWarnings : []),
+    ...(graded.has("session") ? sessions.flatMap((s) => s.warnings) : []),
+    ...(graded.has("balance") ? balance.warnings : []),
+    ...(graded.has("periodization") ? periodization.warnings : []),
   ];
 
   const coverage = deriveCoverage(muscleVolumes, balance);
 
-  return { overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage };
+  return {
+    overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage,
+    goalScope: { goal, partial: gradedDimensions.length < 4, gradedDimensions: [...gradedDimensions] },
+  };
 }
 
 function formatMuscleName(muscle: string): string {

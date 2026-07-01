@@ -1,5 +1,5 @@
 import { analyzeProgram } from "./analyze";
-import { balancedProgram, imbalancedProgram, multiWeekProgram } from "./fixtures";
+import { balancedProgram, imbalancedProgram, multiWeekProgram, startingStrengthProgram } from "./fixtures";
 import type { ProgramDocument } from "@/lib/programs/types";
 
 describe("analyzeProgram", () => {
@@ -68,5 +68,39 @@ describe("analyzeProgram", () => {
     const result = analyzeProgram(multiWeekProgram);
     const chest = result.muscleVolumes.find((m) => m.muscle === "chest");
     expect(chest?.effectiveSets).toBeCloseTo(3.5, 1);
+  });
+});
+
+describe("goal gating", () => {
+  it("defaults to general: all four dimensions graded, not partial", () => {
+    const result = analyzeProgram(startingStrengthProgram);
+    expect(result.goalScope).toEqual({
+      goal: "general",
+      partial: false,
+      gradedDimensions: ["volume", "session", "balance", "periodization"],
+    });
+  });
+
+  it("strength goal drops volume/periodization warnings and renormalizes the grade", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const result = analyzeProgram(program);
+    expect(result.goalScope.partial).toBe(true);
+    expect(result.goalScope.gradedDimensions).toEqual(["session", "balance"]);
+    expect(result.warnings.every((w) => w.dimension !== "volume" && w.dimension !== "periodization")).toBe(true);
+    // dimension scores are still computed for reference
+    expect(result.dimensions.volume.score).toBeGreaterThanOrEqual(0);
+    // overall = renormalized session+balance only
+    const w = { session: 0.235, balance: 0.294 };
+    const expected = Math.round(
+      (result.dimensions.session.score * w.session + result.dimensions.balance.score * w.balance) /
+      (w.session + w.balance),
+    );
+    expect(result.overall.score).toBe(expected);
+  });
+
+  it("undefined goal produces identical output to today (regression pin)", () => {
+    const result = analyzeProgram(startingStrengthProgram);
+    // Starting Strength under hypertrophy rulers: volume warnings exist
+    expect(result.warnings.some((w) => w.dimension === "volume")).toBe(true);
   });
 });

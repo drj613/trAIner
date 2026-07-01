@@ -1,3 +1,5 @@
+import type { TrainingGoal } from "@/lib/programs/types";
+
 export type MuscleGroup =
   | "chest" | "lats" | "upper_back" | "lower_back"
   | "front_delts" | "side_delts" | "rear_delts"
@@ -17,6 +19,14 @@ export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
 
 export type Severity = "green" | "yellow" | "red";
 export type Grade = "A" | "B" | "C" | "D" | "F";
+
+export type DimensionKey = "volume" | "session" | "balance" | "periodization";
+
+export type GoalScope = {
+  goal: TrainingGoal;
+  partial: boolean;
+  gradedDimensions: DimensionKey[];
+};
 
 export type Warning = {
   severity: Severity;
@@ -96,6 +106,7 @@ export type AnalysisResult = {
   periodization: PeriodizationResult;
   warnings: Warning[];
   coverage: CoverageResult;
+  goalScope: GoalScope;
 };
 
 export type DimensionDisplay = {

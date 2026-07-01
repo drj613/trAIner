@@ -3,6 +3,9 @@ export type ID = string;
 
 export type ProgramScope = "base" | "week" | "day";
 
+export const TRAINING_GOALS = ["general", "hypertrophy", "strength", "endurance", "other"] as const;
+export type TrainingGoal = (typeof TRAINING_GOALS)[number];
+
 export const SECTION_TYPES = [
   "warmup", "explosive", "strength", "power", "hypertrophy",
   "accessory", "metcon", "cardio", "conditioning", "rehab",
@@ -15,6 +18,7 @@ export type ProfileDocument = {
   id: "local-profile";
   name: string;
   goals: string[];
+  primaryGoal?: TrainingGoal;
   equipment: string[];
   constraints: string[];
   trainingAge: string;
@@ -40,6 +44,7 @@ export type ProgramDocument = {
   source: "import" | "manual" | "backup";
   active: boolean;
   status?: "active" | "draft" | "archived";
+  goal?: TrainingGoal;
   daysPerWeek?: number;
   lengthWeeks?: number;
   lastRunAt?: ISODate | null;

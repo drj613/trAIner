@@ -37,6 +37,11 @@ const makeResult = (): AnalysisResult => ({
     severity: "yellow", dimension: "volume",
     message: "Rear delts below MEV",
   }],
+  goalScope: {
+    goal: "general" as const,
+    partial: false,
+    gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
 });
 
 describe("toDisplayAnalysis", () => {
