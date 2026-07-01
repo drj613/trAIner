@@ -1,3 +1,4 @@
+import type { ProgramDay } from "@/lib/programs/types";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
 
@@ -27,6 +28,27 @@ describe("countWeeklyVolume", () => {
   it("handles missing week number by treating all days as week 1", () => {
     const volumes = countWeeklyVolume(balancedProgram.days);
     expect(volumes.get("chest")).toBeGreaterThan(0);
+  });
+
+  it("credits 'full body' expansion at half the tier weight", () => {
+    const fullBodyDay: ProgramDay = {
+      id: "fb-1", dayNumber: 1, weekNumber: 1, title: "Conditioning",
+      sections: [{
+        id: "fb-s1", type: "conditioning", name: "Metcon",
+        groups: [{
+          id: "fb-g1", type: "single",
+          exercises: [{
+            id: "fb-e1", name: "Thruster", sets: 4, reps: "10",
+            tags: { primary: ["full body"], secondary: [], incidental: [], modifiers: [] },
+          }],
+        }],
+      }],
+    };
+    const volumes = countWeeklyVolume([fullBodyDay], 1);
+    // 4 sets × 1.0 primary × 0.5 full-body discount = 2 per expanded muscle
+    expect(volumes.get("quads")).toBe(2);
+    expect(volumes.get("core")).toBe(2);
+    expect(volumes.get("lats")).toBe(2);
   });
 });
 
