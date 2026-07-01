@@ -124,6 +124,34 @@ describe("goal gating", () => {
     expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(true);
   });
 
+  it("nudges at exactly 50% heavy sets (boundary)", () => {
+    const boundaryDay = {
+      id: "bd-1", dayNumber: 1, weekNumber: 1, title: "Mixed",
+      sections: [{
+        id: "bd-s1", type: "strength" as const, name: "Main",
+        groups: [
+          {
+            id: "bd-g1", type: "single" as const,
+            exercises: [{
+              id: "bd-e1", name: "Back Squat", sets: 5, reps: "2", load: "90%",
+              tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+            }],
+          },
+          {
+            id: "bd-g2", type: "single" as const,
+            exercises: [{
+              id: "bd-e2", name: "Leg Press", sets: 5, reps: "10-12",
+              tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+            }],
+          },
+        ],
+      }],
+    };
+    const program = { ...startingStrengthProgram, days: [boundaryDay], goal: "hypertrophy" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(true);
+  });
+
   it("nudges when a strength-goal program has zero heavy work", () => {
     const program = { ...startingStrengthProgram, goal: "strength" as const };
     const result = analyzeProgram(program);

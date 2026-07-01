@@ -126,10 +126,10 @@ describe("analyzePeriodization", () => {
 describe("heavySetShare", () => {
   it("returns the set-weighted share of heavy work", () => {
     const week = weekOf(1, [
-      { name: "Back Squat", sets: 5, reps: "1-2", load: "92%" },
-      { name: "Leg Press", sets: 5, reps: "10-12" },
+      { name: "Back Squat", sets: 6, reps: "1-2", load: "92%" },
+      { name: "Leg Press", sets: 2, reps: "10-12" },
     ]);
-    expect(heavySetShare([week])).toBe(0.5);
+    expect(heavySetShare([week])).toBe(0.75);
   });
 
   it("returns 0 for an empty program", () => {
