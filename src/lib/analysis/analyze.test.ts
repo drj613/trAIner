@@ -100,7 +100,8 @@ describe("goal gating", () => {
 
   it("undefined goal produces identical output to today (regression pin)", () => {
     const result = analyzeProgram(startingStrengthProgram);
-    // Starting Strength under hypertrophy rulers: volume warnings exist
     expect(result.warnings.some((w) => w.dimension === "volume")).toBe(true);
+    // undefined goal must be byte-equivalent to explicit "general"
+    expect(result).toEqual(analyzeProgram({ ...startingStrengthProgram, goal: "general" }));
   });
 });

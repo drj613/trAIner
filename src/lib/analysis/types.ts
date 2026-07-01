@@ -20,7 +20,8 @@ export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
 export type Severity = "green" | "yellow" | "red";
 export type Grade = "A" | "B" | "C" | "D" | "F";
 
-export type DimensionKey = "volume" | "session" | "balance" | "periodization";
+export const DIMENSION_KEYS = ["volume", "session", "balance", "periodization"] as const;
+export type DimensionKey = (typeof DIMENSION_KEYS)[number];
 
 export type GoalScope = {
   goal: TrainingGoal;

@@ -1,4 +1,5 @@
 import type { MuscleGroup, VolumeLandmarks, DimensionKey } from "./types";
+import { DIMENSION_KEYS } from "./types";
 import type { TrainingGoal } from "@/lib/programs/types";
 
 export const VOLUME_LANDMARKS: Record<MuscleGroup, VolumeLandmarks> = {
@@ -58,8 +59,8 @@ export const DIMENSION_WEIGHTS = {
 // The goal GATES the engine's existing rulers — it never re-scores or swaps
 // landmark values. Dimensions not listed still render as reference info.
 export const GOAL_GATE_PROFILES: Record<TrainingGoal, readonly DimensionKey[]> = {
-  general:     ["volume", "session", "balance", "periodization"],
-  hypertrophy: ["volume", "session", "balance", "periodization"],
+  general:     DIMENSION_KEYS,
+  hypertrophy: DIMENSION_KEYS,
   strength:    ["session", "balance"],
   endurance:   ["session"],
   other:       ["session", "balance"],

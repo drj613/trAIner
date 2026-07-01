@@ -1,5 +1,6 @@
 import type { ProgramDocument } from "@/lib/programs/types";
-import type { AnalysisResult, MuscleGroup, Warning } from "./types";
+import type { AnalysisResult, MuscleGroup, Warning, DimensionKey } from "./types";
+import { DIMENSION_KEYS } from "./types";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { analyzeSessions } from "./session";
@@ -49,7 +50,7 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
 
   const goal = program.goal ?? "general";
   const gradedDimensions = GOAL_GATE_PROFILES[goal];
-  const graded = new Set<string>(gradedDimensions);
+  const graded = new Set<DimensionKey>(gradedDimensions);
 
   const overall = computeOverallScore(dimensions, gradedDimensions);
 
@@ -72,7 +73,7 @@ export function analyzeProgram(program: ProgramDocument): AnalysisResult {
 
   return {
     overall, dimensions, muscleVolumes, sessions, balance, periodization, warnings, coverage,
-    goalScope: { goal, partial: gradedDimensions.length < 4, gradedDimensions: [...gradedDimensions] },
+    goalScope: { goal, partial: gradedDimensions.length < DIMENSION_KEYS.length, gradedDimensions: [...gradedDimensions] },
   };
 }
 

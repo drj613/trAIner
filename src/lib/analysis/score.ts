@@ -1,7 +1,6 @@
 import type { DimensionScore, Grade, MuscleVolumeResult, SessionResult, BalanceResult, PeriodizationResult, DimensionKey } from "./types";
+import { DIMENSION_KEYS } from "./types";
 import { DIMENSION_WEIGHTS } from "./thresholds";
-
-const ALL_DIMENSIONS: readonly DimensionKey[] = ["volume", "session", "balance", "periodization"];
 
 export function computeOverallScore(
   dimensions: {
@@ -10,7 +9,7 @@ export function computeOverallScore(
     balance: DimensionScore;
     periodization: DimensionScore;
   },
-  graded: readonly DimensionKey[] = ALL_DIMENSIONS,
+  graded: readonly DimensionKey[] = DIMENSION_KEYS,
 ): DimensionScore {
   const w = DIMENSION_WEIGHTS;
   let weighted = 0;
