@@ -123,7 +123,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     status: s.warnings.some((w) => w.severity === "red") ? "bad"
           : s.warnings.length > 0 ? "warn"
           : "good",
-    flag: s.warnings[0]?.message,
+    flag: (s.warnings.find((w) => w.severity === "red") ?? s.warnings[0])?.message,
   }));
 
   const warnings: FindingDisplay[] = result.warnings.map((w): FindingDisplay => ({

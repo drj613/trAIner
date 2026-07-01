@@ -157,4 +157,21 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(result, 0);
     expect(d.sessions[0].status).toBe("bad");
   });
+
+  it("flags the red warning message on bad sessions, not the first warning", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [
+          { severity: "yellow" as const, dimension: "session", message: "9 exercises — on the high end" },
+          { severity: "red" as const, dimension: "session", message: "32 total sets (recommended: 10-25)" },
+        ],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+    expect(d.sessions[0].flag).toBe("32 total sets (recommended: 10-25)");
+  });
 });
