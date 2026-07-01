@@ -36,30 +36,10 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
   }),
 }));
 
-jest.mock("@/lib/analysis/analyze", () => ({
-  analyzeProgram: jest.fn().mockReturnValue({
-    overall: { name: "Overall", score: 82, grade: "B" },
-    dimensions: {
-      volume:        { name: "Volume",        score: 91, grade: "A" },
-      session:       { name: "Structure",     score: 88, grade: "A" },
-      balance:       { name: "Balance",       score: 78, grade: "B" },
-      periodization: { name: "Periodization", score: 65, grade: "C" },
-    },
-    muscleVolumes: [], sessions: [],
-    balance: {
-      pushPullRatio: null, upperLowerRatio: null, quadHamRatio: null, chestBackRatio: null,
-      movementPatternsCovered: [], movementPatternsMissing: [], warnings: [],
-    },
-    periodization: { weeksDetected: 1, volumePattern: "static", deloadDetected: false, warnings: [] },
-    warnings: [],
-    goalScope: {
-      goal: "general",
-      partial: false,
-      gradedDimensions: ["volume", "session", "balance", "periodization"],
-    },
-    notes: [],
-  }),
-}));
+jest.mock("@/lib/analysis/analyze", () => {
+  const actual = jest.requireActual("@/lib/analysis/analyze");
+  return { analyzeProgram: jest.fn(actual.analyzeProgram) };
+});
 
 jest.mock("./ModifyAiModal", () => ({
   ModifyAiModal: ({ onClose }: { onClose: () => void }) => (

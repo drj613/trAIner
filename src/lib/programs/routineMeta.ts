@@ -1,4 +1,12 @@
-import type { ProgramDocument } from "./types";
+import type { ProgramDocument, TrainingGoal } from "./types";
+
+export const GOAL_LABELS: Record<TrainingGoal, string> = {
+  general: "General fitness",
+  hypertrophy: "Hypertrophy",
+  strength: "Strength (PL/OL)",
+  endurance: "Endurance / conditioning",
+  other: "Other / mixed",
+};
 
 export function programStatus(p: ProgramDocument): "active" | "draft" | "archived" {
   return p.status ?? "draft";

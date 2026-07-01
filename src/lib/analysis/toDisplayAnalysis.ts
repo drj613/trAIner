@@ -62,7 +62,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
         : "No deload week present",
   };
 
-  const gradedSet = new Set<string>(result.goalScope.gradedDimensions);
+  const gradedSet = new Set(result.goalScope.gradedDimensions);
 
   const dimensions: DimensionDisplay[] = [
     { id: "volume",        label: "Volume",        score: dims.volume.score,        grade: dims.volume.grade,        status: DIM_STATUS(dims.volume.score),        note: dimNotes.volume,        graded: gradedSet.has("volume") },

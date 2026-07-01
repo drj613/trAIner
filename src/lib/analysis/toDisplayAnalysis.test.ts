@@ -195,6 +195,7 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(analyzeProgram(program), 0);
     expect(d.warnings[0].severity).toBe("info");
     expect(d.warnings[0].area).toBe("goal");
+    expect(d.warnings.some((w) => w.severity !== "info")).toBe(true);
   });
 
   it("full-scope programs mark every dimension graded", () => {
