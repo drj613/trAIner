@@ -11,7 +11,7 @@ const STATUS_COLOR: Record<string, "good" | "warn" | "bad"> = {
 const DIM_STATUS = (score: number): "good" | "warn" | "bad" =>
   score >= 80 ? "good" : score >= 60 ? "warn" : "bad";
 
-const MUSCLE_LABEL: Record<string, string> = {
+export const MUSCLE_LABEL: Record<string, string> = {
   chest: "Chest", lats: "Lats", upper_back: "Back (upper)", lower_back: "Lower back",
   front_delts: "Front delts", side_delts: "Side delts", rear_delts: "Rear delts",
   biceps: "Biceps", triceps: "Triceps", forearms: "Forearms",
