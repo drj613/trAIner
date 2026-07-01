@@ -32,6 +32,16 @@ framework, and (c) confirmed bugs. Read this before touching the analysis engine
 > per-finding mapping: `docs/superpowers/plans/2026-06-19-analysis-engine-correctness.md`. Sections below
 > describe the **pre-fix** state — cross-reference the plan for current status.
 
+> **UPDATE — 2026-07-01:** Five residual findings from the 2026-07-01 review are fixed on master:
+> fingerprint reports days/week (was total days across weeks); peak-week detection weighs sets not
+> exercises, and an explicit sub-85% %1RM vetoes the low-rep "heavy" fallback; "full body" muscle
+> expansion credits each muscle at half the tier weight; the LLM sheet prompt is generated from
+> `thresholds.ts` (single source of truth — the divergent inline table and the unkept "JSON for app
+> to consume"/profile promises are gone, builder extracted to `src/lib/analysis/sheetPrompt.ts`);
+> red session warnings display as "bad" (and surface the red message, not the first warning) and
+> `mavLow` now drives a "Productive — lower end" label (severity unchanged).
+> Plan: `docs/superpowers/plans/2026-07-01-analysis-residual-fixes.md`.
+
 ---
 
 ## 1. Architecture (as shipped)

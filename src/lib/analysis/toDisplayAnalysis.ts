@@ -11,7 +11,7 @@ const STATUS_COLOR: Record<string, "good" | "warn" | "bad"> = {
 const DIM_STATUS = (score: number): "good" | "warn" | "bad" =>
   score >= 80 ? "good" : score >= 60 ? "warn" : "bad";
 
-const MUSCLE_LABEL: Record<string, string> = {
+export const MUSCLE_LABEL: Record<string, string> = {
   chest: "Chest", lats: "Lats", upper_back: "Back (upper)", lower_back: "Lower back",
   front_delts: "Front delts", side_delts: "Side delts", rear_delts: "Rear delts",
   biceps: "Biceps", triceps: "Triceps", forearms: "Forearms",
@@ -120,8 +120,10 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     exercises: s.exerciseCount,
     sets: s.totalSets,
     durationMin: s.estimatedMinutes,
-    status: s.warnings.length === 0 ? "good" : "warn",
-    flag: s.warnings[0]?.message,
+    status: s.warnings.some((w) => w.severity === "red") ? "bad"
+          : s.warnings.length > 0 ? "warn"
+          : "good",
+    flag: (s.warnings.find((w) => w.severity === "red") ?? s.warnings[0])?.message,
   }));
 
   const warnings: FindingDisplay[] = result.warnings.map((w): FindingDisplay => ({
@@ -130,13 +132,20 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     msg: w.message,
   }));
 
+  // sessions has one entry per day across ALL weeks; divide by detected weeks
+  // to report training days per week. weeksDetected is always >= 1.
+  const daysPerWeek = Math.max(
+    1,
+    Math.round(result.sessions.length / Math.max(1, result.periodization.weeksDetected)),
+  );
+
   return {
     durationMs,
     overall: { score: result.overall.score, grade: result.overall.grade },
     fingerprint: {
-      primary: `${result.sessions.length}d/wk`,
+      primary: `${daysPerWeek}d/wk`,
       secondary: null,
-      label: `${result.sessions.length}-day program`,
+      label: `${daysPerWeek}-day program`,
     },
     dimensions,
     muscles,

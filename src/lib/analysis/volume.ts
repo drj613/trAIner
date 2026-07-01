@@ -27,6 +27,8 @@ export function countWeeklyVolume(
   return volumes;
 }
 
+const FULL_BODY_DISCOUNT = 0.5;
+
 function addMuscleVolume(
   volumes: Map<MuscleGroup, number>,
   muscles: string[],
@@ -35,8 +37,12 @@ function addMuscleVolume(
 ): void {
   for (const label of muscles) {
     const canonicals = mapMuscleExpanded(label);
+    // "full body" expands to 6 muscles; full tier credit for each would let one
+    // exercise generate 6× its sets in volume. Halve the credit per muscle.
+    const effectiveWeight =
+      canonicals.length > 1 ? weight * FULL_BODY_DISCOUNT : weight;
     for (const canonical of canonicals) {
-      volumes.set(canonical, (volumes.get(canonical) ?? 0) + sets * weight);
+      volumes.set(canonical, (volumes.get(canonical) ?? 0) + sets * effectiveWeight);
     }
   }
 }
@@ -56,6 +62,7 @@ function classifyVolume(
 ): { severity: Severity; label: string } {
   if (sets < lm.mv) return { severity: "red", label: "Below maintenance" };
   if (sets < lm.mev) return { severity: "yellow", label: "Maintenance only" };
+  if (sets < lm.mavLow) return { severity: "green", label: "Productive — lower end" };
   if (sets <= lm.mavHigh) return { severity: "green", label: "Productive range" };
   if (sets <= lm.mrv) return { severity: "yellow", label: "High — approaching limit" };
   return { severity: "red", label: "Excessive — recovery impaired" };

@@ -1,3 +1,5 @@
+import type { ProgramDay } from "@/lib/programs/types";
+import type { MuscleGroup } from "./types";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
 
@@ -28,6 +30,27 @@ describe("countWeeklyVolume", () => {
     const volumes = countWeeklyVolume(balancedProgram.days);
     expect(volumes.get("chest")).toBeGreaterThan(0);
   });
+
+  it("credits 'full body' expansion at half the tier weight", () => {
+    const fullBodyDay: ProgramDay = {
+      id: "fb-1", dayNumber: 1, weekNumber: 1, title: "Conditioning",
+      sections: [{
+        id: "fb-s1", type: "conditioning", name: "Metcon",
+        groups: [{
+          id: "fb-g1", type: "single",
+          exercises: [{
+            id: "fb-e1", name: "Thruster", sets: 4, reps: "10",
+            tags: { primary: ["full body"], secondary: [], incidental: [], modifiers: [] },
+          }],
+        }],
+      }],
+    };
+    const volumes = countWeeklyVolume([fullBodyDay], 1);
+    // 4 sets × 1.0 primary × 0.5 full-body discount = 2 per expanded muscle
+    expect(volumes.get("quads")).toBe(2);
+    expect(volumes.get("core")).toBe(2);
+    expect(volumes.get("lats")).toBe(2);
+  });
 });
 
 describe("scoreVolume", () => {
@@ -43,5 +66,14 @@ describe("scoreVolume", () => {
     const results = scoreVolume(volumes);
     const chest = results.find((r) => r.muscle === "chest")!;
     expect(["green", "yellow"]).toContain(chest.severity);
+  });
+
+  it("labels sets between MEV and MAV-low as lower-end productive, still green", () => {
+    // chest: mev 5, mavLow 6 — 5.5 sets sits in the gap
+    const volumes = new Map<MuscleGroup, number>([["chest", 5.5]]);
+    const results = scoreVolume(volumes);
+    const chest = results.find((r) => r.muscle === "chest")!;
+    expect(chest.severity).toBe("green");
+    expect(chest.label).toBe("Productive — lower end");
   });
 });

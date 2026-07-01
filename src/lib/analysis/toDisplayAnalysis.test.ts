@@ -1,6 +1,6 @@
 import { toDisplayAnalysis } from "./toDisplayAnalysis";
 import type { AnalysisResult } from "./types";
-import { imbalancedProgram } from "./fixtures";
+import { imbalancedProgram, multiWeekProgram } from "./fixtures";
 import { analyzeProgram } from "./analyze";
 
 const makeResult = (): AnalysisResult => ({
@@ -130,5 +130,48 @@ describe("toDisplayAnalysis", () => {
     const volNote = d.dimensions.find((x) => x.id === "volume")?.note ?? "";
     expect(volNote).toContain(`of ${trainedCount} muscles`);
     expect(volNote).not.toContain(`of ${totalCount} muscles`);
+  });
+
+  it("fingerprint uses days per week, not total days across weeks", () => {
+    // multiWeekProgram: 4 weeks × 1 day/week = 4 session entries, but 1 day/wk
+    const d = toDisplayAnalysis(analyzeProgram(multiWeekProgram), 0);
+    expect(d.fingerprint.primary).toBe("1d/wk");
+    expect(d.fingerprint.label).toBe("1-day program");
+  });
+
+  it("fingerprint is unchanged for single-week programs", () => {
+    const d = toDisplayAnalysis(analyzeProgram(imbalancedProgram), 0);
+    expect(d.fingerprint.primary).toBe("2d/wk");
+    expect(d.fingerprint.label).toBe("2-day program");
+  });
+
+  it("maps sessions with red warnings to 'bad' status", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [{ severity: "red" as const, dimension: "session", message: "too long" }],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+  });
+
+  it("flags the red warning message on bad sessions, not the first warning", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [
+          { severity: "yellow" as const, dimension: "session", message: "9 exercises — on the high end" },
+          { severity: "red" as const, dimension: "session", message: "32 total sets (recommended: 10-25)" },
+        ],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+    expect(d.sessions[0].flag).toBe("32 total sets (recommended: 10-25)");
   });
 });
