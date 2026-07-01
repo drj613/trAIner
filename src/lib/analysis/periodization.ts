@@ -17,15 +17,26 @@ function exerciseIsHeavy(exercise: ProgramExercise): boolean {
   if (load.pct1rm !== undefined && load.pct1rm >= 85) return true;
   if (load.repMax !== undefined && load.repMax <= 3) return true;
   if (load.rpe !== undefined && load.rpe >= 9) return true;
+  // An explicit sub-85% load means not heavy even at low reps —
+  // light triples in a deload must not read as heavy singles.
+  if (load.pct1rm !== undefined) return false;
   const mid = repMidpoint(exercise.reps);
   if (mid !== null && mid <= 3) return true;
   return false;
 }
 
 function weekIsHeavy(weekDays: ProgramDay[]): boolean {
-  const exercises = weekExercises(weekDays);
-  if (exercises.length === 0) return false;
-  return exercises.filter(exerciseIsHeavy).length / exercises.length >= 0.5;
+  // Weigh by sets, not exercise count: in a volume-cut final week the heavy
+  // main lifts carry most sets even when accessories outnumber them.
+  let totalSets = 0;
+  let heavySets = 0;
+  for (const exercise of weekExercises(weekDays)) {
+    const sets = getEffectiveSets(exercise);
+    totalSets += sets;
+    if (exerciseIsHeavy(exercise)) heavySets += sets;
+  }
+  if (totalSets === 0) return false;
+  return heavySets / totalSets >= 0.5;
 }
 
 function weekAvgPct(weekDays: ProgramDay[]): number | null {
