@@ -62,11 +62,13 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
         : "No deload week present",
   };
 
+  const gradedSet = new Set<string>(result.goalScope.gradedDimensions);
+
   const dimensions: DimensionDisplay[] = [
-    { id: "volume",        label: "Volume",        score: dims.volume.score,        grade: dims.volume.grade,        status: DIM_STATUS(dims.volume.score),        note: dimNotes.volume },
-    { id: "balance",       label: "Balance",       score: dims.balance.score,       grade: dims.balance.grade,       status: DIM_STATUS(dims.balance.score),       note: dimNotes.balance },
-    { id: "structure",     label: "Structure",     score: dims.session.score,       grade: dims.session.grade,       status: DIM_STATUS(dims.session.score),       note: dimNotes.session },
-    { id: "periodization", label: "Periodization", score: dims.periodization.score, grade: dims.periodization.grade, status: DIM_STATUS(dims.periodization.score), note: dimNotes.periodization },
+    { id: "volume",        label: "Volume",        score: dims.volume.score,        grade: dims.volume.grade,        status: DIM_STATUS(dims.volume.score),        note: dimNotes.volume,        graded: gradedSet.has("volume") },
+    { id: "balance",       label: "Balance",       score: dims.balance.score,       grade: dims.balance.grade,       status: DIM_STATUS(dims.balance.score),       note: dimNotes.balance,       graded: gradedSet.has("balance") },
+    { id: "structure",     label: "Structure",     score: dims.session.score,       grade: dims.session.grade,       status: DIM_STATUS(dims.session.score),      note: dimNotes.session,       graded: gradedSet.has("session") },
+    { id: "periodization", label: "Periodization", score: dims.periodization.score, grade: dims.periodization.grade, status: DIM_STATUS(dims.periodization.score), note: dimNotes.periodization, graded: gradedSet.has("periodization") },
   ];
 
   const muscles: MuscleDisplay[] = result.muscleVolumes.map((mv): MuscleDisplay => ({
@@ -126,11 +128,14 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     flag: (s.warnings.find((w) => w.severity === "red") ?? s.warnings[0])?.message,
   }));
 
-  const warnings: FindingDisplay[] = result.warnings.map((w): FindingDisplay => ({
-    severity: STATUS_COLOR[w.severity] ?? "good",
-    area: w.dimension,
-    msg: w.message,
-  }));
+  const warnings: FindingDisplay[] = [
+    ...result.notes.map((n): FindingDisplay => ({ severity: "info", area: n.area, msg: n.msg })),
+    ...result.warnings.map((w): FindingDisplay => ({
+      severity: STATUS_COLOR[w.severity] ?? "good",
+      area: w.dimension,
+      msg: w.message,
+    })),
+  ];
 
   // sessions has one entry per day across ALL weeks; divide by detected weeks
   // to report training days per week. weeksDetected is always >= 1.
@@ -142,6 +147,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
   return {
     durationMs,
     overall: { score: result.overall.score, grade: result.overall.grade },
+    goalScope: result.goalScope,
     fingerprint: {
       primary: `${daysPerWeek}d/wk`,
       secondary: null,

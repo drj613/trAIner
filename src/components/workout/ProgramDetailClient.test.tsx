@@ -52,6 +52,12 @@ jest.mock("@/lib/analysis/analyze", () => ({
     },
     periodization: { weeksDetected: 1, volumePattern: "static", deloadDetected: false, warnings: [] },
     warnings: [],
+    goalScope: {
+      goal: "general",
+      partial: false,
+      gradedDimensions: ["volume", "session", "balance", "periodization"],
+    },
+    notes: [],
   }),
 }));
 

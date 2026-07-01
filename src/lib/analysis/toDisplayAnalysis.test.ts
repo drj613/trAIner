@@ -1,6 +1,6 @@
 import { toDisplayAnalysis } from "./toDisplayAnalysis";
 import type { AnalysisResult } from "./types";
-import { imbalancedProgram, multiWeekProgram } from "./fixtures";
+import { imbalancedProgram, multiWeekProgram, startingStrengthProgram } from "./fixtures";
 import { analyzeProgram } from "./analyze";
 
 const makeResult = (): AnalysisResult => ({
@@ -179,5 +179,27 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(result, 0);
     expect(d.sessions[0].status).toBe("bad");
     expect(d.sessions[0].flag).toBe("32 total sets (recommended: 10-25)");
+  });
+
+  it("threads goalScope and marks gated-out dimensions as not graded", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const d = toDisplayAnalysis(analyzeProgram(program), 0);
+    expect(d.goalScope.goal).toBe("strength");
+    expect(d.goalScope.partial).toBe(true);
+    const byId = Object.fromEntries(d.dimensions.map((x) => [x.id, x.graded]));
+    expect(byId).toEqual({ volume: false, balance: true, structure: true, periodization: false });
+  });
+
+  it("renders notes as info findings ahead of warnings", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const d = toDisplayAnalysis(analyzeProgram(program), 0);
+    expect(d.warnings[0].severity).toBe("info");
+    expect(d.warnings[0].area).toBe("goal");
+  });
+
+  it("full-scope programs mark every dimension graded", () => {
+    const d = toDisplayAnalysis(analyzeProgram(imbalancedProgram), 0);
+    expect(d.dimensions.every((x) => x.graded)).toBe(true);
+    expect(d.goalScope.partial).toBe(false);
   });
 });

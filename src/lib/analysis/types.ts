@@ -120,6 +120,7 @@ export type DimensionDisplay = {
   grade: Grade;
   status: "good" | "warn" | "bad";
   note: string;
+  graded: boolean;
 };
 
 export type MuscleDisplay = {
@@ -160,6 +161,7 @@ export type FindingDisplay = {
 export type DisplayAnalysis = {
   durationMs: number;
   overall: { score: number; grade: string };
+  goalScope: GoalScope;
   fingerprint: { primary: string; secondary: string | null; label: string };
   dimensions: DimensionDisplay[];
   muscles: MuscleDisplay[];
