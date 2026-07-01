@@ -112,7 +112,7 @@ describe("mapMuscleExpanded — H12 full body expansion", () => {
 // H17 — classifyMovement returns "legs" for hip hinge patterns
 describe("classifyMovement — H17 hinge patterns", () => {
   const makeCatalogItem = (movementPatterns: string[]): ExerciseCatalogItem =>
-    ({ id: "test", name: "Test", movementPatterns, tags: [], primaryMuscles: [], secondaryMuscles: [] } as any);
+    ({ id: "test", name: "Test", movementPatterns, tags: [], primaryMuscles: [], secondaryMuscles: [] } as unknown as ExerciseCatalogItem);
 
   it('returns "legs" for hinge pattern', () => {
     expect(classifyMovement(makeCatalogItem(["hinge"]))).toBe("legs");

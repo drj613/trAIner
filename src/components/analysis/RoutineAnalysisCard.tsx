@@ -255,7 +255,7 @@ function CoveragePanel({ muscles, patterns }: {
             ))}
           </div>
           <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5 }}>
-            Untrained muscles don't affect your score — specialists intentionally skip certain groups.
+            Untrained muscles don&apos;t affect your score — specialists intentionally skip certain groups.
           </div>
         </div>
       )}

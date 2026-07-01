@@ -12,7 +12,6 @@ import {
 export function analyzeBalance(days: ProgramDay[]): BalanceResult {
   let pushSets = 0;
   let pullSets = 0;
-  let legSets = 0;
   let upperSets = 0;
   let lowerSets = 0;
   let quadSets = 0;
@@ -41,7 +40,6 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
 
           if (category === "push") pushSets += sets;
           if (category === "pull") pullSets += sets;
-          if (category === "legs") legSets += sets;
 
           // C10: dedup per-exercise so multiple primary muscles mapping to the
           // same bucket don't double-count sets. mapMuscleExpanded handles "full body"

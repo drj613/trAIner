@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { clearDb, waitForIdb, IMPORT_PROGRAM_JSON } from "./helpers";
+import { clearDb, IMPORT_PROGRAM_JSON } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Program import suite — serial mode so tests chain: import → verify → map

@@ -64,7 +64,7 @@ export function LlmAnalysisSheet({
 
         <div style={{ flex: 1, overflow: "auto", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
-            What's in this prompt
+            What&apos;s in this prompt
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 12 }}>
             {[

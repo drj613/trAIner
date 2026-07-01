@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { clearDb, seedDemoIfNeeded, IMPORT_PROGRAM_JSON } from "./helpers";
+import { clearDb, seedDemoIfNeeded } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Routines index suite — serial mode so tests chain: read tests → mutation tests
