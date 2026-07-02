@@ -27,9 +27,10 @@ function landmarkTable(): string {
 export function buildSheetPrompt(analysis: DisplayAnalysis, programTitle: string): string {
   const s = SESSION_LIMITS;
   const bt = BALANCE_TARGETS;
+  const infoNotes = analysis.warnings.filter((w) => w.severity === "info");
   return `# Workout Routine Analysis: ${programTitle}
 
-You are an evidence-based strength coach. Analyze this routine using the reference data below. The user's goal for this routine is **${GOAL_LABELS[analysis.goalScope.goal]}**. Judge it by that goal's standards. The reference values below are calibrated for general/hypertrophy training${analysis.goalScope.partial ? " — dimensions outside this goal's scope are shown for reference and were excluded from the computed grade" : ""}.
+You are an evidence-based strength coach. Analyze this routine using the reference data below. The user's goal for this routine is **${GOAL_LABELS[analysis.goalScope.goal]}**. Judge it by that goal's standards. If the routine's content clearly doesn't fit this goal, say so before grading. The reference values below are calibrated for general/hypertrophy training${analysis.goalScope.partial ? " — dimensions outside this goal's scope are shown for reference and were excluded from the computed grade" : ""}.
 
 ## Reference: Volume Landmarks (effective sets/muscle/week)
 ${landmarkTable()}
@@ -50,8 +51,8 @@ Volume counting: primary muscles = 1.0 set, secondary = 0.5, incidental = 0.25; 
 - 6 movement patterns: horizontal/vertical push, horizontal/vertical pull, hinge, squat
 
 ## Computed Scores (validate or dispute)
-${analysis.dimensions.map((d) => `- ${d.label}: ${d.grade} (${d.score}/100) — ${d.note}`).join("\n")}
-
+${analysis.dimensions.map((d) => `- ${d.label}: ${d.grade} (${d.score}/100) — ${d.note}${d.graded ? "" : " [reference only — excluded from the grade for this goal]"}`).join("\n")}
+${infoNotes.length ? `\n## Engine notes (weigh these before trusting the stated goal)\n${infoNotes.map((n) => `- ${n.msg}`).join("\n")}\n` : ""}
 ## Muscle Volumes
 ${analysis.muscles.map((m) => `- ${m.group}: ${m.sets} eff. sets (MEV ${m.mev}, MAV ${m.mavLo}–${m.mavHi}, MRV ${m.mrv}) [${m.status}]`).join("\n")}
 

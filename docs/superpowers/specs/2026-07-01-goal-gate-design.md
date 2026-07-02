@@ -129,6 +129,10 @@ targets another goal…" guess with an explicit line — "The user's goal for th
 **<goal>**. Judge it by that goal's standards." Free-text goals chips continue flowing to the
 generation prompt unchanged.
 
+The prompt must carry the same goal-scope signal as the card: reference-only dimensions are
+tagged in the computed-scores list, and any engine mismatch notes are surfaced in an
+"Engine notes" section so the LLM can question a wrong goal rather than anchor on it.
+
 ## Testing
 
 - Gate math: each goal → expected graded set + renormalized overall (hand-computed cases).

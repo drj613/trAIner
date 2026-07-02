@@ -51,4 +51,27 @@ describe("buildSheetPrompt", () => {
     expect(prompt).toContain("The user's goal for this routine is **General fitness**");
     expect(prompt).not.toContain("excluded from the computed grade");
   });
+
+  it("tags reference-only dimensions in the computed scores", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const prompt = buildSheetPrompt(toDisplayAnalysis(analyzeProgram(program), 0), "SS");
+    const volumeLine = prompt.split("\n").find((l) => l.startsWith("- Volume:"))!;
+    const structureLine = prompt.split("\n").find((l) => l.startsWith("- Structure:"))!;
+    expect(volumeLine).toContain("[reference only");
+    expect(structureLine).not.toContain("[reference only");
+  });
+
+  it("surfaces engine mismatch notes so the LLM can question the goal", () => {
+    // strength goal + no heavy work → mismatch note exists
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const prompt = buildSheetPrompt(toDisplayAnalysis(analyzeProgram(program), 0), "SS");
+    expect(prompt).toContain("## Engine notes");
+    expect(prompt).toMatch(/no heavy work/i);
+    expect(prompt).toContain("doesn't fit this goal, say so");
+  });
+
+  it("omits the engine-notes section when there are none", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
+    expect(prompt).not.toContain("## Engine notes");
+  });
 });
