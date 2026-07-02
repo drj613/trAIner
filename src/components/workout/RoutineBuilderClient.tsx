@@ -14,6 +14,7 @@ import type {
   ProgramGroup,
   ProgramExercise,
   SectionType,
+  TrainingGoal,
 } from "@/lib/programs/types";
 
 // ── Draft types (local to this wizard) ───────────────────────────────────────
@@ -83,7 +84,7 @@ function sectionMeta(kind: SectionType) {
 
 // ── Draft → ProgramDocument ───────────────────────────────────────────────────
 
-function draftToProgram(draft: Draft): ProgramDocument {
+function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): ProgramDocument {
   const now = new Date().toISOString();
   const days: ProgramDay[] = draft.days.map((d, i) => ({
     id: crypto.randomUUID(),
@@ -117,6 +118,7 @@ function draftToProgram(draft: Draft): ProgramDocument {
     description: draft.description || undefined,
     source: "manual",
     active: true,
+    ...(primaryGoal ? { goal: primaryGoal } : {}),
     days,
     overrides: [],
     createdAt: now,
@@ -388,7 +390,7 @@ function DayEditorStep({
 
 export function RoutineBuilderClient() {
   const navigate = useNavigate();
-  const { saveProgram } = useLocalData();
+  const { saveProgram, profile } = useLocalData();
   const [step, setStep] = useState<"setup" | "days" | "edit">("setup");
   const [draft, setDraft] = useState<Draft>({ name: "", description: "", days: [] });
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
@@ -454,7 +456,7 @@ export function RoutineBuilderClient() {
   async function handleSave() {
     setSaving(true);
     try {
-      const program = draftToProgram(draft);
+      const program = draftToProgram(draft, profile?.primaryGoal);
       await saveProgram(program);
       navigate(`/programs/${program.id}`);
     } finally {

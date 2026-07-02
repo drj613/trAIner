@@ -62,6 +62,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
     source: "import",
     active: true,
     ...(lengthWeeks !== undefined ? { lengthWeeks } : {}),
+    ...(profileSnapshot?.primaryGoal ? { goal: profileSnapshot.primaryGoal } : {}),
     days,
     overrides,
     import: {

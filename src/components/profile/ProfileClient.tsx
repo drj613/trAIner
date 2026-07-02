@@ -10,6 +10,8 @@ import { TrainingHeatmap } from "./TrainingHeatmap";
 import { BodyweightSparkline } from "./BodyweightSparkline";
 import type { HeatmapCell } from "@/lib/analytics/trainingHeatmap";
 import type { BodyweightEntry, ProfileDocument } from "@/lib/programs/types";
+import { TRAINING_GOALS, type TrainingGoal } from "@/lib/programs/types";
+import { GOAL_LABELS } from "@/lib/programs/routineMeta";
 
 type EditingSection =
   | "name" | "body" | "history" | "goals"
@@ -22,6 +24,26 @@ function initials(name: string): string {
     .map((w) => w[0]?.toUpperCase() ?? "")
     .slice(0, 2)
     .join("");
+}
+
+function PrimaryGoalSelect({ value, onChange }: {
+  value: TrainingGoal | undefined;
+  onChange: (goal: TrainingGoal | undefined) => void;
+}) {
+  return (
+    <select
+      aria-label="Primary training goal"
+      className="input"
+      style={{ fontSize: 12, padding: "4px 8px", marginBottom: 8, display: "block" }}
+      value={value ?? ""}
+      onChange={(e) => onChange((e.target.value || undefined) as TrainingGoal | undefined)}
+    >
+      <option value="">No primary goal</option>
+      {TRAINING_GOALS.map((g) => (
+        <option key={g} value={g}>{GOAL_LABELS[g]}</option>
+      ))}
+    </select>
+  );
 }
 
 function ChipList({ items }: { items: string[] }) {
@@ -339,6 +361,10 @@ export function ProfileClient() {
 
         <div className="panel">
           <p className="tx-up mb-2">Goals</p>
+          <PrimaryGoalSelect
+            value={draft.primaryGoal}
+            onChange={(primaryGoal) => setDraft((d) => d && { ...d, primaryGoal })}
+          />
           <EditableChips
             items={draft.goals}
             onChange={(goals) => setDraft((d) => d && { ...d, goals })}
@@ -534,12 +560,23 @@ export function ProfileClient() {
         onCancel={cancelEdit}
       >
         {editingSection === "goals" && draft ? (
-          <EditableChips
-            items={draft.goals}
-            onChange={(goals) => setDraft((d) => d && { ...d, goals })}
-          />
+          <>
+            <PrimaryGoalSelect
+              value={draft.primaryGoal}
+              onChange={(primaryGoal) => setDraft((d) => d && { ...d, primaryGoal })}
+            />
+            <EditableChips
+              items={draft.goals}
+              onChange={(goals) => setDraft((d) => d && { ...d, goals })}
+            />
+          </>
         ) : (
-          <ChipList items={profile.goals} />
+          <ChipList
+            items={[
+              ...(profile.primaryGoal ? [`★ ${GOAL_LABELS[profile.primaryGoal]}`] : []),
+              ...profile.goals,
+            ]}
+          />
         )}
       </ProfileCard>
 
