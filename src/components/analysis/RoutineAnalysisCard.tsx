@@ -363,7 +363,7 @@ export function RoutineAnalysisCard({
             <span>Analysis</span>
             <span style={{ color: "var(--fg-4)" }}>· {analysis.durationMs}ms · offline</span>
             {analysis.goalScope.partial && (
-              <span style={{ color: "var(--warn)" }}>· partial</span>
+              <span style={{ color: "var(--warn)" }} title="Partial grade — some dimensions shown for reference only">· partial</span>
             )}
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.3, marginBottom: 3 }}>
@@ -405,8 +405,8 @@ export function RoutineAnalysisCard({
         <div style={{ flex: 1, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4 }}>
           {analysis.goalScope.partial ? (
             <>Graded on {analysis.dimensions.filter((d) => d.graded).map((d) => d.label).join(" + ")} for
-            a {GOAL_LABELS[analysis.goalScope.goal].toLowerCase()} goal.
-            {" "}{analysis.dimensions.filter((d) => !d.graded).map((d) => d.label).join(" & ")} shown for
+            your {GOAL_LABELS[analysis.goalScope.goal]} routine.
+            {" "}{analysis.dimensions.filter((d) => !d.graded).map((d) => d.label).join(", ")} shown for
             reference — standards differ for this goal.</>
           ) : (
             <>Calibrated for general &amp; hypertrophy training. Strength, powerlifting &amp; Olympic

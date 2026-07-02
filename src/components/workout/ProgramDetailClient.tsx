@@ -310,9 +310,16 @@ export function ProgramDetailClient({ id }: { id: string }) {
 
   async function handleGoalChange(goal: TrainingGoal) {
     if (!program) return;
+    const prev = program;
     const updated = { ...program, goal };
     setProgram(updated); // useMemo([program]) recomputes the analysis immediately
-    await programRepo.save(updated);
+    try {
+      await programRepo.save(updated);
+    } catch (e) {
+      console.error("[handleGoalChange] save failed", e);
+      setProgram(prev); // roll back so UI matches storage
+      alert("Couldn't save the goal. Please try again.");
+    }
   }
 
   const displayAnalysis = useMemo(() => {
