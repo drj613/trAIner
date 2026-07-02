@@ -1,7 +1,7 @@
 import { buildSheetPrompt, SHEET_PROMPT_GRID_ITEMS } from "./sheetPrompt";
 import { toDisplayAnalysis } from "./toDisplayAnalysis";
 import { analyzeProgram } from "./analyze";
-import { balancedProgram } from "./fixtures";
+import { balancedProgram, startingStrengthProgram } from "./fixtures";
 import { VOLUME_LANDMARKS } from "./thresholds";
 import { ALL_MUSCLE_GROUPS } from "./types";
 
@@ -36,5 +36,19 @@ describe("buildSheetPrompt", () => {
     const flat = SHEET_PROMPT_GRID_ITEMS.flat().join(" ");
     expect(flat).not.toMatch(/JSON for app to consume/i);
     expect(flat).not.toMatch(/profile/i);
+  });
+
+  it("states the routine goal explicitly", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const prompt = buildSheetPrompt(toDisplayAnalysis(analyzeProgram(program), 0), "SS");
+    expect(prompt).toContain("The user's goal for this routine is **Strength (PL/OL)**");
+    expect(prompt).not.toMatch(/appears to target/i);
+    expect(prompt).toContain("excluded from the computed grade");
+  });
+
+  it("full-scope goals state the goal without the exclusion clause", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
+    expect(prompt).toContain("The user's goal for this routine is **General fitness**");
+    expect(prompt).not.toContain("excluded from the computed grade");
   });
 });

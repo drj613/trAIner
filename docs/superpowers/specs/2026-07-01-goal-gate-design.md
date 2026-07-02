@@ -1,7 +1,7 @@
 # Goal-Gate for Routine Analysis — Design
 
 Date: 2026-07-01
-Status: approved (design conversation 2026-07-01)
+Status: implemented (see docs/superpowers/plans/2026-07-01-goal-gate.md)
 Depends on: `fix/analysis-residual-findings` branch (residual fixes, esp. Task 2 set-weighted
 heaviness and Task 4 `sheetPrompt.ts`) — implement this feature after that branch merges.
 

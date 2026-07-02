@@ -42,4 +42,20 @@ describe("ProfileClient — no profile", () => {
       );
     });
   });
+
+  it("saves the selected primary training goal", async () => {
+    render(<MemoryRouter><ProfileClient /></MemoryRouter>);
+    fireEvent.change(screen.getByPlaceholderText(/your name/i), {
+      target: { value: "Alex" },
+    });
+    fireEvent.change(screen.getByLabelText(/primary training goal/i), {
+      target: { value: "strength" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
+    await waitFor(() => {
+      expect(mockSaveProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ primaryGoal: "strength" })
+      );
+    });
+  });
 });

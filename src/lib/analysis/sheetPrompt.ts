@@ -2,6 +2,7 @@ import type { DisplayAnalysis } from "./types";
 import { ALL_MUSCLE_GROUPS } from "./types";
 import { VOLUME_LANDMARKS, SESSION_LIMITS, BALANCE_TARGETS } from "./thresholds";
 import { MUSCLE_LABEL } from "./toDisplayAnalysis";
+import { GOAL_LABELS } from "@/lib/programs/routineMeta";
 
 export const SHEET_PROMPT_GRID_ITEMS: ReadonlyArray<readonly [string, string]> = [
   ["Volume landmarks", `${ALL_MUSCLE_GROUPS.length} muscle groups · MV/MEV/MAV/MRV`],
@@ -28,7 +29,7 @@ export function buildSheetPrompt(analysis: DisplayAnalysis, programTitle: string
   const bt = BALANCE_TARGETS;
   return `# Workout Routine Analysis: ${programTitle}
 
-You are an evidence-based strength coach. Analyze this routine using the reference data below. The reference values are calibrated for general/hypertrophy training — if the routine clearly targets another goal (strength, powerlifting, endurance), say so and judge it by that goal's standards instead.
+You are an evidence-based strength coach. Analyze this routine using the reference data below. The user's goal for this routine is **${GOAL_LABELS[analysis.goalScope.goal]}**. Judge it by that goal's standards. The reference values below are calibrated for general/hypertrophy training${analysis.goalScope.partial ? " — dimensions outside this goal's scope are shown for reference and were excluded from the computed grade" : ""}.
 
 ## Reference: Volume Landmarks (effective sets/muscle/week)
 ${landmarkTable()}
@@ -62,7 +63,7 @@ ${analysis.sessions.map((sn) => `- ${sn.day}: ${sn.exercises} exercises, ${sn.se
 
 ## What to return
 Plain markdown — this app does not ingest a machine-readable response:
-1. **Verdict** — 2–3 sentences on overall quality for the goal this routine appears to target.
+1. **Verdict** — 2–3 sentences on overall quality for the stated goal.
 2. **Corrections** — where you disagree with the computed scores above, and why.
 3. **Top changes** — up to 5, prioritized, each with the specific edit and rationale.
 4. **What's already good** — brief.`;
