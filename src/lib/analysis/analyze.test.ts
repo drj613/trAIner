@@ -1,5 +1,5 @@
 import { analyzeProgram } from "./analyze";
-import { balancedProgram, imbalancedProgram, multiWeekProgram } from "./fixtures";
+import { balancedProgram, imbalancedProgram, multiWeekProgram, startingStrengthProgram } from "./fixtures";
 import type { ProgramDocument } from "@/lib/programs/types";
 
 describe("analyzeProgram", () => {
@@ -68,5 +68,98 @@ describe("analyzeProgram", () => {
     const result = analyzeProgram(multiWeekProgram);
     const chest = result.muscleVolumes.find((m) => m.muscle === "chest");
     expect(chest?.effectiveSets).toBeCloseTo(3.5, 1);
+  });
+});
+
+describe("goal gating", () => {
+  it("defaults to general: all four dimensions graded, not partial", () => {
+    const result = analyzeProgram(startingStrengthProgram);
+    expect(result.goalScope).toEqual({
+      goal: "general",
+      partial: false,
+      gradedDimensions: ["volume", "session", "balance", "periodization"],
+    });
+  });
+
+  it("strength goal drops volume/periodization warnings and renormalizes the grade", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const result = analyzeProgram(program);
+    expect(result.goalScope.partial).toBe(true);
+    expect(result.goalScope.gradedDimensions).toEqual(["session", "balance"]);
+    expect(result.warnings.every((w) => w.dimension !== "volume" && w.dimension !== "periodization")).toBe(true);
+    // dimension scores are still computed for reference
+    expect(result.dimensions.volume.score).toBeGreaterThanOrEqual(0);
+    // overall = renormalized session+balance only
+    const w = { session: 0.235, balance: 0.294 };
+    const expected = Math.round(
+      (result.dimensions.session.score * w.session + result.dimensions.balance.score * w.balance) /
+      (w.session + w.balance),
+    );
+    expect(result.overall.score).toBe(expected);
+  });
+
+  it("undefined goal produces identical output to today (regression pin)", () => {
+    const result = analyzeProgram(startingStrengthProgram);
+    expect(result.warnings.some((w) => w.dimension === "volume")).toBe(true);
+    // undefined goal must be byte-equivalent to explicit "general"
+    expect(result).toEqual(analyzeProgram({ ...startingStrengthProgram, goal: "general" }));
+  });
+
+  it("nudges when a hypertrophy-goal program is mostly heavy work", () => {
+    const heavyDay = {
+      id: "hv-1", dayNumber: 1, weekNumber: 1, title: "Heavy",
+      sections: [{
+        id: "hv-s1", type: "strength" as const, name: "Main",
+        groups: [{
+          id: "hv-g1", type: "single" as const,
+          exercises: [{
+            id: "hv-e1", name: "Back Squat", sets: 5, reps: "2", load: "90%",
+            tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+          }],
+        }],
+      }],
+    };
+    const program = { ...startingStrengthProgram, days: [heavyDay], goal: "hypertrophy" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(true);
+  });
+
+  it("nudges at exactly 50% heavy sets (boundary)", () => {
+    const boundaryDay = {
+      id: "bd-1", dayNumber: 1, weekNumber: 1, title: "Mixed",
+      sections: [{
+        id: "bd-s1", type: "strength" as const, name: "Main",
+        groups: [
+          {
+            id: "bd-g1", type: "single" as const,
+            exercises: [{
+              id: "bd-e1", name: "Back Squat", sets: 5, reps: "2", load: "90%",
+              tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+            }],
+          },
+          {
+            id: "bd-g2", type: "single" as const,
+            exercises: [{
+              id: "bd-e2", name: "Leg Press", sets: 5, reps: "10-12",
+              tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+            }],
+          },
+        ],
+      }],
+    };
+    const program = { ...startingStrengthProgram, days: [boundaryDay], goal: "hypertrophy" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(true);
+  });
+
+  it("nudges when a strength-goal program has zero heavy work", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /no heavy/i.test(n.msg))).toBe(true);
+  });
+
+  it("no nudge when goal matches content", () => {
+    const result = analyzeProgram(startingStrengthProgram); // general goal, light-ish content
+    expect(result.notes).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { analyzePeriodization } from "./periodization";
+import { analyzePeriodization, heavySetShare } from "./periodization";
 import { balancedProgram, multiWeekProgram } from "./fixtures";
 import type { ProgramDay } from "@/lib/programs/types";
 
@@ -120,5 +120,19 @@ describe("analyzePeriodization", () => {
     const r = analyzePeriodization([build(1, 5), build(2, 5), build(3, 5), deloadWeek]);
     expect(r.deloadDetected).toBe(true);
     expect(r.peakDetected).toBe(false);
+  });
+});
+
+describe("heavySetShare", () => {
+  it("returns the set-weighted share of heavy work", () => {
+    const week = weekOf(1, [
+      { name: "Back Squat", sets: 6, reps: "1-2", load: "92%" },
+      { name: "Leg Press", sets: 2, reps: "10-12" },
+    ]);
+    expect(heavySetShare([week])).toBe(0.75);
+  });
+
+  it("returns 0 for an empty program", () => {
+    expect(heavySetShare([])).toBe(0);
   });
 });

@@ -4,6 +4,11 @@ import { LlmAnalysisSheet } from "./LlmAnalysisSheet";
 const mockAnalysis = {
   durationMs: 184,
   overall: { score: 82, grade: "B" },
+  goalScope: {
+    goal: "general" as const,
+    partial: false,
+    gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
   fingerprint: { primary: "Hypertrophy", secondary: "Strength", label: "Hypertrophy-focused", confidence: 0.88 },
   dimensions: [],
   muscles: [{ group: "Chest", sets: 6.5, mev: 6, mavLo: 6, mavHi: 16, mrv: 24, status: "green" as const }],

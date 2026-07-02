@@ -1,7 +1,7 @@
 # Goal-Gate for Routine Analysis — Design
 
 Date: 2026-07-01
-Status: approved (design conversation 2026-07-01)
+Status: implemented (see docs/superpowers/plans/2026-07-01-goal-gate.md)
 Depends on: `fix/analysis-residual-findings` branch (residual fixes, esp. Task 2 set-weighted
 heaviness and Task 4 `sheetPrompt.ts`) — implement this feature after that branch merges.
 
@@ -128,6 +128,10 @@ new `heavySetShare(days)`), call from `analyze.ts`, append a `severity: "info"`-
 targets another goal…" guess with an explicit line — "The user's goal for this routine is
 **<goal>**. Judge it by that goal's standards." Free-text goals chips continue flowing to the
 generation prompt unchanged.
+
+The prompt must carry the same goal-scope signal as the card: reference-only dimensions are
+tagged in the computed-scores list, and any engine mismatch notes are surfaced in an
+"Engine notes" section so the LLM can question a wrong goal rather than anchor on it.
 
 ## Testing
 

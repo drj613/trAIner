@@ -100,6 +100,22 @@ describe("import parser", () => {
 
     expect(review.program.days[0].sections[0].groups[0].exercises[0].notes).toBe("focus on depth");
   });
+
+  it("defaults program.goal from the profile snapshot's primaryGoal", () => {
+    const profile = {
+      id: "local-profile" as const,
+      name: "T", goals: [], equipment: [], constraints: [],
+      trainingAge: "", defaultDaysPerWeek: 3, updatedAt: "",
+      primaryGoal: "strength" as const,
+    };
+    const { program } = normalizePayload({ days: [minimalDay(1, "Day 1")] }, profile);
+    expect(program.goal).toBe("strength");
+  });
+
+  it("leaves program.goal undefined without a primaryGoal", () => {
+    const { program } = normalizePayload({ days: [minimalDay(1, "Day 1")] });
+    expect(program.goal).toBeUndefined();
+  });
 });
 
 describe("multi-week import", () => {

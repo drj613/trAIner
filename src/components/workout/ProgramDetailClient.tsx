@@ -13,7 +13,7 @@ import { RoutineAnalysisCard } from "@/components/analysis/RoutineAnalysisCard";
 import { LlmAnalysisSheet } from "@/components/analysis/LlmAnalysisSheet";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { GroupRail } from "./GroupRail";
-import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection } from "@/lib/programs/types";
+import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection, TrainingGoal } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
 
@@ -308,6 +308,20 @@ export function ProgramDetailClient({ id }: { id: string }) {
     logRepo.listForProgram(program.id).then(setLogs).catch(() => undefined);
   }, [program?.id]);
 
+  async function handleGoalChange(goal: TrainingGoal) {
+    if (!program) return;
+    const prev = program;
+    const updated = { ...program, goal };
+    setProgram(updated); // useMemo([program]) recomputes the analysis immediately
+    try {
+      await programRepo.save(updated);
+    } catch (e) {
+      console.error("[handleGoalChange] save failed", e);
+      setProgram(prev); // roll back so UI matches storage
+      alert("Couldn't save the goal. Please try again.");
+    }
+  }
+
   const displayAnalysis = useMemo(() => {
     if (!program) return null;
     const start = performance.now();
@@ -379,7 +393,12 @@ export function ProgramDetailClient({ id }: { id: string }) {
         )}
         {displayAnalysis && (
           <div style={{ marginTop: 8 }}>
-            <RoutineAnalysisCard analysis={displayAnalysis} onOpenPrompt={() => setPromptOpen(true)} />
+            <RoutineAnalysisCard
+              analysis={displayAnalysis}
+              goal={program.goal ?? "general"}
+              onGoalChange={(g) => void handleGoalChange(g)}
+              onOpenPrompt={() => setPromptOpen(true)}
+            />
           </div>
         )}
       </div>
