@@ -3,6 +3,7 @@ import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
+import { baseExercisePath } from "@/lib/import/paths";
 
 export class ImportError extends Error {
   reason: RecoveryReason;
@@ -42,7 +43,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   const now = new Date().toISOString();
   const programId = newId("program");
 
-  const baseDays = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+  const baseDays = parseBaseDays(payload, warnings, aliases, userExercises);
 
   if (baseDays.length === 0) {
     throw new ImportError(
@@ -50,6 +51,11 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
       'No workout days found. Make sure you\'re pasting the complete AI response — it should contain a "days" array.'
     );
   }
+
+  // Duplicate-day diagnostics run on the normalized BASE-TEMPLATE days,
+  // before expansion — expanded weekly copies legitimately share the same
+  // declared day number, so checking post-expansion would misfire.
+  diagnoseDuplicateBaseDayNumbers(baseDays, warnings);
 
   const lengthWeeks = optionalNumber(payload.weeks);
   const days = expandDays(baseDays, lengthWeeks);
@@ -75,6 +81,33 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   };
 
   return { program, warnings };
+}
+
+function parseBaseDays(
+  payload: ImportPayload,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[]
+): ProgramDay[] {
+  return detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+}
+
+// Structural warning only (no rawName), so extractUnresolvedExercises never
+// treats this as an exercise-resolution item. Must run on BASE days
+// (pre-expandDays) — see call site in normalizePayload.
+function diagnoseDuplicateBaseDayNumbers(baseDays: ProgramDay[], warnings: ImportWarning[]): void {
+  const counts = new Map<number, number>();
+  for (const day of baseDays) {
+    counts.set(day.dayNumber, (counts.get(day.dayNumber) ?? 0) + 1);
+  }
+  for (const [dayNumber, count] of counts) {
+    if (count > 1) {
+      warnings.push({
+        path: `days.${dayNumber}`,
+        message: `Day ${dayNumber} is declared ${count} times. Duplicate base day numbers make exercise resolutions for this day ambiguous.`,
+      });
+    }
+  }
 }
 
 function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): ProgramDay[] {
@@ -125,23 +158,24 @@ function detectDays(payload: ImportPayload): ImportPayload[] {
 }
 
 function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramDay {
+  const dayNumber = numberFrom(day.day ?? day.dayNumber, fallbackDayNumber);
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, `days.${fallbackDayNumber}.sections.${index}`, warnings, aliases, userExercises)
+    normalizeSection(section, dayNumber, index, warnings, aliases, userExercises)
   );
 
   return {
     id: newId("day"),
-    dayNumber: numberFrom(day.day ?? day.dayNumber, fallbackDayNumber),
+    dayNumber,
     weekNumber: optionalNumber(day.week ?? day.weekNumber),
     title: stringFrom(day.title ?? day.name, `Day ${fallbackDayNumber}`),
     sections
   };
 }
 
-function normalizeSection(section: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
+function normalizeSection(section: ImportPayload, dayNumber: number, sectionIndex: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
   const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases, userExercises, sectionType)
+    normalizeGroup(group, dayNumber, sectionIndex, index, warnings, aliases, userExercises, sectionType)
   );
 
   return {
@@ -152,9 +186,9 @@ function normalizeSection(section: ImportPayload, path: string, warnings: Import
   };
 }
 
-function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramGroup {
+function normalizeGroup(group: ImportPayload, dayNumber: number, sectionIndex: number, groupIndex: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases, userExercises, sectionType)
+    normalizeExercise(exercise, baseExercisePath(dayNumber, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
   );
 
   return {

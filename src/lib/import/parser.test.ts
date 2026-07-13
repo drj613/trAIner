@@ -1,5 +1,7 @@
 import example from "@/test/fixtures/example-structure.json";
 import { normalizePayload, parseProgramJson, ImportError } from "./parser";
+import { applyResolutions } from "./resolution";
+import { baseExercisePath } from "./paths";
 
 const minimalDay = (day: number, title: string) => ({
   day,
@@ -364,6 +366,113 @@ describe("parseProgramJson sanitizer integration", () => {
       parseProgramJson('{"title":"Empty"}');
     } catch (e) {
       expect((e as ImportError).reason).toBe("no-days");
+    }
+  });
+});
+
+describe("canonical base-day warning paths (non-sequential day numbers)", () => {
+  const unknownDay = (day: number, title: string) => ({
+    day,
+    title,
+    sections: [{ type: "strength", groups: [{ exercises: [{ name: "Moon Lunge" }] }] }],
+  });
+
+  it("keys the warning path by the declared day number, not the array index", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Non-Sequential Days",
+        days: [minimalDay(1, "Day 1"), unknownDay(3, "Day 3"), minimalDay(5, "Day 5")],
+      })
+    );
+
+    expect(review.warnings).toHaveLength(1);
+    expect(review.warnings[0].path).toBe(baseExercisePath(3, 0, 0, 0));
+    expect(review.warnings[0].path).not.toBe(baseExercisePath(2, 0, 0, 0));
+  });
+
+  it("applies a resolution to declared Day 3 only, leaving Day 1 and Day 5 untouched", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Non-Sequential Days",
+        days: [minimalDay(1, "Day 1"), unknownDay(3, "Day 3"), minimalDay(5, "Day 5")],
+      })
+    );
+
+    const warningPath = review.warnings[0].path;
+    const patched = applyResolutions(review.program, [
+      { path: warningPath, canonicalId: "lunge-canonical" },
+    ]);
+
+    const day1 = patched.days.find((d) => d.dayNumber === 1)!;
+    const day3 = patched.days.find((d) => d.dayNumber === 3)!;
+    const day5 = patched.days.find((d) => d.dayNumber === 5)!;
+
+    expect(day3.sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("lunge-canonical");
+    // Day 1 and Day 5 (both "Squat", never touched by the resolution) are
+    // structurally unchanged by patching Day 3.
+    expect(day1).toEqual(review.program.days.find((d) => d.dayNumber === 1));
+    expect(day5).toEqual(review.program.days.find((d) => d.dayNumber === 5));
+  });
+});
+
+describe("duplicate base-day diagnostics", () => {
+  it("flags a structural warning for real duplicate base day numbers", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Duplicate Base Days",
+        days: [minimalDay(1, "Day 1"), minimalDay(3, "Day 3a"), minimalDay(3, "Day 3b")],
+      })
+    );
+
+    const structural = review.warnings.filter((w) => w.rawName === undefined);
+    expect(structural).toHaveLength(1);
+    expect(structural[0].message).toMatch(/duplicate/i);
+    expect(structural[0].message).toMatch(/3/);
+  });
+
+  it("does NOT flag a duplicate-day warning for legitimate weekly expansion", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+      })
+    );
+
+    expect(review.program.days).toHaveLength(4);
+    const structural = review.warnings.filter((w) => /duplicate/i.test(w.message));
+    expect(structural).toHaveLength(0);
+  });
+
+  it("does not apply an exercise resolution through an ambiguous duplicate-day path", () => {
+    const unknownDay = (day: number, title: string) => ({
+      day,
+      title,
+      sections: [{ type: "strength", groups: [{ exercises: [{ name: "Moon Lunge" }] }] }],
+    });
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Duplicate Base Days With Unmatched Exercise",
+        days: [unknownDay(3, "Day 3a"), unknownDay(3, "Day 3b")],
+      })
+    );
+
+    const exerciseWarnings = review.warnings.filter((w) => w.rawName !== undefined);
+    expect(exerciseWarnings.length).toBeGreaterThan(0);
+    const ambiguousPath = exerciseWarnings[0].path;
+
+    const patched = applyResolutions(review.program, [
+      { path: ambiguousPath, canonicalId: "lunge-canonical" },
+    ]);
+
+    for (const day of patched.days) {
+      for (const section of day.sections) {
+        for (const group of section.groups) {
+          for (const exercise of group.exercises) {
+            expect(exercise.canonicalExerciseId).toBeUndefined();
+          }
+        }
+      }
     }
   });
 });
