@@ -162,4 +162,40 @@ describe("goal gating", () => {
     const result = analyzeProgram(startingStrengthProgram); // general goal, light-ish content
     expect(result.notes).toEqual([]);
   });
+
+  it("goal-mismatch note derives from the gated heavySetShare — warmup ramp singles must not trigger it (7.6)", () => {
+    // Working sets are Leg Press at moderate reps — never heavy. A warmup
+    // ramp of low-rep singles (no explicit %, so heavy by the reps<=3
+    // fallback) is exactly half the flattened sets — if it counted, it
+    // would cross the 0.5 heavySetShare threshold and wrongly nudge toward
+    // "Strength" even though no working set is heavy.
+    const polluted = {
+      id: "polluted-1", dayNumber: 1, weekNumber: 1, title: "Legs",
+      sections: [
+        {
+          id: "pol-warmup", type: "warmup" as const, name: "Warmup",
+          groups: [{
+            id: "pol-wg", type: "single" as const,
+            exercises: [{
+              id: "pol-we", name: "Bar Ramp", sets: 6, reps: "1",
+              tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+            }],
+          }],
+        },
+        {
+          id: "pol-work", type: "hypertrophy" as const, name: "Main",
+          groups: [{
+            id: "pol-g", type: "single" as const,
+            exercises: [{
+              id: "pol-e", name: "Leg Press", sets: 6, reps: "10-12",
+              tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+            }],
+          }],
+        },
+      ],
+    };
+    const program = { ...startingStrengthProgram, days: [polluted], goal: "hypertrophy" as const };
+    const result = analyzeProgram(program);
+    expect(result.notes.some((n) => n.area === "goal" && /strength/i.test(n.msg))).toBe(false);
+  });
 });

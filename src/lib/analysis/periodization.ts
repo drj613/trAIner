@@ -2,14 +2,25 @@ import type { ProgramDay, ProgramExercise } from "@/lib/programs/types";
 import type { PeriodizationResult, Warning } from "./types";
 import { getEffectiveSets, repMidpoint } from "./muscles";
 import { parseLoad } from "./parseLoad";
+import { resolveCountsTowardVolume } from "./volumeRole";
+import { effectiveWeekNumber } from "@/lib/programs/domain";
 
-function weekExercises(weekDays: ProgramDay[]): ProgramExercise[] {
+// Filters DURING traversal — section context is still in scope when the
+// gate is applied, so warmup/mobility/cooldown/etc. exercises never reach
+// the flattened ProgramExercise[] that every set-derived metric below reads.
+function gatedExercises(days: ProgramDay[]): ProgramExercise[] {
   const out: ProgramExercise[] = [];
-  for (const day of weekDays)
+  for (const day of days)
     for (const section of day.sections)
       for (const group of section.groups)
-        for (const exercise of group.exercises) out.push(exercise);
+        for (const exercise of group.exercises)
+          if (resolveCountsTowardVolume(exercise, section.type)) out.push(exercise);
   return out;
+}
+
+/** The gated (working-set-only) population for a single program week. */
+function getWorkingWeekExercises(days: ProgramDay[], weekNumber: number): ProgramExercise[] {
+  return gatedExercises(days.filter((d) => effectiveWeekNumber(d) === weekNumber));
 }
 
 function exerciseIsHeavy(exercise: ProgramExercise): boolean {
@@ -29,7 +40,7 @@ function exerciseIsHeavy(exercise: ProgramExercise): boolean {
 export function heavySetShare(days: ProgramDay[]): number {
   let totalSets = 0;
   let heavySets = 0;
-  for (const exercise of weekExercises(days)) {
+  for (const exercise of gatedExercises(days)) {
     const sets = getEffectiveSets(exercise);
     totalSets += sets;
     if (exerciseIsHeavy(exercise)) heavySets += sets;
@@ -44,7 +55,7 @@ function weekIsHeavy(weekDays: ProgramDay[]): boolean {
 }
 
 function weekAvgPct(weekDays: ProgramDay[]): number | null {
-  const pcts = weekExercises(weekDays)
+  const pcts = gatedExercises(weekDays)
     .map((e) => parseLoad(e.load).pct1rm)
     .filter((p): p is number => p !== undefined);
   if (pcts.length === 0) return null;
@@ -52,7 +63,7 @@ function weekAvgPct(weekDays: ProgramDay[]): number | null {
 }
 
 function weekAvgReps(weekDays: ProgramDay[]): number | null {
-  const mids = weekExercises(weekDays)
+  const mids = gatedExercises(weekDays)
     .map((e) => repMidpoint(e.reps))
     .filter((m): m is number => m !== null);
   if (mids.length === 0) return null;
@@ -63,8 +74,8 @@ function detectIntensityProgression(
   days: ProgramDay[],
   weeks: number[],
 ): PeriodizationResult["intensityProgression"] {
-  const firstDays = days.filter((d) => (d.weekNumber ?? 1) === weeks[0]);
-  const lastDays = days.filter((d) => (d.weekNumber ?? 1) === weeks[weeks.length - 1]);
+  const firstDays = days.filter((d) => effectiveWeekNumber(d) === weeks[0]);
+  const lastDays = days.filter((d) => effectiveWeekNumber(d) === weeks[weeks.length - 1]);
 
   const p0 = weekAvgPct(firstDays);
   const p1 = weekAvgPct(lastDays);
@@ -79,7 +90,7 @@ function detectIntensityProgression(
 }
 
 export function analyzePeriodization(days: ProgramDay[]): PeriodizationResult {
-  const weeks = [...new Set(days.map((d) => d.weekNumber ?? 1))].sort((a, b) => a - b);
+  const weeks = [...new Set(days.map((d) => effectiveWeekNumber(d)))].sort((a, b) => a - b);
   const warnings: Warning[] = [];
 
   if (weeks.length <= 1) {
@@ -99,17 +110,19 @@ export function analyzePeriodization(days: ProgramDay[]): PeriodizationResult {
   }
 
   const weeklyVolumes = weeks.map((wk) => {
-    const weekDays = days.filter((d) => (d.weekNumber ?? 1) === wk);
     let total = 0;
-    for (const exercise of weekExercises(weekDays)) total += getEffectiveSets(exercise);
+    for (const exercise of getWorkingWeekExercises(days, wk)) total += getEffectiveSets(exercise);
     return total;
   });
 
   const maxVolume = Math.max(...weeklyVolumes);
   const lastWeekVolume = weeklyVolumes[weeklyVolumes.length - 1];
-  const lastWeekDays = days.filter((d) => (d.weekNumber ?? 1) === weeks[weeks.length - 1]);
+  const lastWeekDays = days.filter((d) => effectiveWeekNumber(d) === weeks[weeks.length - 1]);
 
-  const volumeDropped = lastWeekVolume <= maxVolume * 0.7 && weeklyVolumes.length >= 3;
+  // Positive-reference guard: with a zero-working-volume routine (e.g. pure
+  // mobility, fully gated out), maxVolume is 0 and 0 <= 0 * 0.7 is
+  // vacuously true — without this guard that reads as a spurious deload.
+  const volumeDropped = maxVolume > 0 && lastWeekVolume <= maxVolume * 0.7 && weeklyVolumes.length >= 3;
   const lastWeekHeavy = weekIsHeavy(lastWeekDays);
   const deloadDetected = volumeDropped && !lastWeekHeavy;
   const peakDetected = volumeDropped && lastWeekHeavy;

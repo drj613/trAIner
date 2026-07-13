@@ -1,6 +1,37 @@
 import { analyzePeriodization, heavySetShare } from "./periodization";
 import { balancedProgram, multiWeekProgram } from "./fixtures";
-import type { ProgramDay } from "@/lib/programs/types";
+import type { ProgramDay, ProgramExercise, SectionType } from "@/lib/programs/types";
+
+function exOf(id: string, overrides: Partial<ProgramExercise> = {}): ProgramExercise {
+  return {
+    id,
+    name: overrides.name ?? id,
+    sets: overrides.sets,
+    reps: overrides.reps,
+    load: overrides.load,
+    countsTowardVolume: overrides.countsTowardVolume,
+    tags: overrides.tags ?? { primary: ["quads"], secondary: [], incidental: [], modifiers: [] },
+  };
+}
+
+function dayWithSections(
+  id: string,
+  weekNumber: number,
+  sections: { type: SectionType; exercises: ProgramExercise[] }[],
+): ProgramDay {
+  return {
+    id,
+    dayNumber: 1,
+    weekNumber,
+    title: `Week ${weekNumber}`,
+    sections: sections.map((s, i) => ({
+      id: `${id}-s${i}`,
+      type: s.type,
+      name: s.type,
+      groups: [{ id: `${id}-g${i}`, type: "single", exercises: s.exercises }],
+    })),
+  };
+}
 
 function squatWeek(weekNumber: number, sets: number, reps: string, load: string): ProgramDay {
   return {
@@ -134,5 +165,86 @@ describe("heavySetShare", () => {
 
   it("returns 0 for an empty program", () => {
     expect(heavySetShare([])).toBe(0);
+  });
+});
+
+describe("periodization gates warmup/non-volume sections during traversal (7.1)", () => {
+  it("does not let warmup ramp singles inflate heavySetShare, avg%, heavy-week classification, or peak detection", () => {
+    const build = (wk: number) =>
+      dayWithSections(`d${wk}`, wk, [
+        { type: "strength", exercises: [exOf(`sq${wk}`, { name: "Back Squat", sets: 6, reps: "5", load: "70%" })] },
+      ]);
+    // Final week: light working sets (not heavy) + a warmup ramp that IS
+    // heavy by the reps<=3-with-no-explicit-%/pct>=85 heuristics. If the
+    // warmup ramp counts, it flips this week from "deload" to "peak".
+    const finalWeek = dayWithSections("d4", 4, [
+      { type: "strength", exercises: [exOf("sq4", { name: "Back Squat", sets: 2, reps: "8", load: "60%" })] },
+      { type: "warmup", exercises: [exOf("ramp4", { name: "Bar Ramp", sets: 2, reps: "1", load: "95%" })] },
+    ]);
+
+    const r = analyzePeriodization([build(1), build(2), build(3), finalWeek]);
+
+    // Gated final-week heavySetShare: only the 2 light strength sets count, 0 heavy.
+    expect(heavySetShare([finalWeek])).toBe(0);
+    // Correctly a deload (light + reduced volume), never a peak — warmup must not
+    // make this week read as "heavy".
+    expect(r.deloadDetected).toBe(true);
+    expect(r.peakDetected).toBe(false);
+    // Avg% intensity progression must ignore the warmup's 95% entirely.
+    expect(r.intensityProgression).toBe("flat");
+  });
+
+  it("does not let warmup ramp singles skew average-reps-based intensity progression", () => {
+    const week1 = dayWithSections("r1", 1, [
+      { type: "strength", exercises: [exOf("b1", { name: "Bench Press", sets: 4, reps: "10" })] },
+      { type: "warmup", exercises: [exOf("w1", { name: "Bar Ramp", sets: 3, reps: "1" })] },
+    ]);
+    const week2 = dayWithSections("r2", 2, [
+      { type: "strength", exercises: [exOf("b2", { name: "Bench Press", sets: 4, reps: "9" })] },
+    ]);
+    const week3 = dayWithSections("r3", 3, [
+      { type: "strength", exercises: [exOf("b3", { name: "Bench Press", sets: 4, reps: "8" })] },
+    ]);
+    // Rep midpoints drop 10 -> 8 across the block (gated) — a real intensity rise.
+    // Ungated, week 1's average is dragged down to 5.5 by the warmup single,
+    // which masks the rise.
+    const r = analyzePeriodization([week1, week2, week3]);
+    expect(r.intensityProgression).toBe("rising");
+  });
+});
+
+describe("periodization gates constant warmup volume so it can't mask a real deload (7.3)", () => {
+  it("detects a deload driven by reduced working volume + intensity, undisturbed by constant warmup", () => {
+    const warmup = (wk: number) => exOf(`warmup-row-${wk}`, { name: "Warmup Row", sets: 15, reps: "10" });
+    const build = (wk: number) =>
+      dayWithSections(`bw${wk}`, wk, [
+        { type: "warmup", exercises: [warmup(wk)] },
+        { type: "strength", exercises: [exOf(`sq${wk}`, { name: "Back Squat", sets: 10, reps: "5", load: "75%" })] },
+      ]);
+    const deloadWeek = dayWithSections("bw4", 4, [
+      { type: "warmup", exercises: [warmup(4)] },
+      { type: "strength", exercises: [exOf("sq4", { name: "Back Squat", sets: 3, reps: "8", load: "55%" })] },
+    ]);
+
+    const r = analyzePeriodization([build(1), build(2), build(3), deloadWeek]);
+    expect(r.deloadDetected).toBe(true);
+    expect(r.peakDetected).toBe(false);
+  });
+});
+
+describe("periodization guards zero-working-volume routines against spurious classification (7.4)", () => {
+  it("reports no deload, no peak, and no NaN/Infinity for a pure-mobility multi-week routine", () => {
+    const build = (wk: number, sets: number) =>
+      dayWithSections(`mob${wk}`, wk, [
+        { type: "mobility", exercises: [exOf(`mob-ex${wk}`, { name: "Hip Mobility Flow", sets, reps: "10" })] },
+      ]);
+    // A big set-count drop in the final week — if mobility were treated as
+    // working volume (pre-fix bug), this reads as a deload. It should not,
+    // since none of this counts toward working volume at all.
+    const r = analyzePeriodization([build(1, 6), build(2, 6), build(3, 6), build(4, 1)]);
+
+    expect(r.deloadDetected).toBe(false);
+    expect(r.peakDetected).toBe(false);
+    expect(JSON.stringify(r)).not.toMatch(/NaN|Infinity/);
   });
 });
