@@ -28,6 +28,14 @@ standalone dataset. See [NOTICE](NOTICE) for details.
 - Tap any set to log reps and weight. The app tracks your history across sessions.
 - **History** shows a full log of past workouts. **Profile** shows the training heatmap and bodyweight history.
 
+### Routine analysis
+
+Each routine has an analysis card that scores volume, balance, coverage, and session structure.
+
+- Working-volume analysis excludes exercises identified as ordinary warmup, activation, mobility, cooldown, rehabilitation, or prehabilitation work — they aren't counted as working sets when scoring muscle-group volume.
+- Those exercises still count toward total programmed activity, exercise count, and estimated session duration.
+- Analysis is recomputed every time you open a routine, so existing stored routines automatically show updated results — no action needed, and no data migration is required.
+
 ### Your data stays on your device
 
 trAIner stores everything — programs, logs, and settings — in your browser's IndexedDB. **Nothing is sent to any server.** There are no accounts, no cloud sync, and no telemetry.

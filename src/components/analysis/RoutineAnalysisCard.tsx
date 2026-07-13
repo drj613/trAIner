@@ -139,6 +139,9 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
       <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
         Ideally your sets land in the MAV band — above MEV to drive growth, below MRV to stay recoverable. Consistently under MEV means not enough stimulus; consistently over MRV risks accumulating fatigue faster than you can adapt.
       </div>
+      <div style={{ marginTop: 6, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
+        Working-volume analysis excludes exercises identified as ordinary warmup, activation, mobility, cooldown, rehabilitation, or prehabilitation work. Those exercises still count toward total programmed activity, exercise count, and estimated session duration — they&apos;re just not scored as working sets here.
+      </div>
     </div>
   );
 }

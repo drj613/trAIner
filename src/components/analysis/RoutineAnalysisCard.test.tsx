@@ -81,6 +81,14 @@ describe("RoutineAnalysisCard", () => {
       screen.getByText(/calibrated for general .* hypertrophy training/i),
     ).toBeInTheDocument();
   });
+
+  it("explains that warmup/activation/mobility/cooldown/rehab/prehab work is excluded from working volume", () => {
+    render(<RoutineAnalysisCard analysis={mockAnalysis} goal="general" onGoalChange={() => {}} onOpenPrompt={jest.fn()} />);
+    fireEvent.click(screen.getByText("Hypertrophy-focused upper/lower split"));
+    expect(
+      screen.getByText(/warmup, activation, mobility, cooldown, rehabilitation, or prehabilitation/i),
+    ).toBeInTheDocument();
+  });
 });
 
 const strengthAnalysis = () =>
