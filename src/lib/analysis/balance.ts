@@ -8,6 +8,7 @@ import {
   classifyMovement,
   detectMovementPatterns,
 } from "./muscles";
+import { resolveCountsTowardVolume } from "./volumeRole";
 
 export function analyzeBalance(days: ProgramDay[]): BalanceResult {
   let pushSets = 0;
@@ -34,6 +35,13 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
     for (const section of day.sections) {
       for (const group of section.groups) {
         for (const exercise of group.exercises) {
+          // Gate: ordinary preparation (warmup/activation/mobility/etc.) does
+          // not count toward working-pattern balance — push/pull, upper/
+          // lower, movement-pattern coverage, and set-based totals below.
+          if (!resolveCountsTowardVolume(exercise, section.type)) {
+            continue;
+          }
+
           const sets = getEffectiveSets(exercise);
           const catalogItem = lookupCatalogExercise(exercise);
           const category = classifyMovement(catalogItem);

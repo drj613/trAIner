@@ -4,6 +4,7 @@ import {
   startingStrengthProgram,
   pplProgram,
 } from "./fixtures";
+import type { ProgramDay, ProgramDocument } from "@/lib/programs/types";
 
 describe("deriveCoverage (via analyzeProgram)", () => {
   it("coverage.musclesTrained contains only muscles with sets > 0", () => {
@@ -32,6 +33,56 @@ describe("deriveCoverage (via analyzeProgram)", () => {
     const result = analyzeProgram(balancedProgram);
     expect(result.coverage.patternsCovered).toEqual(result.balance.movementPatternsCovered);
     expect(result.coverage.patternsMissing).toEqual(result.balance.movementPatternsMissing);
+  });
+});
+
+// Phase 6 regression — deriveCoverage does its own traversal of NOTHING: it only
+// reads muscleVolumes (already gated by Phase 3's countWeeklyVolume) and balance
+// (now gated by Phase 6's analyzeBalance). This test proves non-volume work
+// excluded upstream does not reappear as "trained"/"covered" through coverage,
+// without deriveCoverage itself needing a second filter.
+describe("deriveCoverage inherits the counts-toward-volume gate (no second filter)", () => {
+  const warmupOnlyProgram: ProgramDocument = {
+    id: "warmup-only",
+    title: "Warmup-only",
+    source: "manual",
+    active: true,
+    overrides: [],
+    createdAt: "2025-01-01T00:00:00.000Z",
+    updatedAt: "2025-01-01T00:00:00.000Z",
+    days: [{
+      id: "d-1",
+      dayNumber: 1,
+      weekNumber: 1,
+      title: "Day",
+      sections: [{
+        id: "s-1",
+        type: "warmup",
+        name: "Warmup",
+        groups: [{
+          id: "g-1",
+          type: "single",
+          exercises: [{
+            id: "e-1",
+            name: "Band Pull-Aparts",
+            sets: 3,
+            reps: "20",
+            canonicalExerciseId: "band-pull-apart",
+            tags: { primary: ["shoulders"], secondary: [], incidental: [], modifiers: [] },
+          }],
+        }],
+      }],
+    }] as ProgramDay[],
+  };
+
+  it("does not mark a warmup-only muscle as trained, and does not mark its pattern as covered", () => {
+    const result = analyzeProgram(warmupOnlyProgram);
+    // Band Pull-Apart's primary muscle ("shoulders" → side_delts) never counts:
+    // the warmup section defaults countsTowardVolume=false and nothing overrides it.
+    expect(result.coverage.musclesTrained).toHaveLength(0);
+    expect(result.coverage.patternsCovered).toHaveLength(0);
+    // Still equal to (now-gated) balance output — no double filtering, no drift.
+    expect(result.coverage.patternsCovered).toEqual(result.balance.movementPatternsCovered);
   });
 });
 
