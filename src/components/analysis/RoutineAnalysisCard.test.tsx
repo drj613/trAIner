@@ -28,7 +28,7 @@ const mockAnalysis = {
   ],
   patterns: { covered: ["horizontal_push", "squat"], missing: ["hip_hinge"] },
   sessions: [
-    { day: "Mon · Upper A", exercises: 7, sets: 22, durationMin: 56, status: "good" as const },
+    { day: "Mon · Upper A", exercises: 7, sets: 22, workingSets: 18, durationMin: 56, status: "good" as const },
   ],
   warnings: [
     { severity: "warn" as const, area: "Volume", msg: "Rear delts below MEV" },

@@ -2,6 +2,7 @@ import type { ProgramDay } from "@/lib/programs/types";
 import type { MuscleGroup, SessionResult, Warning } from "./types";
 import { SESSION_LIMITS } from "./thresholds";
 import { mapMuscle, getEffectiveSets } from "./muscles";
+import { resolveCountsTowardVolume } from "./volumeRole";
 
 export function analyzeSessions(days: ProgramDay[]): SessionResult[] {
   return days.map(analyzeDay);
@@ -10,6 +11,7 @@ export function analyzeSessions(days: ProgramDay[]): SessionResult[] {
 function analyzeDay(day: ProgramDay): SessionResult {
   let exerciseCount = 0;
   let totalSets = 0;
+  let workingSets = 0;
   const muscleSetCounts: Partial<Record<MuscleGroup, number>> = {};
   const warnings: Warning[] = [];
 
@@ -20,9 +22,17 @@ function analyzeDay(day: ProgramDay): SessionResult {
         const sets = getEffectiveSets(exercise);
         totalSets += sets;
 
-        for (const label of exercise.tags.primary) {
-          const muscle = mapMuscle(label);
-          if (muscle) muscleSetCounts[muscle] = (muscleSetCounts[muscle] ?? 0) + sets;
+        // Only the resolved WORKING population accumulates toward workingSets
+        // and the direct per-muscle cap — warmup/mobility/explicitly-excluded
+        // exercises still count toward totalSets/duration above, but must not
+        // inflate working-volume or direct-muscle accounting below.
+        if (resolveCountsTowardVolume(exercise, section.type)) {
+          workingSets += sets;
+
+          for (const label of exercise.tags.primary) {
+            const muscle = mapMuscle(label);
+            if (muscle) muscleSetCounts[muscle] = (muscleSetCounts[muscle] ?? 0) + sets;
+          }
         }
       }
     }
@@ -45,17 +55,19 @@ function analyzeDay(day: ProgramDay): SessionResult {
     });
   }
 
-  if (totalSets > lim.totalSets.yellowMax) {
+  // The 10-25(-30) range gates WORKING sets, not all prescribed activity —
+  // warmup/mobility/excluded work must not push a session into this warning.
+  if (workingSets > lim.totalSets.yellowMax) {
     warnings.push({
       severity: "red",
       dimension: "session",
-      message: `${day.title}: ${totalSets} total sets (recommended: ${lim.totalSets.greenMin}-${lim.totalSets.greenMax})`,
+      message: `${day.title}: working sets are above the preferred range.`,
     });
-  } else if (totalSets > lim.totalSets.greenMax) {
+  } else if (workingSets > lim.totalSets.greenMax) {
     warnings.push({
       severity: "yellow",
       dimension: "session",
-      message: `${day.title}: ${totalSets} total sets — high volume`,
+      message: `${day.title}: working sets are above the preferred range.`,
     });
   }
 
@@ -94,6 +106,7 @@ function analyzeDay(day: ProgramDay): SessionResult {
     dayTitle: day.title,
     exerciseCount,
     totalSets,
+    workingSets,
     estimatedMinutes,
     muscleSetCounts,
     warnings,

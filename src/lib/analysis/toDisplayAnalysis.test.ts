@@ -18,7 +18,7 @@ const makeResult = (): AnalysisResult => ({
   }],
   sessions: [{
     dayId: "d1", dayTitle: "Mon · Upper A",
-    exerciseCount: 7, totalSets: 22, estimatedMinutes: 56,
+    exerciseCount: 7, totalSets: 22, workingSets: 18, estimatedMinutes: 56,
     muscleSetCounts: {},
     warnings: [],
   }],
@@ -100,6 +100,8 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(makeResult(), 184);
     expect(d.sessions[0].day).toBe("Mon · Upper A");
     expect(d.sessions[0].exercises).toBe(7);
+    expect(d.sessions[0].sets).toBe(22);
+    expect(d.sessions[0].workingSets).toBe(18);
     expect(d.sessions[0].durationMin).toBe(56);
   });
 

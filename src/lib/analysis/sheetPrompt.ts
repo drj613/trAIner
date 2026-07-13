@@ -60,7 +60,7 @@ ${analysis.muscles.map((m) => `- ${m.group}: ${m.sets} eff. sets (MEV ${m.mev}, 
 ${analysis.ratios.map((r) => `- ${r.label}: ${r.value} (target ${r.target}) [${r.verdict}]`).join("\n")}
 
 ## Sessions
-${analysis.sessions.map((sn) => `- ${sn.day}: ${sn.exercises} exercises, ${sn.sets} sets, ~${sn.durationMin} min [${sn.status}]`).join("\n")}
+${analysis.sessions.map((sn) => `- ${sn.day}: ${sn.exercises} exercises, ${sn.sets} total sets / ${sn.workingSets} working sets, ~${sn.durationMin} min [${sn.status}]`).join("\n")}
 
 ## What to return
 Plain markdown — this app does not ingest a machine-readable response:

@@ -283,7 +283,7 @@ function SessionsPanel({ sessions }: { sessions: DisplayAnalysis["sessions"] }) 
             {s.flag && <div style={{ fontSize: 10, color: "var(--warn)", marginTop: 1, lineHeight: 1.35 }}>{s.flag}</div>}
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", flexShrink: 0 }}>
-            {s.exercises}ex · {s.sets}s · {s.durationMin}m
+            {s.exercises}ex · {s.sets} total / {s.workingSets} working sets · {s.durationMin}m
           </span>
         </div>
       ))}

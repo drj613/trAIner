@@ -121,6 +121,7 @@ export function toDisplayAnalysis(result: AnalysisResult, durationMs: number): D
     day: s.dayTitle,
     exercises: s.exerciseCount,
     sets: s.totalSets,
+    workingSets: s.workingSets,
     durationMin: s.estimatedMinutes,
     status: s.warnings.some((w) => w.severity === "red") ? "bad"
           : s.warnings.length > 0 ? "warn"

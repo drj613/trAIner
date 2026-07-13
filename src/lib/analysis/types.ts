@@ -58,6 +58,7 @@ export type SessionResult = {
   dayTitle: string;
   exerciseCount: number;
   totalSets: number;
+  workingSets: number;
   estimatedMinutes: number;
   muscleSetCounts: Partial<Record<MuscleGroup, number>>;
   warnings: Warning[];
@@ -147,6 +148,7 @@ export type SessionDisplay = {
   day: string;
   exercises: number;
   sets: number;
+  workingSets: number;
   durationMin: number;
   status: "good" | "warn" | "bad";
   flag?: string;

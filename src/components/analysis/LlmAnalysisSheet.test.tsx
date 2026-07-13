@@ -14,7 +14,7 @@ const mockAnalysis = {
   muscles: [{ group: "Chest", sets: 6.5, mev: 6, mavLo: 6, mavHi: 16, mrv: 24, status: "green" as const }],
   ratios: [],
   patterns: { covered: [], missing: [] },
-  sessions: [{ day: "Mon", exercises: 7, sets: 22, durationMin: 56, status: "good" as const }],
+  sessions: [{ day: "Mon", exercises: 7, sets: 22, workingSets: 18, durationMin: 56, status: "good" as const }],
   warnings: [],
   strengths: [],
 };
