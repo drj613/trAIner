@@ -468,6 +468,129 @@ describe("canonical base-day warning paths (non-sequential day numbers)", () => 
   });
 });
 
+describe("override diagnostics (warning-only, never reject/delete/mutate)", () => {
+  it("does not flag an out-of-range week warning for a valid override on an expanded week (effective weeks come from expanded days, not the raw base template)", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", weekNumber: 4, days: [minimalDay(1, "Push Light")] },
+        ],
+      })
+    );
+    const outOfRange = review.warnings.filter((w) => /does not match any week/.test(w.message));
+    expect(outOfRange).toHaveLength(0);
+  });
+
+  it("warns when a week override is missing weekNumber", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", days: [minimalDay(1, "Push Light")] },
+        ],
+      })
+    );
+    expect(review.warnings.some((w) => w.message === "A week override is missing `weekNumber` and cannot be applied.")).toBe(true);
+  });
+
+  it("warns when a week override has no replacement days", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "5-Week Block",
+        weeks: 5,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", weekNumber: 5, days: [] },
+        ],
+      })
+    );
+    const messages = review.warnings.map((w) => w.message);
+    expect(messages).toContain("Week 5 override contains no replacement days. The base weekly template will be used unchanged.");
+    expect(messages).not.toContain("Week 5 override does not match any week represented by this routine and will not be applied.");
+  });
+
+  it("warns when a week override's weekNumber doesn't match any week produced by this routine", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", weekNumber: 9, days: [minimalDay(1, "Push Light")] },
+        ],
+      })
+    );
+    expect(review.warnings.some((w) => w.message === "Week 9 override does not match any week represented by this routine and will not be applied.")).toBe(true);
+  });
+
+  it("warns when an override replacement day references a day number absent from the base weekly template", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "6-Week Block",
+        weeks: 6,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", weekNumber: 6, days: [minimalDay(5, "Ghost Day")] },
+        ],
+      })
+    );
+    const messages = review.warnings.map((w) => w.message);
+    expect(messages).toContain("Week 6 override references Day 5, which does not exist in the base weekly template. That replacement will not be applied.");
+    expect(messages).not.toContain("Week 6 override does not match any week represented by this routine and will not be applied.");
+  });
+
+  it("warns with neutral wording when an override replacement day is empty or rest (sections: [])", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push"), minimalDay(2, "Pull")],
+        overrides: [
+          { scope: "week", weekNumber: 4, days: [{ day: 2, title: "Rest", sections: [] }] },
+        ],
+      })
+    );
+    expect(review.warnings.some((w) => w.message === "Week 4, Day 2 replaces the base workout with an empty or rest day. Confirm that this is intentional.")).toBe(true);
+  });
+
+  it("warns when an imported day-scope override has no matching internal dayId", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "day", days: [minimalDay(1, "Push Light")] },
+        ],
+      })
+    );
+    expect(review.warnings.some((w) => w.message === "Imported day-scope overrides cannot be applied without a matching internal routine day. Use a week override with replacement day objects instead.")).toBe(true);
+  });
+
+  it("preserves the diagnosed override unchanged — warning-only, never rejected/deleted/mutated", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          { scope: "week", weekNumber: 9, days: [minimalDay(1, "Push Light")] },
+        ],
+      })
+    );
+    expect(review.program.overrides).toHaveLength(1);
+    expect(review.program.overrides[0].weekNumber).toBe(9);
+    const replacement = review.program.overrides[0].replacement;
+    const rDays = Array.isArray(replacement) ? replacement : [replacement];
+    expect(rDays[0].title).toBe("Push Light");
+  });
+});
+
 describe("duplicate base-day diagnostics", () => {
   it("flags a structural warning for real duplicate base day numbers", () => {
     const review = parseProgramJson(

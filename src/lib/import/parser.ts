@@ -4,6 +4,7 @@ import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, Pro
 import { emptyTags } from "@/lib/programs/types";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
+import { diagnoseImportOverrides } from "@/lib/programs/overrideDiagnostics";
 
 // Builds the ImportWarning path for an exercise at a given position. Base
 // days use `baseExercisePath`; override replacement days use
@@ -71,8 +72,12 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   diagnoseDuplicateBaseDayNumbers(baseDays, warnings);
 
   const lengthWeeks = optionalNumber(payload.weeks);
+  // Effective weeks are computed from the EXPANDED day set, not the raw
+  // base template or the scalar `weeks` field — expansion is what actually
+  // determines which weeks exist to be overridden. See diagnoseImportOverrides.
   const days = expandDays(baseDays, lengthWeeks);
   const overrides = parseOverrides(payload, programId, warnings, aliases, userExercises);
+  diagnoseImportOverrides(overrides, days, warnings);
 
   const program: ProgramDocument = {
     id: programId,
