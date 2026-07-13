@@ -1,5 +1,5 @@
 import { demoProgram } from "./sample";
-import { getRenderableDays, dedupOverrides } from "./overrides";
+import { getRenderableDays, dedupOverrides, getOverrideReplacementDays } from "./overrides";
 import type { ProgramDocument, ProgramDay, ProgramOverride } from "./types";
 
 describe("program overrides", () => {
@@ -115,6 +115,52 @@ describe("program overrides", () => {
     const days = getRenderableDays(program);
     // Day-scope should win regardless of insertion order
     expect(days[0].title).toBe("Day Override Title");
+  });
+});
+
+describe("getOverrideReplacementDays", () => {
+  it("wraps a single-day replacement in an array for traversal", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-single",
+      scope: "day",
+      programId: demoProgram.id,
+      dayId: baseDay.id,
+      replacement: baseDay,
+      createdAt: new Date().toISOString(),
+    };
+    const result = getOverrideReplacementDays(override);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(baseDay);
+  });
+
+  it("returns an array replacement as-is (same reference)", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-array",
+      scope: "week",
+      programId: demoProgram.id,
+      weekNumber: 2,
+      replacement: [baseDay],
+      createdAt: new Date().toISOString(),
+    };
+    const result = getOverrideReplacementDays(override);
+    expect(result).toBe(override.replacement);
+  });
+
+  it("does NOT rewrite the stored single replacement shape on the override itself", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-single-2",
+      scope: "day",
+      programId: demoProgram.id,
+      dayId: baseDay.id,
+      replacement: baseDay,
+      createdAt: new Date().toISOString(),
+    };
+    getOverrideReplacementDays(override);
+    expect(Array.isArray(override.replacement)).toBe(false);
   });
 });
 

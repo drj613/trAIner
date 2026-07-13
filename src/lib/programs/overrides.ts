@@ -11,6 +11,15 @@ export function dedupOverrides(
   });
 }
 
+// Normalizes an override's replacement for TRAVERSAL only — a single-day
+// replacement is wrapped in a one-element array so callers can iterate
+// uniformly. This never rewrites the stored shape: a single replacement
+// stays single, an array replacement stays an array, on the override object
+// itself.
+export function getOverrideReplacementDays(override: ProgramOverride): ProgramDay[] {
+  return Array.isArray(override.replacement) ? override.replacement : [override.replacement];
+}
+
 export function getRenderableDays(program: ProgramDocument): ProgramDay[] {
   // M5: apply week-scope overrides first, then day-scope so day-level wins
   const sorted = [...program.overrides].sort((a, b) => {
@@ -21,8 +30,7 @@ export function getRenderableDays(program: ProgramDocument): ProgramDay[] {
 }
 
 function applyOverride(days: ProgramDay[], override: ProgramOverride): ProgramDay[] {
-  // M6: normalize single replacement to array
-  const replacements = Array.isArray(override.replacement) ? override.replacement : [override.replacement];
+  const replacements = getOverrideReplacementDays(override);
 
   if (override.scope === "week" && override.weekNumber !== undefined) {
     return days.map((day) => {

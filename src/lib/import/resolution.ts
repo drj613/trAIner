@@ -6,8 +6,10 @@ import type {
   ProgramSection,
   ProgramGroup,
   ProgramExercise,
+  ProgramOverride,
 } from "@/lib/programs/types";
-import { baseExercisePath } from "@/lib/import/paths";
+import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
+import { getOverrideReplacementDays } from "@/lib/programs/overrides";
 
 export const CUSTOM_ID = "__custom__";
 
@@ -86,41 +88,92 @@ export function applyResolutions(
   resolutions: Resolution[],
 ): ProgramDocument {
   const resMap = new Map(resolutions.map((r) => [r.path, r.canonicalId]));
-  const ambiguousDayGroups = findAmbiguousDayGroups(program.days);
+  // Populated ONLY when an exercise is successfully patched (a resolution
+  // existed for its path and it didn't already have a canonicalExerciseId).
+  // Used below to drop exactly those warnings — a failed/absent resolution
+  // must leave its warning in place.
+  const resolvedPaths = new Set<string>();
 
   function patchExercise(ex: ProgramExercise, path: string): ProgramExercise {
     if (ex.canonicalExerciseId) return ex;
     const id = resMap.get(path);
     if (!id || id === CUSTOM_ID) return ex;
+    resolvedPaths.add(path);
     return { ...ex, canonicalExerciseId: id };
   }
 
-  function patchGroup(g: ProgramGroup, dayNumber: number, sectionIndex: number, groupIndex: number): ProgramGroup {
+  // buildPath maps (sectionIndex, groupIndex, exerciseIndex) -> warning/
+  // resolution path. Callers bind this to either baseExercisePath or
+  // overrideExercisePath so base and override traversal share the exact
+  // same patch logic below.
+  function patchGroup(
+    g: ProgramGroup,
+    buildPath: (sectionIndex: number, groupIndex: number, exerciseIndex: number) => string,
+    sectionIndex: number,
+    groupIndex: number,
+  ): ProgramGroup {
     return {
       ...g,
       exercises: g.exercises.map((ex, i) =>
-        patchExercise(ex, baseExercisePath(dayNumber, sectionIndex, groupIndex, i)),
+        patchExercise(ex, buildPath(sectionIndex, groupIndex, i)),
       ),
     };
   }
 
-  function patchSection(s: ProgramSection, dayNumber: number, sectionIndex: number): ProgramSection {
+  function patchSection(
+    s: ProgramSection,
+    buildPath: (sectionIndex: number, groupIndex: number, exerciseIndex: number) => string,
+    sectionIndex: number,
+  ): ProgramSection {
     return {
       ...s,
-      groups: s.groups.map((g, i) => patchGroup(g, dayNumber, sectionIndex, i)),
+      groups: s.groups.map((g, i) => patchGroup(g, buildPath, sectionIndex, i)),
     };
   }
 
-  function patchDay(d: ProgramDay): ProgramDay {
+  function patchDay(
+    d: ProgramDay,
+    buildPath: (sectionIndex: number, groupIndex: number, exerciseIndex: number) => string,
+  ): ProgramDay {
+    return {
+      ...d,
+      sections: d.sections.map((s, i) => patchSection(s, buildPath, i)),
+    };
+  }
+
+  const ambiguousDayGroups = findAmbiguousDayGroups(program.days);
+  const days = program.days.map((d) => {
     // Duplicate base day numbers make this day's exercise paths ambiguous
     // (two different exercises could collide on the same path). Skip
     // resolution entirely rather than risk patching the wrong exercise.
     if (ambiguousDayGroups.has(dayGroupKey(d))) return d;
-    return {
-      ...d,
-      sections: d.sections.map((s, i) => patchSection(s, d.dayNumber, i)),
-    };
+    return patchDay(d, (sectionIndex, groupIndex, exerciseIndex) =>
+      baseExercisePath(d.dayNumber, sectionIndex, groupIndex, exerciseIndex),
+    );
+  });
+
+  function patchOverride(override: ProgramOverride, overrideIndex: number): ProgramOverride {
+    const replacementDays = getOverrideReplacementDays(override);
+    // Ambiguity is scoped to this override's own replacement days — the
+    // overrideIndex prefix already keeps different overrides' paths apart.
+    const ambiguousInOverride = findAmbiguousDayGroups(replacementDays);
+    const patchedDays = replacementDays.map((d) => {
+      if (ambiguousInOverride.has(dayGroupKey(d))) return d;
+      return patchDay(d, (sectionIndex, groupIndex, exerciseIndex) =>
+        overrideExercisePath(overrideIndex, d.dayNumber, sectionIndex, groupIndex, exerciseIndex),
+      );
+    });
+    // Preserve the stored shape: single replacement stays single, array
+    // replacement stays an array. Never rewrite it to the other shape.
+    const replacement = Array.isArray(override.replacement) ? patchedDays : patchedDays[0];
+    return { ...override, replacement };
   }
 
-  return { ...program, days: program.days.map((d) => patchDay(d)) };
+  const overrides = program.overrides.map((o, i) => patchOverride(o, i));
+
+  const importSection = program.import
+    ? { import: { ...program.import, warnings: program.import.warnings.filter((w) => !resolvedPaths.has(w.path)) } }
+    : {};
+
+  return { ...program, days, overrides, ...importSection };
 }

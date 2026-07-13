@@ -293,6 +293,59 @@ describe("multi-week import", () => {
     );
     expect(review.program.overrides[0].scope).toBe("week");
   });
+
+  it("propagates an unmatched-exercise warning from inside an override replacement", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push")],
+        overrides: [
+          {
+            scope: "week",
+            weekNumber: 4,
+            days: [
+              {
+                day: 1,
+                title: "Push Light",
+                sections: [{ type: "strength", groups: [{ exercises: [{ name: "Moon Lunge" }] }] }],
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const overrideWarning = review.warnings.find((w) => w.rawName === "Moon Lunge");
+    expect(overrideWarning).toBeDefined();
+    expect(overrideWarning?.path).toBe("overrides.0.days.1.sections.0.groups.0.exercises.0");
+  });
+
+  it("uses the declared day number (not array position) in a partial override's warning path", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "4-Week Block",
+        weeks: 4,
+        days: [minimalDay(1, "Push"), minimalDay(2, "Pull"), minimalDay(3, "Legs")],
+        overrides: [
+          {
+            scope: "week",
+            weekNumber: 4,
+            days: [
+              {
+                day: 3,
+                title: "Legs Light",
+                sections: [{ type: "strength", groups: [{ exercises: [{ name: "Moon Lunge" }] }] }],
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const overrideWarning = review.warnings.find((w) => w.rawName === "Moon Lunge");
+    expect(overrideWarning?.path).toBe("overrides.0.days.3.sections.0.groups.0.exercises.0");
+  });
 });
 
 describe("parseProgramJson error messages", () => {

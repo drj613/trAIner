@@ -3,7 +3,20 @@ import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
-import { baseExercisePath } from "@/lib/import/paths";
+import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
+
+// Builds the ImportWarning path for an exercise at a given position. Base
+// days use `baseExercisePath`; override replacement days use
+// `overrideExercisePath` bound to their override index. Threaded through
+// normalizeDay -> normalizeSection -> normalizeGroup so every exercise
+// warning path (base or override) is built through the shared path
+// builders in @/lib/import/paths — never hand-assembled.
+type ExercisePathBuilder = (
+  dayNumber: number,
+  sectionIndex: number,
+  groupIndex: number,
+  exerciseIndex: number,
+) => string;
 
 export class ImportError extends Error {
   reason: RecoveryReason;
@@ -124,16 +137,19 @@ function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): Pr
 function parseOverrides(
   payload: ImportPayload,
   programId: ID,
-  _warnings: ImportWarning[],
+  warnings: ImportWarning[],
   aliases: AliasDocument[],
   userExercises: UserExerciseDocument[]
 ): ProgramOverride[] {
   if (!Array.isArray(payload.overrides)) return [];
   const now = new Date().toISOString();
-  return payload.overrides.filter(isRecord).map((raw) => {
-    const localWarnings: ImportWarning[] = [];
+  return payload.overrides.filter(isRecord).map((raw, overrideIndex) => {
+    // Override warnings MERGE into the shared collection (never a local,
+    // discarded array) so they surface through program.import.warnings.
+    const pathBuilder: ExercisePathBuilder = (dayNumber, sectionIndex, groupIndex, exerciseIndex) =>
+      overrideExercisePath(overrideIndex, dayNumber, sectionIndex, groupIndex, exerciseIndex);
     const days = arrayOfRecords(raw.days).map((day, index) =>
-      normalizeDay(day, index + 1, localWarnings, aliases, userExercises)
+      normalizeDay(day, index + 1, warnings, aliases, userExercises, pathBuilder)
     );
     const scope: "week" | "day" = stringFrom(raw.scope, "week") === "day" ? "day" : "week";
     return {
@@ -157,10 +173,17 @@ function detectDays(payload: ImportPayload): ImportPayload[] {
   return [];
 }
 
-function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramDay {
+function normalizeDay(
+  day: ImportPayload,
+  fallbackDayNumber: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  pathBuilder: ExercisePathBuilder = baseExercisePath
+): ProgramDay {
   const dayNumber = numberFrom(day.day ?? day.dayNumber, fallbackDayNumber);
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, dayNumber, index, warnings, aliases, userExercises)
+    normalizeSection(section, dayNumber, index, warnings, aliases, userExercises, pathBuilder)
   );
 
   return {
@@ -172,10 +195,18 @@ function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: I
   };
 }
 
-function normalizeSection(section: ImportPayload, dayNumber: number, sectionIndex: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
+function normalizeSection(
+  section: ImportPayload,
+  dayNumber: number,
+  sectionIndex: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  pathBuilder: ExercisePathBuilder
+): ProgramSection {
   const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, dayNumber, sectionIndex, index, warnings, aliases, userExercises, sectionType)
+    normalizeGroup(group, dayNumber, sectionIndex, index, warnings, aliases, userExercises, sectionType, pathBuilder)
   );
 
   return {
@@ -186,9 +217,19 @@ function normalizeSection(section: ImportPayload, dayNumber: number, sectionInde
   };
 }
 
-function normalizeGroup(group: ImportPayload, dayNumber: number, sectionIndex: number, groupIndex: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramGroup {
+function normalizeGroup(
+  group: ImportPayload,
+  dayNumber: number,
+  sectionIndex: number,
+  groupIndex: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  sectionType: string,
+  pathBuilder: ExercisePathBuilder
+): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, baseExercisePath(dayNumber, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
+    normalizeExercise(exercise, pathBuilder(dayNumber, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
   );
 
   return {
