@@ -118,6 +118,55 @@ describe("import parser", () => {
   });
 });
 
+describe("countsTowardVolume field preservation", () => {
+  const withExercise = (exercise: Record<string, unknown>) =>
+    JSON.stringify({
+      title: "Test",
+      sections: [
+        {
+          type: "strength",
+          exercise_groups: [{ exercises: [{ name: "Squat", sets: 3, ...exercise }] }]
+        }
+      ]
+    });
+
+  it("survives an explicit countsTowardVolume:true", () => {
+    const review = parseProgramJson(withExercise({ countsTowardVolume: true }));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBe(true);
+  });
+
+  it("survives an explicit countsTowardVolume:false", () => {
+    const review = parseProgramJson(withExercise({ countsTowardVolume: false }));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBe(false);
+  });
+
+  it("survives an explicit counts_toward_volume:true (snake_case alias)", () => {
+    const review = parseProgramJson(withExercise({ counts_toward_volume: true }));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBe(true);
+  });
+
+  it("survives an explicit counts_toward_volume:false (snake_case alias)", () => {
+    const review = parseProgramJson(withExercise({ counts_toward_volume: false }));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBe(false);
+  });
+
+  it("rejects a string \"true\" value, leaving countsTowardVolume undefined", () => {
+    const review = parseProgramJson(withExercise({ countsTowardVolume: "true" }));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBeUndefined();
+  });
+
+  it("leaves countsTowardVolume undefined when the field is missing", () => {
+    const review = parseProgramJson(withExercise({}));
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].countsTowardVolume).toBeUndefined();
+  });
+
+  it("discards unknown fields on the exercise (sanity check for the literal rebuild)", () => {
+    const review = parseProgramJson(withExercise({ someUnknownField: "whatever" }));
+    const exercise = review.program.days[0].sections[0].groups[0].exercises[0] as Record<string, unknown>;
+    expect(exercise.someUnknownField).toBeUndefined();
+  });
+});
+
 describe("multi-week import", () => {
   it("sets lengthWeeks from the weeks field", () => {
     const review = parseProgramJson(

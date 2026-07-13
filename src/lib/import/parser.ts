@@ -187,6 +187,8 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
     });
   }
 
+  const countsTowardVolume = optionalBoolean(exercise.countsTowardVolume) ?? optionalBoolean(exercise.counts_toward_volume);
+
   return {
     id: newId("exercise"),
     name,
@@ -197,6 +199,7 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
     rest: optionalString(exercise.rest),
     tempo: normalizeTempo(exercise),
     notes: optionalString(exercise.notes),
+    countsTowardVolume,
     tags
   };
 }
@@ -247,6 +250,10 @@ function numberFrom(value: unknown, fallback: number) {
 
 function optionalNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function isRecord(value: unknown): value is ImportPayload {

@@ -91,6 +91,55 @@ describe("swapExercise", () => {
     const result = swapExercise(mockDay, "ex-999", catalogItem);
     expect(result).toBe(mockDay); // same reference, not just equal
   });
+
+  it("preserves countsTowardVolume:true from the existing exercise", () => {
+    const dayWithFlag: ProgramDay = {
+      ...mockDay,
+      sections: [
+        {
+          ...mockDay.sections[0],
+          groups: [
+            {
+              ...mockDay.sections[0].groups[0],
+              exercises: [
+                { ...mockDay.sections[0].groups[0].exercises[0], countsTowardVolume: true },
+                mockDay.sections[0].groups[0].exercises[1],
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const result = swapExercise(dayWithFlag, "ex-1", catalogItem);
+    expect(result.sections[0].groups[0].exercises[0].countsTowardVolume).toBe(true);
+  });
+
+  it("preserves countsTowardVolume:false from the existing exercise", () => {
+    const dayWithFlag: ProgramDay = {
+      ...mockDay,
+      sections: [
+        {
+          ...mockDay.sections[0],
+          groups: [
+            {
+              ...mockDay.sections[0].groups[0],
+              exercises: [
+                { ...mockDay.sections[0].groups[0].exercises[0], countsTowardVolume: false },
+                mockDay.sections[0].groups[0].exercises[1],
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const result = swapExercise(dayWithFlag, "ex-1", catalogItem);
+    expect(result.sections[0].groups[0].exercises[0].countsTowardVolume).toBe(false);
+  });
+
+  it("leaves countsTowardVolume undefined when the existing exercise never had one", () => {
+    const result = swapExercise(mockDay, "ex-1", catalogItem);
+    expect(result.sections[0].groups[0].exercises[0].countsTowardVolume).toBeUndefined();
+  });
 });
 
 describe("addExercise", () => {

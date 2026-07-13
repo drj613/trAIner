@@ -94,6 +94,7 @@ export type ProgramExercise = {
   rest?: string;
   tempo?: string;
   notes?: string;
+  countsTowardVolume?: boolean;
   tags: {
     primary: string[];
     secondary: string[];
