@@ -51,7 +51,7 @@ export function buildSchemaBlock(): string {
                 reps: "5-8",
                 load: "optional — e.g. '65% 1RM' or '50 kg' (reduced vs base week)",
                 rest: "optional — e.g. '90s'",
-                notes: "deload — reduced sets and load vs the base week",
+                notes: "deload — reduced volume vs the base week (approximately 60% of normal)",
                 countsTowardVolume: true,
                 tags: {
                   primary: ["quads"],
@@ -75,7 +75,7 @@ export function buildSchemaBlock(): string {
       {
         scope: "week",
         weekNumber: 4,
-        reason: "Deload — reduce volume by ~40%",
+        reason: "Deload — use approximately 60% of normal working-set volume",
         days: [overrideReplacementDay]
       }
     ]
@@ -102,7 +102,7 @@ If a week is identical to the base template, omit the entire override object.
 The \`reason\` field is descriptive only. It does not alter sets, repetitions, loads, exercises, or effort targets.`;
 
   const constraints = `## Session and volume constraints
-Design sessions to fit these evidence-based targets:
+Design sessions using these default planning guardrails:
 - Listed exercises or protocols per session: generally 4-8. All warmup, mobility, skill, conditioning, and cooldown exercises count toward this number.
 - Working sets per session: generally 10-25. Only exercises with \`countsTowardVolume: true\` count toward this range.
 - Estimated session duration: 30-75 minutes, including all programmed work.
@@ -111,6 +111,8 @@ Design sessions to fit these evidence-based targets:
 The numeric \`sets\` value controls the number of workout logging rows. It must equal the complete prescription described in \`reps\`, \`load\`, and \`notes\`.
 - One top set plus three back-off sets uses \`"sets": 4\`.
 - One top set plus two back-off sets uses \`"sets": 3\`.
+
+Unlogged ramp-up sets may be described in the heavy exercise's \`notes\` and must not be included in its numeric \`sets\` value. Listed warmup exercises must use \`countsTowardVolume: false\`.
 
 Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25 — counting only exercises with \`countsTowardVolume: true\`):
 - Chest: productive range 6–16 sets/week, hard limit 24
@@ -153,7 +155,7 @@ For programs longer than one week:
   const programRequirements = `## Program requirements
 Every routine you emit must include:
 - A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".
-- Periodization with a planned deload — organize multi-week programs into a mesocycle (accumulate volume/intensity across weeks, then a deload week at ~50% volume). Express week-to-week changes using \`weeks\` + \`overrides\`.
+- For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 60% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
 - A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
 - A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
 
@@ -169,7 +171,7 @@ Emit only the JSON object — no markdown code fences, no preamble, no commentar
 
 Default to conversational coaching. Ask clarifying questions, surface tradeoffs between approaches, and discuss programming choices with the athlete. Keep the routine JSON out of this phase entirely — discussing in prose keeps the design flexible and easy to revise.
 
-Before the athlete asks for the final routine, make sure you have done the following in the conversation, in prose:
+Do not declare the program ready for export until you have stated the required programming decisions and completed the self-audit — in prose, in the conversation:
 - Stated your key programming decisions: weekly volume per muscle group, intensity scheme (RIR/RPE or %1RM), the progression rule, and the deload plan.
 - Run a quick self-audit and fixed any issues — is per-muscle weekly volume within the ranges below? Is the week balanced across movement patterns (push/pull, all major patterns)? Does every session include a warmup? Does every exercise respect the athlete's equipment and injuries?
 

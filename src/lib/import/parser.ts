@@ -71,7 +71,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   // declared day number, so checking post-expansion would misfire.
   diagnoseDuplicateBaseDayNumbers(baseDays, warnings);
 
-  const lengthWeeks = optionalNumber(payload.weeks);
+  const lengthWeeks = coercePositiveInt(payload.weeks);
   // Effective weeks are computed from the EXPANDED day set, not the raw
   // base template or the scalar `weeks` field — expansion is what actually
   // determines which weeks exist to be overridden. See diagnoseImportOverrides.
@@ -330,6 +330,24 @@ function numberFrom(value: unknown, fallback: number) {
 
 function optionalNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+// Targeted coercion for fields where a model may emit a stringified integer
+// (e.g. `"weeks": "4"`) instead of a JSON number. Only used for `weeks` —
+// other optionalNumber callers (weekNumber, sets) keep the strict
+// number-only check so this does not change their behavior.
+function coercePositiveInt(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0 && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^-?\d+$/.test(trimmed)) {
+      const parsed = Number.parseInt(trimmed, 10);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return undefined;
 }
 
 function optionalBoolean(value: unknown): boolean | undefined {

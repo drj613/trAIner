@@ -64,7 +64,7 @@ describe("buildConstraintsFieldsBlock (injuries bug)", () => {
     const block = buildConstraintsFieldsBlock(p, allOn());
     expect(block).toContain("## Injuries & constraints");
     expect(block).toContain("- bad knee");
-    expect(block.toLowerCase()).toContain("hard constraint");
+    expect(block.toLowerCase()).toContain("precaution flag");
   });
 
   it("falls back to legacy constraints when injuries is empty", () => {
@@ -82,6 +82,17 @@ describe("buildConstraintsFieldsBlock (injuries bug)", () => {
 
   it("returns empty string when no injuries anywhere", () => {
     expect(buildConstraintsFieldsBlock(base, allOn(), [])).toBe("");
+  });
+
+  it("treats injuries as precaution flags to steer around, not hard exclusions", () => {
+    const p = { ...base, injuries: ["bad knee"] };
+    const block = buildConstraintsFieldsBlock(p, allOn());
+    expect(block).toContain("Treat listed injuries as precaution flags.");
+    expect(block).toContain("Ask about known aggravating movements when needed.");
+    expect(block).toContain(
+      "Do not knowingly program a reported aggravating movement; provide a pain-free substitution that preserves the intended pattern or stimulus, and note the swap.",
+    );
+    expect(block.toLowerCase()).not.toContain("hard constraints — never program");
   });
 });
 

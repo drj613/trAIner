@@ -167,3 +167,58 @@ describe("buildSchemaBlock — countsTowardVolume + working-volume semantics (Ph
     expect(b()).not.toMatch(/Omit if all weeks are identical/i);
   });
 });
+
+describe("buildSchemaBlock — Phase A prompt refinements", () => {
+  const b = () => buildSchemaBlock();
+
+  it("unifies deload volume on approximately 60% of normal working-set volume", () => {
+    const block = b();
+    expect(block).toContain("Deload — use approximately 60% of normal working-set volume");
+    expect(block).toContain("deload — reduced volume vs the base week (approximately 60% of normal)");
+    expect(block).toContain(
+      "then a deload week at approximately 60% of normal working-set volume",
+    );
+  });
+
+  it("has no conflicting ~40%/~50% deload phrasing left", () => {
+    const block = b();
+    expect(block).not.toContain("~40%");
+    expect(block).not.toContain("~50%");
+    expect(block).not.toContain("reduce volume by ~40%");
+    expect(block).not.toMatch(/deload week at ~50% volume/);
+  });
+
+  it("scopes mandatory periodization/deload to multi-week programs and allows explicit single-week requests", () => {
+    const block = b();
+    expect(block).toContain(
+      "For multi-week programs, include periodization with a planned deload",
+    );
+    expect(block).toContain(
+      "Single-week routines are permitted only when the athlete explicitly requests a single standalone week.",
+    );
+    // Multi-week section's omission line stays as-is and is now non-conflicting.
+    expect(block).toContain("Omit `weeks` and `overrides` for single-week programs.");
+  });
+
+  it("frames session/volume bands as default planning guardrails, not evidence-based targets", () => {
+    const block = b();
+    expect(block).toContain("Design sessions using these default planning guardrails:");
+    expect(block).not.toContain("evidence-based targets");
+  });
+
+  it("gates export readiness on stated decisions and self-audit rather than a pre-ask deadline", () => {
+    const block = b();
+    expect(block).toContain(
+      "Do not declare the program ready for export until you have stated the required programming decisions and completed the self-audit — in prose, in the conversation:",
+    );
+    expect(block).not.toContain("Before the athlete asks for the final routine");
+  });
+
+  it("clarifies unlogged ramp-up sets belong in notes, not the numeric sets value, and warmups use countsTowardVolume: false", () => {
+    const block = b();
+    expect(block).toContain(
+      "Unlogged ramp-up sets may be described in the heavy exercise's `notes` and must not be included in its numeric `sets` value.",
+    );
+    expect(block).toContain("Listed warmup exercises must use `countsTowardVolume: false`.");
+  });
+});

@@ -101,4 +101,14 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
     expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
   });
+
+  it("states that coach personas are advisory and are overridden by athlete constraints and output rules", () => {
+    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    expect(
+      screen.getByText(
+        /Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona/i,
+      ),
+    ).toBeInTheDocument();
+  });
 });

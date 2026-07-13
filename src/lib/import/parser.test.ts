@@ -228,6 +228,58 @@ describe("multi-week import", () => {
     expect(review.program.lengthWeeks).toBeUndefined();
   });
 
+  it("coerces a stringified integer weeks value (\"4\") and expands accordingly", () => {
+    const review = parseProgramJson(
+      JSON.stringify({ title: "4-Week Block", weeks: "4", days: [minimalDay(1, "Push")] })
+    );
+    expect(review.program.lengthWeeks).toBe(4);
+    expect(review.program.days).toHaveLength(4);
+  });
+
+  it("still accepts a numeric weeks value", () => {
+    const review = parseProgramJson(
+      JSON.stringify({ title: "4-Week Block", weeks: 4, days: [minimalDay(1, "Push")] })
+    );
+    expect(review.program.lengthWeeks).toBe(4);
+    expect(review.program.days).toHaveLength(4);
+  });
+
+  it("treats a non-numeric weeks string as absent (no throw, single-week)", () => {
+    const review = parseProgramJson(
+      JSON.stringify({ title: "One Week", weeks: "abc", days: [minimalDay(1, "Push")] })
+    );
+    expect(review.program.lengthWeeks).toBeUndefined();
+    expect(review.program.days).toHaveLength(1);
+  });
+
+  it("treats weeks: 0 and weeks: \"0\" as absent (no throw, single-week)", () => {
+    const numeric = parseProgramJson(
+      JSON.stringify({ title: "One Week", weeks: 0, days: [minimalDay(1, "Push")] })
+    );
+    expect(numeric.program.lengthWeeks).toBeUndefined();
+    expect(numeric.program.days).toHaveLength(1);
+
+    const stringified = parseProgramJson(
+      JSON.stringify({ title: "One Week", weeks: "0", days: [minimalDay(1, "Push")] })
+    );
+    expect(stringified.program.lengthWeeks).toBeUndefined();
+    expect(stringified.program.days).toHaveLength(1);
+  });
+
+  it("treats weeks: -1 and weeks: \"-1\" as absent (no throw, single-week)", () => {
+    const numeric = parseProgramJson(
+      JSON.stringify({ title: "One Week", weeks: -1, days: [minimalDay(1, "Push")] })
+    );
+    expect(numeric.program.lengthWeeks).toBeUndefined();
+    expect(numeric.program.days).toHaveLength(1);
+
+    const stringified = parseProgramJson(
+      JSON.stringify({ title: "One Week", weeks: "-1", days: [minimalDay(1, "Push")] })
+    );
+    expect(stringified.program.lengthWeeks).toBeUndefined();
+    expect(stringified.program.days).toHaveLength(1);
+  });
+
   it("parses week-scope overrides into ProgramOverride objects", () => {
     const review = parseProgramJson(
       JSON.stringify({
