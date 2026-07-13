@@ -7,6 +7,7 @@ import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import { DEFAULT_COUNTS_BY_SECTION } from "@/lib/analysis/volumeRole";
 import type {
   ProgramDocument,
   ProgramDay,
@@ -84,7 +85,7 @@ function sectionMeta(kind: SectionType) {
 
 // ── Draft → ProgramDocument ───────────────────────────────────────────────────
 
-function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): ProgramDocument {
+export function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): ProgramDocument {
   const now = new Date().toISOString();
   const days: ProgramDay[] = draft.days.map((d, i) => ({
     id: crypto.randomUUID(),
@@ -106,6 +107,7 @@ function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): ProgramDocume
               canonicalExerciseId: e.catalogId,
               sets: e.sets,
               reps: e.reps,
+              countsTowardVolume: DEFAULT_COUNTS_BY_SECTION[s.kind],
               tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
             })),
           })),
