@@ -130,6 +130,63 @@ describe("countWeeklyVolume gates by countsTowardVolume", () => {
   });
 });
 
+describe("countWeeklyVolume deduplicates canonical muscles within a tier", () => {
+  const dayWithTags = (tags: Partial<ProgramExercise["tags"]>): ProgramDay => ({
+    id: "d-1",
+    dayNumber: 1,
+    weekNumber: 1,
+    title: "Day",
+    sections: [{
+      id: "s-1",
+      type: "strength" as SectionType,
+      name: "Section",
+      groups: [{
+        id: "g-1",
+        type: "single",
+        exercises: [{
+          id: "e-1",
+          name: "Exercise",
+          sets: 4,
+          reps: "10",
+          tags: { primary: [], secondary: [], incidental: [], modifiers: [], ...tags },
+        }],
+      }],
+    }],
+  });
+
+  it("counts a canonical muscle once when the same alias appears twice (case-insensitive)", () => {
+    const volumes = countWeeklyVolume([dayWithTags({ primary: ["chest", "Chest"] })], 1);
+    // 4 sets × 1.0 primary, counted ONCE → 4 (not 8)
+    expect(volumes.get("chest")).toBe(4);
+  });
+
+  it("counts a canonical muscle once when two different aliases map to it", () => {
+    const volumes = countWeeklyVolume([dayWithTags({ primary: ["upper chest", "pectorals"] })], 1);
+    // both aliases → chest, counted ONCE → 4 (not 8)
+    expect(volumes.get("chest")).toBe(4);
+  });
+
+  it("keeps the larger factor for a muscle hit by both full-body and direct labels", () => {
+    const volumes = countWeeklyVolume([dayWithTags({ primary: ["full body", "quads"] })], 1);
+    // full-body gives quads factor 0.5, direct quads gives 1.0 → max(0.5,1.0)=1.0
+    // 4 sets × 1.0 primary × 1.0 → 4 (NOT 0.5+1.0 = 1.5 × 4 = 6)
+    expect(volumes.get("quads")).toBe(4);
+  });
+
+  it("deduplicates a repeated full-body label", () => {
+    const volumes = countWeeklyVolume([dayWithTags({ primary: ["full body", "full body"] })], 1);
+    // one full-body expansion: 4 sets × 1.0 primary × 0.5 discount → 2 (not 4)
+    expect(volumes.get("quads")).toBe(2);
+    expect(volumes.get("core")).toBe(2);
+  });
+
+  it("keeps tiers additive: primary and secondary on the same muscle still sum", () => {
+    const volumes = countWeeklyVolume([dayWithTags({ primary: ["chest"], secondary: ["chest"] })], 1);
+    // primary 4×1.0 + secondary 4×0.5 = 4 + 2 = 6 (cross-tier addition preserved)
+    expect(volumes.get("chest")).toBe(6);
+  });
+});
+
 describe("scoreVolume", () => {
   it("flags imbalanced program with chest above MAV", () => {
     const volumes = countWeeklyVolume(imbalancedProgram.days, 1);

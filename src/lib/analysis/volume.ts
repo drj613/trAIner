@@ -39,15 +39,24 @@ function addMuscleVolume(
   sets: number,
   weight: number,
 ): void {
+  // Within a single tier, each canonical muscle is credited once, retaining the
+  // LARGEST expansion factor rather than summing duplicates. A direct label
+  // gives its canonical factor 1.0; "full body" expands to 6 muscles at half
+  // credit (FULL_BODY_DISCOUNT) so one exercise can't generate 6× its sets. A
+  // muscle named both directly and via full-body keeps max(1.0, 0.5) = 1.0.
+  // Cross-tier addition is preserved: each tier is a separate call, so the
+  // shared `volumes` map accumulates across tiers.
+  const contributions = new Map<MuscleGroup, number>();
   for (const label of muscles) {
     const canonicals = mapMuscleExpanded(label);
-    // "full body" expands to 6 muscles; full tier credit for each would let one
-    // exercise generate 6× its sets in volume. Halve the credit per muscle.
-    const effectiveWeight =
-      canonicals.length > 1 ? weight * FULL_BODY_DISCOUNT : weight;
+    const factor = canonicals.length > 1 ? FULL_BODY_DISCOUNT : 1.0;
     for (const canonical of canonicals) {
-      volumes.set(canonical, (volumes.get(canonical) ?? 0) + sets * effectiveWeight);
+      const previous = contributions.get(canonical) ?? 0;
+      contributions.set(canonical, Math.max(previous, factor));
     }
+  }
+  for (const [canonical, factor] of contributions) {
+    volumes.set(canonical, (volumes.get(canonical) ?? 0) + sets * factor * weight);
   }
 }
 
