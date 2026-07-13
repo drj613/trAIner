@@ -1,4 +1,4 @@
-import type { ProgramDay } from "@/lib/programs/types";
+import type { ProgramDay, ProgramExercise, SectionType } from "@/lib/programs/types";
 import type { MuscleGroup } from "./types";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
@@ -50,6 +50,83 @@ describe("countWeeklyVolume", () => {
     expect(volumes.get("quads")).toBe(2);
     expect(volumes.get("core")).toBe(2);
     expect(volumes.get("lats")).toBe(2);
+  });
+});
+
+describe("countWeeklyVolume gates by countsTowardVolume", () => {
+  const dayWith = (
+    sectionType: SectionType,
+    exercise: Partial<Omit<ProgramExercise, "tags">> & { tags?: Partial<ProgramExercise["tags"]> },
+  ): ProgramDay => ({
+    id: "d-1",
+    dayNumber: 1,
+    weekNumber: 1,
+    title: "Day",
+    sections: [{
+      id: "s-1",
+      type: sectionType,
+      name: "Section",
+      groups: [{
+        id: "g-1",
+        type: "single",
+        exercises: [{
+          id: "e-1",
+          name: "Exercise",
+          sets: 4,
+          reps: "10",
+          ...exercise,
+          tags: {
+            primary: ["quads"],
+            secondary: [],
+            incidental: [],
+            modifiers: [],
+            ...exercise.tags,
+          },
+        }],
+      }],
+    }],
+  });
+
+  it("zeroes volume for a warmup-activation exercise", () => {
+    const day = dayWith("warmup", { tags: { modifiers: ["activation"] } });
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBe(0);
+  });
+
+  it("zeroes volume for a mobility exercise", () => {
+    const day = dayWith("mobility", {});
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBe(0);
+  });
+
+  it("counts volume when countsTowardVolume is explicitly true inside a warmup section", () => {
+    const day = dayWith("warmup", { countsTowardVolume: true });
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBeGreaterThan(0);
+  });
+
+  it("zeroes volume when countsTowardVolume is explicitly false inside a hypertrophy section", () => {
+    const day = dayWith("hypertrophy", { countsTowardVolume: false });
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBe(0);
+  });
+
+  it("counts volume for conditioning work by default", () => {
+    const day = dayWith("conditioning", {});
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBeGreaterThan(0);
+  });
+
+  it("counts volume for metcon work by default", () => {
+    const day = dayWith("metcon", {});
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBeGreaterThan(0);
+  });
+
+  it("still counts ordinary legacy strength work with no countsTowardVolume field", () => {
+    const day = dayWith("strength", {});
+    const volumes = countWeeklyVolume([day], 1);
+    expect(volumes.get("quads") ?? 0).toBeGreaterThan(0);
   });
 });
 

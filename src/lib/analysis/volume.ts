@@ -3,6 +3,7 @@ import type { MuscleGroup, MuscleVolumeResult, Severity } from "./types";
 import { ALL_MUSCLE_GROUPS } from "./types";
 import { VOLUME_LANDMARKS } from "./thresholds";
 import { mapMuscleExpanded, getEffectiveSets } from "./muscles";
+import { resolveCountsTowardVolume } from "./volumeRole";
 
 export function countWeeklyVolume(
   days: ProgramDay[],
@@ -15,6 +16,9 @@ export function countWeeklyVolume(
     for (const section of day.sections) {
       for (const group of section.groups) {
         for (const exercise of group.exercises) {
+          if (!resolveCountsTowardVolume(exercise, section.type)) {
+            continue;
+          }
           const sets = getEffectiveSets(exercise);
           addMuscleVolume(volumes, exercise.tags.primary, sets, 1.0);
           addMuscleVolume(volumes, exercise.tags.secondary, sets, 0.5);
