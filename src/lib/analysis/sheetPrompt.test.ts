@@ -4,8 +4,90 @@ import { analyzeProgram } from "./analyze";
 import { balancedProgram, startingStrengthProgram } from "./fixtures";
 import { VOLUME_LANDMARKS } from "./thresholds";
 import { ALL_MUSCLE_GROUPS } from "./types";
+import type { ProgramDocument } from "@/lib/programs/types";
 
 const displayAnalysis = () => toDisplayAnalysis(analyzeProgram(balancedProgram), 0);
+
+// Single day: 5 non-working (warmup) sets + 18 working (strength) sets = 23 total.
+const workingVolumeProgram: ProgramDocument = {
+  id: "wv-1",
+  title: "Working Volume Test",
+  source: "manual",
+  active: true,
+  days: [
+    {
+      id: "day-1",
+      dayNumber: 1,
+      title: "Day 1",
+      sections: [
+        {
+          id: "s-warmup",
+          type: "warmup",
+          name: "Warmup",
+          groups: [
+            {
+              id: "g-warmup",
+              type: "single",
+              exercises: [
+                {
+                  id: "e-warmup-1",
+                  name: "Band Pull-Aparts",
+                  sets: 5,
+                  reps: "15",
+                  tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: "s-strength",
+          type: "strength",
+          name: "Strength",
+          groups: [
+            {
+              id: "g-strength",
+              type: "single",
+              exercises: [
+                {
+                  id: "e-1",
+                  name: "Back Squat",
+                  sets: 5,
+                  reps: "5",
+                  tags: { primary: ["quads"], secondary: ["glutes"], incidental: [], modifiers: [] },
+                },
+                {
+                  id: "e-2",
+                  name: "Bench Press",
+                  sets: 5,
+                  reps: "5",
+                  tags: { primary: ["chest"], secondary: ["triceps"], incidental: [], modifiers: [] },
+                },
+                {
+                  id: "e-3",
+                  name: "Barbell Row",
+                  sets: 4,
+                  reps: "8",
+                  tags: { primary: ["lats"], secondary: [], incidental: [], modifiers: [] },
+                },
+                {
+                  id: "e-4",
+                  name: "Overhead Press",
+                  sets: 4,
+                  reps: "6",
+                  tags: { primary: ["front delts"], secondary: [], incidental: [], modifiers: [] },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  overrides: [],
+  createdAt: "2025-01-01T00:00:00.000Z",
+  updatedAt: "2025-01-01T00:00:00.000Z",
+};
 
 describe("buildSheetPrompt", () => {
   it("generates the landmark table from thresholds.ts (engine values, all muscles)", () => {
@@ -73,5 +155,33 @@ describe("buildSheetPrompt", () => {
   it("omits the engine-notes section when there are none", () => {
     const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
     expect(prompt).not.toContain("## Engine notes");
+  });
+});
+
+describe("buildSheetPrompt — working-volume semantics (Phase 11.8)", () => {
+  it("renders total prescribed sets, working sets, and the preferred working-set range", () => {
+    const prompt = buildSheetPrompt(
+      toDisplayAnalysis(analyzeProgram(workingVolumeProgram), 0),
+      "WV Test",
+    );
+    expect(prompt).toContain("Total prescribed sets: 23");
+    expect(prompt).toContain("Working sets: 18");
+    expect(prompt).toContain("Preferred working-set range: 10-25");
+  });
+
+  it("explains countsTowardVolume and its exclusion from analysis dimensions", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
+    expect(prompt).toContain("countsTowardVolume");
+    expect(prompt).toContain(
+      "Exclude exercises with `countsTowardVolume: false` from working-set, weekly muscle-volume, direct-muscle-set, movement-balance, and periodization calculations",
+    );
+  });
+
+  it("explains within-tier dedup, full-body max behavior, cross-tier additivity, and advisory ranges", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
+    expect(prompt).toMatch(/counted once/i);
+    expect(prompt).toMatch(/full body/i);
+    expect(prompt).toMatch(/additive/i);
+    expect(prompt).toMatch(/advisory/i);
   });
 });

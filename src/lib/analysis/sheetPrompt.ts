@@ -32,16 +32,25 @@ export function buildSheetPrompt(analysis: DisplayAnalysis, programTitle: string
 
 You are an evidence-based strength coach. Analyze this routine using the reference data below. The user's goal for this routine is **${GOAL_LABELS[analysis.goalScope.goal]}**. Judge it by that goal's standards. If the routine's content clearly doesn't fit this goal, say so before grading. The reference values below are calibrated for general/hypertrophy training${analysis.goalScope.partial ? " — dimensions outside this goal's scope are shown for reference and were excluded from the computed grade" : ""}.
 
+## Working-volume semantics
+Each exercise carries a \`countsTowardVolume\` boolean. \`true\` marks productive working strength/hypertrophy/conditioning/explosive volume; \`false\` marks ordinary warmups, activation drills, mobility work, cooldowns, rehab/prehab work, and low-fatigue practice.
+
+Exclude exercises with \`countsTowardVolume: false\` from working-set, weekly muscle-volume, direct-muscle-set, movement-balance, and periodization calculations below — that excluded work still counts toward total exercise count and session duration.
+
+Within each muscle-tag tier (primary, secondary, incidental), a canonical muscle is counted once at its largest applicable factor; a "full body" tag and an explicitly tagged muscle in the same tier take the larger of the two rather than stacking. Contributions across tiers (primary + secondary + incidental) remain additive.
+
+The weekly volume ranges below are advisory default guardrails, not mandatory targets — deliberate, acknowledged athlete specialization above a preferred range is not automatically a fault.
+
 ## Reference: Volume Landmarks (effective sets/muscle/week)
 ${landmarkTable()}
 
 Volume counting: primary muscles = 1.0 set, secondary = 0.5, incidental = 0.25; "full body" tags credit each covered muscle at half weight.
 
 ## Reference: Session Constraints
-- ${s.exercises.greenMin}–${s.exercises.greenMax} exercises per session (${s.exercises.yellowMax + 1}+ excessive)
-- ${s.totalSets.greenMin}–${s.totalSets.greenMax} productive sets per session
-- Max ~${s.setsPerMuscle.greenMax} direct sets per muscle per session
-- Duration ≈ (sets × 3) + 10 minutes; ${s.durationMinutes.greenMin}–${s.durationMinutes.greenMax} min preferred
+- ${s.exercises.greenMin}–${s.exercises.greenMax} exercises per session (${s.exercises.yellowMax + 1}+ excessive) — includes all warmup, mobility, conditioning, and cooldown work
+- Preferred working-set range: ${s.totalSets.greenMin}-${s.totalSets.greenMax} — only exercises with \`countsTowardVolume: true\` count toward this
+- Max ~${s.setsPerMuscle.greenMax} direct working sets per muscle per session, unless the athlete deliberately requests specialization
+- Duration ≈ (total sets × 3) + 10 minutes, including all programmed work; ${s.durationMinutes.greenMin}–${s.durationMinutes.greenMax} min preferred
 
 ## Reference: Balance Targets (set-count ratios — volume-balance nudges, not injury metrics)
 - Push:Pull ${bt.pushPull.idealMin}–${bt.pushPull.idealMax} (flag above ${bt.pushPull.warnMax})
@@ -60,7 +69,7 @@ ${analysis.muscles.map((m) => `- ${m.group}: ${m.sets} eff. sets (MEV ${m.mev}, 
 ${analysis.ratios.map((r) => `- ${r.label}: ${r.value} (target ${r.target}) [${r.verdict}]`).join("\n")}
 
 ## Sessions
-${analysis.sessions.map((sn) => `- ${sn.day}: ${sn.exercises} exercises, ${sn.sets} total sets / ${sn.workingSets} working sets, ~${sn.durationMin} min [${sn.status}]`).join("\n")}
+${analysis.sessions.map((sn) => `- ${sn.day}: ${sn.exercises} exercises. Total prescribed sets: ${sn.sets} / Working sets: ${sn.workingSets}, ~${sn.durationMin} min [${sn.status}]`).join("\n")}
 
 ## What to return
 Plain markdown — this app does not ingest a machine-readable response:

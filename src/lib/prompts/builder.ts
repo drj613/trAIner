@@ -19,6 +19,40 @@ export function buildSchemaBlock(): string {
                 load: "optional — e.g. '80% 1RM' or '60 kg'",
                 rest: "optional — e.g. '90s'",
                 notes: "optional",
+                countsTowardVolume: true,
+                tags: {
+                  primary: ["quads"],
+                  secondary: ["glutes"],
+                  incidental: [],
+                  modifiers: []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+  const overrideReplacementDay = {
+    day: 1,
+    title: "Day Name",
+    sections: [
+      {
+        name: "Section Name",
+        type: "strength",
+        groups: [
+          {
+            type: "single",
+            exercises: [
+              {
+                name: "Exercise Name",
+                sets: 2,
+                reps: "5-8",
+                load: "optional — e.g. '65% 1RM' or '50 kg' (reduced vs base week)",
+                rest: "optional — e.g. '90s'",
+                notes: "deload — reduced sets and load vs the base week",
+                countsTowardVolume: true,
                 tags: {
                   primary: ["quads"],
                   secondary: ["glutes"],
@@ -42,19 +76,43 @@ export function buildSchemaBlock(): string {
         scope: "week",
         weekNumber: 4,
         reason: "Deload — reduce volume by ~40%",
-        days: ["OPTIONAL — same structure as base days above. Omit if all weeks are identical."]
+        days: [overrideReplacementDay]
       }
     ]
   };
 
+  const exerciseSchemaNotes = `## countsTowardVolume (required on every exercise)
+Every exercise object must include a boolean \`countsTowardVolume\` field.
+
+Set \`countsTowardVolume\` to \`true\` when the prescribed sets are intended to contribute to working strength, hypertrophy, muscular conditioning, or explosive training volume.
+
+Set it to \`false\` for ordinary warmups, activation drills, mobility work, cooldowns, rehabilitation or prehabilitation work, and low-fatigue practice that is not intended as productive muscular working volume.
+
+Muscle tags still describe anatomical involvement when \`countsTowardVolume\` is false. The boolean controls analysis, not anatomy.`;
+
+  const overrideInstructions = `## Overrides
+Only emit an override when at least one routine day actually changes.
+
+Every override must contain one or more complete replacement day objects.
+
+An override with omitted \`days\` or an empty \`days\` array does not alter the routine and must not be emitted.
+
+If a week is identical to the base template, omit the entire override object.
+
+The \`reason\` field is descriptive only. It does not alter sets, repetitions, loads, exercises, or effort targets.`;
+
   const constraints = `## Session and volume constraints
 Design sessions to fit these evidence-based targets:
-- Exercises per session: 4–8 total (across ALL sections — warmup counts, conditioning counts, everything counts)
-- Total sets per session: 10–25
-- Estimated session duration: 30–75 minutes
-- Direct sets per muscle group per session: ≤ 8
+- Listed exercises or protocols per session: generally 4-8. All warmup, mobility, skill, conditioning, and cooldown exercises count toward this number.
+- Working sets per session: generally 10-25. Only exercises with \`countsTowardVolume: true\` count toward this range.
+- Estimated session duration: 30-75 minutes, including all programmed work.
+- Direct working sets per muscle group per session: generally no more than 8, unless the athlete deliberately requests specialization and accepts the tradeoff.
 
-Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25):
+The numeric \`sets\` value controls the number of workout logging rows. It must equal the complete prescription described in \`reps\`, \`load\`, and \`notes\`.
+- One top set plus three back-off sets uses \`"sets": 4\`.
+- One top set plus two back-off sets uses \`"sets": 3\`.
+
+Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25 — counting only exercises with \`countsTowardVolume: true\`):
 - Chest: productive range 6–16 sets/week, hard limit 24
 - Lats: productive range 10–20 sets/week, hard limit 30
 - Upper back / traps: productive range 10–20 sets/week, hard limit 30
@@ -71,7 +129,19 @@ Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, inci
 - Core: productive range 8–16 sets/week, hard limit 20
 - Adductors/Abductors: productive range 4–10 sets/week, hard limit 16
 
-IMPORTANT: incidental muscles (e.g. "core" on almost every compound, "forearms" on most pulling, "shoulders" on everything) accumulate quickly across many exercises. Tag incidental sparingly — only when the incidental recruitment is genuinely meaningful. "Core" should NOT be incidental on every exercise.`;
+IMPORTANT: incidental muscles (e.g. "core" on almost every compound, "forearms" on most pulling, "shoulders" on everything) accumulate quickly across many exercises. Tag incidental sparingly — only when the incidental recruitment is genuinely meaningful. "Core" should NOT be incidental on every exercise.
+
+The weekly volume ranges are default programming guardrails, not mandatory targets for every muscle.
+
+Prioritized hypertrophy muscles should generally fall within their productive ranges. Maintenance muscles may fall below them.
+
+When the athlete explicitly requests specialization above a preferred range, preserve the decision when the recovery and session tradeoffs remain plausible. Acknowledge the tradeoff during conversation rather than automatically reducing the requested volume.
+
+Hard limits are strong caution thresholds, not automatic reasons to reject an explicit athlete request.
+
+Exclude exercises with \`countsTowardVolume: false\` from working-set, weekly muscle-volume, direct-muscle-set, movement-balance, and periodization calculations.
+
+Do not classify an athlete-requested and acknowledged specialization as an audit failure merely because it departs from a preferred range.`;
 
   const multiWeekInstructions = `## Multi-week programs
 For programs longer than one week:
@@ -119,10 +189,12 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     "  - Each group: `type`, `exercises`",
     `Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training`,
     `Valid group types: single, superset, circuit, giant-set`,
+    exerciseSchemaNotes,
     multiWeekInstructions,
     constraints,
     "Structural skeleton (all real content should replace the placeholder strings):",
     JSON.stringify(skeleton, null, 2),
+    overrideInstructions,
     programRequirements,
     outputContract,
   ].join("\n");
