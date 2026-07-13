@@ -7,13 +7,17 @@ import { balancedProgram, startingStrengthProgram } from "@/lib/analysis/fixture
 const mockAnalysis = {
   durationMs: 184,
   overall: { score: 82, grade: "B" },
-  goalScope: { goal: "general" as const, partial: false, gradedDimensions: ["volume", "session", "balance", "periodization"] as const },
+  goalScope: {
+    goal: "general" as const,
+    partial: false,
+    gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
   fingerprint: { primary: "Hypertrophy", secondary: "Strength", label: "Hypertrophy-focused upper/lower split" },
   dimensions: [
-    { id: "volume", label: "Volume", score: 91, grade: "A", status: "good" as const, note: "8/10 in MAV", graded: true },
-    { id: "balance", label: "Balance", score: 78, grade: "B", status: "warn" as const, note: "Push-dominant", graded: true },
-    { id: "structure", label: "Structure", score: 88, grade: "A", status: "good" as const, note: "38-62 min", graded: true },
-    { id: "periodization", label: "Periodization", score: 65, grade: "C", status: "warn" as const, note: "No deload", graded: true },
+    { id: "volume", label: "Volume", score: 91, grade: "A" as const, status: "good" as const, note: "8/10 in MAV", graded: true },
+    { id: "balance", label: "Balance", score: 78, grade: "B" as const, status: "warn" as const, note: "Push-dominant", graded: true },
+    { id: "structure", label: "Structure", score: 88, grade: "A" as const, status: "good" as const, note: "38-62 min", graded: true },
+    { id: "periodization", label: "Periodization", score: 65, grade: "C" as const, status: "warn" as const, note: "No deload", graded: true },
   ],
   muscles: [
     { group: "Chest", sets: 6.5, mev: 6, mavLo: 6, mavHi: 16, mrv: 24, status: "green" as const },

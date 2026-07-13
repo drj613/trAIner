@@ -122,7 +122,8 @@ describe("resetWorkspace", () => {
   });
 
   it("deletes the database and resets the connection", async () => {
-    const deleteDatabase = (global.indexedDB as { deleteDatabase: jest.Mock }).deleteDatabase;
+    const indexedDbMock = global.indexedDB as unknown as { deleteDatabase: jest.Mock };
+    const deleteDatabase = indexedDbMock.deleteDatabase;
 
     const promise = resetWorkspace();
     const req = deleteDatabase.mock.results[0].value;
@@ -134,7 +135,8 @@ describe("resetWorkspace", () => {
   });
 
   it("rejects when deleteDatabase errors", async () => {
-    const deleteDatabase = (global.indexedDB as { deleteDatabase: jest.Mock }).deleteDatabase;
+    const indexedDbMock = global.indexedDB as unknown as { deleteDatabase: jest.Mock };
+    const deleteDatabase = indexedDbMock.deleteDatabase;
 
     const promise = resetWorkspace();
     const req = deleteDatabase.mock.results[0].value;

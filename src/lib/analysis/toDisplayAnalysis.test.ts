@@ -31,7 +31,8 @@ const makeResult = (): AnalysisResult => ({
   },
   periodization: {
     weeksDetected: 4, volumePattern: "increasing",
-    deloadDetected: false, warnings: [],
+    deloadDetected: false, peakDetected: false,
+    intensityProgression: "unknown", warnings: [],
   },
   warnings: [{
     severity: "yellow", dimension: "volume",
@@ -41,6 +42,12 @@ const makeResult = (): AnalysisResult => ({
     goal: "general" as const,
     partial: false,
     gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
+  coverage: {
+    patternsCovered: ["horizontal_push", "squat"],
+    patternsMissing: ["hip_hinge"],
+    musclesTrained: [],
+    musclesUntrained: [],
   },
   notes: [],
 });
