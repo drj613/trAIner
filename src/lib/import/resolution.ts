@@ -71,22 +71,37 @@ export type AliasSaveInput = { alias: string; canonicalExerciseId: string };
  * day, producing multiple resolved items with the same rawName; saving
  * each once avoids redundant writes and a same-key race when saves run
  * concurrently (aliases' `by-normalized-alias` index in appDb.ts is
- * unique). If the same rawName resolved to different canonical ids, the
- * last one wins — in practice every occurrence resolves identically.
+ * unique).
+ *
+ * CONFLICT HANDLING: the global alias table is a permanent "this raw name →
+ * this canonical exercise" memory used to auto-resolve FUTURE imports. If the
+ * same normalized name resolved to DIFFERENT canonical ids across occurrences
+ * (e.g. an ambiguous "Press" mapped to bench in one slot and overhead in
+ * another), we must NOT silently persist an arbitrary winner — that would
+ * poison every later import of that name. Conflicting names are dropped from
+ * the global save entirely. The imported program is unaffected: each
+ * occurrence's own choice is applied to the program by applyResolutions; only
+ * the global alias write is skipped for the conflicting name.
  */
 export function dedupeAliasResolutions(
   resolvedItems: ResolutionItem[],
   resolutions: Record<string, string>,
 ): AliasSaveInput[] {
-  const byNormalizedAlias = new Map<string, AliasSaveInput>();
+  const byNormalizedAlias = new Map<string, { input: AliasSaveInput; conflict: boolean }>();
   for (const item of resolvedItems) {
     const normalized = normalizeExerciseName(item.rawName);
-    byNormalizedAlias.set(normalized, {
-      alias: item.rawName,
-      canonicalExerciseId: resolutions[item.path],
-    });
+    const canonicalExerciseId = resolutions[item.path];
+    const existing = byNormalizedAlias.get(normalized);
+    if (!existing) {
+      byNormalizedAlias.set(normalized, {
+        input: { alias: item.rawName, canonicalExerciseId },
+        conflict: false,
+      });
+    } else if (existing.input.canonicalExerciseId !== canonicalExerciseId) {
+      existing.conflict = true;
+    }
   }
-  return [...byNormalizedAlias.values()];
+  return [...byNormalizedAlias.values()].filter((e) => !e.conflict).map((e) => e.input);
 }
 
 // A day number is ambiguous within its week when two or more base days

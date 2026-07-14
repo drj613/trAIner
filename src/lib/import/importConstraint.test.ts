@@ -17,6 +17,7 @@ import {
   applyResolutions,
   dedupeAliasResolutions,
   CUSTOM_ID,
+  type ResolutionItem,
 } from "./resolution";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { programRepo } from "@/lib/storage/programRepo";
@@ -112,5 +113,41 @@ describe("import -> save with a deload override that reuses base-day exercise na
 
     const afterSecondImport = await aliasRepo.list();
     expect(afterSecondImport).toHaveLength(aliasesToSave.length);
+  });
+});
+
+describe("dedupeAliasResolutions conflict handling", () => {
+  const item = (path: string, rawName: string): ResolutionItem => ({
+    path,
+    rawName,
+    sectionType: "strength",
+    suggestions: [],
+  });
+
+  it("collapses agreeing duplicates to a single alias save", () => {
+    const items = [item("days.1.s.0.g.0.e.0", "Bench Press"), item("days.2.s.0.g.0.e.0", "Bench Press")];
+    const resolutions = {
+      "days.1.s.0.g.0.e.0": "bench-press",
+      "days.2.s.0.g.0.e.0": "bench-press",
+    };
+    const out = dedupeAliasResolutions(items, resolutions);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toEqual({ alias: "Bench Press", canonicalExerciseId: "bench-press" });
+  });
+
+  it("drops a normalized name that resolved to conflicting canonical ids (no arbitrary global alias)", () => {
+    const items = [item("a", "Press"), item("b", "Press")];
+    const resolutions = { a: "bench-press", b: "overhead-press" };
+    const out = dedupeAliasResolutions(items, resolutions);
+    // Conflicting mapping must NOT persist an arbitrary global alias.
+    expect(out.find((e) => e.alias === "Press")).toBeUndefined();
+    expect(out).toHaveLength(0);
+  });
+
+  it("keeps distinct names and drops only the conflicting one", () => {
+    const items = [item("a", "Press"), item("b", "Press"), item("c", "Squat")];
+    const resolutions = { a: "bench-press", b: "overhead-press", c: "back-squat" };
+    const out = dedupeAliasResolutions(items, resolutions);
+    expect(out).toEqual([{ alias: "Squat", canonicalExerciseId: "back-squat" }]);
   });
 });
