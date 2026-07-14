@@ -51,7 +51,7 @@ export function buildSchemaBlock(): string {
                 reps: "5-8",
                 load: "optional — e.g. '65% 1RM' or '50 kg' (reduced vs base week)",
                 rest: "optional — e.g. '90s'",
-                notes: "deload — reduced volume vs the base week (approximately 60% of normal)",
+                notes: "deload — reduced volume vs the base week (approximately 50% of normal)",
                 countsTowardVolume: true,
                 tags: {
                   primary: ["quads"],
@@ -87,7 +87,7 @@ export function buildSchemaBlock(): string {
       {
         scope: "week",
         weekNumber: 4,
-        reason: "Deload — use approximately 60% of normal working-set volume",
+        reason: "Deload — use approximately 50% of normal working-set volume",
         days: [overrideReplacementDay]
       }
     ]
@@ -167,7 +167,7 @@ For programs longer than one week:
   const programRequirements = `## Program requirements
 Every routine you emit must include:
 - State progression as a scoped list in the top-level \`progression\` field — one entry per movement class (e.g. primary barbell lifts, hypertrophy accessories, kettlebell/skill practice), each with \`applies\` (the class it governs) and \`rule\` (stated numerically, e.g. double progression: "when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and reset to the bottom", or a defined weekly load step). Scope each rule to the class it governs — do not apply one progression model to every exercise, and do not bury the rule in exercise notes. Exercise-specific tweaks may still go in that exercise's \`notes\`.
-- For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 60% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
+- For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 50% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
 - A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
 - A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
 

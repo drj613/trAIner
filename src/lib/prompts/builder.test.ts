@@ -222,12 +222,12 @@ describe("buildSchemaBlock — countsTowardVolume + working-volume semantics (Ph
 describe("buildSchemaBlock — Phase A prompt refinements", () => {
   const b = () => buildSchemaBlock();
 
-  it("unifies deload volume on approximately 60% of normal working-set volume", () => {
+  it("unifies deload volume on approximately 50% of normal working-set volume", () => {
     const block = b();
-    expect(block).toContain("Deload — use approximately 60% of normal working-set volume");
-    expect(block).toContain("deload — reduced volume vs the base week (approximately 60% of normal)");
+    expect(block).toContain("Deload — use approximately 50% of normal working-set volume");
+    expect(block).toContain("deload — reduced volume vs the base week (approximately 50% of normal)");
     expect(block).toContain(
-      "then a deload week at approximately 60% of normal working-set volume",
+      "then a deload week at approximately 50% of normal working-set volume",
     );
   });
 
