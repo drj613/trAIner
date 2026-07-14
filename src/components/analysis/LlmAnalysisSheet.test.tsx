@@ -50,4 +50,18 @@ describe("LlmAnalysisSheet", () => {
     fireEvent.click(screen.getByTestId("llm-sheet-backdrop"));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("threads progression entries into the generated prompt preview", () => {
+    render(
+      <LlmAnalysisSheet
+        open={true}
+        onClose={jest.fn()}
+        analysis={mockAnalysis}
+        programTitle="Test"
+        progression={[{ applies: "Primary compounds", rule: "Add 2.5-5% load weekly." }]}
+      />
+    );
+    fireEvent.click(screen.getByText(/Preview prompt text/));
+    expect(screen.getByText(/Add 2\.5-5% load weekly\./)).toBeInTheDocument();
+  });
 });

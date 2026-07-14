@@ -37,10 +37,16 @@ export type ProfileDocument = {
   preferences?: string[];
 };
 
+export type ProgressionRule = {
+  applies: string;
+  rule: string;
+};
+
 export type ProgramDocument = {
   id: ID;
   title: string;
   description?: string;
+  progression?: ProgressionRule[];
   source: "import" | "manual" | "backup";
   active: boolean;
   status?: "active" | "draft" | "archived";

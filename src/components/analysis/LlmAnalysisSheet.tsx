@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { DisplayAnalysis } from "@/lib/analysis/types";
+import type { ProgressionRule } from "@/lib/programs/types";
 import { buildSheetPrompt, SHEET_PROMPT_GRID_ITEMS } from "@/lib/analysis/sheetPrompt";
 
 export function LlmAnalysisSheet({
@@ -9,18 +10,20 @@ export function LlmAnalysisSheet({
   onClose,
   analysis,
   programTitle,
+  progression,
 }: {
   open: boolean;
   onClose: () => void;
   analysis: DisplayAnalysis;
   programTitle: string;
+  progression?: ProgressionRule[];
 }) {
   const [copied, setCopied] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
 
   if (!open) return null;
 
-  const prompt = buildSheetPrompt(analysis, programTitle);
+  const prompt = buildSheetPrompt(analysis, programTitle, progression);
   const tokens = Math.ceil(prompt.length / 4);
 
   function copy() {

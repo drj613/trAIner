@@ -169,6 +169,85 @@ describe("countsTowardVolume field preservation", () => {
   });
 });
 
+describe("progression field parsing", () => {
+  const withProgression = (progression: unknown) =>
+    JSON.stringify({
+      title: "Test",
+      progression,
+      days: [minimalDay(1, "Day 1")],
+    });
+
+  it("survives valid progression entries", () => {
+    const review = parseProgramJson(
+      withProgression([
+        { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+        { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+      ])
+    );
+    expect(review.program.progression).toEqual([
+      { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+      { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+    ]);
+  });
+
+  it("drops an entry missing applies", () => {
+    const review = parseProgramJson(
+      withProgression([{ rule: "Add load weekly." }, { applies: "Compounds", rule: "Add 5% load monthly." }])
+    );
+    expect(review.program.progression).toEqual([{ applies: "Compounds", rule: "Add 5% load monthly." }]);
+  });
+
+  it("drops an entry missing rule", () => {
+    const review = parseProgramJson(
+      withProgression([{ applies: "Compounds" }, { applies: "Accessories", rule: "Add 1 rep/week." }])
+    );
+    expect(review.program.progression).toEqual([{ applies: "Accessories", rule: "Add 1 rep/week." }]);
+  });
+
+  it("drops an entry with non-string applies/rule", () => {
+    const review = parseProgramJson(
+      withProgression([
+        { applies: 5, rule: "Add load." },
+        { applies: "Compounds", rule: null },
+        { applies: "Accessories", rule: "Add 1 rep/week." },
+      ])
+    );
+    expect(review.program.progression).toEqual([{ applies: "Accessories", rule: "Add 1 rep/week." }]);
+  });
+
+  it("trims whitespace on applies and rule", () => {
+    const review = parseProgramJson(
+      withProgression([{ applies: "  Compounds  ", rule: "  Add load.  " }])
+    );
+    expect(review.program.progression).toEqual([{ applies: "Compounds", rule: "Add load." }]);
+  });
+
+  it("is undefined when the resulting array would be empty", () => {
+    const review = parseProgramJson(withProgression([{ applies: "", rule: "" }, { rule: "x" }]));
+    expect(review.program.progression).toBeUndefined();
+  });
+
+  it("is undefined for an empty array", () => {
+    const review = parseProgramJson(withProgression([]));
+    expect(review.program.progression).toBeUndefined();
+  });
+
+  it("is undefined when the field is absent", () => {
+    const review = parseProgramJson(JSON.stringify({ title: "Test", days: [minimalDay(1, "Day 1")] }));
+    expect(review.program.progression).toBeUndefined();
+  });
+
+  it("is undefined (no throw) when progression is not an array", () => {
+    const review = parseProgramJson(withProgression("not an array"));
+    expect(review.program.progression).toBeUndefined();
+  });
+
+  it("is undefined (no throw) when progression is an object, not an array", () => {
+    const review = parseProgramJson(withProgression({ applies: "x", rule: "y" }));
+    expect(review.program.progression).toBeUndefined();
+  });
+});
+
 describe("multi-week import", () => {
   it("sets lengthWeeks from the weeks field", () => {
     const review = parseProgramJson(

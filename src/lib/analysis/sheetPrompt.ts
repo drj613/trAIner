@@ -3,6 +3,7 @@ import { ALL_MUSCLE_GROUPS } from "./types";
 import { VOLUME_LANDMARKS, SESSION_LIMITS, BALANCE_TARGETS } from "./thresholds";
 import { MUSCLE_LABEL } from "./toDisplayAnalysis";
 import { GOAL_LABELS } from "@/lib/programs/routineMeta";
+import type { ProgressionRule } from "@/lib/programs/types";
 
 export const SHEET_PROMPT_GRID_ITEMS: ReadonlyArray<readonly [string, string]> = [
   ["Volume landmarks", `${ALL_MUSCLE_GROUPS.length} muscle groups · MV/MEV/MAV/MRV`],
@@ -24,10 +25,13 @@ function landmarkTable(): string {
   return [header, ...rows].join("\n");
 }
 
-export function buildSheetPrompt(analysis: DisplayAnalysis, programTitle: string): string {
+export function buildSheetPrompt(analysis: DisplayAnalysis, programTitle: string, progression?: ProgressionRule[]): string {
   const s = SESSION_LIMITS;
   const bt = BALANCE_TARGETS;
   const infoNotes = analysis.warnings.filter((w) => w.severity === "info");
+  const progressionSection = progression && progression.length > 0
+    ? `\n## Intended progression scheme\n${progression.map((p) => `- ${p.applies}: ${p.rule}`).join("\n")}\n`
+    : "";
   return `# Workout Routine Analysis: ${programTitle}
 
 You are an evidence-based strength coach. Analyze this routine using the reference data below. The user's goal for this routine is **${GOAL_LABELS[analysis.goalScope.goal]}**. Judge it by that goal's standards. If the routine's content clearly doesn't fit this goal, say so before grading. The reference values below are calibrated for general/hypertrophy training${analysis.goalScope.partial ? " — dimensions outside this goal's scope are shown for reference and were excluded from the computed grade" : ""}.
@@ -40,7 +44,7 @@ Exclude exercises with \`countsTowardVolume: false\` from working-set, weekly mu
 Within each muscle-tag tier (primary, secondary, incidental), a canonical muscle is counted once at its largest applicable factor; a "full body" tag and an explicitly tagged muscle in the same tier take the larger of the two rather than stacking. Contributions across tiers (primary + secondary + incidental) remain additive.
 
 The weekly volume ranges below are advisory default guardrails, not mandatory targets — deliberate, acknowledged athlete specialization above a preferred range is not automatically a fault.
-
+${progressionSection}
 ## Reference: Volume Landmarks (effective sets/muscle/week)
 ${landmarkTable()}
 

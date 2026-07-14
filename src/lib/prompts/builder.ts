@@ -67,9 +67,21 @@ export function buildSchemaBlock(): string {
     ]
   };
 
+  const progressionExample = [
+    {
+      applies: "Primary compounds (squat, bench, deadlift)",
+      rule: "Top set + 3 back-offs; when the top set stays <=RPE8 for all reps, add 2.5-5% load."
+    },
+    {
+      applies: "Hypertrophy accessories",
+      rule: "Double progression: add reps to the top of the range across all sets, then +5-10% load and reset."
+    }
+  ];
+
   const skeleton = {
     title: "Program Name",
     weeks: "OPTIONAL integer — total number of weeks. Omit for single-week programs.",
+    progression: progressionExample,
     days: [exDay],
     overrides: [
       {
@@ -154,7 +166,7 @@ For programs longer than one week:
 
   const programRequirements = `## Program requirements
 Every routine you emit must include:
-- A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".
+- State progression as a scoped list in the top-level \`progression\` field — one entry per movement class (e.g. primary barbell lifts, hypertrophy accessories, kettlebell/skill practice), each with \`applies\` (the class it governs) and \`rule\` (stated numerically, e.g. double progression: "when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and reset to the bottom", or a defined weekly load step). Scope each rule to the class it governs — do not apply one progression model to every exercise, and do not bury the rule in exercise notes. Exercise-specific tweaks may still go in that exercise's \`notes\`.
 - For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 60% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
 - A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
 - A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
@@ -185,7 +197,7 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     conversationMode,
     "## Routine JSON schema (used only when emitting after GENERATE IT)",
     "You MUST use the exact field names shown below. Do not rename or restructure the hierarchy.",
-    "  - Top level: `title`, `days`, and optionally `weeks` + `overrides`",
+    "  - Top level: `title`, `days`, and optionally `weeks` + `overrides` + `progression`",
     "  - Each day: `day` (number), `title`, `sections`",
     "  - Each section: `name`, `type`, `groups`",
     "  - Each group: `type`, `exercises`",

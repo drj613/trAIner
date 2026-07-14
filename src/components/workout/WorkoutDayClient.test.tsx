@@ -387,6 +387,32 @@ describe("WorkoutDayClient exercise edit — countsTowardVolume preservation", (
   });
 });
 
+describe("WorkoutDayClient progression display", () => {
+  it("renders nothing when the program has no progression", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    expect(screen.queryByText("Progression")).not.toBeInTheDocument();
+  });
+
+  it("renders each applies/rule entry when the program has progression", async () => {
+    (twoDay as { progression?: unknown }).progression = [
+      { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+      { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+    ];
+    try {
+      renderOnDay("day-1");
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+      expect(await screen.findByText("Progression")).toBeInTheDocument();
+      expect(screen.getByText(/Primary compounds/)).toBeInTheDocument();
+      expect(screen.getByText(/Add 2\.5-5% load when top set hits RPE8 for all reps\./)).toBeInTheDocument();
+      expect(screen.getByText(/Hypertrophy accessories/)).toBeInTheDocument();
+      expect(screen.getByText(/Double progression: add reps, then \+5-10% load and reset\./)).toBeInTheDocument();
+    } finally {
+      delete (twoDay as { progression?: unknown }).progression;
+    }
+  });
+});
+
 describe("WorkoutDayClient history button after exercise change", () => {
   it("history dialog shows entries matching the slot's current canonical id", async () => {
     // Two logs: one under the old slot id, one under a different slot but same canonical id.

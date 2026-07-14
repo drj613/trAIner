@@ -52,6 +52,57 @@ describe("buildSchemaBlock", () => {
   });
 });
 
+describe("buildSchemaBlock — progression scoped list (Phase progression)", () => {
+  const b = () => buildSchemaBlock();
+
+  it("includes a top-level progression example with two scoped entries", () => {
+    const block = b();
+    const idx = block.indexOf('"progression"');
+    expect(idx).toBeGreaterThan(-1);
+    const slice = block.slice(idx, idx + 700);
+    expect(slice).toContain('"applies"');
+    expect(slice).toContain('"rule"');
+    // two distinct movement classes in the example
+    expect((slice.match(/"applies"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("mentions progression in the top-level field-name contract", () => {
+    expect(b()).toMatch(/Top level:.*`progression`/);
+  });
+
+  it("states progression as a scoped list, one entry per movement class", () => {
+    const block = b();
+    expect(block).toContain("scoped list");
+    expect(block).toContain("one entry per movement class");
+    expect(block).toContain("do not apply one progression model to every exercise");
+  });
+
+  it("points the progression rule at the top-level `progression` field, with applies/rule keys", () => {
+    const block = b();
+    expect(block).toMatch(/top-level `progression` field/);
+    expect(block).toContain("`applies`");
+    expect(block).toContain("`rule`");
+  });
+
+  it("keeps the numeric-progression requirement (double progression / weekly load step)", () => {
+    const block = b().toLowerCase();
+    expect(block).toMatch(/double progression|load step|%/);
+  });
+
+  it("still allows exercise-specific tweaks in notes, without burying the main rule there", () => {
+    const block = b();
+    expect(block).toContain("Exercise-specific tweaks may still go in that exercise's `notes`");
+    expect(block).toContain("do not bury the rule in exercise notes");
+  });
+
+  it("removes the old blanket single-rule progression phrasing", () => {
+    const block = b();
+    expect(block).not.toContain(
+      'A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".',
+    );
+  });
+});
+
 describe("buildRecoveryPrompt", () => {
   it("always instructs JSON-only, no fences, straight quotes", () => {
     const p = buildRecoveryPrompt("syntax");

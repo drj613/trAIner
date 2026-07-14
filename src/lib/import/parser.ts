@@ -1,6 +1,6 @@
 import { matchExercise } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
-import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
+import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, ProgressionRule, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
@@ -78,6 +78,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   const days = expandDays(baseDays, lengthWeeks);
   const overrides = parseOverrides(payload, programId, warnings, aliases, userExercises);
   diagnoseImportOverrides(overrides, days, warnings);
+  const progression = normalizeProgression(payload.progression);
 
   const program: ProgramDocument = {
     id: programId,
@@ -87,6 +88,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
     active: true,
     ...(lengthWeeks !== undefined ? { lengthWeeks } : {}),
     ...(profileSnapshot?.primaryGoal ? { goal: profileSnapshot.primaryGoal } : {}),
+    ...(progression ? { progression } : {}),
     days,
     overrides,
     import: {
@@ -167,6 +169,20 @@ function parseOverrides(
       createdAt: now,
     };
   });
+}
+
+// Program-level scoped progression list: one entry per movement class, each
+// requiring both a non-empty `applies` and `rule`. Malformed entries are
+// dropped rather than the whole field rejected; an empty result (or a
+// non-array/absent field) normalizes to `undefined` so imports without a
+// progression list behave exactly as before this field existed.
+function normalizeProgression(value: unknown): ProgressionRule[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rules = value
+    .filter(isRecord)
+    .map((entry) => ({ applies: optionalString(entry.applies), rule: optionalString(entry.rule) }))
+    .filter((entry): entry is ProgressionRule => Boolean(entry.applies && entry.rule));
+  return rules.length > 0 ? rules : undefined;
 }
 
 function detectDays(payload: ImportPayload): ImportPayload[] {

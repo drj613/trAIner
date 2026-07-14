@@ -112,6 +112,31 @@ describe("ProgramDetailClient View→ navigation", () => {
   });
 });
 
+describe("ProgramDetailClient progression display", () => {
+  it("renders nothing when progression is absent", async () => {
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(screen.queryByText("Progression")).not.toBeInTheDocument();
+  });
+
+  it("renders each applies/rule entry when progression is present", async () => {
+    (programRepo.get as jest.Mock).mockResolvedValueOnce({
+      ...program,
+      progression: [
+        { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+        { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+      ],
+    });
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("Progression")).toBeInTheDocument();
+    expect(screen.getByText(/Primary compounds/)).toBeInTheDocument();
+    expect(screen.getByText(/Add 2\.5-5% load when top set hits RPE8 for all reps\./)).toBeInTheDocument();
+    expect(screen.getByText(/Hypertrophy accessories/)).toBeInTheDocument();
+    expect(screen.getByText(/Double progression: add reps, then \+5-10% load and reset\./)).toBeInTheDocument();
+  });
+});
+
 describe("ProgramDetailClient goal persistence", () => {
   it("persists a goal change and re-renders partial grading", async () => {
     renderDetail();

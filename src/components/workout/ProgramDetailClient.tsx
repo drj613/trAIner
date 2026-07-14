@@ -391,6 +391,18 @@ export function ProgramDetailClient({ id }: { id: string }) {
         {program.description && (
           <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 1 }}>{program.description}</div>
         )}
+        {!!program.progression?.length && (
+          <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+              Progression
+            </div>
+            {program.progression.map((p, i) => (
+              <div key={i} style={{ marginTop: i === 0 ? 0 : 2 }}>
+                <strong style={{ color: "var(--fg-2)", fontWeight: 500 }}>{p.applies}</strong> → {p.rule}
+              </div>
+            ))}
+          </div>
+        )}
         {displayAnalysis && (
           <div style={{ marginTop: 8 }}>
             <RoutineAnalysisCard
@@ -470,6 +482,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           onClose={() => setPromptOpen(false)}
           analysis={displayAnalysis}
           programTitle={program.title}
+          progression={program.progression}
         />
       )}
     </div>

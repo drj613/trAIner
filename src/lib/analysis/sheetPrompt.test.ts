@@ -158,6 +158,29 @@ describe("buildSheetPrompt", () => {
   });
 });
 
+describe("buildSheetPrompt — progression scoped list", () => {
+  it("includes the progression applies/rule entries when supplied", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program", [
+      { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+      { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+    ]);
+    expect(prompt).toContain("Primary compounds");
+    expect(prompt).toContain("Add 2.5-5% load when top set hits RPE8 for all reps.");
+    expect(prompt).toContain("Hypertrophy accessories");
+    expect(prompt).toContain("Double progression: add reps, then +5-10% load and reset.");
+  });
+
+  it("omits the progression section cleanly when absent", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program");
+    expect(prompt).not.toContain("Intended progression");
+  });
+
+  it("omits the progression section cleanly when the list is empty", () => {
+    const prompt = buildSheetPrompt(displayAnalysis(), "Test Program", []);
+    expect(prompt).not.toContain("Intended progression");
+  });
+});
+
 describe("buildSheetPrompt — working-volume semantics (Phase 11.8)", () => {
   it("renders total prescribed sets, working sets, and the preferred working-set range", () => {
     const prompt = buildSheetPrompt(
