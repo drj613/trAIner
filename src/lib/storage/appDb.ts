@@ -4,7 +4,7 @@ import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, P
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 7;
+export const DB_VERSION = 8;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -126,6 +126,39 @@ export function getDb() {
             } else if (!log.performedDate) {
               await cursor.update({ ...log, performedDate: localDateOf(log.performedAt) });
             }
+            cursor = await cursor.continue();
+          }
+        }
+
+        // v7 → v8: rescue kg cells. Before per-exercise units existed, a cell
+        // like "10kg x10" failed to parse and was stored as unparseable
+        // rawCell text (contributing zero volume). Re-parse those into
+        // weight/reps with unit "kg". Unitless numeric weights stay as-is
+        // (absent unit = lb).
+        if (oldVersion < 8 && oldVersion >= 1) {
+          const kgCell = /^\+?\s*(\d+(?:\.\d+)?)\s*kgs?\s*x\s*(\d+)$/i;
+          const store = tx.objectStore("logs");
+          let cursor = await store.openCursor();
+          while (cursor) {
+            const log = cursor.value as WorkoutLogDocument;
+            let changed = false;
+            const entries = (log.entries ?? []).map((entry) => ({
+              ...entry,
+              sets: (entry.sets ?? []).map((set) => {
+                if (set.weight !== undefined || !set.rawCell) return set;
+                const m = kgCell.exec(set.rawCell.trim());
+                if (!m) return set;
+                changed = true;
+                const { rawCell: _drop, ...rest } = set;
+                return {
+                  ...rest,
+                  weight: parseFloat(m[1]),
+                  unit: "kg" as const,
+                  reps: parseInt(m[2], 10),
+                };
+              }),
+            }));
+            if (changed) await cursor.update({ ...log, entries });
             cursor = await cursor.continue();
           }
         }

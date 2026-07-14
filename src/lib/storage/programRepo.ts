@@ -27,8 +27,14 @@ export const programRepo = {
     await (await getDb()).delete("programs", id);
   },
 
-  async activate(id: string): Promise<void> {
+  async activate(id: string): Promise<ProgramDocument[]> {
     const db = await getDb();
+    // Programs with at least one finished session: a demoted routine that was
+    // actually run should read "completed", not revert to "draft".
+    const logs = await db.getAll("logs");
+    const ranPrograms = new Set(
+      logs.filter((l) => l.completedAt).map((l) => l.programId),
+    );
     const tx = db.transaction("programs", "readwrite");
     const store = tx.objectStore("programs");
     const all = await store.getAll();
@@ -39,21 +45,23 @@ export const programRepo = {
       throw new Error(`Program ${id} not found`);
     }
     const now = new Date().toISOString();
-    await Promise.all(
-      all.map((p) => {
-        if (p.id === id) {
-          return store.put({ ...p, active: true, status: "active", updatedAt: now });
-        }
-        // only change status for non-archived programs (don't un-archive)
-        return store.put({
-          ...p,
-          active: false,
-          status: p.status === "archived" ? "archived" : "draft",
-          updatedAt: now,
-        });
-      })
-    );
+    const updated: ProgramDocument[] = all.map((p) => {
+      if (p.id === id) {
+        return { ...p, active: true, status: "active" as const, updatedAt: now };
+      }
+      // don't un-archive or un-complete; the outgoing active routine keeps
+      // its progress visible as "completed" if it has any finished sessions
+      const status =
+        p.status === "archived" || p.status === "completed"
+          ? p.status
+          : p.active && ranPrograms.has(p.id)
+            ? ("completed" as const)
+            : ("draft" as const);
+      return { ...p, active: false, status, updatedAt: now };
+    });
+    await Promise.all(updated.map((p) => store.put(p)));
     await tx.done;
+    return updated;
   },
 
   async duplicate(id: string): Promise<ProgramDocument> {

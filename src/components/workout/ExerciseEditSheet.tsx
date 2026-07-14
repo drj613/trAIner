@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { ProgramExercise } from "@/lib/programs/types";
+import type { ProgramExercise, WeightUnit } from "@/lib/programs/types";
 
 type Props = {
   exercise: ProgramExercise;
@@ -14,6 +14,7 @@ export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
   const [reps, setReps] = useState<string>(exercise.reps ?? "");
   const [load, setLoad] = useState<string>(exercise.load ?? "");
   const [rest, setRest] = useState<string>(exercise.rest ?? "");
+  const [unit, setUnit] = useState<WeightUnit>(exercise.unit ?? "lb");
   const [notes, setNotes] = useState<string>(exercise.notes ?? "");
 
   function submit() {
@@ -22,6 +23,7 @@ export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
       reps: reps.trim() || undefined,
       load: load.trim() || undefined,
       rest: rest.trim() || undefined,
+      unit: unit === "kg" ? unit : undefined,
       notes: notes.trim() || undefined,
     };
     onSave(patch);
@@ -64,6 +66,16 @@ export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
           </Field>
           <Field label="Rest">
             <input value={rest} onChange={(e) => setRest(e.target.value)} className="input w-full" />
+          </Field>
+          <Field label="Unit">
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value as WeightUnit)}
+              className="input w-full"
+            >
+              <option value="lb">lb</option>
+              <option value="kg">kg</option>
+            </select>
           </Field>
         </div>
         <Field label="Notes">

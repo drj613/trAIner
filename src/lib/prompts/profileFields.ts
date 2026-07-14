@@ -84,12 +84,14 @@ export const PROFILE_FIELDS: ProfileField[] = [
   },
   {
     key: "preferences",
-    label: "Exercise preferences",
+    label: "Exercises I like",
     group: "profile",
     important: false,
     hasData: (p) => (p.preferences?.length ?? 0) > 0,
     render: (p) =>
-      p.preferences?.length ? `Exercise preferences: ${join(p.preferences)}` : null,
+      p.preferences?.length
+        ? `Exercises I like (include where sensible): ${join(p.preferences)}`
+        : null,
   },
   {
     key: "injuries",

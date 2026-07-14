@@ -19,6 +19,7 @@ beforeEach(async () => {
   const { getDb } = await import("./appDb");
   const db = await getDb();
   await db.clear("programs");
+  await db.clear("logs");
 });
 
 describe("programRepo.activate", () => {
@@ -59,6 +60,40 @@ describe("programRepo.activate — edge cases", () => {
     await programRepo.activate("p2");
     const p1 = await programRepo.get("p1");
     expect(p1?.status).toBe("archived"); // must stay archived
+  });
+
+  it("marks the outgoing active routine completed when it has finished sessions", async () => {
+    const { logRepo } = await import("./logRepo");
+    await programRepo.save({ ...makeProgram("p1", true), status: "active" as const });
+    await programRepo.save(makeProgram("p2", false));
+    await logRepo.save({
+      id: "log-1",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-07-01T10:00:00.000Z",
+      completedAt: "2026-07-01T11:00:00.000Z",
+      entries: [],
+    });
+    await programRepo.activate("p2");
+    const p1 = await programRepo.get("p1");
+    expect(p1?.status).toBe("completed");
+    expect(p1?.active).toBe(false);
+  });
+
+  it("demotes the outgoing active routine to draft when it was never run", async () => {
+    await programRepo.save({ ...makeProgram("p1", true), status: "active" as const });
+    await programRepo.save(makeProgram("p2", false));
+    await programRepo.activate("p2");
+    const p1 = await programRepo.get("p1");
+    expect(p1?.status).toBe("draft");
+  });
+
+  it("preserves a completed status when activating something else", async () => {
+    await programRepo.save({ ...makeProgram("p1", false), status: "completed" as const });
+    await programRepo.save(makeProgram("p2", false));
+    await programRepo.activate("p2");
+    const p1 = await programRepo.get("p1");
+    expect(p1?.status).toBe("completed");
   });
 });
 

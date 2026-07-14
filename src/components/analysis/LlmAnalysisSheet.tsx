@@ -91,7 +91,7 @@ export function LlmAnalysisSheet({
             borderRadius: "var(--r-sm, 4px)",
           }}>
             <span style={{ fontSize: 11, color: "var(--fg-2)", flex: 1 }}>
-              ~{tokens.toLocaleString()} tokens · works with Claude, GPT-4, or any frontier model
+              ~{tokens.toLocaleString()} tokens · works with any modern AI assistant
             </span>
           </div>
 

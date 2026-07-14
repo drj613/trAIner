@@ -8,6 +8,7 @@ import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog, applyEntryNotes } from "@/lib/workout/sessionState";
 import { localDateString, logLocalDate, sessionLogId } from "@/lib/workout/localDate";
+import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
@@ -623,11 +624,13 @@ function WorkoutBody({
       : await logRepo.getForDay(program.id, day.id, today);
     const exerciseNameMap = new Map<string, string>();
     const exerciseCanonicalMap = new Map<string, string | undefined>();
+    const exerciseUnitMap = new Map<string, "lb" | "kg">();
     for (const section of day.sections) {
       for (const group of section.groups) {
         for (const ex of group.exercises) {
           exerciseNameMap.set(ex.id, ex.name);
           exerciseCanonicalMap.set(ex.id, ex.canonicalExerciseId);
+          exerciseUnitMap.set(ex.id, ex.unit ?? "lb");
         }
       }
     }
@@ -641,7 +644,7 @@ function WorkoutBody({
       } = {
         exerciseId,
         exerciseName: exerciseNameMap.get(exerciseId),
-        sets: serialiseSets(vals),
+        sets: serialiseSets(vals, exerciseUnitMap.get(exerciseId) ?? "lb"),
       };
       if (canonicalExerciseId) base.canonicalExerciseId = canonicalExerciseId;
       return applyEntryNotes(base, n[exerciseId] ?? "");
@@ -681,6 +684,21 @@ function WorkoutBody({
     navigate(`/programs/${program.id}/days/${days[idx].id}`);
   }
 
+  // After finishing/skipping, go to the next incomplete day (not index + 1,
+  // which re-suggests already-done days when training out of order).
+  async function navigateToNextIncompleteDay() {
+    let idx = (dayIndex + 1) % days.length;
+    try {
+      const logs = await logRepo.listForProgram(program.id);
+      const next = resolveNextDay(days, logs, localDateString());
+      const nextIdx = next ? days.findIndex((d) => d.id === next.id) : -1;
+      if (nextIdx !== -1) idx = nextIdx;
+    } catch (e) {
+      console.error("[navigateToNextIncompleteDay] log fetch failed", e);
+    }
+    navigateToDay(idx);
+  }
+
   async function finishWorkout() {
     if (saving.current) return;
     saving.current = true;
@@ -702,8 +720,7 @@ function WorkoutBody({
         completedSets,
       });
       setSaved(true);
-      const nextIdx = (dayIndex + 1) % days.length;
-      setTimeout(() => navigateToDay(nextIdx), 800);
+      setTimeout(() => void navigateToNextIncompleteDay(), 800);
     } catch (e) {
       console.error("[finishWorkout] save failed", e);
       setSaveError("Failed to save workout. Please try again.");
@@ -719,8 +736,7 @@ function WorkoutBody({
         { skippedAt: new Date().toISOString(), skipReason: reason || undefined },
       );
       setSkipMode(false);
-      const nextIdx = (dayIndex + 1) % days.length;
-      navigateToDay(nextIdx);
+      await navigateToNextIncompleteDay();
     } catch (e) {
       console.error("[handleSkip] save failed", e);
     }

@@ -1,11 +1,17 @@
-import type { WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
+import type { WeightUnit, WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
 
 /**
- * Parse a cell string like "65x10", "BWx8", "+70x9" into a WorkoutSetLog.
+ * Parse a cell string like "65x10", "BWx8", "+70x9", "10kg x10" into a
+ * WorkoutSetLog. An explicit unit in the cell wins; otherwise the exercise's
+ * `defaultUnit` applies. The unit field is only stamped for kg — absent = lb.
  * Returns a WorkoutSetLog with rawCell for unrecognized/skip/pain strings.
  * Empty strings are still treated as empty (returns { setNumber, rawCell: "" }).
  */
-export function parseCellToSet(cell: string, setNumber: number): WorkoutSetLog {
+export function parseCellToSet(
+  cell: string,
+  setNumber: number,
+  defaultUnit: WeightUnit = "lb",
+): WorkoutSetLog {
   if (!cell) return { setNumber, rawCell: cell };
 
   const lower = cell.trim().toLowerCase();
@@ -14,16 +20,24 @@ export function parseCellToSet(cell: string, setNumber: number): WorkoutSetLog {
   // Strip leading PR marker
   const stripped = cell.startsWith("+") ? cell.slice(1) : cell;
 
-  const match = /^(BW|\d+(?:\.\d+)?)x(\d+)$/i.exec(stripped);
+  const match = /^(BW|\d+(?:\.\d+)?)\s*(kg|lbs?)?\s*x\s*(\d+)$/i.exec(stripped.trim());
   if (!match) return { setNumber, rawCell: cell };
 
   const weightPart = match[1];
-  const reps = parseInt(match[2], 10);
+  const explicitUnit = match[2]?.toLowerCase().startsWith("kg")
+    ? "kg"
+    : match[2]
+      ? "lb"
+      : undefined;
+  const reps = parseInt(match[3], 10);
 
-  const weight =
-    weightPart.toUpperCase() === "BW" ? undefined : parseFloat(weightPart);
+  if (weightPart.toUpperCase() === "BW") return { setNumber, weight: undefined, reps };
 
-  return { setNumber, weight, reps };
+  const weight = parseFloat(weightPart);
+  const unit = explicitUnit ?? defaultUnit;
+  return unit === "kg"
+    ? { setNumber, weight, unit, reps }
+    : { setNumber, weight, reps };
 }
 
 /**
@@ -31,11 +45,11 @@ export function parseCellToSet(cell: string, setNumber: number): WorkoutSetLog {
  * Skips empty cells. setNumber is 1-based original index.
  * Unrecognized strings (e.g., notes) are preserved via rawCell.
  */
-export function serialiseSets(cells: string[]): WorkoutSetLog[] {
+export function serialiseSets(cells: string[], defaultUnit: WeightUnit = "lb"): WorkoutSetLog[] {
   const result: WorkoutSetLog[] = [];
   for (let i = 0; i < cells.length; i++) {
     if (!cells[i].trim()) continue;
-    result.push(parseCellToSet(cells[i], i + 1));
+    result.push(parseCellToSet(cells[i], i + 1, defaultUnit));
   }
   return result;
 }
@@ -58,9 +72,10 @@ export function hydrateFromLog(entry: WorkoutLogEntry, prescribedSets?: number):
     if (s.rawCell !== undefined) {
       out[s.setNumber - 1] = s.rawCell;
     } else {
+      const suffix = s.unit === "kg" ? "kg" : "";
       const cell = s.weight === undefined
         ? (s.reps ? `BWx${s.reps}` : "")
-        : s.reps ? `${s.weight}x${s.reps}` : `${s.weight}`;
+        : s.reps ? `${s.weight}${suffix}x${s.reps}` : `${s.weight}${suffix}`;
       out[s.setNumber - 1] = cell;
     }
   }

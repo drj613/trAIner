@@ -662,7 +662,7 @@ export function ProfileClient() {
 
       {(editingSection === "preferences" || (profile.preferences ?? []).length > 0) && (
         <ProfileCard
-          label="Prompt preferences"
+          label="Exercises I like"
           editing={editingSection === "preferences"}
           onEdit={() => startEdit("preferences")}
           onSave={() => void saveEdit()}

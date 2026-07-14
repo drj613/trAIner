@@ -8,7 +8,9 @@ export const GOAL_LABELS: Record<TrainingGoal, string> = {
   other: "Other / mixed",
 };
 
-export function programStatus(p: ProgramDocument): "active" | "draft" | "archived" {
+export function programStatus(
+  p: ProgramDocument,
+): "active" | "draft" | "archived" | "completed" {
   return p.status ?? "draft";
 }
 

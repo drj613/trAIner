@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
-import { formatSetLabel } from "@/lib/workout/historyUtils";
+import { formatSetLabel, setVolume } from "@/lib/workout/historyUtils";
 import { logLocalDate } from "@/lib/workout/localDate";
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
 
@@ -25,10 +25,6 @@ type ExerciseSummary = {
 
 function formatSet(s: WorkoutSetLog): string {
   return formatSetLabel(s, "×");
-}
-
-function setVolume(s: WorkoutSetLog): number {
-  return (s.weight ?? 0) * (s.reps ?? 0);
 }
 
 function deriveTrend(volumes: number[]): "up" | "flat" | "down" {

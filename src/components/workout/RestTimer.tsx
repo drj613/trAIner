@@ -13,6 +13,31 @@ type Props = {
   notes?: string;
 };
 
+function requestNotificationPermission() {
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission === "default") {
+    void Notification.requestPermission().catch(() => { /* dismissed */ });
+  }
+}
+
+function notifyRestDone() {
+  try { navigator.vibrate?.(200); } catch { /* unsupported */ }
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  const title = "Rest done";
+  const options = { body: "Rest timer finished — time for the next set.", tag: "rest-timer" };
+  // Prefer the service worker so the notification also fires when the tab is
+  // backgrounded / installed as a PWA; fall back to a page notification.
+  const viaPage = () => { try { new Notification(title, options); } catch { /* unsupported */ } };
+  if (navigator.serviceWorker?.getRegistration) {
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => (reg ? reg.showNotification(title, options) : viaPage()))
+      .catch(viaPage);
+  } else {
+    viaPage();
+  }
+}
+
 export function RestTimer({ restText, notes }: Props) {
   const initial = parseDuration(restText ?? "") ?? parseDuration(notes ?? "");
   const [seconds, setSeconds] = useState<number | undefined>(initial);
@@ -21,22 +46,27 @@ export function RestTimer({ restText, notes }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>("");
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const remainingRef = useRef(remaining);
+  remainingRef.current = remaining;
 
   useEffect(() => {
     if (!running) {
       if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
       return;
     }
+    // Count down against a wall-clock deadline: background tabs throttle
+    // setInterval, so decrementing per tick would drift badly on phones.
+    const deadline = Date.now() + remainingRef.current * 1000;
+    let fired = false;
     tickRef.current = setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          setRunning(false);
-          try { navigator.vibrate?.(200); } catch { /* unsupported */ }
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
+      const r = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(r);
+      if (r <= 0 && !fired) {
+        fired = true;
+        setRunning(false);
+        notifyRestDone();
+      }
+    }, 250);
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [running]);
 
@@ -106,7 +136,10 @@ export function RestTimer({ restText, notes }: Props) {
         type="button"
         className="btn ghost"
         aria-label={running ? "Pause" : "Start"}
-        onClick={() => setRunning((r) => !r)}
+        onClick={() => {
+          if (!running) requestNotificationPermission();
+          setRunning((r) => !r);
+        }}
         disabled={seconds === undefined}
         style={{ padding: "3px 6px" }}
       >

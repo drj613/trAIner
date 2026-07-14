@@ -49,7 +49,7 @@ export type ProgramDocument = {
   progression?: ProgressionRule[];
   source: "import" | "manual" | "backup";
   active: boolean;
-  status?: "active" | "draft" | "archived";
+  status?: "active" | "draft" | "archived" | "completed";
   goal?: TrainingGoal;
   daysPerWeek?: number;
   lengthWeeks?: number;
@@ -98,6 +98,9 @@ export type ProgramGroup = {
   exercises: ProgramExercise[];
 };
 
+// Weight unit for logged loads. Absent anywhere a unit is optional means lb.
+export type WeightUnit = "lb" | "kg";
+
 export type ProgramExercise = {
   id: ID;
   name: string;
@@ -105,6 +108,9 @@ export type ProgramExercise = {
   sets?: number;
   reps?: string;
   load?: string;
+  // Unit the user logs this exercise in (machines in kg, free weights in lb).
+  // Absent = lb.
+  unit?: WeightUnit;
   rest?: string;
   tempo?: string;
   notes?: string;
@@ -161,6 +167,9 @@ export type WorkoutLogEntry = {
 export type WorkoutSetLog = {
   setNumber: number;
   weight?: number;
+  // Unit `weight` was logged in, stamped at save time so later edits to the
+  // exercise's unit never rewrite history. Absent = lb.
+  unit?: WeightUnit;
   reps?: number;
   rpe?: number;
   notes?: string;

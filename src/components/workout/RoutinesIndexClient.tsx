@@ -6,11 +6,12 @@ import { useLocalData } from "@/components/app/LocalDataProvider";
 import { programStatus, programDaysPerWeek, programLengthWeeks } from "@/lib/programs/routineMeta";
 import type { ProgramDocument } from "@/lib/programs/types";
 
-type Filter = "all" | "draft" | "archived";
+type Filter = "all" | "draft" | "completed" | "archived";
 
 const STATUS_COLOR: Record<string, string> = {
   active: "var(--good, #7fc77a)",
   draft: "var(--warn, #e6b664)",
+  completed: "var(--accent)",
   archived: "var(--fg-3)",
 };
 
@@ -278,12 +279,14 @@ function RoutineRow({
   program,
   onOpen,
   onActivate,
+  onMarkDone,
   onDuplicate,
   onDelete,
 }: {
   program: ProgramDocument;
   onOpen: () => void;
   onActivate: () => void;
+  onMarkDone: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
@@ -351,7 +354,8 @@ function RoutineRow({
             marginTop: 1,
           }}
         >
-          {dpw}d/wk · {lw}w{status === "draft" ? " · not started" : ""}
+          {dpw}d/wk · {lw}w
+          {status === "draft" ? " · not started" : status === "completed" ? " · done" : ""}
           {program.lastRunAt && ` · ${program.lastRunAt.slice(0, 10)}`}
         </div>
       </button>
@@ -401,6 +405,15 @@ function RoutineRow({
                 }}
               />
             )}
+            {status !== "completed" && status !== "archived" && (
+              <MenuButton
+                label="Mark done"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onMarkDone();
+                }}
+              />
+            )}
             <MenuButton
               label="Duplicate"
               onClick={() => {
@@ -431,7 +444,7 @@ function RoutineRow({
 }
 
 export function RoutinesIndexClient() {
-  const { programs, loading, activateProgram, duplicateProgram, removeProgram } = useLocalData();
+  const { programs, loading, activateProgram, duplicateProgram, removeProgram, saveProgram } = useLocalData();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -447,6 +460,14 @@ export function RoutinesIndexClient() {
       await activateProgram(id);
     } catch (err) {
       console.error("Failed to activate routine", err);
+    }
+  }
+
+  async function handleMarkDone(program: ProgramDocument) {
+    try {
+      await saveProgram({ ...program, active: false, status: "completed" });
+    } catch (err) {
+      console.error("Failed to mark routine done", err);
     }
   }
 
@@ -520,7 +541,7 @@ export function RoutinesIndexClient() {
         <span className="tx-up" style={{ fontSize: 9.5 }}>
           Other
         </span>
-        {(["all", "draft", "archived"] as Filter[]).map((k) => {
+        {(["all", "draft", "completed", "archived"] as Filter[]).map((k) => {
           const count =
             k === "all"
               ? others.length
@@ -578,6 +599,7 @@ export function RoutinesIndexClient() {
               program={p}
               onOpen={() => navigate(`/programs/${p.id}`)}
               onActivate={() => { void handleActivate(p.id); }}
+              onMarkDone={() => { void handleMarkDone(p); }}
               onDuplicate={() => { void handleDuplicate(p.id); }}
               onDelete={() => { void handleDelete(p.id); }}
             />

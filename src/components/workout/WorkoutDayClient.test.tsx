@@ -217,8 +217,12 @@ describe("WorkoutDayClient day note", () => {
 });
 
 describe("WorkoutDayClient finish workout", () => {
-  it("Finish workout navigates to the next day", async () => {
+  it("Finish workout navigates to the next incomplete day", async () => {
     jest.useFakeTimers();
+    // After finishing day-1, the fresh log fetch sees day-1 completed.
+    listForProgramMock.mockResolvedValue([
+      { id: "l1", programId: "p1", dayId: "day-1", performedAt: "2026-07-01T10:00:00.000Z", completedAt: "2026-07-01T11:00:00.000Z", entries: [] },
+    ]);
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
@@ -231,8 +235,11 @@ describe("WorkoutDayClient finish workout", () => {
     jest.useRealTimers();
   });
 
-  it("Finish on the last day wraps to day 0", async () => {
+  it("Finish on the last day goes to the earliest incomplete day", async () => {
     jest.useFakeTimers();
+    listForProgramMock.mockResolvedValue([
+      { id: "l2", programId: "p1", dayId: "day-2", performedAt: "2026-07-01T10:00:00.000Z", completedAt: "2026-07-01T11:00:00.000Z", entries: [] },
+    ]);
     renderOnDay("day-2");
     await screen.findByRole("heading", { level: 1, name: "Pull Day" });
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

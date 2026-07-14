@@ -40,6 +40,50 @@ describe("parseCellToSet", () => {
       setNumber: 1, weight: 70, reps: 9,
     });
   });
+  it("parses explicit kg unit with space (10kg x10)", () => {
+    expect(parseCellToSet("10kg x10", 1)).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 10, unit: "kg", reps: 10,
+    });
+  });
+  it("parses explicit kg unit without space (60kgx8)", () => {
+    expect(parseCellToSet("60kgx8", 1)).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 60, unit: "kg", reps: 8,
+    });
+  });
+  it("explicit lb suffix stays unit-less (lb is the default)", () => {
+    expect(parseCellToSet("65lb x10", 1)).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 65, reps: 10,
+    });
+  });
+  it("applies the exercise default unit when the cell has none", () => {
+    expect(parseCellToSet("60x8", 1, "kg")).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 60, unit: "kg", reps: 8,
+    });
+  });
+  it("explicit cell unit wins over the exercise default", () => {
+    expect(parseCellToSet("65lb x10", 1, "kg")).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 65, reps: 10,
+    });
+  });
+  it("strips PR marker from kg cells (+70kg x9)", () => {
+    expect(parseCellToSet("+70kg x9", 1)).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 70, unit: "kg", reps: 9,
+    });
+  });
+});
+
+describe("kg round-trip", () => {
+  it("hydrates a kg set with its unit suffix so it re-parses identically", () => {
+    const entry: WorkoutLogEntry = {
+      exerciseId: "ex1",
+      sets: [{ setNumber: 1, weight: 10, unit: "kg", reps: 10 }],
+    };
+    const cells = hydrateFromLog(entry);
+    expect(cells).toEqual(["10kgx10"]);
+    expect(parseCellToSet(cells[0], 1)).toEqual<WorkoutSetLog>({
+      setNumber: 1, weight: 10, unit: "kg", reps: 10,
+    });
+  });
 });
 
 describe("serialiseSets", () => {

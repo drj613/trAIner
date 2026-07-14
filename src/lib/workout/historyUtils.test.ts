@@ -1,4 +1,4 @@
-import { aggregateExerciseHistory, formatSetLabel } from "./historyUtils";
+import { aggregateExerciseHistory, formatSetLabel, setVolume, setWeightInLb } from "./historyUtils";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 
 const logs: WorkoutLogDocument[] = [
@@ -24,6 +24,19 @@ const logs: WorkoutLogDocument[] = [
     ],
   },
 ];
+
+describe("unit normalization", () => {
+  it("converts kg sets to lb for volume so mixed units aggregate coherently", () => {
+    expect(setWeightInLb({ setNumber: 1, weight: 100, reps: 10 })).toBe(100);
+    expect(setWeightInLb({ setNumber: 1, weight: 100, unit: "kg", reps: 10 })).toBeCloseTo(220.46, 2);
+    expect(setVolume({ setNumber: 1, weight: 10, unit: "kg", reps: 10 })).toBeCloseTo(220.46, 2);
+  });
+
+  it("labels kg sets with their unit", () => {
+    expect(formatSetLabel({ setNumber: 1, weight: 10, unit: "kg", reps: 10 })).toBe("10kgx10");
+    expect(formatSetLabel({ setNumber: 1, weight: 65, reps: 10 })).toBe("65x10");
+  });
+});
 
 describe("aggregateExerciseHistory", () => {
   it("returns sessions sorted newest first", () => {

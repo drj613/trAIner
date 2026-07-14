@@ -44,7 +44,7 @@ describe("buildProfileFieldsBlock", () => {
     expect(block).toContain("Body: age 30, height 180cm, weight 82kg");
     expect(block).toContain("Training history: Ran Starting Strength");
     expect(block).toContain("Schedule: Mon/Wed/Fri, 45 min cap");
-    expect(block).toContain("Exercise preferences: No barbell back squat");
+    expect(block).toContain("Exercises I like (include where sensible): No barbell back squat");
   });
 
   it("omits fields whose toggle is off", () => {

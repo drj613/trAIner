@@ -55,14 +55,50 @@ describe("resolveNextDay", () => {
     expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d2");
   });
 
-  it("crosses week boundaries (d3 → d4)", () => {
-    const logs = [log("d3", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z")];
+  it("returns the first incomplete day, not most-recent + 1 (out-of-order)", () => {
+    // Did d4 then d3: the next session should pick up the earliest
+    // incomplete day (d1), not re-suggest d4.
+    const logs = [
+      log("d4", "2026-05-16T09:00:00.000Z", "2026-05-16T10:00:00.000Z"),
+      log("d3", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z"),
+    ];
+    expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d1");
+  });
+
+  it("continues sequentially through a pass (d1..d3 done → d4)", () => {
+    const logs = [
+      log("d1", "2026-05-15T09:00:00.000Z", "2026-05-15T10:00:00.000Z"),
+      log("d2", "2026-05-16T09:00:00.000Z", "2026-05-16T10:00:00.000Z"),
+      log("d3", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z"),
+    ];
     expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d4");
   });
 
-  it("wraps from last day back to first", () => {
-    const logs = [log("d4", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z")];
+  it("starting mid-program returns the earliest incomplete day", () => {
+    // Only d3 completed: d1 and d2 of this pass are still owed.
+    const logs = [log("d3", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z")];
     expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d1");
+  });
+
+  it("wraps to a new pass when every day is completed", () => {
+    const logs = [
+      log("d1", "2026-05-14T09:00:00.000Z", "2026-05-14T10:00:00.000Z"),
+      log("d2", "2026-05-15T09:00:00.000Z", "2026-05-15T10:00:00.000Z"),
+      log("d3", "2026-05-16T09:00:00.000Z", "2026-05-16T10:00:00.000Z"),
+      log("d4", "2026-05-17T09:00:00.000Z", "2026-05-17T10:00:00.000Z"),
+    ];
+    expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d1");
+  });
+
+  it("second pass advances past days completed twice", () => {
+    const logs = [
+      log("d1", "2026-05-10T09:00:00.000Z", "2026-05-10T10:00:00.000Z"),
+      log("d2", "2026-05-11T09:00:00.000Z", "2026-05-11T10:00:00.000Z"),
+      log("d3", "2026-05-12T09:00:00.000Z", "2026-05-12T10:00:00.000Z"),
+      log("d4", "2026-05-13T09:00:00.000Z", "2026-05-13T10:00:00.000Z"),
+      log("d1", "2026-05-14T09:00:00.000Z", "2026-05-14T10:00:00.000Z"),
+    ];
+    expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d2");
   });
 
   it("ignores completed logs whose dayId no longer exists in the program", () => {
@@ -70,7 +106,7 @@ describe("resolveNextDay", () => {
       log("removed-day", "2026-05-17T10:00:00.000Z", "2026-05-17T11:00:00.000Z"),
       log("d2", "2026-05-16T09:00:00.000Z", "2026-05-16T10:00:00.000Z"),
     ];
-    expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d3");
+    expect(resolveNextDay(days, logs, "2026-05-18")?.id).toBe("d1");
   });
 
   it("starts at days[0] when every prior completed log references a removed day", () => {

@@ -26,7 +26,7 @@ describe("BodyweightWidget", () => {
     await user.click(await screen.findByText(/log bodyweight/i));
     await user.type(screen.getByPlaceholderText(/weight/i), "80");
     await user.click(screen.getByRole("button", { name: /save/i }));
-    expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({ value: 80, unit: "kg" }));
+    expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({ value: 80, unit: "lb" }));
   });
 
   it("shows the current weight when an entry exists for today", async () => {

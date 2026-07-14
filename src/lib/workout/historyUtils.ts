@@ -17,11 +17,20 @@ export type ExerciseSessionRow = {
 export function formatSetLabel(s: WorkoutSetLog, sep: string = "x"): string {
   if (s.rawCell && s.rawCell.trim()) return s.rawCell;
   if (!s.weight) return s.reps ? `BW${sep}${s.reps}` : "";
-  return s.reps ? `${s.weight}${sep}${s.reps}` : `${s.weight}`;
+  const w = s.unit === "kg" ? `${s.weight}kg` : `${s.weight}`;
+  return s.reps ? `${w}${sep}${s.reps}` : w;
 }
 
-function setVolume(s: WorkoutSetLog): number {
-  return (s.weight ?? 0) * (s.reps ?? 0);
+const KG_TO_LB = 2.2046226218;
+
+/** Logged weight normalized to lb, so kg and lb sets aggregate coherently. */
+export function setWeightInLb(s: WorkoutSetLog): number {
+  return (s.weight ?? 0) * (s.unit === "kg" ? KG_TO_LB : 1);
+}
+
+/** Tonnage of a set in lb (kg sets converted). */
+export function setVolume(s: WorkoutSetLog): number {
+  return setWeightInLb(s) * (s.reps ?? 0);
 }
 
 export function aggregateExerciseHistory(

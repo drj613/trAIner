@@ -266,3 +266,66 @@ describe("DB v5 — completedAt backfill", () => {
     expect(log?.completedAt).toBe("2026-05-10T11:00:00.000Z");
   });
 });
+
+describe("DB v8 — kg rawCell rescue", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  function seedV7() {
+    return openDB(DB_NAME, 7, {
+      upgrade(db) {
+        db.createObjectStore("profile", { keyPath: "id" });
+        db.createObjectStore("programs", { keyPath: "id" });
+        const logs = db.createObjectStore("logs", { keyPath: "id" });
+        logs.createIndex("by-program", "programId");
+        logs.createIndex("by-day", "dayId");
+        const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+        aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+        aliases.createIndex("by-exercise", "canonicalExerciseId");
+        db.createObjectStore("backups", { keyPath: "id" });
+        db.createObjectStore("metrics", { keyPath: "exerciseId" });
+        db.createObjectStore("userExercises", { keyPath: "id" });
+        db.createObjectStore("bodyweight", { keyPath: "id" });
+      },
+    });
+  }
+
+  it("re-parses kg rawCells into weight/unit/reps", async () => {
+    const v7 = await seedV7();
+    await v7.put("logs", {
+      id: "kg-log",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-07-01T10:00:00.000Z",
+      performedDate: "2026-07-01",
+      completedAt: "2026-07-01T11:00:00.000Z",
+      entries: [
+        {
+          exerciseId: "leg-press",
+          sets: [
+            { setNumber: 1, rawCell: "10kg x10" },
+            { setNumber: 2, rawCell: "12.5kgx8" },
+            { setNumber: 3, weight: 65, reps: 10 },
+            { setNumber: 4, rawCell: "skip" },
+          ],
+        },
+      ],
+    } as never);
+    v7.close();
+
+    const db = await getDb();
+    const log = await db.get("logs", "kg-log");
+    const sets = log!.entries[0].sets;
+    expect(sets[0]).toEqual({ setNumber: 1, weight: 10, unit: "kg", reps: 10 });
+    expect(sets[1]).toEqual({ setNumber: 2, weight: 12.5, unit: "kg", reps: 8 });
+    expect(sets[2]).toEqual({ setNumber: 3, weight: 65, reps: 10 });
+    expect(sets[3]).toEqual({ setNumber: 4, rawCell: "skip" });
+  });
+});

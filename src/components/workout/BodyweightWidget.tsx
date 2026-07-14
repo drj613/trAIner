@@ -12,13 +12,20 @@ export function BodyweightWidget({ today }: { today?: string } = {}) {
   const [entry, setEntry] = useState<BodyweightEntry | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
-  const [unit, setUnit] = useState<"kg" | "lb">("kg");
+  const [unit, setUnit] = useState<"kg" | "lb">("lb");
 
   useEffect(() => {
     bodyweightRepo.list().then((all) => {
       const found = all.find((e) => e.id === date);
       setEntry(found);
-      if (found) { setValue(String(found.value)); setUnit(found.unit); }
+      if (found) {
+        setValue(String(found.value));
+        setUnit(found.unit);
+      } else if (all.length > 0) {
+        // No entry today — default the unit to whatever was used most recently
+        const latest = all.reduce((a, b) => (a.id > b.id ? a : b));
+        setUnit(latest.unit);
+      }
     });
   }, [date]);
 

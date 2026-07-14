@@ -56,15 +56,8 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   }
 
   async function activateProgram(id: string) {
-    await programRepo.activate(id);
-    const now = new Date().toISOString();
-    setPrograms((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, active: true, status: "active" as const, updatedAt: now }
-          : { ...p, active: false, status: (p.status === "archived" ? "archived" : "draft") as "archived" | "draft", updatedAt: now }
-      )
-    );
+    const updated = await programRepo.activate(id);
+    setPrograms(updated);
   }
 
   async function duplicateProgram(id: string): Promise<ProgramDocument> {
