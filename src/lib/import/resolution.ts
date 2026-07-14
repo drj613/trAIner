@@ -10,6 +10,7 @@ import type {
 } from "@/lib/programs/types";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { getOverrideReplacementDays } from "@/lib/programs/overrides";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
 
 export const CUSTOM_ID = "__custom__";
 
@@ -60,6 +61,32 @@ export function buildInitialResolutions(
     }
   }
   return result;
+}
+
+export type AliasSaveInput = { alias: string; canonicalExerciseId: string };
+
+/**
+ * Collapses resolved items down to one alias-save per normalizedAlias. A
+ * week-4 deload/override day can reuse the same exercise name as a base
+ * day, producing multiple resolved items with the same rawName; saving
+ * each once avoids redundant writes and a same-key race when saves run
+ * concurrently (aliases' `by-normalized-alias` index in appDb.ts is
+ * unique). If the same rawName resolved to different canonical ids, the
+ * last one wins — in practice every occurrence resolves identically.
+ */
+export function dedupeAliasResolutions(
+  resolvedItems: ResolutionItem[],
+  resolutions: Record<string, string>,
+): AliasSaveInput[] {
+  const byNormalizedAlias = new Map<string, AliasSaveInput>();
+  for (const item of resolvedItems) {
+    const normalized = normalizeExerciseName(item.rawName);
+    byNormalizedAlias.set(normalized, {
+      alias: item.rawName,
+      canonicalExerciseId: resolutions[item.path],
+    });
+  }
+  return [...byNormalizedAlias.values()];
 }
 
 // A day number is ambiguous within its week when two or more base days

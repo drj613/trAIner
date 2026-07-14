@@ -10,6 +10,7 @@ import {
   extractUnresolvedExercises,
   applyResolutions,
   buildInitialResolutions,
+  dedupeAliasResolutions,
   CUSTOM_ID,
   type ResolutionItem,
 } from "@/lib/import/resolution";
@@ -115,16 +116,16 @@ export function ImportClient() {
           ? applyResolutions(review.program, catalogResolutions)
           : review.program;
 
-      await Promise.all(
-        unresolvedItems
-          .filter((item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID)
-          .map((item) =>
-            aliasRepo.save({
-              alias: item.rawName,
-              canonicalExerciseId: resolutions[item.path],
-            }),
-          ),
+      // Dedup by normalizedAlias: a deload/override day can reuse the same
+      // exercise name as a base day, producing multiple resolved items with
+      // the same rawName. Saving each unique alias once avoids redundant
+      // writes and a concurrent-write race on the same normalizedAlias.
+      const resolvedItems = unresolvedItems.filter(
+        (item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID,
       );
+      const aliasesToSave = dedupeAliasResolutions(resolvedItems, resolutions);
+
+      await Promise.all(aliasesToSave.map((entry) => aliasRepo.save(entry)));
 
       await saveProgram(resolvedProgram);
       navigate(`/programs/${resolvedProgram.id}`);
