@@ -11,13 +11,22 @@ export const aliasRepo = {
     return (await getDb()).getFromIndex("aliases", "by-normalized-alias", normalizeExerciseName(alias));
   },
 
+  /**
+   * Upsert by normalizedAlias. `by-normalized-alias` is the store's only
+   * unique index, so saving the same alias twice (within one import or
+   * across a later re-import) must update the existing record in place
+   * rather than mint a new id — otherwise the second insert throws a
+   * ConstraintError.
+   */
   async save(alias: Omit<AliasDocument, "id" | "normalizedAlias" | "createdAt"> & { createdAt?: string }) {
     const normalizedAlias = normalizeExerciseName(alias.alias);
-    await (await getDb()).put("aliases", {
+    const db = await getDb();
+    const existing = await db.getFromIndex("aliases", "by-normalized-alias", normalizedAlias);
+    await db.put("aliases", {
       ...alias,
-      id: crypto.randomUUID(),
+      id: existing?.id ?? crypto.randomUUID(),
       normalizedAlias,
-      createdAt: alias.createdAt ?? new Date().toISOString()
+      createdAt: existing?.createdAt ?? alias.createdAt ?? new Date().toISOString()
     });
   },
 

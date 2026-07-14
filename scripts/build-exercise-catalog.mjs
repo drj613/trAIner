@@ -324,7 +324,7 @@ if (existsSync(PRO_SNAPSHOT_PATH)) {
 // mavHigh:8 is calibrated for direct front delt work only.
 const PRESSING_PATTERN = /\b(press|push[-\s]?up|fly|flye|dip|bench)\b/i;
 let frontDeltsCorrected = 0;
-for (const [id, exercise] of byId) {
+for (const [, exercise] of byId) {
   const isPressing = PRESSING_PATTERN.test(exercise.name);
   if (!isPressing) continue;
   const primaryIdx = exercise.muscles.primary.indexOf("front delts");

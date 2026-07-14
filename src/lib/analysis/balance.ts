@@ -8,11 +8,11 @@ import {
   classifyMovement,
   detectMovementPatterns,
 } from "./muscles";
+import { resolveCountsTowardVolume } from "./volumeRole";
 
 export function analyzeBalance(days: ProgramDay[]): BalanceResult {
   let pushSets = 0;
   let pullSets = 0;
-  let legSets = 0;
   let upperSets = 0;
   let lowerSets = 0;
   let quadSets = 0;
@@ -35,13 +35,19 @@ export function analyzeBalance(days: ProgramDay[]): BalanceResult {
     for (const section of day.sections) {
       for (const group of section.groups) {
         for (const exercise of group.exercises) {
+          // Gate: ordinary preparation (warmup/activation/mobility/etc.) does
+          // not count toward working-pattern balance — push/pull, upper/
+          // lower, movement-pattern coverage, and set-based totals below.
+          if (!resolveCountsTowardVolume(exercise, section.type)) {
+            continue;
+          }
+
           const sets = getEffectiveSets(exercise);
           const catalogItem = lookupCatalogExercise(exercise);
           const category = classifyMovement(catalogItem);
 
           if (category === "push") pushSets += sets;
           if (category === "pull") pullSets += sets;
-          if (category === "legs") legSets += sets;
 
           // C10: dedup per-exercise so multiple primary muscles mapping to the
           // same bucket don't double-count sets. mapMuscleExpanded handles "full body"

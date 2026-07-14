@@ -15,7 +15,7 @@ type Props = {
   onClose: () => void;
 };
 
-function buildPrompt(day: ProgramDay): string {
+export function buildPrompt(day: ProgramDay): string {
   const lines: string[] = [
     `Here is my current workout — "${day.title}":`,
     "",
@@ -46,7 +46,15 @@ function buildPrompt(day: ProgramDay): string {
     "",
     "Return ONLY a JSON object in this exact format — no explanation:",
     "",
-    '{ "days": [{ "title": "...", "sections": [{ "type": "strength", "name": "...", "groups": [{ "type": "single", "exercises": [{ "name": "...", "sets": 3, "reps": "8-10", "load": "60kg", "rest": "90s" }] }] }] }] }',
+    '{ "days": [{ "title": "...", "sections": [{ "type": "strength", "name": "...", "groups": [{ "type": "single", "exercises": [{ "name": "...", "sets": 3, "reps": "8-10", "load": "60kg", "rest": "90s", "countsTowardVolume": true }] }] }] }] }',
+    "",
+    "Preserve `countsTowardVolume` for unchanged exercises.",
+    "",
+    "Use `true` for productive working sets and `false` for ordinary warmup, activation, mobility, cooldown, rehabilitation, prehabilitation, or low-fatigue practice.",
+    "",
+    "Do not remove the field when modifying a day.",
+    "",
+    "Preserve all fields unrelated to the requested modification.",
   );
 
   return lines.join("\n");

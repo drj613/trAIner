@@ -2,88 +2,28 @@
 
 import { useState } from "react";
 import type { DisplayAnalysis } from "@/lib/analysis/types";
-
-const PROMPT_GRID_ITEMS = [
-  ["Volume landmarks", "11 muscles · MEV/MAV/MRV bands"],
-  ["Session limits", "Exercise count · set count · duration"],
-  ["Balance targets", "Push:pull · upper:lower · quad:ham"],
-  ["Pattern coverage", "6 movement patterns"],
-  ["Your profile", "Goals · experience · constraints"],
-  ["Computed scores", "For LLM to validate / dispute"],
-  ["Output schema", "JSON for app to consume"],
-];
-
-function buildPrompt(analysis: DisplayAnalysis, programTitle: string): string {
-  return `# Workout Routine Analysis: ${programTitle}
-
-You are an evidence-based strength coach. Analyze this routine using the reference data below.
-
-## Reference: Volume Landmarks (sets/muscle/week)
-| Muscle       | MV  | MEV | MAV-Lo | MAV-Hi | MRV   |
-|--------------|-----|-----|--------|--------|-------|
-| Chest        | 2–4 | 4–6 | 6      | 16     | 16–24 |
-| Back         | 4–6 | 6–8 | 10     | 20     | 20–30 |
-| Quads        | 2–4 | 4–6 | 6      | 14     | 14–18 |
-| Hamstrings   | 2–4 | 4–6 | 6      | 14     | 14–18 |
-| Glutes       | 0   | 2–4 | 6      | 14     | 14–18 |
-| Front Delts  | 0–2 | 4   | 6      | 16     | 16–22 |
-| Side Delts   | 0–2 | 6–8 | 10     | 18     | 18–26 |
-| Rear Delts   | 0   | 4–6 | 8      | 16     | 16–22 |
-| Biceps       | 0–2 | 6–8 | 10     | 18     | 18–26 |
-| Triceps      | 2–4 | 4–6 | 8      | 16     | 16–22 |
-| Calves       | 4–6 | 8   | 10     | 14     | 14–20 |
-
-Volume counting: primary muscles = 1.0 set, secondary = 0.5, incidental = 0.25.
-
-## Reference: Session Constraints
-- 4–8 productive exercises; 11+ excessive
-- 10–25 productive sets per session
-- Duration ≈ (sets × 3) + 10 minutes
-
-## Reference: Balance Targets
-- Push:Pull = 1:1 to 1:1.5 (slightly pull-biased)
-- Upper:Lower ≈ 1:1
-- Quad:Ham = 1:1 to 1.67:1
-- All 6 movement patterns covered: H/V push, H/V pull, hinge, squat
-
-## Computed Scores (validate or dispute)
-${analysis.dimensions.map((d) => `- ${d.label}: ${d.grade} (${d.score}/100) — ${d.note}`).join("\n")}
-
-## Muscle Volumes
-${analysis.muscles.map((m) => `- ${m.group}: ${m.sets} eff. sets (MEV ${m.mev}, MAV ${m.mavLo}–${m.mavHi}, MRV ${m.mrv}) [${m.status}]`).join("\n")}
-
-## Balance Ratios
-${analysis.ratios.map((r) => `- ${r.label}: ${r.value} (target ${r.target}) [${r.verdict}]`).join("\n")}
-
-## Sessions
-${analysis.sessions.map((s) => `- ${s.day}: ${s.exercises} exercises, ${s.sets} sets, ~${s.durationMin} min [${s.status}]`).join("\n")}
-
-## Return JSON
-{
-  "fingerprint": { "primary": "...", "secondary": "...", "confidence": 0.0–1.0, "label": "<short phrase>" },
-  "scores": { "volume": 0–100, "balance": 0–100, "structure": 0–100, "periodization": 0–100 },
-  "findings": [{ "severity": "good|warn|bad|info", "area": "...", "msg": "..." }],
-  "recommendations": [{ "priority": 1, "change": "...", "rationale": "..." }]
-}`;
-}
+import type { ProgressionRule } from "@/lib/programs/types";
+import { buildSheetPrompt, SHEET_PROMPT_GRID_ITEMS } from "@/lib/analysis/sheetPrompt";
 
 export function LlmAnalysisSheet({
   open,
   onClose,
   analysis,
   programTitle,
+  progression,
 }: {
   open: boolean;
   onClose: () => void;
   analysis: DisplayAnalysis;
   programTitle: string;
+  progression?: ProgressionRule[];
 }) {
   const [copied, setCopied] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
 
   if (!open) return null;
 
-  const prompt = buildPrompt(analysis, programTitle);
+  const prompt = buildSheetPrompt(analysis, programTitle, progression);
   const tokens = Math.ceil(prompt.length / 4);
 
   function copy() {
@@ -127,11 +67,11 @@ export function LlmAnalysisSheet({
 
         <div style={{ flex: 1, overflow: "auto", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
-            What's in this prompt
+            What&apos;s in this prompt
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 12 }}>
             {[
-              ...PROMPT_GRID_ITEMS,
+              ...SHEET_PROMPT_GRID_ITEMS,
               ["Full routine", `${analysis.muscles.length} muscles · ${analysis.sessions.length} sessions`],
             ].map(([k, v]) => (
               <div key={k} style={{

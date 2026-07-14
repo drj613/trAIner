@@ -1,7 +1,6 @@
 import {
   buildHeatmapCells,
   computeHeatmapStats,
-  type HeatmapCell,
 } from "./trainingHeatmap";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 

@@ -1,6 +1,6 @@
 import { analyzeBalance } from "./balance";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
-import type { ProgramDay } from "@/lib/programs/types";
+import type { ProgramDay, ProgramExercise, SectionType } from "@/lib/programs/types";
 
 // Minimal day builder for targeted unit tests
 function makeDay(
@@ -137,5 +137,113 @@ describe("analyzeBalance", () => {
     const result = analyzeBalance(imbalancedProgram.days);
     expect(result.movementPatternsMissing).toContain("vertical_pull");
     expect(result.warnings.some((w) => /movement pattern/i.test(w.message))).toBe(false);
+  });
+});
+
+// Phase 6 — gate working-pattern balance via resolveCountsTowardVolume.
+// Preparation work (warmup/activation/mobility/etc.) must not shift push/pull,
+// upper/lower, or movement-pattern coverage unless explicitly marked as
+// counting toward volume.
+describe("analyzeBalance gates by resolveCountsTowardVolume", () => {
+  const makeGatedDay = (
+    sectionType: SectionType,
+    exercise: Partial<Omit<ProgramExercise, "tags">> & { tags?: Partial<ProgramExercise["tags"]> },
+  ): ProgramDay => ({
+    id: "gd-1",
+    dayNumber: 1,
+    weekNumber: 1,
+    title: "Gated Day",
+    sections: [{
+      id: "gd-s1",
+      type: sectionType,
+      name: "Section",
+      groups: [{
+        id: "gd-g1",
+        type: "single",
+        exercises: [{
+          id: "gd-e1",
+          name: "Exercise",
+          sets: 3,
+          reps: "10",
+          ...exercise,
+          tags: {
+            primary: [],
+            secondary: [],
+            incidental: [],
+            modifiers: [],
+            ...exercise.tags,
+          },
+        }],
+      }],
+    }],
+  });
+
+  it("warmup band pull-aparts do not change the push:pull working ratio", () => {
+    // Band Pull Apart catalog entry has movementPatterns including "pull",
+    // so classifyMovement resolves it to "pull". Placed in a warmup section
+    // (default countsTowardVolume=false), it must not move pullSets.
+    const warmupDay = makeGatedDay("warmup", {
+      name: "Band Pull-Aparts",
+      canonicalExerciseId: "band-pull-apart",
+    });
+    const strengthDay = makeGatedDay("strength", {
+      name: "Push-Up",
+      canonicalExerciseId: "push-up",
+      tags: { primary: ["chest"] },
+    });
+    const result = analyzeBalance([warmupDay, strengthDay]);
+    // No counted pull work anywhere → pullSets stays 0 → pushPullRatio is
+    // Infinity (push-only), never diluted by the warmup pull-apart sets.
+    expect(result.pushPullRatio).toBe(Infinity);
+  });
+
+  it("activation work does not change the upper:lower working ratio", () => {
+    // "activation" is an exact-match non-volume modifier regardless of section.
+    const activationGlutes = makeGatedDay("strength", {
+      name: "Glute Activation",
+      tags: { primary: ["glutes"], modifiers: ["activation"] },
+    });
+    const result = analyzeBalance([activationGlutes]);
+    // No counted sets at all → both buckets empty → ratio is null, not a
+    // lower-body-credited value.
+    expect(result.upperLowerRatio).toBeNull();
+  });
+
+  it("non-volume handstand practice does not satisfy vertical-push working coverage", () => {
+    // No canonicalExerciseId → falls into the tag-based fallback in
+    // detectMovementPatterns, which matches "shoulders" to vertical_push
+    // regardless of whether the work counts toward volume. Placed in a
+    // mobility section (default countsTowardVolume=false).
+    const handstandPractice = makeGatedDay("mobility", {
+      name: "Handstand Practice",
+      tags: { primary: ["shoulders"] },
+    });
+    const result = analyzeBalance([handstandPractice]);
+    expect(result.movementPatternsCovered).not.toContain("vertical_push");
+  });
+
+  it("explicitly volume-counting work inside a warmup section does affect balance", () => {
+    const explicitWarmupPush = makeGatedDay("warmup", {
+      name: "Warmup Push-Up Ramp",
+      countsTowardVolume: true,
+      tags: { primary: ["chest"] },
+    });
+    const result = analyzeBalance([explicitWarmupPush]);
+    // chest is credited to upperSets even though the section is a warmup,
+    // because the exercise explicitly opts into counting toward volume.
+    expect(result.upperLowerRatio).toBe(Infinity);
+  });
+
+  it("a pure-mobility routine returns null working ratios without throwing", () => {
+    const mobilityOnly = makeGatedDay("mobility", {
+      name: "Cat-Cow",
+      tags: { primary: ["lower back"] },
+    });
+    expect(() => analyzeBalance([mobilityOnly])).not.toThrow();
+    const result = analyzeBalance([mobilityOnly]);
+    expect(result.pushPullRatio).toBeNull();
+    expect(result.upperLowerRatio).toBeNull();
+    expect(result.quadHamRatio).toBeNull();
+    expect(result.chestBackRatio).toBeNull();
   });
 });

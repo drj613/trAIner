@@ -1,6 +1,6 @@
 import { toDisplayAnalysis } from "./toDisplayAnalysis";
 import type { AnalysisResult } from "./types";
-import { imbalancedProgram } from "./fixtures";
+import { imbalancedProgram, multiWeekProgram, startingStrengthProgram } from "./fixtures";
 import { analyzeProgram } from "./analyze";
 
 const makeResult = (): AnalysisResult => ({
@@ -18,7 +18,7 @@ const makeResult = (): AnalysisResult => ({
   }],
   sessions: [{
     dayId: "d1", dayTitle: "Mon · Upper A",
-    exerciseCount: 7, totalSets: 22, estimatedMinutes: 56,
+    exerciseCount: 7, totalSets: 22, workingSets: 18, estimatedMinutes: 56,
     muscleSetCounts: {},
     warnings: [],
   }],
@@ -31,12 +31,25 @@ const makeResult = (): AnalysisResult => ({
   },
   periodization: {
     weeksDetected: 4, volumePattern: "increasing",
-    deloadDetected: false, warnings: [],
+    deloadDetected: false, peakDetected: false,
+    intensityProgression: "unknown", warnings: [],
   },
   warnings: [{
     severity: "yellow", dimension: "volume",
     message: "Rear delts below MEV",
   }],
+  goalScope: {
+    goal: "general" as const,
+    partial: false,
+    gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
+  coverage: {
+    patternsCovered: ["horizontal_push", "squat"],
+    patternsMissing: ["hip_hinge"],
+    musclesTrained: [],
+    musclesUntrained: [],
+  },
+  notes: [],
 });
 
 describe("toDisplayAnalysis", () => {
@@ -87,6 +100,8 @@ describe("toDisplayAnalysis", () => {
     const d = toDisplayAnalysis(makeResult(), 184);
     expect(d.sessions[0].day).toBe("Mon · Upper A");
     expect(d.sessions[0].exercises).toBe(7);
+    expect(d.sessions[0].sets).toBe(22);
+    expect(d.sessions[0].workingSets).toBe(18);
     expect(d.sessions[0].durationMin).toBe(56);
   });
 
@@ -130,5 +145,71 @@ describe("toDisplayAnalysis", () => {
     const volNote = d.dimensions.find((x) => x.id === "volume")?.note ?? "";
     expect(volNote).toContain(`of ${trainedCount} muscles`);
     expect(volNote).not.toContain(`of ${totalCount} muscles`);
+  });
+
+  it("fingerprint uses days per week, not total days across weeks", () => {
+    // multiWeekProgram: 4 weeks × 1 day/week = 4 session entries, but 1 day/wk
+    const d = toDisplayAnalysis(analyzeProgram(multiWeekProgram), 0);
+    expect(d.fingerprint.primary).toBe("1d/wk");
+    expect(d.fingerprint.label).toBe("1-day program");
+  });
+
+  it("fingerprint is unchanged for single-week programs", () => {
+    const d = toDisplayAnalysis(analyzeProgram(imbalancedProgram), 0);
+    expect(d.fingerprint.primary).toBe("2d/wk");
+    expect(d.fingerprint.label).toBe("2-day program");
+  });
+
+  it("maps sessions with red warnings to 'bad' status", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [{ severity: "red" as const, dimension: "session", message: "too long" }],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+  });
+
+  it("flags the red warning message on bad sessions, not the first warning", () => {
+    const r = makeResult();
+    const result = {
+      ...r,
+      sessions: [{
+        ...r.sessions[0],
+        warnings: [
+          { severity: "yellow" as const, dimension: "session", message: "9 exercises — on the high end" },
+          { severity: "red" as const, dimension: "session", message: "32 total sets (recommended: 10-25)" },
+        ],
+      }],
+    };
+    const d = toDisplayAnalysis(result, 0);
+    expect(d.sessions[0].status).toBe("bad");
+    expect(d.sessions[0].flag).toBe("32 total sets (recommended: 10-25)");
+  });
+
+  it("threads goalScope and marks gated-out dimensions as not graded", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const d = toDisplayAnalysis(analyzeProgram(program), 0);
+    expect(d.goalScope.goal).toBe("strength");
+    expect(d.goalScope.partial).toBe(true);
+    const byId = Object.fromEntries(d.dimensions.map((x) => [x.id, x.graded]));
+    expect(byId).toEqual({ volume: false, balance: true, structure: true, periodization: false });
+  });
+
+  it("renders notes as info findings ahead of warnings", () => {
+    const program = { ...startingStrengthProgram, goal: "strength" as const };
+    const d = toDisplayAnalysis(analyzeProgram(program), 0);
+    expect(d.warnings[0].severity).toBe("info");
+    expect(d.warnings[0].area).toBe("goal");
+    expect(d.warnings.some((w) => w.severity !== "info")).toBe(true);
+  });
+
+  it("full-scope programs mark every dimension graded", () => {
+    const d = toDisplayAnalysis(analyzeProgram(imbalancedProgram), 0);
+    expect(d.dimensions.every((x) => x.graded)).toBe(true);
+    expect(d.goalScope.partial).toBe(false);
   });
 });

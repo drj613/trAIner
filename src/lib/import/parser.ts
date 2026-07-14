@@ -1,8 +1,24 @@
 import { matchExercise } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
-import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, UserExerciseDocument } from "@/lib/programs/types";
+import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, ProgressionRule, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
+import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
+import { diagnoseImportOverrides } from "@/lib/programs/overrideDiagnostics";
+
+// Builds the ImportWarning path for an exercise at a given position. Base
+// days use `baseExercisePath`; override replacement days use
+// `overrideExercisePath` bound to their override index. Threaded through
+// normalizeDay -> normalizeSection -> normalizeGroup so every exercise
+// warning path (base or override) is built through the shared path
+// builders in @/lib/import/paths — never hand-assembled.
+type ExercisePathBuilder = (
+  dayNumber: number,
+  templateWeek: number | undefined,
+  sectionIndex: number,
+  groupIndex: number,
+  exerciseIndex: number,
+) => string;
 
 export class ImportError extends Error {
   reason: RecoveryReason;
@@ -42,7 +58,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   const now = new Date().toISOString();
   const programId = newId("program");
 
-  const baseDays = detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+  const baseDays = parseBaseDays(payload, warnings, aliases, userExercises);
 
   if (baseDays.length === 0) {
     throw new ImportError(
@@ -51,9 +67,19 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
     );
   }
 
-  const lengthWeeks = optionalNumber(payload.weeks);
+  // Duplicate-day diagnostics run on the normalized BASE-TEMPLATE days,
+  // before expansion — expanded weekly copies legitimately share the same
+  // declared day number, so checking post-expansion would misfire.
+  diagnoseDuplicateBaseDayNumbers(baseDays, warnings);
+
+  const lengthWeeks = coercePositiveInt(payload.weeks);
+  // Effective weeks are computed from the EXPANDED day set, not the raw
+  // base template or the scalar `weeks` field — expansion is what actually
+  // determines which weeks exist to be overridden. See diagnoseImportOverrides.
   const days = expandDays(baseDays, lengthWeeks);
   const overrides = parseOverrides(payload, programId, warnings, aliases, userExercises);
+  diagnoseImportOverrides(overrides, days, warnings);
+  const progression = normalizeProgression(payload.progression);
 
   const program: ProgramDocument = {
     id: programId,
@@ -62,6 +88,8 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
     source: "import",
     active: true,
     ...(lengthWeeks !== undefined ? { lengthWeeks } : {}),
+    ...(profileSnapshot?.primaryGoal ? { goal: profileSnapshot.primaryGoal } : {}),
+    ...(progression ? { progression } : {}),
     days,
     overrides,
     import: {
@@ -76,11 +104,43 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   return { program, warnings };
 }
 
+function parseBaseDays(
+  payload: ImportPayload,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[]
+): ProgramDay[] {
+  return detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+}
+
+// Structural warning only (no rawName), so extractUnresolvedExercises never
+// treats this as an exercise-resolution item. Must run on BASE days
+// (pre-expandDays) — see call site in normalizePayload.
+function diagnoseDuplicateBaseDayNumbers(baseDays: ProgramDay[], warnings: ImportWarning[]): void {
+  const counts = new Map<number, number>();
+  for (const day of baseDays) {
+    counts.set(day.dayNumber, (counts.get(day.dayNumber) ?? 0) + 1);
+  }
+  for (const [dayNumber, count] of counts) {
+    if (count > 1) {
+      warnings.push({
+        path: `days.${dayNumber}`,
+        message: `Day ${dayNumber} is declared ${count} times. Duplicate base day numbers make exercise resolutions for this day ambiguous.`,
+      });
+    }
+  }
+}
+
 function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): ProgramDay[] {
   if (!lengthWeeks || lengthWeeks <= 1) return baseDays;
   const expanded: ProgramDay[] = [];
   for (let week = 1; week <= lengthWeeks; week++) {
     for (const base of baseDays) {
+      // `...base` propagates `templateWeek` unchanged onto every clone —
+      // only `weekNumber` (the week this clone was expanded INTO) is
+      // reassigned. That keeps every clone's resolution-path identity tied
+      // to the TEMPLATE it came from, not the week it landed in, which is
+      // what lets one resolution patch every week-clone. See paths.ts.
       expanded.push({ ...base, id: newId("day"), weekNumber: week });
     }
   }
@@ -90,16 +150,19 @@ function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): Pr
 function parseOverrides(
   payload: ImportPayload,
   programId: ID,
-  _warnings: ImportWarning[],
+  warnings: ImportWarning[],
   aliases: AliasDocument[],
   userExercises: UserExerciseDocument[]
 ): ProgramOverride[] {
   if (!Array.isArray(payload.overrides)) return [];
   const now = new Date().toISOString();
-  return payload.overrides.filter(isRecord).map((raw) => {
-    const localWarnings: ImportWarning[] = [];
+  return payload.overrides.filter(isRecord).map((raw, overrideIndex) => {
+    // Override warnings MERGE into the shared collection (never a local,
+    // discarded array) so they surface through program.import.warnings.
+    const pathBuilder: ExercisePathBuilder = (dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex) =>
+      overrideExercisePath(overrideIndex, dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex);
     const days = arrayOfRecords(raw.days).map((day, index) =>
-      normalizeDay(day, index + 1, localWarnings, aliases, userExercises)
+      normalizeDay(day, index + 1, warnings, aliases, userExercises, pathBuilder)
     );
     const scope: "week" | "day" = stringFrom(raw.scope, "week") === "day" ? "day" : "week";
     return {
@@ -114,6 +177,20 @@ function parseOverrides(
   });
 }
 
+// Program-level scoped progression list: one entry per movement class, each
+// requiring both a non-empty `applies` and `rule`. Malformed entries are
+// dropped rather than the whole field rejected; an empty result (or a
+// non-array/absent field) normalizes to `undefined` so imports without a
+// progression list behave exactly as before this field existed.
+function normalizeProgression(value: unknown): ProgressionRule[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rules = value
+    .filter(isRecord)
+    .map((entry) => ({ applies: optionalString(entry.applies), rule: optionalString(entry.rule) }))
+    .filter((entry): entry is ProgressionRule => Boolean(entry.applies && entry.rule));
+  return rules.length > 0 ? rules : undefined;
+}
+
 function detectDays(payload: ImportPayload): ImportPayload[] {
   if (Array.isArray(payload.days)) return payload.days.filter(isRecord);
   if (Array.isArray(payload.weeks)) {
@@ -123,24 +200,47 @@ function detectDays(payload: ImportPayload): ImportPayload[] {
   return [];
 }
 
-function normalizeDay(day: ImportPayload, fallbackDayNumber: number, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramDay {
+function normalizeDay(
+  day: ImportPayload,
+  fallbackDayNumber: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  pathBuilder: ExercisePathBuilder = baseExercisePath
+): ProgramDay {
+  const dayNumber = numberFrom(day.day ?? day.dayNumber, fallbackDayNumber);
+  // The EXPLICIT week this day declared, if any — captured once here (pre-
+  // expansion) so it can be propagated unchanged through expandDays and
+  // used as the day's template identity for path building. See ProgramDay
+  // and paths.ts.
+  const templateWeek = optionalNumber(day.week ?? day.weekNumber);
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, `days.${fallbackDayNumber}.sections.${index}`, warnings, aliases, userExercises)
+    normalizeSection(section, dayNumber, templateWeek, index, warnings, aliases, userExercises, pathBuilder)
   );
 
   return {
     id: newId("day"),
-    dayNumber: numberFrom(day.day ?? day.dayNumber, fallbackDayNumber),
-    weekNumber: optionalNumber(day.week ?? day.weekNumber),
+    dayNumber,
+    weekNumber: templateWeek,
+    templateWeek,
     title: stringFrom(day.title ?? day.name, `Day ${fallbackDayNumber}`),
     sections
   };
 }
 
-function normalizeSection(section: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[]): ProgramSection {
+function normalizeSection(
+  section: ImportPayload,
+  dayNumber: number,
+  templateWeek: number | undefined,
+  sectionIndex: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  pathBuilder: ExercisePathBuilder
+): ProgramSection {
   const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, `${path}.groups.${index}`, warnings, aliases, userExercises, sectionType)
+    normalizeGroup(group, dayNumber, templateWeek, sectionIndex, index, warnings, aliases, userExercises, sectionType, pathBuilder)
   );
 
   return {
@@ -151,9 +251,20 @@ function normalizeSection(section: ImportPayload, path: string, warnings: Import
   };
 }
 
-function normalizeGroup(group: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string): ProgramGroup {
+function normalizeGroup(
+  group: ImportPayload,
+  dayNumber: number,
+  templateWeek: number | undefined,
+  sectionIndex: number,
+  groupIndex: number,
+  warnings: ImportWarning[],
+  aliases: AliasDocument[],
+  userExercises: UserExerciseDocument[],
+  sectionType: string,
+  pathBuilder: ExercisePathBuilder
+): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, `${path}.exercises.${index}`, warnings, aliases, userExercises, sectionType)
+    normalizeExercise(exercise, pathBuilder(dayNumber, templateWeek, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
   );
 
   return {
@@ -186,6 +297,8 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
     });
   }
 
+  const countsTowardVolume = optionalBoolean(exercise.countsTowardVolume) ?? optionalBoolean(exercise.counts_toward_volume);
+
   return {
     id: newId("exercise"),
     name,
@@ -196,6 +309,7 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
     rest: optionalString(exercise.rest),
     tempo: normalizeTempo(exercise),
     notes: optionalString(exercise.notes),
+    countsTowardVolume,
     tags
   };
 }
@@ -246,6 +360,28 @@ function numberFrom(value: unknown, fallback: number) {
 
 function optionalNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+// Targeted coercion for fields where a model may emit a stringified integer
+// (e.g. `"weeks": "4"`) instead of a JSON number. Only used for `weeks` —
+// other optionalNumber callers (weekNumber, sets) keep the strict
+// number-only check so this does not change their behavior.
+function coercePositiveInt(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0 && Number.isInteger(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^-?\d+$/.test(trimmed)) {
+      const parsed = Number.parseInt(trimmed, 10);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function isRecord(value: unknown): value is ImportPayload {

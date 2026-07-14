@@ -3,6 +3,9 @@ export type ID = string;
 
 export type ProgramScope = "base" | "week" | "day";
 
+export const TRAINING_GOALS = ["general", "hypertrophy", "strength", "endurance", "other"] as const;
+export type TrainingGoal = (typeof TRAINING_GOALS)[number];
+
 export const SECTION_TYPES = [
   "warmup", "explosive", "strength", "power", "hypertrophy",
   "accessory", "metcon", "cardio", "conditioning", "rehab",
@@ -15,6 +18,7 @@ export type ProfileDocument = {
   id: "local-profile";
   name: string;
   goals: string[];
+  primaryGoal?: TrainingGoal;
   equipment: string[];
   constraints: string[];
   trainingAge: string;
@@ -33,13 +37,20 @@ export type ProfileDocument = {
   preferences?: string[];
 };
 
+export type ProgressionRule = {
+  applies: string;
+  rule: string;
+};
+
 export type ProgramDocument = {
   id: ID;
   title: string;
   description?: string;
+  progression?: ProgressionRule[];
   source: "import" | "manual" | "backup";
   active: boolean;
   status?: "active" | "draft" | "archived";
+  goal?: TrainingGoal;
   daysPerWeek?: number;
   lengthWeeks?: number;
   lastRunAt?: ISODate | null;
@@ -61,6 +72,14 @@ export type ProgramDay = {
   id: ID;
   dayNumber: number;
   weekNumber?: number;
+  // The EXPLICIT week this day declared at import time (`day.week`/
+  // `day.weekNumber` in the raw payload), distinct from `weekNumber` above.
+  // `weekNumber` gets overwritten by expandDays with the week a day was
+  // expanded INTO; `templateWeek` is never touched by expansion and stays
+  // undefined for a template-less base day even after cloning. It is the
+  // stable identity import warning/resolution paths are keyed on — see
+  // src/lib/import/paths.ts.
+  templateWeek?: number;
   title: string;
   sections: ProgramSection[];
 };
@@ -89,6 +108,7 @@ export type ProgramExercise = {
   rest?: string;
   tempo?: string;
   notes?: string;
+  countsTowardVolume?: boolean;
   tags: {
     primary: string[];
     secondary: string[];

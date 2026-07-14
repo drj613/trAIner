@@ -101,4 +101,26 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
     expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
   });
+
+  it("states persona precedence even in the default single-coach flow (no synthesis block emitted)", () => {
+    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    // Default state selects a single persona (rp), so the multi-coach synthesis
+    // block is NOT emitted — but the precedence subordination must still appear.
+    expect(screen.queryByText(/resolve each conflict with an explicit rule/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps persona precedence present in the multi-coach flow too", () => {
+    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    expect(
+      screen.getByText(
+        /Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona/i,
+      ),
+    ).toBeInTheDocument();
+  });
 });

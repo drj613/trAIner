@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { DisplayAnalysis } from "@/lib/analysis/types";
+import { TRAINING_GOALS, type TrainingGoal } from "@/lib/programs/types";
+import { GOAL_LABELS } from "@/lib/programs/routineMeta";
 
 type AnyStatus = "good" | "warn" | "bad" | "green" | "yellow" | "red" | "untrained";
 
@@ -58,6 +60,7 @@ function DimChip({
       style={{
         flex: "0 0 auto", minWidth: 64, padding: "6px 8px",
         background: active ? sb(dim.status) : "var(--bg-2)",
+        opacity: dim.graded ? 1 : 0.55,
         borderTop: `2px solid ${sc(dim.status)}`,
         borderRight: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
         borderBottom: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
@@ -67,7 +70,9 @@ function DimChip({
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: sc(dim.status), lineHeight: 1 }}>{dim.score}</div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>{dim.label}</div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>
+        {dim.label}{dim.graded ? "" : " ·ref"}
+      </div>
     </button>
   );
 }
@@ -133,6 +138,9 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
       </div>
       <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
         Ideally your sets land in the MAV band — above MEV to drive growth, below MRV to stay recoverable. Consistently under MEV means not enough stimulus; consistently over MRV risks accumulating fatigue faster than you can adapt.
+      </div>
+      <div style={{ marginTop: 6, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
+        Working-volume analysis excludes exercises identified as ordinary warmup, activation, mobility, cooldown, rehabilitation, or prehabilitation work. Those exercises still count toward total programmed activity, exercise count, and estimated session duration — they&apos;re just not scored as working sets here.
       </div>
     </div>
   );
@@ -255,7 +263,7 @@ function CoveragePanel({ muscles, patterns }: {
             ))}
           </div>
           <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5 }}>
-            Untrained muscles don't affect your score — specialists intentionally skip certain groups.
+            Untrained muscles don&apos;t affect your score — specialists intentionally skip certain groups.
           </div>
         </div>
       )}
@@ -278,7 +286,7 @@ function SessionsPanel({ sessions }: { sessions: DisplayAnalysis["sessions"] }) 
             {s.flag && <div style={{ fontSize: 10, color: "var(--warn)", marginTop: 1, lineHeight: 1.35 }}>{s.flag}</div>}
           </div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", flexShrink: 0 }}>
-            {s.exercises}ex · {s.sets}s · {s.durationMin}m
+            {s.exercises}ex · {s.sets} total / {s.workingSets} working sets · {s.durationMin}m
           </span>
         </div>
       ))}
@@ -292,8 +300,8 @@ function FindingsPanel({ warnings, strengths }: { warnings: DisplayAnalysis["war
       {warnings.map((w, i) => (
         <div key={i} style={{
           display: "flex", gap: 8, padding: "7px 9px", marginBottom: 4,
-          background: sb(w.severity === "info" ? "good" : w.severity),
-          border: `1px solid ${sc(w.severity === "info" ? "good" : w.severity)}`,
+          background: w.severity === "info" ? "var(--bg-2)" : sb(w.severity),
+          border: w.severity === "info" ? "1px solid var(--line)" : `1px solid ${sc(w.severity)}`,
           borderRadius: "var(--r-sm, 4px)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -321,9 +329,13 @@ type Tab = "volume" | "balance" | "coverage" | "sessions" | "findings" | "struct
 
 export function RoutineAnalysisCard({
   analysis,
+  goal,
+  onGoalChange,
   onOpenPrompt,
 }: {
   analysis: DisplayAnalysis;
+  goal: TrainingGoal;
+  onGoalChange: (goal: TrainingGoal) => void;
   onOpenPrompt: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -353,6 +365,9 @@ export function RoutineAnalysisCard({
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             <span>Analysis</span>
             <span style={{ color: "var(--fg-4)" }}>· {analysis.durationMs}ms · offline</span>
+            {analysis.goalScope.partial && (
+              <span style={{ color: "var(--warn)" }} title="Partial grade — some dimensions shown for reference only">· partial</span>
+            )}
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.3, marginBottom: 3 }}>
             {analysis.fingerprint.label}
@@ -374,11 +389,33 @@ export function RoutineAnalysisCard({
         <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
       </button>
 
-      <div style={{
-        padding: "0 12px 8px", fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4,
-      }}>
-        Calibrated for general &amp; hypertrophy training. Strength, powerlifting &amp; Olympic
-        programs may score low by design — use the AI prompt for goal-aware review.
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "0 12px 8px" }}>
+        <select
+          aria-label="Routine goal"
+          value={goal}
+          onChange={(e) => onGoalChange(e.target.value as TrainingGoal)}
+          style={{
+            flexShrink: 0, padding: "3px 6px", fontSize: 10.5,
+            fontFamily: "var(--font-mono)", color: "var(--fg-2)",
+            background: "var(--bg-2)", border: "1px solid var(--line)",
+            borderRadius: "var(--r-sm, 4px)",
+          }}
+        >
+          {TRAINING_GOALS.map((g) => (
+            <option key={g} value={g}>{GOAL_LABELS[g]}</option>
+          ))}
+        </select>
+        <div style={{ flex: 1, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4 }}>
+          {analysis.goalScope.partial ? (
+            <>Graded on {analysis.dimensions.filter((d) => d.graded).map((d) => d.label).join(" + ")} for
+            your {GOAL_LABELS[analysis.goalScope.goal]} routine.
+            {" "}{analysis.dimensions.filter((d) => !d.graded).map((d) => d.label).join(", ")} shown for
+            reference — standards differ for this goal.</>
+          ) : (
+            <>Calibrated for general &amp; hypertrophy training. Strength, powerlifting &amp; Olympic
+            programs may score low by design — set the goal above or use the AI prompt for a goal-aware review.</>
+          )}
+        </div>
       </div>
 
       {/* Chips row — dimension chips + coverage chip */}
@@ -411,6 +448,7 @@ export function RoutineAnalysisCard({
             <div style={{ padding: "8px 12px", background: "var(--bg-2)", borderBottom: "1px solid var(--line)", fontSize: 11, color: "var(--fg-2)", lineHeight: 1.4 }}>
               <strong style={{ color: sc(activeDim.status) }}>{activeDim.label}</strong>
               {" — "}
+              {!activeDim.graded && "Reference only — not graded for this goal. "}
               {activeDim.note}
             </div>
           )}

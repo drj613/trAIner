@@ -1,3 +1,5 @@
+import type { TrainingGoal } from "@/lib/programs/types";
+
 export type MuscleGroup =
   | "chest" | "lats" | "upper_back" | "lower_back"
   | "front_delts" | "side_delts" | "rear_delts"
@@ -17,6 +19,17 @@ export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
 
 export type Severity = "green" | "yellow" | "red";
 export type Grade = "A" | "B" | "C" | "D" | "F";
+
+export const DIMENSION_KEYS = ["volume", "session", "balance", "periodization"] as const;
+export type DimensionKey = (typeof DIMENSION_KEYS)[number];
+
+export type GoalScope = {
+  goal: TrainingGoal;
+  partial: boolean;
+  gradedDimensions: DimensionKey[];
+};
+
+export type AnalysisNote = { area: string; msg: string };
 
 export type Warning = {
   severity: Severity;
@@ -45,6 +58,7 @@ export type SessionResult = {
   dayTitle: string;
   exerciseCount: number;
   totalSets: number;
+  workingSets: number;
   estimatedMinutes: number;
   muscleSetCounts: Partial<Record<MuscleGroup, number>>;
   warnings: Warning[];
@@ -96,6 +110,8 @@ export type AnalysisResult = {
   periodization: PeriodizationResult;
   warnings: Warning[];
   coverage: CoverageResult;
+  goalScope: GoalScope;
+  notes: AnalysisNote[];
 };
 
 export type DimensionDisplay = {
@@ -105,6 +121,7 @@ export type DimensionDisplay = {
   grade: Grade;
   status: "good" | "warn" | "bad";
   note: string;
+  graded: boolean;
 };
 
 export type MuscleDisplay = {
@@ -131,6 +148,7 @@ export type SessionDisplay = {
   day: string;
   exercises: number;
   sets: number;
+  workingSets: number;
   durationMin: number;
   status: "good" | "warn" | "bad";
   flag?: string;
@@ -145,6 +163,7 @@ export type FindingDisplay = {
 export type DisplayAnalysis = {
   durationMs: number;
   overall: { score: number; grade: string };
+  goalScope: GoalScope;
   fingerprint: { primary: string; secondary: string | null; label: string };
   dimensions: DimensionDisplay[];
   muscles: MuscleDisplay[];

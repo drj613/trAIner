@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ModifyAiModal } from "./ModifyAiModal";
+import { ModifyAiModal, buildPrompt } from "./ModifyAiModal";
 import type { ProgramDay } from "@/lib/programs/types";
 
 const mockDay: ProgramDay = {
@@ -108,6 +108,25 @@ describe("ModifyAiModal", () => {
     );
     const placeholder = screen.getByText(/Describe what you want to change here/i);
     expect(placeholder.tagName).toMatch(/mark|strong|em|span/i);
+  });
+
+  it("includes countsTowardVolume: true in the inline exercise example", () => {
+    const prompt = buildPrompt(mockDay);
+    expect(prompt).toMatch(/"countsTowardVolume":\s*true/);
+  });
+
+  it("instructs preserving countsTowardVolume for unchanged exercises", () => {
+    const prompt = buildPrompt(mockDay);
+    expect(prompt).toContain("Preserve `countsTowardVolume` for unchanged exercises.");
+    expect(prompt).toContain(
+      "Use `true` for productive working sets and `false` for ordinary warmup, activation, mobility, cooldown, rehabilitation, prehabilitation, or low-fatigue practice.",
+    );
+    expect(prompt).toContain("Do not remove the field when modifying a day.");
+  });
+
+  it("instructs preserving fields unrelated to the requested modification", () => {
+    const prompt = buildPrompt(mockDay);
+    expect(prompt).toMatch(/preserve all fields unrelated to the requested modification/i);
   });
 
   it("renders the replace instruction note", () => {

@@ -1,6 +1,7 @@
-import { scoreVolumeDimension, scorePeriodizationDimension } from "./score";
+import { scoreVolumeDimension, scorePeriodizationDimension, computeOverallScore } from "./score";
 import { countWeeklyVolume, scoreVolume } from "./volume";
 import { balancedProgram, imbalancedProgram } from "./fixtures";
+import type { DimensionKey } from "./types";
 
 describe("scoreVolumeDimension", () => {
   it("scores a balanced program at B or better (≥ 75)", () => {
@@ -84,5 +85,28 @@ describe("scorePeriodizationDimension (de-double-counted)", () => {
       warnings: [],
     };
     expect(scorePeriodizationDimension(result).score).toBe(100);
+  });
+});
+
+describe("computeOverallScore with graded subset", () => {
+  const dims = {
+    volume:        { name: "Volume",        score: 30, grade: "F" as const },
+    session:       { name: "Session",       score: 80, grade: "B" as const },
+    balance:       { name: "Balance",       score: 60, grade: "C" as const },
+    periodization: { name: "Periodization", score: 40, grade: "D" as const },
+  };
+
+  it("renormalizes weights over the graded subset", () => {
+    const graded: DimensionKey[] = ["session", "balance"];
+    const result = computeOverallScore(dims, graded);
+    // (80×0.235 + 60×0.294) / (0.235 + 0.294) = 36.44 / 0.529 = 68.88 → 69
+    expect(result.score).toBe(69);
+    expect(result.grade).toBe("C");
+  });
+
+  it("defaults to all four dimensions (back-compat)", () => {
+    const withDefault = computeOverallScore(dims);
+    // 30×0.353 + 80×0.235 + 60×0.294 + 40×0.118 = 51.75 → 52 (weights sum to 1.0)
+    expect(withDefault.score).toBe(52);
   });
 });

@@ -4,7 +4,8 @@ import {
   buildInitialResolutions,
   CUSTOM_ID,
 } from "./resolution";
-import type { ImportWarning, ProgramDocument } from "@/lib/programs/types";
+import { getRenderableDays } from "@/lib/programs/overrides";
+import type { ImportWarning, ProgramDay, ProgramDocument, ProgramExercise } from "@/lib/programs/types";
 
 const warnings: ImportWarning[] = [
   {
@@ -392,5 +393,240 @@ describe("extractUnresolvedExercises with sectionType", () => {
     ];
     const items = extractUnresolvedExercises(warningsWithoutType);
     expect(items[0].sectionType).toBe("strength");
+  });
+});
+
+// ─── Phase 9: override resolution + resolved-warning removal ───────────────
+
+function makeExercise(id: string, name: string, extra: Partial<ProgramExercise> = {}): ProgramExercise {
+  return {
+    id,
+    name,
+    canonicalExerciseId: undefined,
+    tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+    ...extra,
+  };
+}
+
+function makeSingleExerciseDay(
+  dayId: string,
+  dayNumber: number,
+  weekNumber: number | undefined,
+  exercise: ProgramExercise,
+): ProgramDay {
+  return {
+    id: dayId,
+    dayNumber,
+    weekNumber,
+    title: `Day ${dayNumber}`,
+    sections: [
+      {
+        id: `${dayId}-s`,
+        type: "strength",
+        name: "Strength",
+        groups: [
+          {
+            id: `${dayId}-g`,
+            type: "single",
+            exercises: [exercise],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+const BASE_WARNING_PATH = "days.3.sections.0.groups.0.exercises.0";
+const OVERRIDE_WARNING_PATH = "overrides.0.days.3.sections.0.groups.0.exercises.0";
+const STRUCTURAL_WARNING_PATH = "days.1.sections.0";
+
+function buildOverrideProgram(): ProgramDocument {
+  const baseDay3 = makeSingleExerciseDay(
+    "d-base-3",
+    3,
+    1,
+    makeExercise("e-base3", "Moon Lunge"),
+  );
+  const overrideDay3 = makeSingleExerciseDay(
+    "d-override-3",
+    3,
+    undefined,
+    makeExercise("e-override3", "Moon Lunge", { countsTowardVolume: true }),
+  );
+
+  return {
+    id: "p1",
+    title: "Override Program",
+    source: "import",
+    active: true,
+    createdAt: "2026-07-13T00:00:00Z",
+    updatedAt: "2026-07-13T00:00:00Z",
+    days: [baseDay3],
+    overrides: [
+      {
+        id: "ov-1",
+        scope: "week",
+        programId: "p1",
+        weekNumber: 4,
+        replacement: [overrideDay3],
+        createdAt: "2026-07-13T00:00:00Z",
+      },
+    ],
+    import: {
+      rawJson: {},
+      warnings: [
+        {
+          path: BASE_WARNING_PATH,
+          message: "Moon Lunge was imported without a catalog match.",
+          rawName: "Moon Lunge",
+        },
+        {
+          path: OVERRIDE_WARNING_PATH,
+          message: "Moon Lunge was imported without a catalog match.",
+          rawName: "Moon Lunge",
+        },
+        {
+          path: STRUCTURAL_WARNING_PATH,
+          message: "Unknown section type: power_endurance.",
+        },
+      ],
+    },
+  };
+}
+
+function overrideExercise(program: ProgramDocument): ProgramExercise {
+  const replacement = program.overrides[0].replacement;
+  const days = Array.isArray(replacement) ? replacement : [replacement];
+  return days[0].sections[0].groups[0].exercises[0];
+}
+
+function baseDay3Exercise(program: ProgramDocument): ProgramExercise {
+  return program.days.find((d) => d.dayNumber === 3)!.sections[0].groups[0].exercises[0];
+}
+
+describe("applyResolutions: override exercise resolution", () => {
+  it("patches the actual nested replacement exercise (visible on program.overrides[0].replacement)", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(overrideExercise(patched).canonicalExerciseId).toBe("moon-lunge");
+  });
+
+  it("leaves the base Day 3 exercise unaffected when only the override path is resolved", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(baseDay3Exercise(patched).canonicalExerciseId).toBeUndefined();
+  });
+
+  it("preserves the override exercise's slot id after patching", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(overrideExercise(patched).id).toBe("e-override3");
+  });
+
+  it("preserves countsTowardVolume on the override exercise after patching", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(overrideExercise(patched).countsTowardVolume).toBe(true);
+  });
+
+  it("preserves an array-shaped replacement as an array after patching", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(Array.isArray(patched.overrides[0].replacement)).toBe(true);
+  });
+
+  it("preserves a single-shaped (non-array) replacement after patching", () => {
+    const program = buildOverrideProgram();
+    const currentReplacement = program.overrides[0].replacement;
+    const singleDay = Array.isArray(currentReplacement) ? currentReplacement[0] : currentReplacement;
+    program.overrides[0].replacement = singleDay;
+
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(Array.isArray(patched.overrides[0].replacement)).toBe(false);
+    const day = patched.overrides[0].replacement as ProgramDay;
+    expect(day.sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("moon-lunge");
+  });
+
+  it("makes the canonical id available through getRenderableDays for cross-week history matching", () => {
+    const program = buildOverrideProgram();
+    const week4Day3 = makeSingleExerciseDay(
+      "d-week4-3",
+      3,
+      4,
+      makeExercise("e-week4-3-slot", "Moon Lunge"),
+    );
+    program.days.push(week4Day3);
+
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    const rendered = getRenderableDays(patched);
+    const renderedWeek4Day3 = rendered.find((d) => d.weekNumber === 4 && d.dayNumber === 3);
+    expect(renderedWeek4Day3?.sections[0].groups[0].exercises[0].canonicalExerciseId).toBe(
+      "moon-lunge",
+    );
+  });
+});
+
+describe("applyResolutions: resolved-warning removal", () => {
+  it("removes the base-day warning once its exercise is successfully resolved", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: BASE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === BASE_WARNING_PATH)).toBe(false);
+  });
+
+  it("removes the override warning once its exercise is successfully resolved", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === OVERRIDE_WARNING_PATH)).toBe(false);
+  });
+
+  it("leaves a warning in place when its resolution path does not match any exercise (failed resolution)", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: "overrides.0.days.99.sections.0.groups.0.exercises.0", canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === OVERRIDE_WARNING_PATH)).toBe(true);
+  });
+
+  it("keeps unrelated structural warnings untouched", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+      { path: BASE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === STRUCTURAL_WARNING_PATH)).toBe(true);
+  });
+
+  it("resolving only the override path does not remove the base-day warning at the colliding day number", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: OVERRIDE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === BASE_WARNING_PATH)).toBe(true);
+  });
+
+  it("resolving only the base path does not remove the override warning at the colliding day number", () => {
+    const program = buildOverrideProgram();
+    const patched = applyResolutions(program, [
+      { path: BASE_WARNING_PATH, canonicalId: "moon-lunge" },
+    ]);
+    expect(patched.import!.warnings.some((w) => w.path === OVERRIDE_WARNING_PATH)).toBe(true);
   });
 });

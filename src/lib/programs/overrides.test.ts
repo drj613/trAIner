@@ -1,5 +1,5 @@
 import { demoProgram } from "./sample";
-import { getRenderableDays, dedupOverrides } from "./overrides";
+import { getRenderableDays, dedupOverrides, getOverrideReplacementDays } from "./overrides";
 import type { ProgramDocument, ProgramDay, ProgramOverride } from "./types";
 
 describe("program overrides", () => {
@@ -44,6 +44,36 @@ describe("program overrides", () => {
     const overriddenDay = days[0];
     expect(overriddenDay.title).toBe("LLM Override");
     expect(overriddenDay.id).toBe(baseDay.id); // original id preserved, not llm-generated-uuid
+  });
+
+  it("applies a week-1 override when the base day carries no explicit weekNumber", () => {
+    // Single-week import with no top-level `weeks`: base days have weekNumber
+    // undefined, so effectiveWeekNumber(day) === 1. A week-1 override must render.
+    const baseDay: ProgramDay = {
+      id: "base-day-1",
+      dayNumber: 1,
+      title: "Base Day",
+      sections: [],
+    };
+    const program: ProgramDocument = {
+      ...demoProgram,
+      days: [baseDay],
+      overrides: [
+        {
+          id: "override-week1",
+          scope: "week",
+          programId: demoProgram.id,
+          weekNumber: 1,
+          replacement: [{ ...baseDay, title: "Week 1 Replacement" }],
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    expect(baseDay.weekNumber).toBeUndefined();
+    const days = getRenderableDays(program);
+    expect(days[0].title).toBe("Week 1 Replacement");
+    expect(days[0].id).toBe("base-day-1"); // slot identity preserved
   });
 
   it("preserves the slot's weekNumber when a week-scope replacement omits it", () => {
@@ -115,6 +145,52 @@ describe("program overrides", () => {
     const days = getRenderableDays(program);
     // Day-scope should win regardless of insertion order
     expect(days[0].title).toBe("Day Override Title");
+  });
+});
+
+describe("getOverrideReplacementDays", () => {
+  it("wraps a single-day replacement in an array for traversal", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-single",
+      scope: "day",
+      programId: demoProgram.id,
+      dayId: baseDay.id,
+      replacement: baseDay,
+      createdAt: new Date().toISOString(),
+    };
+    const result = getOverrideReplacementDays(override);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(baseDay);
+  });
+
+  it("returns an array replacement as-is (same reference)", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-array",
+      scope: "week",
+      programId: demoProgram.id,
+      weekNumber: 2,
+      replacement: [baseDay],
+      createdAt: new Date().toISOString(),
+    };
+    const result = getOverrideReplacementDays(override);
+    expect(result).toBe(override.replacement);
+  });
+
+  it("does NOT rewrite the stored single replacement shape on the override itself", () => {
+    const baseDay = demoProgram.days[0];
+    const override: ProgramOverride = {
+      id: "ov-single-2",
+      scope: "day",
+      programId: demoProgram.id,
+      dayId: baseDay.id,
+      replacement: baseDay,
+      createdAt: new Date().toISOString(),
+    };
+    getOverrideReplacementDays(override);
+    expect(Array.isArray(override.replacement)).toBe(false);
   });
 });
 

@@ -1041,6 +1041,29 @@ export function WorkoutDayClient() {
         </details>
       </div>
 
+      {!!program.progression?.length && (
+        <div
+          style={{
+            padding: "8px 10px",
+            marginBottom: 12,
+            background: "var(--bg-2)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-sm, 4px)",
+            fontSize: 11,
+            color: "var(--fg-3)",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
+            Progression
+          </div>
+          {program.progression.map((p, i) => (
+            <div key={i} style={{ marginTop: i === 0 ? 0 : 2 }}>
+              <strong style={{ color: "var(--fg-2)", fontWeight: 500 }}>{p.applies}</strong> → {p.rule}
+            </div>
+          ))}
+        </div>
+      )}
+
       <BodyweightWidget />
 
       {/* Workout body — keyed by dayId so state resets on navigation */}

@@ -7,6 +7,7 @@ import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import { DEFAULT_COUNTS_BY_SECTION } from "@/lib/analysis/volumeRole";
 import type {
   ProgramDocument,
   ProgramDay,
@@ -14,6 +15,7 @@ import type {
   ProgramGroup,
   ProgramExercise,
   SectionType,
+  TrainingGoal,
 } from "@/lib/programs/types";
 
 // ── Draft types (local to this wizard) ───────────────────────────────────────
@@ -83,7 +85,7 @@ function sectionMeta(kind: SectionType) {
 
 // ── Draft → ProgramDocument ───────────────────────────────────────────────────
 
-function draftToProgram(draft: Draft): ProgramDocument {
+export function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): ProgramDocument {
   const now = new Date().toISOString();
   const days: ProgramDay[] = draft.days.map((d, i) => ({
     id: crypto.randomUUID(),
@@ -105,6 +107,7 @@ function draftToProgram(draft: Draft): ProgramDocument {
               canonicalExerciseId: e.catalogId,
               sets: e.sets,
               reps: e.reps,
+              countsTowardVolume: DEFAULT_COUNTS_BY_SECTION[s.kind],
               tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
             })),
           })),
@@ -117,6 +120,7 @@ function draftToProgram(draft: Draft): ProgramDocument {
     description: draft.description || undefined,
     source: "manual",
     active: true,
+    ...(primaryGoal ? { goal: primaryGoal } : {}),
     days,
     overrides: [],
     createdAt: now,
@@ -388,7 +392,7 @@ function DayEditorStep({
 
 export function RoutineBuilderClient() {
   const navigate = useNavigate();
-  const { saveProgram } = useLocalData();
+  const { saveProgram, profile } = useLocalData();
   const [step, setStep] = useState<"setup" | "days" | "edit">("setup");
   const [draft, setDraft] = useState<Draft>({ name: "", description: "", days: [] });
   const [editingDayId, setEditingDayId] = useState<string | null>(null);
@@ -454,7 +458,7 @@ export function RoutineBuilderClient() {
   async function handleSave() {
     setSaving(true);
     try {
-      const program = draftToProgram(draft);
+      const program = draftToProgram(draft, profile?.primaryGoal);
       await saveProgram(program);
       navigate(`/programs/${program.id}`);
     } finally {

@@ -117,7 +117,7 @@ describe("extractEntryNotes / applyEntryNotes", () => {
   });
 
   it("extractEntryNotes returns empty string when entry has no notes", () => {
-    expect(extractEntryNotes({ exerciseId: "e1", sets: [] })).toBe("");
+    expect(extractEntryNotes({})).toBe("");
   });
 
   it("applyEntryNotes writes notes onto an entry", () => {

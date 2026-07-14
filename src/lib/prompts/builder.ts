@@ -19,6 +19,7 @@ export function buildSchemaBlock(): string {
                 load: "optional — e.g. '80% 1RM' or '60 kg'",
                 rest: "optional — e.g. '90s'",
                 notes: "optional",
+                countsTowardVolume: true,
                 tags: {
                   primary: ["quads"],
                   secondary: ["glutes"],
@@ -33,28 +34,99 @@ export function buildSchemaBlock(): string {
     ]
   };
 
+  const overrideReplacementDay = {
+    day: 1,
+    title: "Day Name",
+    sections: [
+      {
+        name: "Section Name",
+        type: "strength",
+        groups: [
+          {
+            type: "single",
+            exercises: [
+              {
+                name: "Exercise Name",
+                sets: 2,
+                reps: "5-8",
+                load: "optional — e.g. '65% 1RM' or '50 kg' (reduced vs base week)",
+                rest: "optional — e.g. '90s'",
+                notes: "deload — reduced volume vs the base week (approximately 50% of normal)",
+                countsTowardVolume: true,
+                tags: {
+                  primary: ["quads"],
+                  secondary: ["glutes"],
+                  incidental: [],
+                  modifiers: []
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+
+  const progressionExample = [
+    {
+      applies: "Primary compounds (squat, bench, deadlift)",
+      rule: "Top set + 3 back-offs; when the top set stays <=RPE8 for all reps, add 2.5-5% load."
+    },
+    {
+      applies: "Hypertrophy accessories",
+      rule: "Double progression: add reps to the top of the range across all sets, then +5-10% load and reset."
+    }
+  ];
+
   const skeleton = {
     title: "Program Name",
     weeks: "OPTIONAL integer — total number of weeks. Omit for single-week programs.",
+    progression: progressionExample,
     days: [exDay],
     overrides: [
       {
         scope: "week",
         weekNumber: 4,
-        reason: "Deload — reduce volume by ~40%",
-        days: ["OPTIONAL — same structure as base days above. Omit if all weeks are identical."]
+        reason: "Deload — use approximately 50% of normal working-set volume",
+        days: [overrideReplacementDay]
       }
     ]
   };
 
-  const constraints = `## Session and volume constraints
-Design sessions to fit these evidence-based targets:
-- Exercises per session: 4–8 total (across ALL sections — warmup counts, conditioning counts, everything counts)
-- Total sets per session: 10–25
-- Estimated session duration: 30–75 minutes
-- Direct sets per muscle group per session: ≤ 8
+  const exerciseSchemaNotes = `## countsTowardVolume (required on every exercise)
+Every exercise object must include a boolean \`countsTowardVolume\` field.
 
-Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25):
+Set \`countsTowardVolume\` to \`true\` when the prescribed sets are intended to contribute to working strength, hypertrophy, muscular conditioning, or explosive training volume.
+
+Set it to \`false\` for ordinary warmups, activation drills, mobility work, cooldowns, rehabilitation or prehabilitation work, and low-fatigue practice that is not intended as productive muscular working volume.
+
+Muscle tags still describe anatomical involvement when \`countsTowardVolume\` is false. The boolean controls analysis, not anatomy.`;
+
+  const overrideInstructions = `## Overrides
+Only emit an override when at least one routine day actually changes.
+
+Every override must contain one or more complete replacement day objects.
+
+An override with omitted \`days\` or an empty \`days\` array does not alter the routine and must not be emitted.
+
+If a week is identical to the base template, omit the entire override object.
+
+The \`reason\` field is descriptive only. It does not alter sets, repetitions, loads, exercises, or effort targets.`;
+
+  const constraints = `## Session and volume constraints
+Design sessions using these default planning guardrails:
+- Listed exercises or protocols per session: generally 4-8. All warmup, mobility, skill, conditioning, and cooldown exercises count toward this number.
+- Working sets per session: generally 10-25. Only exercises with \`countsTowardVolume: true\` count toward this range.
+- Estimated session duration: 30-75 minutes, including all programmed work.
+- Direct working sets per muscle group per session: generally no more than 8, unless the athlete deliberately requests specialization and accepts the tradeoff.
+
+The numeric \`sets\` value controls the number of workout logging rows. It must equal the complete prescription described in \`reps\`, \`load\`, and \`notes\`.
+- One top set plus three back-off sets uses \`"sets": 4\`.
+- One top set plus two back-off sets uses \`"sets": 3\`.
+
+Unlogged ramp-up sets may be described in the heavy exercise's \`notes\` and must not be included in its numeric \`sets\` value. Listed warmup exercises must use \`countsTowardVolume: false\`.
+
+Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25 — counting only exercises with \`countsTowardVolume: true\`):
 - Chest: productive range 6–16 sets/week, hard limit 24
 - Lats: productive range 10–20 sets/week, hard limit 30
 - Upper back / traps: productive range 10–20 sets/week, hard limit 30
@@ -71,7 +143,19 @@ Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, inci
 - Core: productive range 8–16 sets/week, hard limit 20
 - Adductors/Abductors: productive range 4–10 sets/week, hard limit 16
 
-IMPORTANT: incidental muscles (e.g. "core" on almost every compound, "forearms" on most pulling, "shoulders" on everything) accumulate quickly across many exercises. Tag incidental sparingly — only when the incidental recruitment is genuinely meaningful. "Core" should NOT be incidental on every exercise.`;
+IMPORTANT: incidental muscles (e.g. "core" on almost every compound, "forearms" on most pulling, "shoulders" on everything) accumulate quickly across many exercises. Tag incidental sparingly — only when the incidental recruitment is genuinely meaningful. "Core" should NOT be incidental on every exercise.
+
+The weekly volume ranges are default programming guardrails, not mandatory targets for every muscle.
+
+Prioritized hypertrophy muscles should generally fall within their productive ranges. Maintenance muscles may fall below them.
+
+When the athlete explicitly requests specialization above a preferred range, preserve the decision when the recovery and session tradeoffs remain plausible. Acknowledge the tradeoff during conversation rather than automatically reducing the requested volume.
+
+Hard limits are strong caution thresholds, not automatic reasons to reject an explicit athlete request.
+
+Exclude exercises with \`countsTowardVolume: false\` from working-set, weekly muscle-volume, direct-muscle-set, movement-balance, and periodization calculations.
+
+Do not classify an athlete-requested and acknowledged specialization as an audit failure merely because it departs from a preferred range.`;
 
   const multiWeekInstructions = `## Multi-week programs
 For programs longer than one week:
@@ -82,8 +166,8 @@ For programs longer than one week:
 
   const programRequirements = `## Program requirements
 Every routine you emit must include:
-- A concrete progressive-overload rule, stated numerically — e.g. double progression ("when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and return to the bottom of the range"), or a defined weekly load step. Avoid vague guidance like "increase over time".
-- Periodization with a planned deload — organize multi-week programs into a mesocycle (accumulate volume/intensity across weeks, then a deload week at ~50% volume). Express week-to-week changes using \`weeks\` + \`overrides\`.
+- State progression as a scoped list in the top-level \`progression\` field — one entry per movement class (e.g. primary barbell lifts, hypertrophy accessories, kettlebell/skill practice), each with \`applies\` (the class it governs) and \`rule\` (stated numerically, e.g. double progression: "when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and reset to the bottom", or a defined weekly load step). Scope each rule to the class it governs — do not apply one progression model to every exercise, and do not bury the rule in exercise notes. Exercise-specific tweaks may still go in that exercise's \`notes\`.
+- For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 50% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
 - A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
 - A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
 
@@ -99,7 +183,7 @@ Emit only the JSON object — no markdown code fences, no preamble, no commentar
 
 Default to conversational coaching. Ask clarifying questions, surface tradeoffs between approaches, and discuss programming choices with the athlete. Keep the routine JSON out of this phase entirely — discussing in prose keeps the design flexible and easy to revise.
 
-Before the athlete asks for the final routine, make sure you have done the following in the conversation, in prose:
+Do not declare the program ready for export until you have stated the required programming decisions and completed the self-audit — in prose, in the conversation:
 - Stated your key programming decisions: weekly volume per muscle group, intensity scheme (RIR/RPE or %1RM), the progression rule, and the deload plan.
 - Run a quick self-audit and fixed any issues — is per-muscle weekly volume within the ranges below? Is the week balanced across movement patterns (push/pull, all major patterns)? Does every session include a warmup? Does every exercise respect the athlete's equipment and injuries?
 
@@ -113,16 +197,18 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     conversationMode,
     "## Routine JSON schema (used only when emitting after GENERATE IT)",
     "You MUST use the exact field names shown below. Do not rename or restructure the hierarchy.",
-    "  - Top level: `title`, `days`, and optionally `weeks` + `overrides`",
+    "  - Top level: `title`, `days`, and optionally `weeks` + `overrides` + `progression`",
     "  - Each day: `day` (number), `title`, `sections`",
     "  - Each section: `name`, `type`, `groups`",
     "  - Each group: `type`, `exercises`",
     `Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training`,
     `Valid group types: single, superset, circuit, giant-set`,
+    exerciseSchemaNotes,
     multiWeekInstructions,
     constraints,
     "Structural skeleton (all real content should replace the placeholder strings):",
     JSON.stringify(skeleton, null, 2),
+    overrideInstructions,
     programRequirements,
     outputContract,
   ].join("\n");

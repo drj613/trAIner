@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import type { ProgramDocument } from "@/lib/programs/types";
+import { programRepo } from "@/lib/storage/programRepo";
 
 const makeExercise = (id: string, name: string, canonicalExerciseId?: string) => ({
   id, name, sets: 3, reps: "8-10",
@@ -360,6 +361,55 @@ describe("WorkoutDayClient locked-day Skip button", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /skip day/i })).not.toBeDisabled()
     );
+  });
+});
+
+describe("WorkoutDayClient exercise edit — countsTowardVolume preservation", () => {
+  it("preserves an existing countsTowardVolume:true through an edit save", async () => {
+    const exercise = twoDay.days[0].sections[0].groups[0].exercises[0];
+    (exercise as { countsTowardVolume?: boolean }).countsTowardVolume = true;
+    (programRepo.get as jest.Mock).mockResolvedValueOnce(twoDay);
+    try {
+      renderOnDay("day-1");
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /edit prescription for bench press/i }));
+      await user.click(await screen.findByRole("button", { name: /^save$/i }));
+
+      await waitFor(() => expect(programRepo.save as jest.Mock).toHaveBeenCalled());
+      const saved = (programRepo.save as jest.Mock).mock.calls[0][0];
+      const override = saved.overrides.find((o: { dayId?: string }) => o.dayId === "day-1");
+      const savedExercise = override.replacement.sections[0].groups[0].exercises[0];
+      expect(savedExercise.countsTowardVolume).toBe(true);
+    } finally {
+      delete (exercise as { countsTowardVolume?: boolean }).countsTowardVolume;
+    }
+  });
+});
+
+describe("WorkoutDayClient progression display", () => {
+  it("renders nothing when the program has no progression", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    expect(screen.queryByText("Progression")).not.toBeInTheDocument();
+  });
+
+  it("renders each applies/rule entry when the program has progression", async () => {
+    (twoDay as { progression?: unknown }).progression = [
+      { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+      { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+    ];
+    try {
+      renderOnDay("day-1");
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+      expect(await screen.findByText("Progression")).toBeInTheDocument();
+      expect(screen.getByText(/Primary compounds/)).toBeInTheDocument();
+      expect(screen.getByText(/Add 2\.5-5% load when top set hits RPE8 for all reps\./)).toBeInTheDocument();
+      expect(screen.getByText(/Hypertrophy accessories/)).toBeInTheDocument();
+      expect(screen.getByText(/Double progression: add reps, then \+5-10% load and reset\./)).toBeInTheDocument();
+    } finally {
+      delete (twoDay as { progression?: unknown }).progression;
+    }
   });
 });
 

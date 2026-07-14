@@ -23,6 +23,10 @@ export function swapExercise(
             ...ex,
             name: item.name,
             canonicalExerciseId: item.id,
+            // explicit even though the spread above already carries it — the volume
+            // role is an editorial decision on the slot, not the catalog item, so a
+            // swap must never let it silently drop.
+            countsTowardVolume: ex.countsTowardVolume,
             // catalog items have no incidental/modifier data; reset to empty on swap
             tags: {
               primary: item.muscles.primary,

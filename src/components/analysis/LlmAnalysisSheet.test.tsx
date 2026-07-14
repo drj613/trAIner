@@ -4,12 +4,17 @@ import { LlmAnalysisSheet } from "./LlmAnalysisSheet";
 const mockAnalysis = {
   durationMs: 184,
   overall: { score: 82, grade: "B" },
+  goalScope: {
+    goal: "general" as const,
+    partial: false,
+    gradedDimensions: ["volume", "session", "balance", "periodization"] as ("volume" | "session" | "balance" | "periodization")[],
+  },
   fingerprint: { primary: "Hypertrophy", secondary: "Strength", label: "Hypertrophy-focused", confidence: 0.88 },
   dimensions: [],
   muscles: [{ group: "Chest", sets: 6.5, mev: 6, mavLo: 6, mavHi: 16, mrv: 24, status: "green" as const }],
   ratios: [],
   patterns: { covered: [], missing: [] },
-  sessions: [{ day: "Mon", exercises: 7, sets: 22, durationMin: 56, status: "good" as const }],
+  sessions: [{ day: "Mon", exercises: 7, sets: 22, workingSets: 18, durationMin: 56, status: "good" as const }],
   warnings: [],
   strengths: [],
 };
@@ -44,5 +49,19 @@ describe("LlmAnalysisSheet", () => {
     );
     fireEvent.click(screen.getByTestId("llm-sheet-backdrop"));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("threads progression entries into the generated prompt preview", () => {
+    render(
+      <LlmAnalysisSheet
+        open={true}
+        onClose={jest.fn()}
+        analysis={mockAnalysis}
+        programTitle="Test"
+        progression={[{ applies: "Primary compounds", rule: "Add 2.5-5% load weekly." }]}
+      />
+    );
+    fireEvent.click(screen.getByText(/Preview prompt text/));
+    expect(screen.getByText(/Add 2\.5-5% load weekly\./)).toBeInTheDocument();
   });
 });

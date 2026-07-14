@@ -1,6 +1,7 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ProgramDetailClient } from "./ProgramDetailClient";
+import { programRepo } from "@/lib/storage/programRepo";
 import type { ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
 
 const program: ProgramDocument = {
@@ -21,6 +22,7 @@ let mockLogs: WorkoutLogDocument[] = [];
 jest.mock("@/lib/storage/programRepo", () => ({
   programRepo: {
     get: jest.fn().mockImplementation(async () => program),
+    save: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -36,24 +38,10 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
   }),
 }));
 
-jest.mock("@/lib/analysis/analyze", () => ({
-  analyzeProgram: jest.fn().mockReturnValue({
-    overall: { name: "Overall", score: 82, grade: "B" },
-    dimensions: {
-      volume:        { name: "Volume",        score: 91, grade: "A" },
-      session:       { name: "Structure",     score: 88, grade: "A" },
-      balance:       { name: "Balance",       score: 78, grade: "B" },
-      periodization: { name: "Periodization", score: 65, grade: "C" },
-    },
-    muscleVolumes: [], sessions: [],
-    balance: {
-      pushPullRatio: null, upperLowerRatio: null, quadHamRatio: null, chestBackRatio: null,
-      movementPatternsCovered: [], movementPatternsMissing: [], warnings: [],
-    },
-    periodization: { weeksDetected: 1, volumePattern: "static", deloadDetected: false, warnings: [] },
-    warnings: [],
-  }),
-}));
+jest.mock("@/lib/analysis/analyze", () => {
+  const actual = jest.requireActual("@/lib/analysis/analyze");
+  return { analyzeProgram: jest.fn(actual.analyzeProgram) };
+});
 
 jest.mock("./ModifyAiModal", () => ({
   ModifyAiModal: ({ onClose }: { onClose: () => void }) => (
@@ -121,5 +109,55 @@ describe("ProgramDetailClient View→ navigation", () => {
     await screen.findByText("Push Day");
     fireEvent.click(screen.getByText("Push Day"));
     expect(screen.getByRole("button", { name: /view →/i })).toBeInTheDocument();
+  });
+});
+
+describe("ProgramDetailClient progression display", () => {
+  it("renders nothing when progression is absent", async () => {
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(screen.queryByText("Progression")).not.toBeInTheDocument();
+  });
+
+  it("renders each applies/rule entry when progression is present", async () => {
+    (programRepo.get as jest.Mock).mockResolvedValueOnce({
+      ...program,
+      progression: [
+        { applies: "Primary compounds", rule: "Add 2.5-5% load when top set hits RPE8 for all reps." },
+        { applies: "Hypertrophy accessories", rule: "Double progression: add reps, then +5-10% load and reset." },
+      ],
+    });
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("Progression")).toBeInTheDocument();
+    expect(screen.getByText(/Primary compounds/)).toBeInTheDocument();
+    expect(screen.getByText(/Add 2\.5-5% load when top set hits RPE8 for all reps\./)).toBeInTheDocument();
+    expect(screen.getByText(/Hypertrophy accessories/)).toBeInTheDocument();
+    expect(screen.getByText(/Double progression: add reps, then \+5-10% load and reset\./)).toBeInTheDocument();
+  });
+});
+
+describe("ProgramDetailClient goal persistence", () => {
+  it("persists a goal change and re-renders partial grading", async () => {
+    renderDetail();
+    const select = await screen.findByLabelText(/routine goal/i);
+    fireEvent.change(select, { target: { value: "strength" } });
+    await waitFor(() =>
+      expect(programRepo.save).toHaveBeenCalledWith(expect.objectContaining({ goal: "strength" })),
+    );
+    expect(await screen.findByText(/·\s*partial/)).toBeTruthy();
+  });
+
+  it("rolls back and alerts when the goal save fails", async () => {
+    const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    (programRepo.save as jest.Mock).mockRejectedValueOnce(new Error("quota"));
+    renderDetail();
+    const select = await screen.findByLabelText(/routine goal/i);
+    fireEvent.change(select, { target: { value: "strength" } });
+    await waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    expect((select as HTMLSelectElement).value).toBe("general"); // rolled back
+    alertSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });

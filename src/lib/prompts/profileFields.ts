@@ -105,7 +105,7 @@ export const PROFILE_FIELDS: ProfileField[] = [
 ];
 
 const HARD_CONSTRAINT_DIRECTIVE =
-  "Treat these as hard constraints — never program a movement that aggravates them; substitute a pain-free alternative that preserves the training stimulus and note the swap.";
+  "Treat listed injuries as precaution flags. Ask about known aggravating movements when needed. Do not knowingly program a reported aggravating movement; provide a pain-free substitution that preserves the intended pattern or stimulus, and note the swap.";
 
 export function buildProfileFieldsBlock(
   profile: ProfileDocument,

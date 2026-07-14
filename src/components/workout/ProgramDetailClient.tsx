@@ -13,7 +13,7 @@ import { RoutineAnalysisCard } from "@/components/analysis/RoutineAnalysisCard";
 import { LlmAnalysisSheet } from "@/components/analysis/LlmAnalysisSheet";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { GroupRail } from "./GroupRail";
-import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection } from "@/lib/programs/types";
+import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection, TrainingGoal } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
 
@@ -308,6 +308,20 @@ export function ProgramDetailClient({ id }: { id: string }) {
     logRepo.listForProgram(program.id).then(setLogs).catch(() => undefined);
   }, [program?.id]);
 
+  async function handleGoalChange(goal: TrainingGoal) {
+    if (!program) return;
+    const prev = program;
+    const updated = { ...program, goal };
+    setProgram(updated); // useMemo([program]) recomputes the analysis immediately
+    try {
+      await programRepo.save(updated);
+    } catch (e) {
+      console.error("[handleGoalChange] save failed", e);
+      setProgram(prev); // roll back so UI matches storage
+      alert("Couldn't save the goal. Please try again.");
+    }
+  }
+
   const displayAnalysis = useMemo(() => {
     if (!program) return null;
     const start = performance.now();
@@ -377,9 +391,26 @@ export function ProgramDetailClient({ id }: { id: string }) {
         {program.description && (
           <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 1 }}>{program.description}</div>
         )}
+        {!!program.progression?.length && (
+          <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+              Progression
+            </div>
+            {program.progression.map((p, i) => (
+              <div key={i} style={{ marginTop: i === 0 ? 0 : 2 }}>
+                <strong style={{ color: "var(--fg-2)", fontWeight: 500 }}>{p.applies}</strong> → {p.rule}
+              </div>
+            ))}
+          </div>
+        )}
         {displayAnalysis && (
           <div style={{ marginTop: 8 }}>
-            <RoutineAnalysisCard analysis={displayAnalysis} onOpenPrompt={() => setPromptOpen(true)} />
+            <RoutineAnalysisCard
+              analysis={displayAnalysis}
+              goal={program.goal ?? "general"}
+              onGoalChange={(g) => void handleGoalChange(g)}
+              onOpenPrompt={() => setPromptOpen(true)}
+            />
           </div>
         )}
       </div>
@@ -451,6 +482,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           onClose={() => setPromptOpen(false)}
           analysis={displayAnalysis}
           programTitle={program.title}
+          progression={program.progression}
         />
       )}
     </div>
