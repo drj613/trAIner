@@ -270,9 +270,9 @@ const override1: ProgramOverride = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-const handstandPath = baseExercisePath(1, 1, 0, 0);
-const zercherPath = baseExercisePath(5, 1, 2, 0);
-const landminePath = overrideExercisePath(0, 3, 1, 0, 0);
+const handstandPath = baseExercisePath(1, undefined, 1, 0, 0);
+const zercherPath = baseExercisePath(5, undefined, 1, 2, 0);
+const landminePath = overrideExercisePath(0, 3, undefined, 1, 0, 0);
 
 const importWarnings: ImportWarning[] = [
   {

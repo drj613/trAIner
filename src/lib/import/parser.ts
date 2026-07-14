@@ -14,6 +14,7 @@ import { diagnoseImportOverrides } from "@/lib/programs/overrideDiagnostics";
 // builders in @/lib/import/paths — never hand-assembled.
 type ExercisePathBuilder = (
   dayNumber: number,
+  templateWeek: number | undefined,
   sectionIndex: number,
   groupIndex: number,
   exerciseIndex: number,
@@ -135,6 +136,11 @@ function expandDays(baseDays: ProgramDay[], lengthWeeks: number | undefined): Pr
   const expanded: ProgramDay[] = [];
   for (let week = 1; week <= lengthWeeks; week++) {
     for (const base of baseDays) {
+      // `...base` propagates `templateWeek` unchanged onto every clone —
+      // only `weekNumber` (the week this clone was expanded INTO) is
+      // reassigned. That keeps every clone's resolution-path identity tied
+      // to the TEMPLATE it came from, not the week it landed in, which is
+      // what lets one resolution patch every week-clone. See paths.ts.
       expanded.push({ ...base, id: newId("day"), weekNumber: week });
     }
   }
@@ -153,8 +159,8 @@ function parseOverrides(
   return payload.overrides.filter(isRecord).map((raw, overrideIndex) => {
     // Override warnings MERGE into the shared collection (never a local,
     // discarded array) so they surface through program.import.warnings.
-    const pathBuilder: ExercisePathBuilder = (dayNumber, sectionIndex, groupIndex, exerciseIndex) =>
-      overrideExercisePath(overrideIndex, dayNumber, sectionIndex, groupIndex, exerciseIndex);
+    const pathBuilder: ExercisePathBuilder = (dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex) =>
+      overrideExercisePath(overrideIndex, dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex);
     const days = arrayOfRecords(raw.days).map((day, index) =>
       normalizeDay(day, index + 1, warnings, aliases, userExercises, pathBuilder)
     );
@@ -203,14 +209,20 @@ function normalizeDay(
   pathBuilder: ExercisePathBuilder = baseExercisePath
 ): ProgramDay {
   const dayNumber = numberFrom(day.day ?? day.dayNumber, fallbackDayNumber);
+  // The EXPLICIT week this day declared, if any — captured once here (pre-
+  // expansion) so it can be propagated unchanged through expandDays and
+  // used as the day's template identity for path building. See ProgramDay
+  // and paths.ts.
+  const templateWeek = optionalNumber(day.week ?? day.weekNumber);
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, dayNumber, index, warnings, aliases, userExercises, pathBuilder)
+    normalizeSection(section, dayNumber, templateWeek, index, warnings, aliases, userExercises, pathBuilder)
   );
 
   return {
     id: newId("day"),
     dayNumber,
-    weekNumber: optionalNumber(day.week ?? day.weekNumber),
+    weekNumber: templateWeek,
+    templateWeek,
     title: stringFrom(day.title ?? day.name, `Day ${fallbackDayNumber}`),
     sections
   };
@@ -219,6 +231,7 @@ function normalizeDay(
 function normalizeSection(
   section: ImportPayload,
   dayNumber: number,
+  templateWeek: number | undefined,
   sectionIndex: number,
   warnings: ImportWarning[],
   aliases: AliasDocument[],
@@ -227,7 +240,7 @@ function normalizeSection(
 ): ProgramSection {
   const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, dayNumber, sectionIndex, index, warnings, aliases, userExercises, sectionType, pathBuilder)
+    normalizeGroup(group, dayNumber, templateWeek, sectionIndex, index, warnings, aliases, userExercises, sectionType, pathBuilder)
   );
 
   return {
@@ -241,6 +254,7 @@ function normalizeSection(
 function normalizeGroup(
   group: ImportPayload,
   dayNumber: number,
+  templateWeek: number | undefined,
   sectionIndex: number,
   groupIndex: number,
   warnings: ImportWarning[],
@@ -250,7 +264,7 @@ function normalizeGroup(
   pathBuilder: ExercisePathBuilder
 ): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, pathBuilder(dayNumber, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
+    normalizeExercise(exercise, pathBuilder(dayNumber, templateWeek, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType)
   );
 
   return {

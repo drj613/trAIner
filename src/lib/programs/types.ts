@@ -72,6 +72,14 @@ export type ProgramDay = {
   id: ID;
   dayNumber: number;
   weekNumber?: number;
+  // The EXPLICIT week this day declared at import time (`day.week`/
+  // `day.weekNumber` in the raw payload), distinct from `weekNumber` above.
+  // `weekNumber` gets overwritten by expandDays with the week a day was
+  // expanded INTO; `templateWeek` is never touched by expansion and stays
+  // undefined for a template-less base day even after cloning. It is the
+  // stable identity import warning/resolution paths are keyed on — see
+  // src/lib/import/paths.ts.
+  templateWeek?: number;
   title: string;
   sections: ProgramSection[];
 };

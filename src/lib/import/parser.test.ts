@@ -570,8 +570,8 @@ describe("canonical base-day warning paths (non-sequential day numbers)", () => 
     );
 
     expect(review.warnings).toHaveLength(1);
-    expect(review.warnings[0].path).toBe(baseExercisePath(3, 0, 0, 0));
-    expect(review.warnings[0].path).not.toBe(baseExercisePath(2, 0, 0, 0));
+    expect(review.warnings[0].path).toBe(baseExercisePath(3, undefined, 0, 0, 0));
+    expect(review.warnings[0].path).not.toBe(baseExercisePath(2, undefined, 0, 0, 0));
   });
 
   it("applies a resolution to declared Day 3 only, leaving Day 1 and Day 5 untouched", () => {
@@ -596,6 +596,91 @@ describe("canonical base-day warning paths (non-sequential day numbers)", () => 
     // structurally unchanged by patching Day 3.
     expect(day1).toEqual(review.program.days.find((d) => d.dayNumber === 1));
     expect(day5).toEqual(review.program.days.find((d) => d.dayNumber === 5));
+  });
+});
+
+// F2 regression: a flat week-tagged day list (no top-level `weeks`, so
+// expandDays is a no-op) can carry two base days that share a dayNumber but
+// declare DIFFERENT explicit weekNumbers. The ambiguity guard in
+// resolution.ts correctly treats these as distinct (different `${week}:${day}`
+// keys), but baseExercisePath ignored week entirely, so both emitted the
+// SAME warning path and a resolution applied to one silently patched the
+// other's (different) exercise too.
+describe("explicit-week base days sharing a dayNumber (F2)", () => {
+  const explicitWeekDay = (dayNumber: number, weekNumber: number, exerciseName: string) => ({
+    day: dayNumber,
+    weekNumber,
+    title: `Week ${weekNumber} Day ${dayNumber}`,
+    sections: [{ type: "strength", groups: [{ exercises: [{ name: exerciseName }] }] }],
+  });
+
+  it("gives distinct warning paths to two explicit-week days sharing a dayNumber", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Flat Week-Tagged Days",
+        days: [explicitWeekDay(1, 1, "Moon Lunge"), explicitWeekDay(1, 2, "Moon Walk")],
+      })
+    );
+
+    // Two exercise-resolution warnings (one per explicit-week day), plus the
+    // separate structural "Day 1 declared twice" diagnostic (harmless and
+    // expected — these two days DO share a literal dayNumber; that
+    // diagnostic is keyed purely on dayNumber and is not part of this fix).
+    const exerciseWarnings = review.warnings.filter((w) => w.rawName !== undefined);
+    expect(exerciseWarnings).toHaveLength(2);
+    const paths = exerciseWarnings.map((w) => w.path);
+    expect(new Set(paths).size).toBe(2);
+  });
+
+  it("resolving the week-1 day's exercise does not patch the week-2 day's different exercise", () => {
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "Flat Week-Tagged Days",
+        days: [explicitWeekDay(1, 1, "Moon Lunge"), explicitWeekDay(1, 2, "Moon Walk")],
+      })
+    );
+
+    const week1Warning = review.warnings.find((w) => w.rawName === "Moon Lunge")!;
+    const week2Warning = review.warnings.find((w) => w.rawName === "Moon Walk")!;
+    expect(week1Warning.path).not.toBe(week2Warning.path);
+
+    const patched = applyResolutions(review.program, [
+      { path: week1Warning.path, canonicalId: "lunge-canonical" },
+    ]);
+
+    const week1Day = patched.days.find((d) => d.weekNumber === 1)!;
+    const week2Day = patched.days.find((d) => d.weekNumber === 2)!;
+
+    expect(week1Day.sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("lunge-canonical");
+    // The week-2 day's DIFFERENT exercise ("Moon Walk") must be left
+    // untouched — it must never inherit week 1's resolution.
+    expect(week2Day.sections[0].groups[0].exercises[0].canonicalExerciseId).toBeUndefined();
+  });
+
+  it("still applies a single base resolution to every mechanical week-clone (Case A must not regress)", () => {
+    // Normal template: base days carry NO explicit weekNumber, and
+    // top-level `weeks` fans them out via expandDays. All week-clones of
+    // "day 1" must keep sharing one canonical resolution path.
+    const review = parseProgramJson(
+      JSON.stringify({
+        title: "3-Week Block",
+        weeks: 3,
+        days: [minimalDay(1, "Push"), { day: 2, title: "Pull", sections: [{ type: "strength", groups: [{ exercises: [{ name: "Moon Lunge" }] }] }] }],
+      })
+    );
+
+    expect(review.program.days).toHaveLength(6);
+    expect(review.warnings).toHaveLength(1);
+
+    const patched = applyResolutions(review.program, [
+      { path: review.warnings[0].path, canonicalId: "lunge-canonical" },
+    ]);
+
+    const day2Clones = patched.days.filter((d) => d.dayNumber === 2);
+    expect(day2Clones).toHaveLength(3);
+    for (const clone of day2Clones) {
+      expect(clone.sections[0].groups[0].exercises[0].canonicalExerciseId).toBe("lunge-canonical");
+    }
   });
 });
 

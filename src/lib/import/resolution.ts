@@ -190,7 +190,7 @@ export function applyResolutions(
     // resolution entirely rather than risk patching the wrong exercise.
     if (ambiguousDayGroups.has(dayGroupKey(d))) return d;
     return patchDay(d, (sectionIndex, groupIndex, exerciseIndex) =>
-      baseExercisePath(d.dayNumber, sectionIndex, groupIndex, exerciseIndex),
+      baseExercisePath(d.dayNumber, d.templateWeek, sectionIndex, groupIndex, exerciseIndex),
     );
   });
 
@@ -202,7 +202,7 @@ export function applyResolutions(
     const patchedDays = replacementDays.map((d) => {
       if (ambiguousInOverride.has(dayGroupKey(d))) return d;
       return patchDay(d, (sectionIndex, groupIndex, exerciseIndex) =>
-        overrideExercisePath(overrideIndex, d.dayNumber, sectionIndex, groupIndex, exerciseIndex),
+        overrideExercisePath(overrideIndex, d.dayNumber, d.templateWeek, sectionIndex, groupIndex, exerciseIndex),
       );
     });
     // Preserve the stored shape: single replacement stays single, array
