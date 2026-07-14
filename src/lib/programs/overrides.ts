@@ -1,4 +1,5 @@
 import type { ProgramDay, ProgramDocument, ProgramOverride } from "./types";
+import { effectiveWeekNumber } from "./domain";
 
 export function dedupOverrides(
   overrides: ProgramOverride[],
@@ -34,7 +35,11 @@ function applyOverride(days: ProgramDay[], override: ProgramOverride): ProgramDa
 
   if (override.scope === "week" && override.weekNumber !== undefined) {
     return days.map((day) => {
-      if (day.weekNumber !== override.weekNumber) return day;
+      // Match on the EFFECTIVE week (a day with no explicit weekNumber is week 1),
+      // consistent with overrideDiagnostics — otherwise a valid week-1 override on a
+      // single-week import (base day carries no weekNumber) is diagnosed applicable
+      // but silently never rendered.
+      if (effectiveWeekNumber(day) !== override.weekNumber) return day;
       const match = replacements.find((replacement) => replacement.dayNumber === day.dayNumber);
       // Preserve the slot's structural identity (id + week/day placement); the override only supplies content.
       return match ? { ...match, id: day.id, weekNumber: day.weekNumber, dayNumber: day.dayNumber } : day;

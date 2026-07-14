@@ -46,6 +46,36 @@ describe("program overrides", () => {
     expect(overriddenDay.id).toBe(baseDay.id); // original id preserved, not llm-generated-uuid
   });
 
+  it("applies a week-1 override when the base day carries no explicit weekNumber", () => {
+    // Single-week import with no top-level `weeks`: base days have weekNumber
+    // undefined, so effectiveWeekNumber(day) === 1. A week-1 override must render.
+    const baseDay: ProgramDay = {
+      id: "base-day-1",
+      dayNumber: 1,
+      title: "Base Day",
+      sections: [],
+    };
+    const program: ProgramDocument = {
+      ...demoProgram,
+      days: [baseDay],
+      overrides: [
+        {
+          id: "override-week1",
+          scope: "week",
+          programId: demoProgram.id,
+          weekNumber: 1,
+          replacement: [{ ...baseDay, title: "Week 1 Replacement" }],
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    expect(baseDay.weekNumber).toBeUndefined();
+    const days = getRenderableDays(program);
+    expect(days[0].title).toBe("Week 1 Replacement");
+    expect(days[0].id).toBe("base-day-1"); // slot identity preserved
+  });
+
   it("preserves the slot's weekNumber when a week-scope replacement omits it", () => {
     const baseDay = demoProgram.days[0];
     const expandedWeek4: ProgramDay = { ...baseDay, id: "wk4-day1", weekNumber: 4, dayNumber: 1 };
