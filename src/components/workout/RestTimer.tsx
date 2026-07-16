@@ -114,6 +114,7 @@ export function RestTimer({ restText, notes }: Props) {
       ) : (
         <button
           type="button"
+          className="tap-target"
           onClick={running ? undefined : startEditing}
           disabled={running}
           aria-label={seconds === undefined ? "Set rest duration" : "Edit rest duration"}

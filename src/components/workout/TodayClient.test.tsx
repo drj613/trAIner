@@ -44,6 +44,7 @@ jest.mock("@/lib/storage/logRepo", () => ({
 beforeEach(() => {
   mockProfile = undefined;
   mockPrograms = [];
+  localStorage.clear();
 });
 
 describe("TodayClient", () => {
@@ -77,6 +78,20 @@ describe("TodayClient", () => {
     render(<MemoryRouter><TodayClient /></MemoryRouter>);
     const step1Link = screen.getByRole("link", { name: /Fill out your Profile/i });
     expect(step1Link.textContent).toMatch(/✓/);
+  });
+
+  it("marks step 2 done once a prompt has been copied", () => {
+    localStorage.setItem("trainer-prompt-copied", "1");
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    const step2Link = screen.getByRole("link", { name: /Choose a coach on Prompts/i });
+    expect(step2Link.textContent).toMatch(/✓/);
+    localStorage.removeItem("trainer-prompt-copied");
+  });
+
+  it("leaves step 2 unchecked when no prompt has been copied", () => {
+    render(<MemoryRouter><TodayClient /></MemoryRouter>);
+    const step2Link = screen.getByRole("link", { name: /Choose a coach on Prompts/i });
+    expect(step2Link.textContent).not.toMatch(/✓/);
   });
 });
 

@@ -28,6 +28,7 @@ import { GroupRail } from "./GroupRail";
 import { RestTimer } from "./RestTimer";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 import { BodyweightWidget } from "./BodyweightWidget";
+import { SessionSummary, computeSessionSummary, type SessionSummaryStats } from "./SessionSummary";
 
 function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
@@ -127,10 +128,10 @@ const ExerciseRow = memo(function ExerciseRow({
           >
             <span
               style={{
-                color: "var(--fg-4)",
+                color: "var(--fg-3)",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                fontSize: 9,
+                fontSize: 10,
                 marginRight: 4,
               }}
             >
@@ -167,10 +168,9 @@ const ExerciseRow = memo(function ExerciseRow({
         })}
         {!readOnly && (
           <button
-            className="cell empty"
+            className="cell empty tap-target"
             onClick={onAddSet}
             style={{
-              minWidth: 28,
               width: 28,
               padding: 0,
               cursor: "pointer",
@@ -185,18 +185,15 @@ const ExerciseRow = memo(function ExerciseRow({
         )}
       </div>
       <RestTimer restText={exercise.rest} notes={exercise.notes} />
-      <details style={{ marginTop: 6 }} open={!!note}>
+      <details className="disclosure" style={{ marginTop: 6 }} open={!!note}>
         <summary
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--fg-4)",
-            cursor: "pointer",
-            listStyle: "none",
-            userSelect: "none",
+            fontSize: 11,
+            color: "var(--fg-3)",
           }}
         >
-          {note ? "note ▾" : "+ add note"}
+          {note ? "note" : "add note"}
         </summary>
         <textarea
           value={note}
@@ -308,6 +305,7 @@ function WorkoutBottomBar({
   onFinish,
   saved,
   autoSaveStatus,
+  onRetrySave,
   dayNote,
   onDayNoteChange,
   noteExpanded,
@@ -316,12 +314,15 @@ function WorkoutBottomBar({
   onSkipDay,
   onSkipConfirm,
   onSkipCancel,
+  confirmFinish,
+  onCancelConfirm,
   alreadyComplete,
 }: {
   cells: CellMap;
   onFinish: () => void;
   saved: boolean;
   autoSaveStatus: "idle" | "saving" | "saved" | "error";
+  onRetrySave: () => void;
   dayNote: string;
   onDayNoteChange: (v: string) => void;
   noteExpanded: boolean;
@@ -330,6 +331,8 @@ function WorkoutBottomBar({
   onSkipDay: () => void;
   onSkipConfirm: (reason: string) => void;
   onSkipCancel: () => void;
+  confirmFinish: boolean;
+  onCancelConfirm: () => void;
   alreadyComplete: boolean | undefined;
 }) {
   const [skipReason, setSkipReason] = useState("");
@@ -348,9 +351,18 @@ function WorkoutBottomBar({
 
   return (
     <div style={{ position: "sticky", bottom: 0, zIndex: 4, background: "var(--bg-1)", borderTop: "1px solid var(--line)" }}>
-      {/* Progress strip */}
-      <div style={{ height: 2, background: "var(--bg-3)", position: "relative" }}>
-        <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "var(--accent)", transition: "width .3s" }} />
+      {/* Progress strip — animate transform (not width) to avoid layout thrash */}
+      <div style={{ height: 2, background: "var(--bg-3)", position: "relative", overflow: "hidden" }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "var(--accent)",
+            transform: `scaleX(${pct / 100})`,
+            transformOrigin: "left",
+            transition: "transform .3s",
+          }}
+        />
       </div>
 
       {/* Day note textarea */}
@@ -416,66 +428,113 @@ function WorkoutBottomBar({
         </div>
       )}
 
-      {/* Main action row */}
-      <div style={{ display: "flex", alignItems: "center", padding: "8px 12px", gap: 6 }}>
-        <span
-          role="status"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color:
-              autoSaveStatus === "error"
-                ? "var(--bad)"
-                : autoSaveStatus === "saving"
-                ? "var(--fg-3)"
-                : autoSaveStatus === "saved"
-                ? "var(--good)"
-                : "var(--fg-4)",
-          }}
-        >
-          {autoSaveStatus === "saving" && "saving…"}
-          {autoSaveStatus === "saved" && "saved"}
-          {autoSaveStatus === "error" && "save failed"}
-          {autoSaveStatus === "idle" && ""}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", flex: 1 }}>
-          {done}/{total} <span style={{ color: "var(--fg-4)" }}>· {pct}%</span>
-        </span>
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={onToggleNote}
-          aria-label="Day note"
-          style={{ fontSize: 11 }}
-        >
-          Day note {noteExpanded ? "▴" : "▾"}
-        </button>
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={onSkipDay}
-          disabled={locked}
-          aria-label="Skip day"
-          style={{ fontSize: 11 }}
-        >
-          Skip day
-        </button>
-        <button
-          type="button"
-          className={`btn ${pct === 100 && !locked ? "primary" : ""}`}
-          onClick={onFinish}
-          disabled={locked}
-          aria-label={alreadyComplete === true ? "Completed" : "Finish workout"}
-          style={{ fontSize: 12 }}
-        >
-          {alreadyComplete === true ? (
-            <><CheckCircle size={13} /> Completed</>
-          ) : saved ? (
-            <><CheckCircle size={13} /> Saved</>
-          ) : (
-            "Finish workout"
-          )}
-        </button>
+      {/* Main action row — one tight line. Telemetry grows to fill and pushes
+          the action cluster right as an intact group, so no button ever orphans
+          onto its own row; on a narrow phone the row wraps telemetry-over-actions. */}
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", padding: "8px 12px", gap: 8 }}>
+        {confirmFinish ? (
+          // Confirm lands inline (replacing the actions), not as a stacked banner.
+          // Finishing locks the day, so we confirm every time — copy adapts to whether work was logged.
+          <>
+            <span
+              role="alert"
+              style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--warn)", flex: "1 1 auto", minWidth: 140 }}
+            >
+              {done === 0
+                ? "Nothing logged yet — finish anyway?"
+                : "Finish locks this day — you can't reopen it."}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <button type="button" className="btn ghost" onClick={onCancelConfirm} style={{ fontSize: 12 }}>
+                Cancel
+              </button>
+              <button type="button" className="btn primary" onClick={onFinish} style={{ fontSize: 12 }}>
+                {done === 0 ? "Finish anyway" : "Finish & lock"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Telemetry group — sits left; the action cluster's auto-margin does the right-push. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 120 }}>
+              <span
+                role="status"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color:
+                    autoSaveStatus === "error"
+                      ? "var(--bad)"
+                      : autoSaveStatus === "saved"
+                      ? "var(--good)"
+                      : "var(--fg-3)",
+                }}
+              >
+                {autoSaveStatus === "saving" && "saving…"}
+                {autoSaveStatus === "saved" && "saved"}
+                {autoSaveStatus === "error" && (
+                  <>
+                    save failed
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={onRetrySave}
+                      style={{ fontSize: 11, padding: "2px 6px", color: "var(--bad)", borderColor: "var(--bad)" }}
+                    >
+                      Retry
+                    </button>
+                  </>
+                )}
+              </span>
+              {/* Percent is already carried by the progress strip above — no double duty here. */}
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
+                {done}/{total} sets
+              </span>
+            </div>
+            {/* Action cluster — pinned hard-right; only Finish carries the accent. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
+              {/* Skip is kept away from the primary so a mid-set thumb-slip can't discard the session */}
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={onSkipDay}
+                disabled={locked}
+                aria-label="Skip day"
+                style={{ fontSize: 11, color: "var(--fg-3)" }}
+              >
+                Skip day
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={onToggleNote}
+                aria-label="Day note"
+                style={{ fontSize: 11, color: "var(--fg-3)" }}
+              >
+                Note {noteExpanded ? "▴" : "▾"}
+              </button>
+              <button
+                type="button"
+                className={`btn ${!locked ? "primary" : ""}`}
+                onClick={onFinish}
+                disabled={locked}
+                aria-label={alreadyComplete === true ? "Completed" : "Finish workout"}
+                style={{ fontSize: 12 }}
+              >
+                {alreadyComplete === true ? (
+                  <><CheckCircle size={13} /> Completed</>
+                ) : saved ? (
+                  <><CheckCircle size={13} /> Saved</>
+                ) : (
+                  "Finish workout"
+                )}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -509,6 +568,8 @@ function WorkoutBody({
   const logIdRef = useRef<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<SessionSummaryStats | null>(null);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const [alreadyComplete, setAlreadyComplete] = useState<boolean | undefined>(undefined);
   const saving = useRef(false);
   // "loading" until hydration resolves; "active" = an editable session
@@ -701,26 +762,30 @@ function WorkoutBody({
 
   async function finishWorkout() {
     if (saving.current) return;
+    const stats = computeSessionSummary(cells);
+    // Finishing locks the day and can't be reopened — always confirm first.
+    if (!confirmFinish) {
+      setConfirmFinish(true);
+      return;
+    }
     saving.current = true;
     setSaveError(null);
     try {
       await flush();
       await saveCells({ cells, notes, dayNote }, { markCompleted: true });
-      const allCells = Object.values(cells).flat();
-      const totalSets = allCells.length;
-      const completedSets = allCells.filter((v) => classifyCell(v) !== "empty").length;
-      const exerciseCount = Object.keys(cells).length;
       await trackWorkoutEvent({
         type: "workout_saved",
         programId: program.id,
         dayId: day.id,
         performedAt: new Date().toISOString(),
-        exerciseCount,
-        totalSets,
-        completedSets,
+        exerciseCount: Object.keys(cells).length,
+        totalSets: stats.setsTotal,
+        completedSets: stats.setsDone,
       });
       setSaved(true);
-      setTimeout(() => void navigateToNextIncompleteDay(), 800);
+      setConfirmFinish(false);
+      // Show the closing readout instead of silently jumping to the next day.
+      setSummary(stats);
     } catch (e) {
       console.error("[finishWorkout] save failed", e);
       setSaveError("Failed to save workout. Please try again.");
@@ -879,6 +944,7 @@ function WorkoutBody({
         onFinish={finishWorkout}
         saved={saved}
         autoSaveStatus={autoSaveStatus}
+        onRetrySave={() => void flush()}
         dayNote={dayNote}
         onDayNoteChange={setDayNote}
         noteExpanded={noteExpanded}
@@ -887,8 +953,19 @@ function WorkoutBody({
         onSkipDay={() => setSkipMode(true)}
         onSkipConfirm={handleSkip}
         onSkipCancel={() => setSkipMode(false)}
+        confirmFinish={confirmFinish}
+        onCancelConfirm={() => setConfirmFinish(false)}
         alreadyComplete={alreadyComplete}
       />
+
+      {summary && (
+        <SessionSummary
+          dayTitle={day.title}
+          stats={summary}
+          onNext={() => { setSummary(null); void navigateToNextIncompleteDay(); }}
+          onReview={() => setSummary(null)}
+        />
+      )}
 
       {saveError && (
         <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "4px 12px", margin: 0 }}>
@@ -935,7 +1012,7 @@ function WorkoutBody({
 export function WorkoutDayClient() {
   const { id: programId, dayId } = useParams<{ id: string; dayId: string }>();
   const navigate = useNavigate();
-  const { programs } = useLocalData();
+  const { programs, loading } = useLocalData();
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const program = programs.find((p) => p.id === programId);
@@ -943,11 +1020,29 @@ export function WorkoutDayClient() {
   const dayIndex = days.findIndex((d) => d.id === dayId);
   const day = dayIndex >= 0 ? days[dayIndex] : undefined;
 
-  if (!program || !day) {
+  // Distinguish "still loading" from "genuinely not here" — a bad URL should
+  // not sit on an eternal "Loading…".
+  if (loading) {
     return (
       <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
         Loading…
       </p>
+    );
+  }
+
+  if (!program || !day) {
+    return (
+      <div style={{ padding: "24px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+        <p style={{ color: "var(--fg-2)", fontSize: 14, margin: 0 }}>
+          {program ? "That day isn't part of this routine." : "That routine no longer exists."}
+        </p>
+        <Link
+          to="/programs"
+          style={{ color: "var(--accent)", fontSize: 13, fontFamily: "var(--font-mono)", textDecoration: "none" }}
+        >
+          ← Back to Routines
+        </Link>
+      </div>
     );
   }
 
@@ -997,7 +1092,7 @@ export function WorkoutDayClient() {
 
         <h1
           style={{
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: 700,
             letterSpacing: "-0.01em",
             margin: 0,
@@ -1016,41 +1111,39 @@ export function WorkoutDayClient() {
             type="button"
             className="btn ghost"
             onClick={() => setAiModalOpen(true)}
-            style={{ padding: "4px 8px", gap: 4, display: "flex", alignItems: "center" }}
+            style={{ padding: "4px 8px", gap: 5, display: "flex", alignItems: "center", fontSize: 11, color: "var(--fg-3)" }}
             aria-label="Modify with AI"
-            title="Modify with AI"
+            title="Modify this day with an external LLM"
           >
             <Sparkles size={13} aria-hidden />
+            <span>Modify</span>
           </button>
         </div>
 
         {/* Format guide */}
-        <details style={{ marginTop: 6 }}>
+        <details className="disclosure" style={{ marginTop: 6 }}>
           <summary
-            style={{
-              fontSize: 10, color: "var(--fg-4)", cursor: "pointer",
-              fontFamily: "var(--font-mono)", userSelect: "none", listStyle: "none",
-            }}
+            style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}
           >
             format guide
           </summary>
           <div
             style={{
-              paddingTop: 5, fontSize: 10, color: "var(--fg-3)",
+              paddingTop: 5, fontSize: 11, color: "var(--fg-2)",
               fontFamily: "var(--font-mono)", lineHeight: 2,
             }}
           >
             {[
-              ["70×8", "weight × reps (done)"],
-              ["+70×8", "personal record"],
-              ["bw×15", "bodyweight"],
-              ["70×8!", "failed / missed rep"],
+              ["70x8", "weight x reps (done)"],
+              ["+70x8", "personal record"],
+              ["bwx15", "bodyweight"],
+              ["70x8!", "failed / missed rep"],
               ["skip", "skipped set"],
               ["pain", "pain noted"],
             ].map(([ex, desc]) => (
               <span key={ex} style={{ display: "inline-flex", gap: 4, marginRight: 14, alignItems: "baseline" }}>
-                <code style={{ background: "var(--bg-3)", padding: "0 4px", borderRadius: 3 }}>{ex}</code>
-                <span style={{ color: "var(--fg-4)", fontSize: 9 }}>{desc}</span>
+                <code style={{ background: "var(--bg-3)", padding: "0 4px", borderRadius: "var(--r-sm)" }}>{ex}</code>
+                <span style={{ color: "var(--fg-3)", fontSize: 10 }}>{desc}</span>
               </span>
             ))}
           </div>
@@ -1064,12 +1157,12 @@ export function WorkoutDayClient() {
             marginBottom: 12,
             background: "var(--bg-2)",
             border: "1px solid var(--line)",
-            borderRadius: "var(--r-sm, 4px)",
+            borderRadius: "var(--r)",
             fontSize: 11,
             color: "var(--fg-3)",
           }}
         >
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
             Progression
           </div>
           {program.progression.map((p, i) => (

@@ -218,60 +218,61 @@ describe("WorkoutDayClient day note", () => {
 
 describe("WorkoutDayClient finish workout", () => {
   it("Finish workout navigates to the next incomplete day", async () => {
-    jest.useFakeTimers();
     // After finishing day-1, the fresh log fetch sees day-1 completed.
     listForProgramMock.mockResolvedValue([
       { id: "l1", programId: "p1", dayId: "day-1", performedAt: "2026-07-01T10:00:00.000Z", completedAt: "2026-07-01T11:00:00.000Z", entries: [] },
     ]);
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
     );
+    // Empty session → confirm, then the summary readout, then advance day.
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
-    await act(async () => { jest.advanceTimersByTime(800); });
+    await user.click(await screen.findByRole("button", { name: /finish anyway/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to next day/i }));
     expect(await screen.findByRole("heading", { level: 1, name: "Pull Day" })).toBeInTheDocument();
-    jest.useRealTimers();
   });
 
   it("Finish on the last day goes to the earliest incomplete day", async () => {
-    jest.useFakeTimers();
     listForProgramMock.mockResolvedValue([
       { id: "l2", programId: "p1", dayId: "day-2", performedAt: "2026-07-01T10:00:00.000Z", completedAt: "2026-07-01T11:00:00.000Z", entries: [] },
     ]);
     renderOnDay("day-2");
     await screen.findByRole("heading", { level: 1, name: "Pull Day" });
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
     );
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
-    await act(async () => { jest.advanceTimersByTime(800); });
+    await user.click(await screen.findByRole("button", { name: /finish anyway/i }));
+    await user.click(await screen.findByRole("button", { name: /continue to next day/i }));
     expect(await screen.findByRole("heading", { level: 1, name: "Push Day" })).toBeInTheDocument();
-    jest.useRealTimers();
   });
 });
 
 describe("WorkoutDayClient canonical id persistence", () => {
   it("Finish workout saves canonicalExerciseId on each entry", async () => {
-    jest.useFakeTimers();
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const user = userEvent.setup();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
     );
     await user.click(screen.getByRole("button", { name: /finish workout/i }));
-    await act(async () => { jest.advanceTimersByTime(800); });
+    await user.click(await screen.findByRole("button", { name: /finish anyway/i }));
+    await waitFor(() =>
+      expect(
+        saveMock.mock.calls.find((call) => call[0].completedAt !== undefined && call[0].dayId === "day-1"),
+      ).toBeDefined(),
+    );
     const finishSave = saveMock.mock.calls.find(
       (call) => call[0].completedAt !== undefined && call[0].dayId === "day-1",
     );
-    expect(finishSave).toBeDefined();
     expect(finishSave![0].entries[0]).toEqual(
       expect.objectContaining({ exerciseId: "e1", canonicalExerciseId: "cat-bench" }),
     );
-    jest.useRealTimers();
   });
 });
 
@@ -448,5 +449,53 @@ describe("WorkoutDayClient history button after exercise change", () => {
     // Both logs should surface because they share canonicalExerciseId "cat-bench".
     expect(dialog).toHaveTextContent("90x5");
     expect(dialog).toHaveTextContent("80x5");
+  });
+});
+
+describe("WorkoutDayClient finish flow — confirm and summary", () => {
+  it("asks to confirm before finishing an empty session", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    expect(screen.getByText(/nothing logged yet/i)).toBeInTheDocument();
+    // The summary must not appear until the user confirms.
+    expect(screen.queryByText(/push day done/i)).not.toBeInTheDocument();
+    // saveMock must not have recorded a completion yet.
+    expect(saveMock.mock.calls.find((c) => c[0].completedAt !== undefined)).toBeUndefined();
+    await user.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(screen.queryByText(/nothing logged yet/i)).not.toBeInTheDocument();
+  });
+
+  it("confirms (lock warning), then shows a session summary for a logged session", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+    const cell = document.getElementById("cell-e1-0") as HTMLInputElement;
+    await user.type(cell, "+100x5");
+    await user.tab(); // commit the cell
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    // Finishing is irreversible → confirm gate warns it locks the day, no summary yet.
+    expect(screen.getByText(/locks this day/i)).toBeInTheDocument();
+    expect(screen.queryByText(/push day done/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /finish & lock/i }));
+    expect(await screen.findByText(/push day done/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 of 3 sets logged/i)).toBeInTheDocument();
+    expect(screen.getByText("PR")).toBeInTheDocument();
+  });
+});
+
+describe("WorkoutDayClient not-found", () => {
+  it("shows a recoverable message for an unknown day (not an eternal Loading…)", async () => {
+    renderOnDay("day-does-not-exist");
+    expect(await screen.findByText(/isn't part of this routine/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /back to routines/i })).toHaveAttribute("href", "/programs");
+    expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
   });
 });

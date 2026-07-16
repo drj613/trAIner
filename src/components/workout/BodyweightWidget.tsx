@@ -48,7 +48,7 @@ export function BodyweightWidget({ today }: { today?: string } = {}) {
       style={{
         background: "var(--bg-1)",
         border: "1px solid var(--line)",
-        borderRadius: "var(--r, 6px)",
+        borderRadius: "var(--r)",
         padding: "8px 10px",
         marginBottom: 10,
         display: "flex",
@@ -110,7 +110,7 @@ export function BodyweightWidget({ today }: { today?: string } = {}) {
             <option value="kg">kg</option>
             <option value="lb">lb</option>
           </select>
-          <button type="button" className="button" onClick={save} style={{ padding: "3px 8px", fontSize: 11 }}>
+          <button type="button" className="btn primary" onClick={save} style={{ fontSize: 11 }}>
             Save
           </button>
         </>

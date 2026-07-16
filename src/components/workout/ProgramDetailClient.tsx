@@ -372,7 +372,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
   if (!program) return <p className="muted">Loading…</p>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ padding: "10px 12px 8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -425,11 +425,10 @@ export function ProgramDetailClient({ id }: { id: string }) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden", touchAction: "pan-y" }}
+        style={{ position: "relative", overflowX: "hidden", touchAction: "pan-y" }}
       >
         <div
           style={{
-            height: "100%",
             transform: `translateX(${dragDX}px)`,
             transition: dragDX ? "none" : "transform .25s cubic-bezier(.2,.7,.3,1)",
           }}
@@ -437,7 +436,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           {weeks[activeWeek] && (
             <div
               key={weeks[activeWeek].weekNumber}
-              style={{ width: "100%", height: "100%", overflowY: "auto", overflowX: "hidden", padding: "10px 12px 14px" }}
+              style={{ width: "100%", padding: "10px 12px 14px" }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>Week {weeks[activeWeek].weekNumber}</span>

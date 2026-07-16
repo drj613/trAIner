@@ -65,7 +65,12 @@ export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocu
       onKeyDown={onKey}
       autoFocus={autoFocus}
       readOnly={readOnly}
-      style={{ width: 70, height: 30, fontSize: 13 }}
+      inputMode="text"
+      autoComplete="off"
+      autoCapitalize="off"
+      autoCorrect="off"
+      spellCheck={false}
+      style={{ width: 70, fontSize: 13 }}
       aria-label={`Set value${prescribed ? ` (${prescribed})` : ""}`}
     />
   );

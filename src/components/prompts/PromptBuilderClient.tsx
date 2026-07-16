@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
+import { markPromptCopied } from "@/lib/workspace/onboarding";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import {
   buildProfileFieldsBlock,
@@ -268,7 +269,10 @@ export function PromptBuilderClient() {
         <button
           className="button mt-2 w-full justify-center"
           disabled={!prompt}
-          onClick={() => void navigator.clipboard.writeText(prompt).catch(() => {})}
+          onClick={() => {
+            markPromptCopied();
+            void navigator.clipboard.writeText(prompt).catch(() => {});
+          }}
         >
           <Copy size={14} /> Copy prompt · {prompt.length.toLocaleString()} chars
         </button>

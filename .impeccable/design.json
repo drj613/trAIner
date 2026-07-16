@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "title": "Design System: trAIner",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Instrument Cyan", "canonical": "#5cc4d6", "tonalRamp": ["#0a1c20", "#103038", "#164450", "#1e6373", "#2f8b9f", "#5cc4d6", "#89d7e4", "#b6e8f0", "#e0f6fa"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#e7eaee", "tonalRamp": ["#15171a", "#20242a", "#2f353d", "#454c56", "#5f6772", "#7a818c", "#a0a7b0", "#c6ccd3", "#e7eaee"] },
+      "good": { "role": "tertiary", "displayName": "Signal Green", "canonical": "#7fc77a", "tonalRamp": ["#0e1c0d", "#173017", "#204521", "#2e6330", "#4d8f4a", "#7fc77a", "#a3d89f", "#c6e8c4", "#e6f6e5"] },
+      "warn": { "role": "tertiary", "displayName": "Signal Amber", "canonical": "#e6b664", "tonalRamp": ["#231803", "#3a2909", "#513a10", "#75551a", "#a67a2b", "#e6b664", "#eecb8f", "#f4dfba", "#faf2e2"] },
+      "bad": { "role": "tertiary", "displayName": "Signal Coral", "canonical": "#e07b6a", "tonalRamp": ["#2a0f0a", "#3f1811", "#552118", "#7a3226", "#a84b3a", "#e07b6a", "#e9a094", "#f2c6bf", "#f9e6e2"] },
+      "pr": { "role": "secondary", "displayName": "PR Violet", "canonical": "#c5a3ff", "tonalRamp": ["#1a1230", "#281c48", "#372560", "#4f3688", "#7a54c9", "#c5a3ff", "#d5bcff", "#e6d7ff", "#f4edff"] }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "Wordmark and screen titles. Small (14-15px), never poster-scale." },
+      "body": { "displayName": "Body", "purpose": "Default reading text; shifts with density mode." },
+      "label": { "displayName": "Label", "purpose": "Uppercase micro-labels, column heads, section tags." },
+      "mono": { "displayName": "Mono", "purpose": "Every logged figure and set cell. Tabular figures. The signature." }
+    },
+    "shadows": [
+      { "name": "overlay", "value": "0 8px 32px rgba(0,0,0,0.4)", "purpose": "Drawers and dialogs floating above a scrim." },
+      { "name": "popover", "value": "0 4px 16px rgba(0,0,0,0.3)", "purpose": "Small floating menus anchored to a control." }
+    ],
+    "motion": [
+      { "name": "state", "value": "0.12s", "purpose": "Default button/border/background state transition." },
+      { "name": "cell", "value": "0.1s", "purpose": "Set-cell hover/focus border+bg transition." },
+      { "name": "ease-drawer", "value": "cubic-bezier(0.2, 0.7, 0.3, 1)", "purpose": "Drawer slide-in easing (slideright, 0.16s)." }
+    ],
+    "breakpoints": [
+      { "name": "content-max", "value": "960px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The workhorse button. Surface fill, hairline border, label type.",
+      "html": "<button class=\"ds-btn\">Add set</button>",
+      "css": ".ds-btn { font-family: Inter, system-ui, sans-serif; font-size: 11.5px; font-weight: 500; background: var(--bg-2, #20242a); color: var(--fg, #e7eaee); border: 1px solid var(--line, #2a2f37); border-radius: 4px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: background .12s, border-color .12s; } .ds-btn:hover { background: var(--bg-hover, #2c323a); border-color: var(--line-2, #353c46); } .ds-btn:focus-visible { outline: none; border-color: var(--accent, #5cc4d6); }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action per context. Accent fill.",
+      "html": "<button class=\"ds-btn-primary\">Log workout</button>",
+      "css": ".ds-btn-primary { font-family: Inter, system-ui, sans-serif; font-size: 11.5px; font-weight: 500; background: var(--accent, #5cc4d6); color: var(--accent-fg, #061216); border: 1px solid var(--accent, #5cc4d6); border-radius: 4px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: filter .12s; } .ds-btn-primary:hover { filter: brightness(1.05); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #5cc4d6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Borderless toolbar/icon button; border appears on hover.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Open menu\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><line x1=\"3\" y1=\"6\" x2=\"21\" y2=\"6\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><line x1=\"3\" y1=\"18\" x2=\"21\" y2=\"18\"/></svg></button>",
+      "css": ".ds-btn-ghost { background: transparent; color: var(--fg, #e7eaee); border: 1px solid transparent; border-radius: 4px; padding: 4px 6px; display: inline-flex; align-items: center; cursor: pointer; transition: background .12s, border-color .12s; } .ds-btn-ghost:hover { background: var(--bg-2, #20242a); border-color: var(--line, #2a2f37); }"
+    },
+    {
+      "name": "Set Cell",
+      "kind": "custom",
+      "refersTo": "cell",
+      "description": "The signature logging cell. Monospace tabular figures, tap-to-edit.",
+      "html": "<span class=\"ds-cell\">8&nbsp;×&nbsp;100</span> <span class=\"ds-cell ds-cell-pr\">10&nbsp;×&nbsp;120</span> <span class=\"ds-cell ds-cell-empty\">–</span>",
+      "css": ".ds-cell { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13.5px; font-variant-numeric: tabular-nums; background: var(--bg-3, #262b32); color: var(--fg, #e7eaee); border: 1px solid var(--line, #2a2f37); border-radius: 2px; padding: 4px 7px; min-width: 56px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: text; transition: border-color .1s, background .1s; } .ds-cell:hover { border-color: var(--line-2, #353c46); } .ds-cell:focus-visible { outline: none; border-color: var(--accent, #5cc4d6); background: var(--bg-2, #20242a); } .ds-cell-pr { color: var(--pr, #c5a3ff); border-color: rgba(197,163,255,0.4); background: rgba(197,163,255,0.08); } .ds-cell-empty { color: var(--fg-4, #555c66); border-style: dashed; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard field; border shifts to accent on focus, no glow.",
+      "html": "<input class=\"ds-input\" placeholder=\"Paste program JSON…\" />",
+      "css": ".ds-input { width: 100%; font-family: Inter, system-ui, sans-serif; font-size: 13.5px; background: var(--bg-2, #20242a); color: var(--fg, #e7eaee); border: 1px solid var(--line, #2a2f37); border-radius: 8px; padding: 10px 12px; transition: border-color .12s; } .ds-input::placeholder { color: var(--fg-3, #7a818c); } .ds-input:focus-visible { outline: none; border-color: var(--accent, #5cc4d6); }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Drawer navigation link; active state uses accent-soft bg + accent text.",
+      "html": "<a class=\"ds-nav ds-nav-active\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\"/><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\"/><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"/></svg><span>Today</span></a>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 4px; color: var(--fg, #e7eaee); font-family: Inter, system-ui, sans-serif; font-size: 13px; background: transparent; cursor: pointer; transition: background .1s; } .ds-nav:hover { background: var(--bg-2, #20242a); } .ds-nav-active { background: var(--accent-soft, rgba(92,196,214,0.14)); color: var(--accent, #5cc4d6); font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Training Logbook",
+    "overview": "trAIner is a private record kept in a well-made instrument. It reads like a logbook a serious lifter would actually trust: exact figures set in monospace, tight rows that pack a full session onto one screen, ink laid on quiet charcoal surfaces. The data is the interface; chrome recedes so the numbers carry the page. It is calm on purpose, because it gets used mid-workout. The system is token-driven and multi-theme: one set of CSS variables drives six themes (Editor, Terminal, Logbook, Midnight, Linen, Paper) and three density modes.",
+    "keyCharacteristics": [
+      "Information-dense, low-stimulation, monospace where figures matter",
+      "Tonal depth over shadow; hairline 1px borders",
+      "Tight radii (2/4/8px), never soft or pillowy",
+      "Six themes + three density modes from one token set",
+      "Accent is rare and functional — a syntax highlight, not a brand splash"
+    ],
+    "rules": [
+      { "name": "The One-Accent Rule", "body": "Exactly one accent hue per theme. A second 'color' comes only from the status set (good/warn/bad/pr) and must mean something.", "section": "colors" },
+      { "name": "The Status-Is-Semantic Rule", "body": "Good/Warn/Bad/PR are reserved for state. Never use them decoratively.", "section": "colors" },
+      { "name": "The Tabular-Figures Rule", "body": "Every number a user might scan or compare is set in mono with tabular-nums.", "section": "typography" },
+      { "name": "The Small-Type Rule", "body": "Base UI text is ~13.5px, titles top out around 15px. Adjust via density modes, not ad-hoc font bumps.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "In-flow surfaces get zero shadow. Use the next tonal step and a hairline border to raise something.", "section": "elevation" },
+      { "name": "The Float-Earns-Shadow Rule", "body": "A shadow is permission to leave the document flow. Only overlays (drawer, dialog, popover) may cast one.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every comparable figure in JetBrains Mono with tabular-nums.",
+      "Do build depth from the tonal ladder and 1px borders, not shadows.",
+      "Do keep the accent rare — active nav, primary action, focus, section-strength.",
+      "Do reserve Good/Warn/Bad/PR for genuine state, never hue alone.",
+      "Do author against the CSS variables so screens work across all six themes and three density modes.",
+      "Do keep radii tight (2/4/8px) and type small (~13.5px body, <=15px titles)."
+    ],
+    "donts": [
+      "Don't ship loud fitness-app hype: no neon gradients, motivational-poster energy, gamified confetti.",
+      "Don't build a generic SaaS dashboard: no rounded card grids, pastel gradient hero-metrics, purple-blue template.",
+      "Don't borrow consumer social/feed patterns: no avatars, likes, streak-shaming, engagement bait.",
+      "Don't go sterile-clinical: cold, gray, joyless form-portal energy.",
+      "Don't put a box-shadow on a resting in-flow surface — use the next tonal step.",
+      "Don't use border-left/right colored stripes; the section-rail --sec system is the only sanctioned colored edge.",
+      "Don't use gradient text or glassmorphism.",
+      "Don't hardcode hex in components — reference the tokens."
+    ]
+  }
+}

@@ -7,6 +7,7 @@ import { useLocalData } from "@/components/app/LocalDataProvider";
 import { getRenderableDays } from "@/lib/programs/overrides";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { localDateString } from "@/lib/workout/localDate";
+import { hasCopiedPrompt } from "@/lib/workspace/onboarding";
 
 export function TodayClient() {
   const { programs, profile, loading } = useLocalData();
@@ -51,7 +52,7 @@ export function TodayClient() {
       role="status"
       style={{
         display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", marginBottom: 14,
-        background: "var(--accent-soft)", border: "1px solid var(--accent)", borderRadius: "var(--r, 6px)",
+        background: "var(--accent-soft)", border: "1px solid var(--accent)", borderRadius: "var(--r)",
         fontSize: 13, color: "var(--fg)",
       }}
     >
@@ -79,8 +80,8 @@ export function TodayClient() {
   const profileDone = !!profile;
   const steps: Array<{ label: string; to: string; done: boolean }> = [
     { label: "Fill out your Profile", to: "/profile", done: profileDone },
-    { label: "Choose a coach on Prompts — copy the generated prompt", to: "/prompts", done: false },
-    { label: "Paste the AI's JSON response on Import", to: "/import", done: false },
+    { label: "Choose a coach on Prompts — copy the generated prompt", to: "/prompts", done: hasCopiedPrompt() },
+    { label: "Paste the AI's JSON response on Import", to: "/import", done: programs.length > 0 },
   ];
 
   return (
@@ -88,7 +89,7 @@ export function TodayClient() {
       {banner}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 6px", color: "var(--fg)" }}>Today</h1>
+          <h1 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 6px", color: "var(--fg)" }}>Today</h1>
           <p style={{ color: "var(--fg-3)", fontSize: 13, margin: 0 }}>No active program yet. Follow these steps to get started:</p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -100,7 +101,7 @@ export function TodayClient() {
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                 background: done ? "var(--bg-2)" : "var(--bg-1)",
                 border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
-                borderRadius: "var(--r, 6px)", textDecoration: "none", color: "var(--fg)",
+                borderRadius: "var(--r)", textDecoration: "none", color: "var(--fg)",
               }}
             >
               <span
@@ -110,7 +111,7 @@ export function TodayClient() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: done ? 12 : 11, fontFamily: "var(--font-mono)", fontWeight: 700,
                   background: done ? "var(--good)" : "var(--bg-3)",
-                  color: done ? "#fff" : "var(--fg-3)",
+                  color: done ? "var(--accent-fg)" : "var(--fg-3)",
                   border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
                 }}
               >
