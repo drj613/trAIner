@@ -494,6 +494,9 @@ git commit -m "feat: wire ranked goals editor into profile creation and edit flo
 **Files:**
 - Modify: `src/lib/prompts/profileFields.ts:46-52`
 - Modify: `src/lib/prompts/profileFields.test.ts:31,53`
+- Modify: `src/components/prompts/PromptBuilderClient.test.tsx` (asserts the old
+  `/Goals: Hypertrophy/` text format against the rendered prompt preview at four call
+  sites — missed by the initial spec grep; update to `/Goals \(priority order\):/`)
 
 - [ ] **Step 1: Update the failing assertions first**
 
