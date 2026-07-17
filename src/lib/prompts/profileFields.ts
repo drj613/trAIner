@@ -48,7 +48,10 @@ export const PROFILE_FIELDS: ProfileField[] = [
     group: "profile",
     important: true,
     hasData: (p) => p.goals.length > 0,
-    render: (p) => (p.goals.length ? `Goals: ${join(p.goals)}` : null),
+    render: (p) =>
+      p.goals.length
+        ? `Goals (priority order):\n${p.goals.map((g, i) => `${i + 1}. ${g}`).join("\n")}`
+        : null,
   },
   {
     key: "equipment",
