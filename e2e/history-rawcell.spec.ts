@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { seedDemoIfNeeded, clearDb, waitForIdb } from "./helpers";
+import { seedDemoIfNeeded, clearDb, waitForIdb, finishWorkout } from "./helpers";
 
 // kg-suffixed cells now parse into weight/unit/reps (shown as "2.5kgx10");
 // genuinely unparseable values are stored in rawCell and must still appear
@@ -22,7 +22,7 @@ test.describe("History drawer — kg and raw-cell sets", () => {
     await waitForIdb(page);
 
     // Finish the workout so the session is persisted.
-    await page.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(page);
     await expect(
       page.getByRole("button", { name: /finish workout/i }),
     ).toHaveText(/saved/i, { timeout: 3000 });

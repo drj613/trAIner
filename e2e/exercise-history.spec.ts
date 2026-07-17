@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { seedDemoIfNeeded, clearDb, waitForIdb } from "./helpers";
+import { seedDemoIfNeeded, clearDb, waitForIdb, finishWorkout } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers local to this spec
@@ -76,7 +76,7 @@ test.describe("Exercise history", () => {
     await waitForIdb(sharedPage);
 
     // Finish workout and wait for saved confirmation
-    await sharedPage.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(sharedPage);
     await expect(
       sharedPage.getByRole("button", { name: /finish workout/i }),
     ).toHaveText(/saved/i, { timeout: 3000 });

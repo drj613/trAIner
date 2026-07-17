@@ -46,6 +46,18 @@ export async function clearDb(page: Page) {
   });
 }
 
+/**
+ * Click "Finish workout" and confirm the lock — finishing now requires a
+ * two-step confirm ("Finish & lock" / "Finish anyway") before it saves.
+ */
+export async function finishWorkout(page: Page) {
+  await page.getByRole("button", { name: /finish workout/i }).click();
+  await page.getByRole("button", { name: /finish & lock|finish anyway/i }).click();
+  // Finishing opens a "<Day> complete" summary dialog — dismiss it so it
+  // doesn't intercept clicks on whatever the test does next.
+  await page.getByRole("button", { name: /review session/i }).click();
+}
+
 /** Wait for IndexedDB to flush by yielding to the event loop */
 export async function waitForIdb(page: Page) {
   await page.evaluate(() => new Promise(r => setTimeout(r, 50)));

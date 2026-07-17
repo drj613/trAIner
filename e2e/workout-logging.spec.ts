@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { seedDemoIfNeeded, clearDb, waitForIdb } from "./helpers";
+import { seedDemoIfNeeded, clearDb, waitForIdb, finishWorkout } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Helpers local to this spec
@@ -74,7 +74,7 @@ test.describe("Workout logging", () => {
 
   // 5. finish workout shows Saved feedback
   test("finish workout shows Saved feedback", async () => {
-    await sharedPage.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(sharedPage);
     await expect(sharedPage.getByRole("button", { name: /finish workout/i })).toHaveText(/saved/i, { timeout: 2000 });
   });
 });
@@ -96,7 +96,7 @@ test.describe("Workout logging — persistence", () => {
     const firstInput = page.locator('input[id^="cell-"]').first();
     await fillCell(page, firstInput, "90x3");
 
-    await page.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(page);
     await expect(page.getByRole("button", { name: /finish workout/i })).toHaveText(/saved/i, { timeout: 2000 });
 
     await page.reload();
@@ -120,7 +120,7 @@ test.describe("Workout logging — persistence", () => {
     const newCell = inputs.nth(count - 1);
     await fillCell(page, newCell, "55x10");
 
-    await page.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(page);
     await expect(page.getByRole("button", { name: /finish workout/i })).toHaveText(/saved/i, { timeout: 2000 });
 
     await page.reload();
@@ -134,7 +134,7 @@ test.describe("Workout logging — persistence", () => {
   // 8. a finished day reloads locked as Completed — re-finishing is
   //    impossible by design (prevents duplicate completion logs).
   test("finished day reloads locked as Completed", async ({ page }) => {
-    await page.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(page);
     await expect(page.getByRole("button", { name: /finish workout/i })).toHaveText(/saved/i, { timeout: 2000 });
 
     await page.reload();
@@ -148,7 +148,7 @@ test.describe("Workout logging — persistence", () => {
   // 9. empty finish saves without error
   test("empty finish saves without error", async ({ page }) => {
     // No cells filled — click finish immediately
-    await page.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(page);
     await expect(page.getByRole("button", { name: /finish workout/i })).toHaveText(/saved/i, { timeout: 2000 });
     // No app-level error message (exclude Next.js route announcer)
     await expect(page.getByRole("alert").filter({ hasText: /\S/ })).not.toBeVisible();

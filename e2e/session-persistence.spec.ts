@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { seedDemoIfNeeded, clearDb, waitForIdb } from "./helpers";
+import { seedDemoIfNeeded, clearDb, waitForIdb, finishWorkout } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Session persistence — guards against duplicate/phantom workout logs and
@@ -87,7 +87,7 @@ test.describe("Session persistence", () => {
   // 3. After finishing, revisiting the day shows the completed session's
   //    lifts and the completed state — not an empty "new session".
   test("revisiting a finished day shows its lifts and completed state", async () => {
-    await sharedPage.getByRole("button", { name: /finish workout/i }).click();
+    await finishWorkout(sharedPage);
     await expect(
       sharedPage.getByRole("button", { name: /finish workout/i }),
     ).toHaveText(/saved/i, { timeout: 2000 });
