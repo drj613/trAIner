@@ -5,6 +5,7 @@ import { logRepo } from "@/lib/storage/logRepo";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
 import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
+import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
 
 // Fix 2: Deep validation helpers
@@ -29,6 +30,7 @@ export async function exportBackup(): Promise<BackupDocument> {
     aliases: await aliasRepo.list(),
     userExercises: await userExerciseRepo.list(),
     bodyweight: await bodyweightRepo.list(),
+    promptPresets: await promptPresetRepo.list(),
   };
 }
 
@@ -84,11 +86,21 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     }
   }
 
+  // promptPresets is optional (old backups may not have it)
+  if (doc["promptPresets"] !== undefined) {
+    if (!isArrayOfObjects(doc["promptPresets"])) {
+      throw new Error("Invalid backup: 'promptPresets' must be an array of objects.");
+    }
+    if (!hasIds(doc["promptPresets"])) {
+      throw new Error("Invalid backup: 'promptPresets' entries must have string ids.");
+    }
+  }
+
   const b = backup as BackupDocument;
 
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises", "bodyweight"], "readwrite");
+  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"], "readwrite");
 
   tx.objectStore("profile").clear();
   tx.objectStore("programs").clear();
@@ -96,6 +108,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   tx.objectStore("aliases").clear();
   tx.objectStore("userExercises").clear();
   tx.objectStore("bodyweight").clear();
+  tx.objectStore("promptPresets").clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);
@@ -103,6 +116,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   for (const a of b.aliases) tx.objectStore("aliases").put(a);
   for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
   for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);
+  for (const p of b.promptPresets ?? []) tx.objectStore("promptPresets").put(p);
 
   await tx.done;
 }

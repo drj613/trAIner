@@ -62,6 +62,14 @@ jest.mock("@/lib/storage/bodyweightRepo", () => ({
   },
 }));
 
+jest.mock("@/lib/storage/promptPresetRepo", () => ({
+  promptPresetRepo: {
+    list: jest.fn().mockResolvedValue([]),
+    save: jest.fn().mockResolvedValue(undefined),
+    remove: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe("exportBackup", () => {
   it("returns a backup document with version 1", async () => {
     const backup = await exportBackup();

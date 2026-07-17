@@ -220,6 +220,18 @@ export type BackupDocument = {
   aliases: AliasDocument[];
   userExercises?: UserExerciseDocument[];
   bodyweight?: BodyweightEntry[];
+  promptPresets?: PromptPresetDocument[];
+};
+
+export type PromptPresetDocument = {
+  id: ID;
+  name: string;
+  personaIds: string[];
+  editedBlocks: Record<string, string>;
+  fieldOn: Record<string, boolean>;
+  schemaOn: boolean;
+  createdAt: ISODate;
+  updatedAt: ISODate;
 };
 
 export const emptyTags = (): ProgramExercise["tags"] => ({
