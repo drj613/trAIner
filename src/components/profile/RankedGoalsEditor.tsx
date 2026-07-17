@@ -17,6 +17,21 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { moveItem } from "@/lib/ui/reorder";
 
+// dnd-kit ids are the string index of each row (not the goal text), so
+// dragging/removing a row with duplicate text as another row still resolves
+// to the exact row the user touched.
+export function resolveDragReorder(
+  items: string[],
+  activeId: string | number,
+  overId: string | number | undefined,
+): string[] | null {
+  if (overId === undefined || activeId === overId) return null;
+  const from = Number(activeId);
+  const to = Number(overId);
+  if (!Number.isInteger(from) || !Number.isInteger(to)) return null;
+  return moveItem(items, from, to);
+}
+
 export function RankedGoalsList({ items }: { items: string[] }) {
   if (!items.length) {
     return <p className="muted text-xs">No goals yet</p>;
@@ -35,10 +50,12 @@ export function RankedGoalsList({ items }: { items: string[] }) {
 
 function SortableGoalRow({
   id,
+  text,
   rank,
   onRemove,
 }: {
   id: string;
+  text: string;
   rank: number;
   onRemove: () => void;
 }) {
@@ -53,11 +70,10 @@ function SortableGoalRow({
       ref={setNodeRef}
       style={style}
       className="flex items-center gap-2 text-xs px-2 py-1 rounded"
-      role="listitem"
     >
       <button
         type="button"
-        aria-label={`Reorder ${id}`}
+        aria-label={`Reorder ${text}`}
         className="cursor-grab"
         style={{ color: "var(--fg-3)", touchAction: "none" }}
         {...attributes}
@@ -66,10 +82,10 @@ function SortableGoalRow({
         ⠿
       </button>
       <span style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>{rank}.</span>
-      <span className="flex-1" style={{ color: "var(--fg-2)" }}>{id}</span>
+      <span className="flex-1" style={{ color: "var(--fg-2)" }}>{text}</span>
       <button
         type="button"
-        aria-label={`Remove ${id}`}
+        aria-label={`Remove ${text}`}
         onClick={onRemove}
         style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 1px" }}
       >
@@ -99,13 +115,11 @@ export function RankedGoalsEditor({
     setInput("");
   }
 
+  const ids = items.map((_, i) => String(i));
+
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const from = items.indexOf(String(active.id));
-    const to = items.indexOf(String(over.id));
-    if (from === -1 || to === -1) return;
-    onChange(moveItem(items, from, to));
+    const reordered = resolveDragReorder(items, event.active.id, event.over?.id);
+    if (reordered) onChange(reordered);
   }
 
   return (
@@ -114,14 +128,15 @@ export function RankedGoalsEditor({
         <p className="muted text-xs">No goals yet</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <ol style={{ listStyle: "none", margin: 0, padding: 0 }} className="flex flex-col gap-1">
               {items.map((item, i) => (
                 <SortableGoalRow
-                  key={item}
-                  id={item}
+                  key={i}
+                  id={String(i)}
+                  text={item}
                   rank={i + 1}
-                  onRemove={() => onChange(items.filter((it) => it !== item))}
+                  onRemove={() => onChange(items.filter((_, idx) => idx !== i))}
                 />
               ))}
             </ol>

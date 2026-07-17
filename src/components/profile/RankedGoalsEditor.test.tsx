@@ -1,5 +1,29 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { RankedGoalsEditor, RankedGoalsList } from "./RankedGoalsEditor";
+import { RankedGoalsEditor, RankedGoalsList, resolveDragReorder } from "./RankedGoalsEditor";
+
+describe("resolveDragReorder", () => {
+  it("moves the dragged item to the drop target's position", () => {
+    expect(resolveDragReorder(["a", "b", "c"], "0", "2")).toEqual(["b", "c", "a"]);
+  });
+
+  it("returns null when dropped on itself", () => {
+    expect(resolveDragReorder(["a", "b", "c"], "1", "1")).toBeNull();
+  });
+
+  it("returns null when there is no drop target", () => {
+    expect(resolveDragReorder(["a", "b", "c"], "0", undefined)).toBeNull();
+  });
+
+  it("resolves by row position, not by text, so duplicate goal text reorders the exact row dragged", () => {
+    // Two rows both read "Get stronger" — dragging row 0 (id "0") onto row 2's
+    // slot (id "2") must move the FIRST occurrence, not fail or move the second.
+    expect(resolveDragReorder(["Get stronger", "b", "Get stronger"], "0", "2")).toEqual([
+      "b",
+      "Get stronger",
+      "Get stronger",
+    ]);
+  });
+});
 
 describe("RankedGoalsList", () => {
   it("renders items as a numbered list in given order", () => {
@@ -57,6 +81,14 @@ describe("RankedGoalsEditor", () => {
     render(<RankedGoalsEditor items={["a", "b", "c"]} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: /remove b/i }));
     expect(onChange).toHaveBeenCalledWith(["a", "c"]);
+  });
+
+  it("removes only the clicked row when goal text repeats", () => {
+    const onChange = jest.fn();
+    render(<RankedGoalsEditor items={["dup", "b", "dup"]} onChange={onChange} />);
+    const removeButtons = screen.getAllByRole("button", { name: /remove dup/i });
+    fireEvent.click(removeButtons[0]);
+    expect(onChange).toHaveBeenCalledWith(["b", "dup"]);
   });
 
   it("shows a placeholder when there are no goals", () => {
