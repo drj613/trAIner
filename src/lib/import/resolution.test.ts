@@ -5,6 +5,8 @@ import {
   CUSTOM_ID,
 } from "./resolution";
 import { getRenderableDays } from "@/lib/programs/overrides";
+import { normalizePayload } from "./parser";
+import variantsFixture from "./__fixtures__/variants-multiweek.json";
 import type { ImportWarning, ProgramDay, ProgramDocument, ProgramExercise } from "@/lib/programs/types";
 
 const warnings: ImportWarning[] = [
@@ -628,5 +630,253 @@ describe("applyResolutions: resolved-warning removal", () => {
       { path: BASE_WARNING_PATH, canonicalId: "moon-lunge" },
     ]);
     expect(patched.import!.warnings.some((w) => w.path === OVERRIDE_WARNING_PATH)).toBe(true);
+  });
+});
+
+describe("variant-aware resolution (Stage 5)", () => {
+  const buildVariantProgram = (opts: {
+    baseName: string;
+    variant: Record<string, unknown>;
+    weeks: number;
+  }) =>
+    normalizePayload({
+      title: "Variant Res",
+      weeks: opts.weeks,
+      days: [
+        {
+          day: 1,
+          title: "Day 1",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [
+                {
+                  type: "single",
+                  exercises: [{ name: opts.baseName, sets: 3, reps: "5", variants: [opts.variant] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+  const slotEx = (program: ProgramDocument, week: number) =>
+    program.days.find((d) => d.weekNumber === week)!.sections[0].groups[0].exercises[0];
+
+  it("extractUnresolvedExercises surfaces a variant path item", () => {
+    const { warnings } = buildVariantProgram({
+      baseName: "Squat",
+      variant: { weeks: [2], name: "Totally Fake Movement XYZ" },
+      weeks: 2,
+    });
+    const items = extractUnresolvedExercises(warnings);
+    const item = items.find((i) => i.path.endsWith(".exercises.0.variants.0"))!;
+    expect(item).toBeDefined();
+    expect(item.rawName).toBe("Totally Fake Movement XYZ");
+    expect(item.sectionType).toBe("strength");
+  });
+
+  it("a variants.{v} resolution patches every week-clone carrying that variant", () => {
+    const { program, warnings } = buildVariantProgram({
+      baseName: "Squat", // matched → base weeks already resolved
+      variant: { weeks: [2, 4], name: "Totally Fake Movement XYZ" },
+      weeks: 4,
+    });
+    const variantWarning = warnings.find((w) => w.path.endsWith(".variants.0"))!;
+    const patched = applyResolutions(program, [
+      { path: variantWarning.path, canonicalId: "fake_canonical" },
+    ]);
+    expect(slotEx(patched, 2).canonicalExerciseId).toBe("fake_canonical");
+    expect(slotEx(patched, 4).canonicalExerciseId).toBe("fake_canonical");
+    // base weeks (Squat) keep their own match, not the variant resolution
+    expect(slotEx(patched, 1).canonicalExerciseId).not.toBe("fake_canonical");
+    expect(slotEx(patched, 3).canonicalExerciseId).not.toBe("fake_canonical");
+    // variant warning removed
+    expect(patched.import?.warnings.some((w) => w.path === variantWarning.path)).toBe(false);
+  });
+
+  it("a base resolution does not patch the variant-week exercise in the same slot", () => {
+    const { program, warnings } = buildVariantProgram({
+      baseName: "Barbell Row", // unmatched → base has a warning
+      variant: { weeks: [2], name: "Totally Fake Movement XYZ" },
+      weeks: 2,
+    });
+    const baseWarning = warnings.find((w) => w.rawName === "Barbell Row")!;
+    const variantWarning = warnings.find((w) => w.rawName === "Totally Fake Movement XYZ")!;
+
+    // Only the base resolution
+    const basePatched = applyResolutions(program, [
+      { path: baseWarning.path, canonicalId: "base_canonical" },
+    ]);
+    expect(slotEx(basePatched, 1).canonicalExerciseId).toBe("base_canonical");
+    expect(slotEx(basePatched, 2).canonicalExerciseId).toBeUndefined();
+
+    // Only the variant resolution
+    const variantPatched = applyResolutions(program, [
+      { path: variantWarning.path, canonicalId: "variant_canonical" },
+    ]);
+    expect(slotEx(variantPatched, 2).canonicalExerciseId).toBe("variant_canonical");
+    expect(slotEx(variantPatched, 1).canonicalExerciseId).toBeUndefined();
+  });
+
+  it("ambiguous base day number short-circuits resolution for variant slots too", () => {
+    const { program, warnings } = normalizePayload({
+      title: "Ambiguous",
+      weeks: 2,
+      days: [
+        {
+          day: 1,
+          title: "Day 1a",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [
+                {
+                  type: "single",
+                  exercises: [
+                    { name: "Barbell Row", variants: [{ weeks: [2], name: "Totally Fake Movement XYZ" }] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          day: 1,
+          title: "Day 1b",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [{ type: "single", exercises: [{ name: "Barbell Row" }] }],
+            },
+          ],
+        },
+      ],
+    });
+    const anyWarning = warnings.find((w) => w.rawName !== undefined)!;
+    const patched = applyResolutions(program, [
+      { path: anyWarning.path, canonicalId: "should_not_apply" },
+    ]);
+    for (const day of patched.days) {
+      for (const section of day.sections) {
+        for (const group of section.groups) {
+          for (const exercise of group.exercises) {
+            expect(exercise.canonicalExerciseId).toBeUndefined();
+          }
+        }
+      }
+    }
+  });
+});
+
+describe("fixture: variants-multiweek resolution (Stage 7)", () => {
+  it("unmatched variant surfaces a resolution item and applyResolutions patches all its week-clones", () => {
+    const { program, warnings } = normalizePayload(variantsFixture);
+
+    const items = extractUnresolvedExercises(warnings);
+    const rdlVariant = items.find((i) => i.rawName === "Deficit Romanian deadlift")!;
+    expect(rdlVariant).toBeDefined();
+    expect(rdlVariant.path).toMatch(/\.variants\.\d+$/);
+
+    const patched = applyResolutions(program, [
+      { path: rdlVariant.path, canonicalId: "deficit_rdl_canonical" },
+    ]);
+
+    // The Deficit RDL variant is active only on week 3 (day 1, section 1, ex 1)
+    const week3Day1 = patched.days.find((d) => d.weekNumber === 3 && d.dayNumber === 1)!;
+    const rdl = week3Day1.sections[1].groups[0].exercises[1];
+    expect(rdl.name).toBe("Deficit Romanian deadlift");
+    expect(rdl.canonicalExerciseId).toBe("deficit_rdl_canonical");
+
+    // The base-week RDL clones keep their own (matched) canonical id, not the variant's
+    const week1Day1 = patched.days.find((d) => d.weekNumber === 1 && d.dayNumber === 1)!;
+    expect(week1Day1.sections[1].groups[0].exercises[1].canonicalExerciseId).not.toBe(
+      "deficit_rdl_canonical",
+    );
+
+    // Variant warning removed
+    expect(patched.import?.warnings.some((w) => w.path === rdlVariant.path)).toBe(false);
+  });
+});
+
+describe("variant leak scan (Stage 8)", () => {
+  const hasVariantKey = (root: unknown): boolean => {
+    let found = false;
+    const walk = (obj: unknown) => {
+      if (found) return;
+      if (Array.isArray(obj)) return obj.forEach(walk);
+      if (obj && typeof obj === "object") {
+        for (const k of Object.keys(obj)) {
+          if (k === "variants" || k === "__variants") {
+            found = true;
+            return;
+          }
+          walk((obj as Record<string, unknown>)[k]);
+        }
+      }
+    };
+    walk(root);
+    return found;
+  };
+
+  const inlinePayload = {
+    title: "Leak Scan Inline",
+    weeks: 4,
+    days: [
+      {
+        day: 1,
+        title: "Day 1",
+        sections: [
+          {
+            name: "Main",
+            type: "strength",
+            groups: [
+              {
+                type: "single",
+                exercises: [
+                  {
+                    name: "Barbell Row",
+                    sets: 3,
+                    reps: "5",
+                    variants: [
+                      { weeks: [2], name: "Totally Fake Movement XYZ" },
+                      { weeks: [3, 4], name: "Front Squat", load: "60%" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("no variants/__variants key in program.days (inline + fixture)", () => {
+    const inline = normalizePayload(inlinePayload).program;
+    const fixture = normalizePayload(variantsFixture).program;
+    expect(hasVariantKey(inline.days)).toBe(false);
+    expect(hasVariantKey(fixture.days)).toBe(false);
+  });
+
+  it("no leak after applyResolutions (whole program minus import.rawJson)", () => {
+    for (const payload of [inlinePayload, variantsFixture]) {
+      const { program, warnings } = normalizePayload(payload);
+      const items = extractUnresolvedExercises(warnings);
+      const patched = applyResolutions(
+        program,
+        items.map((i) => ({ path: i.path, canonicalId: "some_canonical" })),
+      );
+      // rawJson legally contains `variants` (untouched raw input) — exempt it.
+      const { import: importSection, ...programSansImport } = patched;
+      const importMinusRaw = importSection
+        ? { warnings: importSection.warnings }
+        : undefined;
+      expect(hasVariantKey({ ...programSansImport, import: importMinusRaw })).toBe(false);
+    }
   });
 });

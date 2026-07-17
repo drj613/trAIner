@@ -31,6 +31,23 @@ export function baseExercisePath(
   return `days.${dayPathSegment(dayNumber, templateWeek)}.sections.${sectionIndex}.groups.${groupIndex}.exercises.${exerciseIndex}`;
 }
 
+// Variant resolution path: the base exercise path plus a `.variants.{v}`
+// suffix, where `v` is the index into the exercise's RAW `variants` array
+// (not a week number). Two variants on one exercise get distinct paths even
+// when their weeks overlap. Variants inherit the base day's template identity
+// via baseExercisePath, so one resolution patches every week-clone carrying
+// the variant. Keep in lockstep with baseExercisePath.
+export function variantExercisePath(
+  dayNumber: number,
+  templateWeek: number | undefined,
+  sectionIndex: number,
+  groupIndex: number,
+  exerciseIndex: number,
+  variantIndex: number,
+): string {
+  return `${baseExercisePath(dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex)}.variants.${variantIndex}`;
+}
+
 // Not yet wired end-to-end (override warning propagation + override
 // resolution application land in Phase 9). Defined now so the base and
 // override path shapes are declared side by side from the start.

@@ -1,7 +1,9 @@
 import example from "@/test/fixtures/example-structure.json";
+import variantsFixture from "./__fixtures__/variants-multiweek.json";
 import { normalizePayload, parseProgramJson, ImportError } from "./parser";
-import { applyResolutions } from "./resolution";
+import { applyResolutions, extractUnresolvedExercises } from "./resolution";
 import { baseExercisePath } from "./paths";
+import { getRenderableDays } from "@/lib/programs/overrides";
 
 const minimalDay = (day: number, title: string) => ({
   day,
@@ -866,5 +868,420 @@ describe("duplicate base-day diagnostics", () => {
         }
       }
     }
+  });
+});
+
+// A base exercise carrying a `variants` array. Helper for the variant suites.
+const variantDay = (exercise: Record<string, unknown>) => ({
+  day: 1,
+  title: "Day 1",
+  sections: [{ name: "Main", type: "strength", groups: [{ type: "single", exercises: [exercise] }] }],
+});
+
+describe("variant parsing warnings (Stage 2)", () => {
+  it("emits a variant warning on the variants.{v} path for an unmatched variant name", () => {
+    const review = normalizePayload({
+      title: "Variant Warn",
+      days: [
+        variantDay({
+          name: "Squat",
+          sets: 3,
+          reps: "5",
+          variants: [{ weeks: [2], name: "Totally Fake Movement XYZ" }],
+        }),
+      ],
+    });
+
+    const variantWarning = review.warnings.find((w) => w.path.endsWith(".exercises.0.variants.0"));
+    expect(variantWarning).toBeDefined();
+    expect(variantWarning!.rawName).toBe("Totally Fake Movement XYZ");
+    expect(variantWarning!.message).toMatch(
+      /^Totally Fake Movement XYZ was imported without a catalog match\.$/,
+    );
+    expect(variantWarning!.sectionType).toBe("strength");
+  });
+
+  it("does not emit a variant warning when the variant name resolves", () => {
+    const review = normalizePayload({
+      title: "Variant Resolves",
+      days: [
+        variantDay({
+          name: "Squat",
+          sets: 3,
+          reps: "5",
+          variants: [{ weeks: [2], name: "Front Squat" }],
+        }),
+      ],
+    });
+
+    expect(review.warnings.some((w) => w.path.includes(".variants."))).toBe(false);
+  });
+
+  it("does not emit a variant warning when the variant omits name", () => {
+    const review = normalizePayload({
+      title: "Variant No Name",
+      days: [
+        variantDay({
+          name: "Squat",
+          sets: 3,
+          reps: "5",
+          variants: [{ weeks: [2], load: "70%" }],
+        }),
+      ],
+    });
+
+    expect(review.warnings.some((w) => w.path.includes(".variants."))).toBe(false);
+  });
+
+  it("extractUnresolvedExercises surfaces the variant warning as a resolution item", () => {
+    const review = normalizePayload({
+      title: "Variant Unresolved",
+      days: [
+        variantDay({
+          name: "Squat",
+          sets: 3,
+          reps: "5",
+          variants: [{ weeks: [2], name: "Totally Fake Movement XYZ" }],
+        }),
+      ],
+    });
+
+    const items = extractUnresolvedExercises(review.warnings);
+    const variantItem = items.find((i) => i.path.endsWith(".exercises.0.variants.0"));
+    expect(variantItem).toBeDefined();
+    expect(variantItem!.rawName).toBe("Totally Fake Movement XYZ");
+  });
+});
+
+describe("variant expansion (Stage 3)", () => {
+  // 4-week program, one base day, one section, one group with three base
+  // exercises carrying variants, plus a sibling section with no variants.
+  const buildReview = () =>
+    normalizePayload({
+      title: "Variant Expansion",
+      weeks: 4,
+      days: [
+        {
+          day: 1,
+          title: "Day 1",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [
+                {
+                  type: "single",
+                  exercises: [
+                    {
+                      name: "Deadlift",
+                      sets: 4,
+                      reps: "5",
+                      load: "80%",
+                      variants: [
+                        { weeks: [2], name: "Stiff-Leg Deadlift" },
+                        { weeks: [3], name: "Deficit Deadlift", load: "70%" },
+                      ],
+                    },
+                    {
+                      name: "Bench Press",
+                      sets: 3,
+                      reps: "5",
+                      variants: [{ weeks: [2, 4], name: "Front Squat" }],
+                    },
+                    {
+                      name: "Overhead Press",
+                      sets: 3,
+                      reps: "8",
+                      variants: [{ weeks: [2], load: "60%" }],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: "Accessory",
+              type: "accessory",
+              groups: [{ type: "single", exercises: [{ name: "Squat", sets: 3, reps: "10" }] }],
+            },
+          ],
+        },
+      ],
+    });
+
+  const dayForWeek = (review: ReturnType<typeof buildReview>, week: number) =>
+    review.program.days.find((d) => d.weekNumber === week)!;
+  const ex = (review: ReturnType<typeof buildReview>, week: number, exIndex: number) =>
+    dayForWeek(review, week).sections[0].groups[0].exercises[exIndex];
+
+  it("expands variant names per week", () => {
+    const review = buildReview();
+    const names = [1, 2, 3, 4].map((w) => ex(review, w, 0).name);
+    expect(names).toEqual(["Deadlift", "Stiff-Leg Deadlift", "Deficit Deadlift", "Deadlift"]);
+  });
+
+  it("sparse inheritance keeps base fields, overrides only present ones", () => {
+    const review = buildReview();
+    const w2 = ex(review, 2, 0); // Stiff-Leg (only name)
+    expect(w2.sets).toBe(4);
+    expect(w2.reps).toBe("5");
+    expect(w2.load).toBe("80%");
+    const w3 = ex(review, 3, 0); // Deficit (name + load)
+    expect(w3.sets).toBe(4);
+    expect(w3.reps).toBe("5");
+    expect(w3.load).toBe("70%");
+  });
+
+  it("swapped exercise gets a fresh id distinct from base and from other variant weeks", () => {
+    const review = buildReview();
+    const w1 = ex(review, 1, 0).id;
+    const w2 = ex(review, 2, 0).id;
+    const w3 = ex(review, 3, 0).id;
+    expect(new Set([w1, w2, w3]).size).toBe(3);
+    // [2,4] Front Squat: distinct id per week clone
+    const fs2 = ex(review, 2, 1).id;
+    const fs4 = ex(review, 4, 1).id;
+    expect(fs2).not.toBe(fs4);
+  });
+
+  it("deep-clones only the swap path — mutating one week's swapped exercise does not affect others", () => {
+    const review = buildReview();
+    const w1Name = ex(review, 1, 0).name;
+    const w3Name = ex(review, 3, 0).name;
+    (ex(review, 2, 0) as { notes?: string }).notes = "MUTATED";
+    expect(ex(review, 1, 0).name).toBe(w1Name);
+    expect(ex(review, 3, 0).name).toBe(w3Name);
+    expect((ex(review, 1, 0) as { notes?: string }).notes).not.toBe("MUTATED");
+    // swapped section + group in w2 are fresh objects (not shared with w1)
+    expect(dayForWeek(review, 2).sections[0]).not.toBe(dayForWeek(review, 1).sections[0]);
+    expect(dayForWeek(review, 2).sections[0].groups[0]).not.toBe(
+      dayForWeek(review, 1).sections[0].groups[0],
+    );
+  });
+
+  it("structural sharing preserved for siblings not on the swap path", () => {
+    const review = buildReview();
+    // Section 1 (Accessory) has no variants — same reference across weeks.
+    const s1w1 = dayForWeek(review, 1).sections[1];
+    const s1w2 = dayForWeek(review, 2).sections[1];
+    expect(s1w2).toBe(s1w1);
+  });
+
+  it("no variants/__variants key leaks into stored program.days", () => {
+    const review = buildReview();
+    const seen: string[] = [];
+    const walk = (obj: unknown) => {
+      if (Array.isArray(obj)) return obj.forEach(walk);
+      if (obj && typeof obj === "object") {
+        for (const k of Object.keys(obj)) {
+          if (k === "variants" || k === "__variants") seen.push(k);
+          walk((obj as Record<string, unknown>)[k]);
+        }
+      }
+    };
+    walk(review.program.days);
+    expect(seen).toEqual([]);
+  });
+
+  it("canonicalExerciseId: named variant carries its own match; nameless inherits base", () => {
+    const review = buildReview();
+    // Front Squat variant (matched) carries its own canonicalExerciseId
+    const fs2 = ex(review, 2, 1);
+    expect(fs2.canonicalExerciseId).toBeDefined();
+    // Overhead Press nameless variant inherits base canonicalExerciseId
+    const baseOhp = ex(review, 1, 2).canonicalExerciseId;
+    const w2Ohp = ex(review, 2, 2).canonicalExerciseId;
+    expect(w2Ohp).toBe(baseOhp);
+    expect(w2Ohp).toBeDefined();
+  });
+});
+
+describe("variant diagnostics (Stage 4)", () => {
+  const baseExercise = (variants: unknown) => ({
+    name: "Deadlift",
+    sets: 4,
+    reps: "5",
+    variants,
+  });
+  const build = (weeks: number | undefined, variants: unknown) =>
+    normalizePayload({
+      title: "Diag",
+      ...(weeks !== undefined ? { weeks } : {}),
+      days: [
+        {
+          day: 1,
+          title: "Day 1",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [{ type: "single", exercises: [baseExercise(variants)] }],
+            },
+          ],
+        },
+      ],
+    });
+
+  it("variant week beyond program length is dropped with a warning", () => {
+    const review = build(3, [{ weeks: [2, 5], name: "Stiff-Leg Deadlift" }]);
+    // week 2 clone has the swap
+    const w2 = review.program.days.find((d) => d.weekNumber === 2)!;
+    expect(w2.sections[0].groups[0].exercises[0].name).toBe("Stiff-Leg Deadlift");
+    // no week-5 clone exists
+    expect(review.program.days.some((d) => d.weekNumber === 5)).toBe(false);
+    const warning = review.warnings.find((w) => w.message.includes("exceeds the program length (3 weeks)"));
+    expect(warning).toBeDefined();
+    expect(warning!.path).toBe(baseExercisePath(1, undefined, 0, 0, 0));
+  });
+
+  it("variants on a single-week program are ignored with a warning", () => {
+    const review = build(undefined, [{ weeks: [2], name: "Stiff-Leg Deadlift" }]);
+    expect(review.program.days).toHaveLength(1);
+    expect(review.program.days[0].sections[0].groups[0].exercises[0].name).toBe("Deadlift");
+    const warning = review.warnings.find((w) => w.message.includes("ignored because the program is a single week"));
+    expect(warning).toBeDefined();
+  });
+
+  it("duplicate week across two variants: later wins, with a warning", () => {
+    const review = build(2, [
+      { weeks: [2], name: "First" },
+      { weeks: [2], name: "Second" },
+    ]);
+    const w2 = review.program.days.find((d) => d.weekNumber === 2)!;
+    expect(w2.sections[0].groups[0].exercises[0].name).toBe("Second");
+    const warning = review.warnings.find(
+      (w) => w.message.includes("Multiple variants of") && w.message.includes('the last one ("Second")'),
+    );
+    expect(warning).toBeDefined();
+  });
+});
+
+describe("fixture: variants-multiweek (Stage 7)", () => {
+  const review = () => normalizePayload(variantsFixture);
+  const day1 = (program: ReturnType<typeof review>["program"], week: number) =>
+    program.days.find((d) => d.weekNumber === week && d.dayNumber === 1)!;
+  const strengthEx = (program: ReturnType<typeof review>["program"], week: number, exIndex: number) =>
+    // day 1 sections: [0]=Warmup, [1]=Main Strength
+    day1(program, week).sections[1].groups[0].exercises[exIndex];
+
+  it("variant names expand correctly across 4 weeks", () => {
+    const { program } = review();
+    // Squat slot (exercises[0]) alternates via a [2,4] variant
+    const squatNames = [1, 2, 3, 4].map((w) => strengthEx(program, w, 0).name);
+    expect(squatNames).toEqual(["Barbell Back Squat", "Front Squat", "Barbell Back Squat", "Front Squat"]);
+    // RDL slot (exercises[1]) swaps only on week 3
+    const rdlNames = [1, 2, 3, 4].map((w) => strengthEx(program, w, 1).name);
+    expect(rdlNames).toEqual([
+      "Romanian deadlift",
+      "Romanian deadlift",
+      "Deficit Romanian deadlift",
+      "Romanian deadlift",
+    ]);
+  });
+
+  it("sparse-override variant inherits sets/reps/tags, overrides load", () => {
+    const { program } = review();
+    const base = strengthEx(program, 1, 1);
+    const w3 = strengthEx(program, 3, 1);
+    expect(w3.sets).toBe(base.sets);
+    expect(w3.reps).toBe(base.reps);
+    expect(w3.tags).toEqual(base.tags);
+    expect(w3.load).toBe("63 kg");
+    expect(base.load).toBe("70 kg");
+  });
+
+  it("override wins over variant on the overlapping week", () => {
+    const { program } = review();
+    const rendered = getRenderableDays(program);
+    const week3Day1 = rendered.find((d) => d.weekNumber === 3 && d.dayNumber === 1)!;
+    const names = week3Day1.sections.flatMap((s) => s.groups.flatMap((g) => g.exercises.map((e) => e.name)));
+    expect(names).toContain("Leg Press");
+    expect(names).not.toContain("Deficit Romanian deadlift");
+  });
+});
+
+describe("variants inside override replacement days (defect: overrides leak)", () => {
+  const build = () =>
+    normalizePayload({
+      title: "Override Variant Leak",
+      weeks: 4,
+      days: [
+        {
+          day: 1,
+          title: "Day 1",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [{ type: "single", exercises: [{ name: "Squat", sets: 3, reps: "5" }] }],
+            },
+          ],
+        },
+      ],
+      overrides: [
+        {
+          scope: "week",
+          weekNumber: 3,
+          reason: "Deload",
+          days: [
+            {
+              day: 1,
+              title: "Deload Day 1",
+              sections: [
+                {
+                  name: "Main",
+                  type: "strength",
+                  groups: [
+                    {
+                      type: "single",
+                      exercises: [
+                        {
+                          name: "Squat",
+                          sets: 2,
+                          reps: "5",
+                          // A variant inside an override day — out of scope,
+                          // must not persist and must not orphan a warning.
+                          variants: [{ weeks: [3], name: "Totally Fake Movement XYZ" }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+  const hasVariantKey = (root: unknown): boolean => {
+    let found = false;
+    const walk = (obj: unknown) => {
+      if (found) return;
+      if (Array.isArray(obj)) return obj.forEach(walk);
+      if (obj && typeof obj === "object") {
+        for (const k of Object.keys(obj)) {
+          if (k === "variants" || k === "__variants") {
+            found = true;
+            return;
+          }
+          walk((obj as Record<string, unknown>)[k]);
+        }
+      }
+    };
+    walk(root);
+    return found;
+  };
+
+  it("does not leak variants/__variants into the whole program (incl. overrides), minus rawJson", () => {
+    const { program } = build();
+    const { import: importSection, ...programSansImport } = program;
+    const importMinusRaw = importSection ? { warnings: importSection.warnings } : undefined;
+    expect(hasVariantKey({ ...programSansImport, import: importMinusRaw })).toBe(false);
+  });
+
+  it("does not surface an override-day variant as a resolution item", () => {
+    const { warnings } = build();
+    const items = extractUnresolvedExercises(warnings);
+    expect(items.some((i) => i.path.includes("overrides.") && i.path.includes(".variants."))).toBe(false);
   });
 });

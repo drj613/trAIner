@@ -20,6 +20,13 @@ export function buildSchemaBlock(): string {
                 rest: "optional — e.g. '90s'",
                 notes: "optional",
                 countsTowardVolume: true,
+                variants: [
+                  {
+                    weeks: [2, 4],
+                    name: "A week-specific swap of this ONE exercise — omit any field to inherit it from the base exercise above",
+                    load: "optional — only include fields that differ from the base"
+                  }
+                ],
                 tags: {
                   primary: ["quads"],
                   secondary: ["glutes"],
@@ -162,6 +169,7 @@ For programs longer than one week:
 - Set \`weeks\` to the total number of weeks (integer).
 - \`days\` is the base weekly template — the repeating pattern followed by most weeks.
 - \`overrides\` lists only the weeks that deviate (e.g. deload week, peak week, test week). Weeks without an override automatically repeat the base template.
+- Use \`variants\` (an optional array on any exercise) to swap or retune ONE exercise on specific weeks while the rest of the day stays on the base template — e.g. \`"variants": [{"weeks": [2], "name": "Stiff-Leg Deadlift"}]\`. Each variant lists the 1-based \`weeks\` it applies to; any field you omit (\`sets\`, \`reps\`, \`load\`, \`name\`, \`tags\`, …) is inherited from the base exercise. Supply \`tags\` on a variant only when the muscle emphasis changes. Reserve \`overrides\` for weeks whose STRUCTURE differs (deload, test week, added/removed exercises); do not use an override just to swap one movement.
 - Omit \`weeks\` and \`overrides\` for single-week programs.`;
 
   const programRequirements = `## Program requirements
@@ -201,6 +209,7 @@ At the end of every conversational message, append one line: \`Say GENERATE IT (
     "  - Each day: `day` (number), `title`, `sections`",
     "  - Each section: `name`, `type`, `groups`",
     "  - Each group: `type`, `exercises`",
+    "  - Each exercise: `name`, `sets`, `reps`, `countsTowardVolume`, `tags`, and optionally `load`, `rest`, `notes`, `variants`",
     `Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training`,
     `Valid group types: single, superset, circuit, giant-set`,
     exerciseSchemaNotes,
@@ -221,6 +230,7 @@ export function buildRecoveryPrompt(reason: RecoveryReason, detail?: string): st
     "- Use straight ASCII quotes, no markdown code fences, no comments, and no trailing commas.",
     "- No preamble or commentary before or after the JSON.",
     "- Use the exact field names from the schema; do not rename or restructure.",
+    "- Preserve any `variants` arrays exactly as in the schema — they encode week-specific single-exercise swaps.",
   ];
 
   let lead: string;

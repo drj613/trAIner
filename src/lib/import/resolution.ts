@@ -136,12 +136,52 @@ export function applyResolutions(
   // must leave its warning in place.
   const resolvedPaths = new Set<string>();
 
-  function patchExercise(ex: ProgramExercise, path: string): ProgramExercise {
+  // path -> rawName, built from the pre-filter warning set (warnings are only
+  // filtered at the very end, so this map is complete during patching). This
+  // is what lets patching NAME-GUARD each slot: a resolution only lands on the
+  // clone whose `name` matches the warning's rawName, preventing base<->variant
+  // cross-patching when a variant swap occupies the same slot as its base.
+  const warningRawNames = new Map<string, string>();
+  for (const w of program.import?.warnings ?? []) {
+    if (w.rawName !== undefined) warningRawNames.set(w.path, w.rawName);
+  }
+  const allKnownPaths = new Set<string>([...resMap.keys(), ...warningRawNames.keys()]);
+
+  function patchExercise(ex: ProgramExercise, basePath: string): ProgramExercise {
     if (ex.canonicalExerciseId) return ex;
-    const id = resMap.get(path);
-    if (!id || id === CUSTOM_ID) return ex;
-    resolvedPaths.add(path);
-    return { ...ex, canonicalExerciseId: id };
+    // Candidate paths for this slot: the base path plus any `.variants.{v}`
+    // path known to resolutions or warnings for this slot.
+    const candidatePaths = [basePath];
+    for (const key of allKnownPaths) {
+      if (key.startsWith(`${basePath}.variants.`)) candidatePaths.push(key);
+    }
+    // Name guard: only the candidate whose warning rawName equals ex.name may
+    // patch this exercise — blocks base<->variant cross-patching in BOTH
+    // directions.
+    for (const p of candidatePaths) {
+      const rawName = warningRawNames.get(p);
+      if (rawName !== undefined && rawName === ex.name) {
+        const id = resMap.get(p);
+        if (id && id !== CUSTOM_ID) {
+          resolvedPaths.add(p);
+          return { ...ex, canonicalExerciseId: id };
+        }
+        return ex; // matched the guard but no usable resolution; stop
+      }
+    }
+    // Fallback: the base path carries no warning entry (e.g. a hand-built
+    // program with no import warnings, or a name matched at import). Retain
+    // the pre-variant behavior — patch by base path alone. In the real import
+    // flow every unmatched exercise HAS a warning, so this only preserves
+    // legacy/no-warning callers.
+    if (warningRawNames.get(basePath) === undefined) {
+      const id = resMap.get(basePath);
+      if (id && id !== CUSTOM_ID) {
+        resolvedPaths.add(basePath);
+        return { ...ex, canonicalExerciseId: id };
+      }
+    }
+    return ex;
   }
 
   // buildPath maps (sectionIndex, groupIndex, exerciseIndex) -> warning/
