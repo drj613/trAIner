@@ -47,8 +47,9 @@ const ExerciseRow = memo(function ExerciseRow({
   onReplaceExercise,
   onEdit,
   onNoteChange,
+  onToggleUnit,
 }: {
-  exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string };
+  exercise: { id: string; name: string; sets?: number; reps?: string; load?: string; rest?: string; notes?: string; unit?: "kg" | "lb" };
   cells: string[];
   note: string;
   readOnly: boolean;
@@ -58,6 +59,7 @@ const ExerciseRow = memo(function ExerciseRow({
   onReplaceExercise: () => void;
   onEdit: () => void;
   onNoteChange: (v: string) => void;
+  onToggleUnit: () => void;
 }) {
   const prescription = [
     exercise.sets ? `${exercise.sets}×` : "",
@@ -81,6 +83,25 @@ const ExerciseRow = memo(function ExerciseRow({
           <span style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", flex: 1 }}>
             {toTitleCase(exercise.name)}
           </span>
+          <button
+            className="btn ghost"
+            onClick={onToggleUnit}
+            disabled={readOnly}
+            style={{
+              padding: "3px 6px",
+              flexShrink: 0,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10.5,
+              color: "var(--fg-3)",
+              minWidth: 26,
+              justifyContent: "center",
+            }}
+            aria-label={`Weight unit ${exercise.unit ?? "lb"} — switch to ${(exercise.unit ?? "lb") === "lb" ? "kg" : "lb"}`}
+            title="Weight unit — tap to switch"
+            type="button"
+          >
+            {exercise.unit ?? "lb"}
+          </button>
           <button
             className="btn ghost"
             onClick={onOpenHistory}
@@ -184,37 +205,41 @@ const ExerciseRow = memo(function ExerciseRow({
           </button>
         )}
       </div>
-      <RestTimer restText={exercise.rest} notes={exercise.notes} />
-      <details className="disclosure" style={{ marginTop: 6 }} open={!!note}>
-        <summary
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--fg-3)",
-          }}
-        >
-          {note ? "note" : "add note"}
-        </summary>
-        <textarea
-          value={note}
-          readOnly={readOnly}
-          onChange={(e) => onNoteChange(e.target.value)}
-          rows={2}
-          placeholder="Your note about this set (felt good, ouch, etc.)"
-          style={{
-            width: "100%",
-            marginTop: 4,
-            background: "var(--bg-2)",
-            color: "var(--fg)",
-            border: "1px solid var(--line)",
-            borderRadius: 4,
-            padding: "4px 6px",
-            fontFamily: "inherit",
-            fontSize: 12,
-            resize: "vertical",
-          }}
-        />
-      </details>
+      {/* Timer + note share one line — two rows per exercise was the single
+          biggest vertical cost on a phone screen. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <RestTimer restText={exercise.rest} notes={exercise.notes} />
+        <details className="disclosure" style={{ flex: 1, minWidth: 140, marginTop: 4 }} open={!!note}>
+          <summary
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--fg-3)",
+            }}
+          >
+            {note ? "note" : "add note"}
+          </summary>
+          <textarea
+            value={note}
+            readOnly={readOnly}
+            onChange={(e) => onNoteChange(e.target.value)}
+            rows={2}
+            placeholder="Your note about this set (felt good, ouch, etc.)"
+            style={{
+              width: "100%",
+              marginTop: 4,
+              background: "var(--bg-2)",
+              color: "var(--fg)",
+              border: "1px solid var(--line)",
+              borderRadius: 4,
+              padding: "4px 6px",
+              fontFamily: "inherit",
+              fontSize: 12,
+              resize: "vertical",
+            }}
+          />
+        </details>
+      </div>
     </div>
   );
 });
@@ -232,6 +257,7 @@ function SectionCard({
   onReplaceExercise,
   onEdit,
   onNoteChange,
+  onToggleUnit,
 }: {
   section: ProgramSection;
   cells: CellMap;
@@ -243,6 +269,7 @@ function SectionCard({
   onReplaceExercise: (exerciseId: string) => void;
   onEdit: (exercise: ProgramExercise) => void;
   onNoteChange: (exId: string, v: string) => void;
+  onToggleUnit: (exercise: ProgramExercise) => void;
 }) {
   const { cls, glyph } = sectionKind(section.type);
   return (
@@ -256,13 +283,15 @@ function SectionCard({
         overflow: "hidden",
       }}
     >
+      {/* Header stays a hairline-ruled label, not a filled band — filled bands
+          plus the boxed section plus the group rule read as three nested boxes
+          on the light themes. */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
-          padding: "8px 12px",
-          background: "var(--bg-2)",
+          padding: "7px 12px 5px",
           borderBottom: "1px solid var(--line)",
         }}
       >
@@ -290,6 +319,7 @@ function SectionCard({
               onReplaceExercise={() => onReplaceExercise(ex.id)}
               onEdit={() => onEdit(ex)}
               onNoteChange={(v) => onNoteChange(ex.id, v)}
+              onToggleUnit={() => onToggleUnit(ex)}
             />
           ))}
         </GroupRail>
@@ -558,7 +588,7 @@ function WorkoutBody({
   onAiModalClose: () => void;
 }) {
   const navigate = useNavigate();
-  const { refresh } = useLocalData();
+  const { saveProgram } = useLocalData();
 
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -834,40 +864,57 @@ function WorkoutBody({
 
   const handleEditExercise = useCallback((ex: ProgramExercise) => setEditTarget(ex), []);
 
+  async function applyExercisePatch(exerciseId: string, patch: Partial<ProgramExercise>, reason: string) {
+    const fresh = await programRepo.get(program.id);
+    if (!fresh) return;
+    const patchedDay: ProgramDay = {
+      ...day,
+      sections: day.sections.map((s) => ({
+        ...s,
+        groups: s.groups.map((g) => ({
+          ...g,
+          exercises: g.exercises.map((e) => e.id === exerciseId ? { ...e, ...patch } : e),
+        })),
+      })),
+    };
+    const filteredOverrides = fresh.overrides.filter(
+      (o) => !(o.scope === "day" && o.dayId === day.id),
+    );
+    const newOverride = {
+      id: crypto.randomUUID(),
+      scope: "day" as const,
+      programId: program.id,
+      dayId: day.id,
+      replacement: patchedDay,
+      reason,
+      createdAt: new Date().toISOString(),
+    };
+    // Save through the provider so its programs state updates in place.
+    // A global refresh() here flips `loading`, which swaps the whole view for
+    // "Loading…" — remounting every row and throwing the scroll to the top.
+    await saveProgram({ ...fresh, overrides: [...filteredOverrides, newOverride] });
+  }
+
   async function applyExerciseEdit(patch: Partial<ProgramExercise>) {
     if (!editTarget) return;
     setEditError(null);
     try {
-      const fresh = await programRepo.get(program.id);
-      if (!fresh) return;
-      const patchedDay: ProgramDay = {
-        ...day,
-        sections: day.sections.map((s) => ({
-          ...s,
-          groups: s.groups.map((g) => ({
-            ...g,
-            exercises: g.exercises.map((e) => e.id === editTarget.id ? { ...e, ...patch } : e),
-          })),
-        })),
-      };
-      const filteredOverrides = fresh.overrides.filter(
-        (o) => !(o.scope === "day" && o.dayId === day.id),
-      );
-      const newOverride = {
-        id: crypto.randomUUID(),
-        scope: "day" as const,
-        programId: program.id,
-        dayId: day.id,
-        replacement: patchedDay,
-        reason: "Edited from workout",
-        createdAt: new Date().toISOString(),
-      };
-      await programRepo.save({ ...fresh, overrides: [...filteredOverrides, newOverride] });
-      await refresh();
+      await applyExercisePatch(editTarget.id, patch, "Edited from workout");
       setEditTarget(null);
     } catch (e) {
       console.error("[applyExerciseEdit] save failed", e);
       setEditError("Failed to save. Please try again.");
+    }
+  }
+
+  async function handleToggleUnit(ex: ProgramExercise) {
+    // unit is only ever stamped for kg; absent means lb (see ProgramExercise).
+    const next = (ex.unit ?? "lb") === "lb" ? ("kg" as const) : undefined;
+    try {
+      await applyExercisePatch(ex.id, { unit: next }, "Unit toggled from workout");
+    } catch (e) {
+      console.error("[handleToggleUnit] save failed", e);
+      setSaveError("Failed to save unit change. Please try again.");
     }
   }
 
@@ -936,6 +983,7 @@ function WorkoutBody({
           onReplaceExercise={handleReplaceExercise}
           onEdit={handleEditExercise}
           onNoteChange={handleNoteChange}
+          onToggleUnit={(ex) => void handleToggleUnit(ex)}
         />
       ))}
 

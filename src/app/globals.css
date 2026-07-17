@@ -446,24 +446,39 @@ a {
   padding: 16px;
 }
 
+/* Primary-action button. Same instrument vocabulary as .btn (tight radius,
+   label type, hairline scale) — accent fill marks it as the primary action,
+   not extra size. Touch targets come from the coarse-pointer rule below. */
 .button {
-  min-height: 42px;
+  min-height: 30px;
   border: 1px solid var(--accent);
-  border-radius: var(--r-lg);
+  border-radius: var(--r);
   background: var(--accent);
   color: var(--accent-fg);
-  padding: 0 14px;
+  font-size: var(--fs-sm, 11.5px);
+  font-weight: 500;
+  padding: 5px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+.button:hover {
+  filter: brightness(1.05);
 }
 
 .button.secondary {
   background: transparent;
   color: var(--accent);
-  border-color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
+}
+.button.secondary:hover {
+  filter: none;
+  background: var(--accent-soft);
 }
 
 .input {
@@ -516,20 +531,32 @@ a {
 }
 
 /* ─── Touch targets ─────────────────────────────────────────────────────────
-   On coarse pointers (phone mid-workout, one-handed) every control grows to a
-   ≥44px hit area. The visual cell/button stays as designed; only the tappable
-   box expands, so desktop density is untouched. */
+   On coarse pointers (phone mid-workout, one-handed) buttons keep their
+   designed visual size; an invisible pseudo-element extends the tappable box
+   to ≥44px tall (and slightly wider), so density survives on the phone.
+   Horizontal expansion is capped at +8px so adjacent icon buttons' hit areas
+   don't swallow their neighbours.
+   .cell is an <input> (no pseudo-elements), so it gets a modest visual floor
+   instead — 36px is tappable without turning every set row into a slab. */
 @media (pointer: coarse) {
-  .btn {
-    min-height: var(--tap);
-    min-width: var(--tap);
+  .btn,
+  .button,
+  .tap-target {
+    position: relative;
+  }
+  .btn::after,
+  .button::after,
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% + 8px);
+    height: max(100%, var(--tap));
   }
   .cell {
-    min-height: var(--tap);
-  }
-  .tap-target {
-    min-height: var(--tap);
-    min-width: var(--tap);
+    min-height: 36px;
   }
 }
 
