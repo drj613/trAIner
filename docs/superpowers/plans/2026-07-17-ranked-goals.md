@@ -395,11 +395,11 @@ describe("ProfileClient — ranked goals (creation form)", () => {
     fireEvent.change(screen.getByPlaceholderText(/add goal/i), {
       target: { value: "Fix shoulder pain" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+    fireEvent.keyDown(screen.getByPlaceholderText(/add goal/i), { key: "Enter" });
     fireEvent.change(screen.getByPlaceholderText(/add goal/i), {
       target: { value: "Compete again" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+    fireEvent.keyDown(screen.getByPlaceholderText(/add goal/i), { key: "Enter" });
     fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
     await waitFor(() => {
       expect(mockSaveProfile).toHaveBeenCalledWith(
@@ -415,7 +415,9 @@ describe("ProfileClient — ranked goals (creation form)", () => {
 Run: `npx jest src/components/profile/ProfileClient.test.tsx`
 Expected: FAIL — this specific test fails because `EditableChips` (current goals
 control) uses placeholder `Add item…`, not `Add goal…`, so `getByPlaceholderText(/add
-goal/i)` finds no match.
+goal/i)` finds no match. (The test submits via Enter keydown on the input rather than
+clicking an "Add" button, since the creation form renders several chip editors at once
+and `getByRole("button", { name: /^add$/i })` would be ambiguous across them.)
 
 - [ ] **Step 3: Wire the new components**
 

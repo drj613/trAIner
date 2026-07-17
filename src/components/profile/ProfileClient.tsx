@@ -12,6 +12,7 @@ import type { HeatmapCell } from "@/lib/analytics/trainingHeatmap";
 import type { BodyweightEntry, ProfileDocument } from "@/lib/programs/types";
 import { TRAINING_GOALS, type TrainingGoal } from "@/lib/programs/types";
 import { GOAL_LABELS } from "@/lib/programs/routineMeta";
+import { RankedGoalsEditor, RankedGoalsList } from "./RankedGoalsEditor";
 
 type EditingSection =
   | "name" | "body" | "history" | "goals"
@@ -365,7 +366,7 @@ export function ProfileClient() {
             value={draft.primaryGoal}
             onChange={(primaryGoal) => setDraft((d) => d && { ...d, primaryGoal })}
           />
-          <EditableChips
+          <RankedGoalsEditor
             items={draft.goals}
             onChange={(goals) => setDraft((d) => d && { ...d, goals })}
           />
@@ -565,18 +566,20 @@ export function ProfileClient() {
               value={draft.primaryGoal}
               onChange={(primaryGoal) => setDraft((d) => d && { ...d, primaryGoal })}
             />
-            <EditableChips
+            <RankedGoalsEditor
               items={draft.goals}
               onChange={(goals) => setDraft((d) => d && { ...d, goals })}
             />
           </>
         ) : (
-          <ChipList
-            items={[
-              ...(profile.primaryGoal ? [`★ ${GOAL_LABELS[profile.primaryGoal]}`] : []),
-              ...profile.goals,
-            ]}
-          />
+          <>
+            {profile.primaryGoal && (
+              <p className="text-xs mb-1" style={{ color: "var(--fg-2)" }}>
+                ★ {GOAL_LABELS[profile.primaryGoal]}
+              </p>
+            )}
+            <RankedGoalsList items={profile.goals} />
+          </>
         )}
       </ProfileCard>
 

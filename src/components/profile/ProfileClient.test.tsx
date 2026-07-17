@@ -59,3 +59,26 @@ describe("ProfileClient — no profile", () => {
     });
   });
 });
+
+describe("ProfileClient — ranked goals (creation form)", () => {
+  it("adds a goal via the ranked editor and saves it in array order", async () => {
+    render(<MemoryRouter><ProfileClient /></MemoryRouter>);
+    fireEvent.change(screen.getByPlaceholderText(/your name/i), {
+      target: { value: "Alex" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/add goal/i), {
+      target: { value: "Fix shoulder pain" },
+    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/add goal/i), { key: "Enter" });
+    fireEvent.change(screen.getByPlaceholderText(/add goal/i), {
+      target: { value: "Compete again" },
+    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/add goal/i), { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
+    await waitFor(() => {
+      expect(mockSaveProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ goals: ["Fix shoulder pain", "Compete again"] })
+      );
+    });
+  });
+});
