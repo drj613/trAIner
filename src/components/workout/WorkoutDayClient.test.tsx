@@ -384,8 +384,8 @@ describe("WorkoutDayClient exercise edit — countsTowardVolume preservation", (
       await user.click(screen.getByRole("button", { name: /edit prescription for bench press/i }));
       await user.click(await screen.findByRole("button", { name: /^save$/i }));
 
-      await waitFor(() => expect(programRepo.save as jest.Mock).toHaveBeenCalled());
-      const saved = (programRepo.save as jest.Mock).mock.calls[0][0];
+      await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
+      const saved = saveProgramMock.mock.calls[0][0];
       const override = saved.overrides.find((o: { dayId?: string }) => o.dayId === "day-1");
       const savedExercise = override.replacement.sections[0].groups[0].exercises[0];
       expect(savedExercise.countsTowardVolume).toBe(true);
@@ -497,5 +497,55 @@ describe("WorkoutDayClient not-found", () => {
     expect(await screen.findByText(/isn't part of this routine/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to routines/i })).toHaveAttribute("href", "/programs");
     expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkoutDayClient unit toggle", () => {
+  it("shows the current unit on the exercise row (lb default)", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const chip = screen.getByRole("button", { name: /weight unit lb — switch to kg/i });
+    expect(chip).toHaveTextContent("lb");
+  });
+
+  it("toggling persists a day override with the exercise stamped kg", async () => {
+    (programRepo.get as jest.Mock).mockResolvedValue({ ...twoDay, overrides: [] });
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /weight unit lb — switch to kg/i }));
+    await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
+    const savedDoc = saveProgramMock.mock.calls.at(-1)[0];
+    const override = savedDoc.overrides.find(
+      (o: { scope: string; dayId: string }) => o.scope === "day" && o.dayId === "day-1",
+    );
+    expect(override.reason).toBe("Unit toggled from workout");
+    const patched = override.replacement.sections[0].groups[0].exercises[0];
+    expect(patched.id).toBe("e1");
+    expect(patched.unit).toBe("kg");
+    // Saves must go through the provider's in-place saveProgram — a global
+    // refresh() would blank the view and reset scroll.
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it("toggling a kg exercise back clears the unit (absent = lb)", async () => {
+    const kgProgram = structuredClone(twoDay);
+    kgProgram.days[0].sections[0].groups[0].exercises[0].unit = "kg";
+    (programRepo.get as jest.Mock).mockResolvedValue({ ...kgProgram, overrides: [] });
+    // Render against the kg variant via the day override path: simplest is to
+    // point the provider's program at it too.
+    twoDay.days[0].sections[0].groups[0].exercises[0].unit = "kg";
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /weight unit kg — switch to lb/i }));
+    await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
+    const savedDoc = saveProgramMock.mock.calls.at(-1)[0];
+    const override = savedDoc.overrides.find(
+      (o: { scope: string; dayId: string }) => o.scope === "day" && o.dayId === "day-1",
+    );
+    const patched = override.replacement.sections[0].groups[0].exercises[0];
+    expect(patched.unit).toBeUndefined();
+    delete twoDay.days[0].sections[0].groups[0].exercises[0].unit;
   });
 });

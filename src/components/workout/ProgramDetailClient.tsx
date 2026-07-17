@@ -217,9 +217,10 @@ function DayCard({
   return (
     <div
       style={{
-        background: "var(--bg-1)", border: "1px solid var(--line)",
-        borderLeft: "3px solid var(--line)", borderRadius: "var(--r)",
-        marginBottom: 8, overflow: "hidden", opacity: isRest ? 0.65 : 1,
+        // List rows, not stacked cards — the data is the interface; the boxed
+        // version read as a gray-on-gray card grid on the light themes.
+        borderBottom: "1px solid var(--line)",
+        overflow: "hidden", opacity: isRest ? 0.65 : 1,
       }}
     >
       <div

@@ -35,6 +35,19 @@ describe("ExerciseEditSheet", () => {
     }));
   });
 
+  it("has no unit field — unit lives on the exercise row toggle", () => {
+    render(<ExerciseEditSheet exercise={baseExercise} onSave={() => undefined} onClose={() => undefined} />);
+    expect(screen.queryByLabelText(/unit/i)).toBeNull();
+  });
+
+  it("never touches unit in the saved patch", async () => {
+    const onSave = jest.fn();
+    const user = userEvent.setup();
+    render(<ExerciseEditSheet exercise={{ ...baseExercise, unit: "kg" as const }} onSave={onSave} onClose={() => undefined} />);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect("unit" in onSave.mock.calls[0][0]).toBe(false);
+  });
+
   it("drops blank values rather than persisting empty strings", async () => {
     const onSave = jest.fn();
     const user = userEvent.setup();

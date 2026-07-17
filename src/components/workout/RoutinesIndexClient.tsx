@@ -42,7 +42,7 @@ function StatusBadge({ status }: { status: string }) {
         letterSpacing: "0.1em",
         color,
         padding: "1px 6px",
-        borderRadius: "var(--r-sm, 4px)",
+        borderRadius: "var(--r-sm)",
         border: `1px solid ${color}`,
         background: status === "active" ? "rgba(127,199,122,0.08)" : "transparent",
       }}
@@ -58,7 +58,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       style={{
         background: "var(--bg-2)",
         border: "1px solid var(--line)",
-        borderRadius: "var(--r-sm, 4px)",
+        borderRadius: "var(--r-sm)",
         padding: "4px 6px",
       }}
     >
@@ -104,7 +104,7 @@ function WeekStrip({ days }: { days: ProgramDocument["days"] }) {
               height: 28,
               background: isRest ? "transparent" : "var(--bg-2)",
               border: `1px ${isRest ? "dashed" : "solid"} var(--line)`,
-              borderRadius: "var(--r-sm, 4px)",
+              borderRadius: "var(--r-sm)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -156,7 +156,7 @@ function ActiveCard({
       style={{
         background: "var(--bg-1)",
         border: "1px solid var(--accent)",
-        borderRadius: "var(--r, 6px)",
+        borderRadius: "var(--r)",
         overflow: "hidden",
         marginBottom: 10,
       }}
@@ -310,11 +310,8 @@ function RoutineRow({
         display: "flex",
         alignItems: "center",
         gap: 10,
-        padding: "10px 12px",
-        marginBottom: 4,
-        background: "var(--bg-1)",
-        border: "1px solid var(--line)",
-        borderRadius: "var(--r, 6px)",
+        padding: "9px 10px",
+        borderBottom: "1px solid var(--line)",
         position: "relative",
         opacity: status === "archived" ? 0.7 : 1,
       }}
@@ -389,7 +386,7 @@ function RoutineRow({
               marginTop: 2,
               background: "var(--bg-2)",
               border: "1px solid var(--line)",
-              borderRadius: "var(--r, 6px)",
+              borderRadius: "var(--r)",
               overflow: "hidden",
               zIndex: 10,
               minWidth: 140,
@@ -554,7 +551,7 @@ export function RoutinesIndexClient() {
               onClick={() => setFilter(k)}
               style={{
                 padding: "2px 7px",
-                borderRadius: "var(--r-sm, 4px)",
+                borderRadius: "var(--r-sm)",
                 background: isActive ? "var(--accent-soft)" : "transparent",
                 border: `1px solid ${isActive ? "var(--accent)" : "var(--line)"}`,
                 color: isActive ? "var(--accent)" : "var(--fg-2)",
@@ -579,7 +576,7 @@ export function RoutinesIndexClient() {
               fontSize: 12,
               background: "var(--bg-1)",
               border: "1px dashed var(--line)",
-              borderRadius: "var(--r, 6px)",
+              borderRadius: "var(--r)",
             }}
           >
             <div style={{ marginBottom: 4 }}>

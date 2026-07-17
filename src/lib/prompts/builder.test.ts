@@ -273,3 +273,28 @@ describe("buildSchemaBlock — Phase A prompt refinements", () => {
     expect(block).toContain("Listed warmup exercises must use `countsTowardVolume: false`.");
   });
 });
+
+describe("buildSchemaBlock — variants (Stage 6)", () => {
+  it("includes a variants example with weeks [2, 4]", () => {
+    const block = buildSchemaBlock();
+    expect(block).toContain('"variants"');
+    expect(block).toMatch(/"weeks"[\s\S]*?2[\s\S]*?4/);
+  });
+
+  it("guidance explains variants vs overrides", () => {
+    const block = buildSchemaBlock();
+    expect(block).toContain("Use `variants`");
+    expect(block).toContain("Reserve `overrides`");
+  });
+
+  it("hierarchy note lists variants as an optional exercise field", () => {
+    const block = buildSchemaBlock();
+    expect(block).toMatch(/Each exercise:[\s\S]*?`variants`/);
+  });
+});
+
+describe("buildRecoveryPrompt — variants (Stage 6)", () => {
+  it("preserves variants instruction", () => {
+    expect(buildRecoveryPrompt("syntax")).toContain("Preserve any `variants` arrays");
+  });
+});

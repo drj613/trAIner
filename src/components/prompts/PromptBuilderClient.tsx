@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { markPromptCopied } from "@/lib/workspace/onboarding";
@@ -13,6 +13,8 @@ import {
 } from "@/lib/prompts/profileFields";
 import { buildSchemaBlock, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
+import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
+import type { PromptPresetDocument } from "@/lib/programs/types";
 
 export function PromptBuilderClient() {
   const { profile, loading } = useLocalData();
@@ -25,6 +27,63 @@ export function PromptBuilderClient() {
   const [schemaOn, setSchemaOn] = useState(true);
   const [adhocInjuries, setAdhocInjuries] = useState<string[]>([]);
   const [adhocInput, setAdhocInput] = useState("");
+  const [presets, setPresets] = useState<PromptPresetDocument[]>([]);
+  const [presetName, setPresetName] = useState("");
+
+  const refreshPresets = () =>
+    promptPresetRepo.list().then((all) =>
+      setPresets([...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))),
+    );
+  useEffect(() => {
+    void refreshPresets();
+  }, []);
+
+  async function savePreset() {
+    const name = presetName.trim();
+    if (!name) return;
+    const edited: Record<string, string> = {};
+    for (const [id, text] of Object.entries(editedBlocks)) {
+      const def = DEFAULT_PERSONAS.find((p) => p.id === id);
+      if (def && text !== def.block) edited[id] = text;
+    }
+    await promptPresetRepo.save({
+      id: crypto.randomUUID(),
+      name,
+      personaIds: [...selectedIds],
+      editedBlocks: edited,
+      fieldOn: { ...fieldOn },
+      schemaOn,
+      createdAt: "",
+      updatedAt: "",
+    });
+    setPresetName("");
+    await refreshPresets();
+  }
+
+  function loadPreset(preset: PromptPresetDocument) {
+    setSelectedIds(
+      preset.personaIds.filter((id) => DEFAULT_PERSONAS.some((p) => p.id === id)),
+    );
+    setEditedBlocks(
+      Object.fromEntries(
+        Object.entries(preset.editedBlocks).filter(([id]) =>
+          DEFAULT_PERSONAS.some((p) => p.id === id),
+        ),
+      ),
+    );
+    setFieldOn(
+      Object.fromEntries(
+        PROFILE_FIELDS.map((f) => [f.key, preset.fieldOn[f.key] ?? true]),
+      ),
+    );
+    setSchemaOn(preset.schemaOn);
+    // adhocInjuries / adhocInput intentionally untouched
+  }
+
+  async function deletePreset(id: string) {
+    await promptPresetRepo.remove(id);
+    await refreshPresets();
+  }
 
   function addAdhocInjury() {
     const v = adhocInput.trim();
@@ -119,6 +178,53 @@ export function PromptBuilderClient() {
           first for a useful result.
         </div>
       )}
+      <section>
+        <p className="tx-up mb-2">Presets</p>
+        {presets.length > 0 && (
+          <div className="stack" style={{ gap: 4 }}>
+            {presets.map((preset) => (
+              <div key={preset.id} className="flex items-center justify-between panel">
+                <button
+                  type="button"
+                  className="text-sm text-left flex-1"
+                  style={{ color: "var(--fg)" }}
+                  onClick={() => loadPreset(preset)}
+                >
+                  {preset.name}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${preset.name}`}
+                  onClick={() => void deletePreset(preset.id)}
+                  style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 2px" }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-1 mt-2">
+          <input
+            className="input flex-1"
+            style={{ fontSize: 12, padding: "3px 7px" }}
+            value={presetName}
+            placeholder="Name this preset…"
+            onChange={(e) => setPresetName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && void savePreset()}
+          />
+          <button
+            type="button"
+            className="button"
+            style={{ fontSize: 11, padding: "2px 8px" }}
+            disabled={!presetName.trim()}
+            onClick={() => void savePreset()}
+          >
+            Save
+          </button>
+        </div>
+      </section>
+
       <section>
         <p className="tx-up mb-2">Coach personas · select &amp; combine</p>
         <div className="grid grid-cols-2 gap-2">

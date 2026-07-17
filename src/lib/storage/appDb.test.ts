@@ -6,6 +6,7 @@ import { profileRepo } from "./profileRepo";
 import { programRepo } from "./programRepo";
 import { userExerciseRepo } from "./userExerciseRepo";
 import { bodyweightRepo } from "./bodyweightRepo";
+import { promptPresetRepo } from "./promptPresetRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
@@ -76,6 +77,47 @@ describe("IndexedDB repositories", () => {
 
     await expect(programRepo.list()).resolves.toHaveLength(1);
     await expect(userExerciseRepo.list()).resolves.toHaveLength(0);
+  });
+
+  it("exports and restores prompt presets", async () => {
+    await programRepo.save(demoProgram);
+    await promptPresetRepo.save({
+      id: "preset-1",
+      name: "Push focus",
+      personaIds: ["rp", "pl"],
+      editedBlocks: { rp: "custom rp block" },
+      fieldOn: { goals: true, equipment: false },
+      schemaOn: true,
+      createdAt: "",
+      updatedAt: "",
+    });
+
+    const backup = await exportBackup();
+    expect(backup.promptPresets).toHaveLength(1);
+    expect(backup.promptPresets?.[0].name).toBe("Push focus");
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(backup);
+
+    const restored = await promptPresetRepo.list();
+    expect(restored).toHaveLength(1);
+    expect(restored[0].editedBlocks.rp).toBe("custom rp block");
+  });
+
+  it("restores a backup with no promptPresets field (backward compatibility)", async () => {
+    await programRepo.save(demoProgram);
+    const backup = await exportBackup();
+    const oldBackup = { ...backup, promptPresets: undefined };
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(oldBackup);
+
+    await expect(programRepo.list()).resolves.toHaveLength(1);
+    await expect(promptPresetRepo.list()).resolves.toHaveLength(0);
   });
 });
 
@@ -327,5 +369,45 @@ describe("DB v8 — kg rawCell rescue", () => {
     expect(sets[1]).toEqual({ setNumber: 2, weight: 12.5, unit: "kg", reps: 8 });
     expect(sets[2]).toEqual({ setNumber: 3, weight: 65, reps: 10 });
     expect(sets[3]).toEqual({ setNumber: 4, rawCell: "skip" });
+  });
+});
+
+describe("DB v9 — promptPresets store", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  function seedV8() {
+    return openDB(DB_NAME, 8, {
+      upgrade(db) {
+        db.createObjectStore("profile", { keyPath: "id" });
+        db.createObjectStore("programs", { keyPath: "id" });
+        const logs = db.createObjectStore("logs", { keyPath: "id" });
+        logs.createIndex("by-program", "programId");
+        logs.createIndex("by-day", "dayId");
+        const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+        aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+        aliases.createIndex("by-exercise", "canonicalExerciseId");
+        db.createObjectStore("backups", { keyPath: "id" });
+        db.createObjectStore("metrics", { keyPath: "exerciseId" });
+        db.createObjectStore("userExercises", { keyPath: "id" });
+        db.createObjectStore("bodyweight", { keyPath: "id" });
+      },
+    });
+  }
+
+  it("v9 upgrade creates the promptPresets store without dropping existing data", async () => {
+    const v8 = await seedV8();
+    await v8.put("programs", { ...demoProgram });
+    v8.close();
+
+    const db = await getDb(); // triggers v8 → v9 upgrade
+    expect(db.objectStoreNames.contains("promptPresets")).toBe(true);
+    await expect(programRepo.list()).resolves.toHaveLength(1);
   });
 });

@@ -1,10 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { localDateOf } from "@/lib/workout/localDate";
-import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, ProgramDocument, PromptPresetDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import type { ExerciseMetricsDocument } from "./metricsRepo";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -40,6 +40,10 @@ export interface TrainerDb extends DBSchema {
   bodyweight: {
     key: string;
     value: BodyweightEntry;
+  };
+  promptPresets: {
+    key: string;
+    value: PromptPresetDocument;
   };
 }
 
@@ -160,6 +164,13 @@ export function getDb() {
             }));
             if (changed) await cursor.update({ ...log, entries });
             cursor = await cursor.continue();
+          }
+        }
+
+        // v8 → v9: add promptPresets store. Create-only; no existing data to migrate.
+        if (oldVersion < 9) {
+          if (!db.objectStoreNames.contains("promptPresets")) {
+            db.createObjectStore("promptPresets", { keyPath: "id" });
           }
         }
       }
