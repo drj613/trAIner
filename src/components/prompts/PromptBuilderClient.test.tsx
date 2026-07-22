@@ -80,14 +80,14 @@ describe("PromptBuilderClient no-profile warning", () => {
 describe("PromptBuilderClient field toggles", () => {
   it("includes enabled profile fields in the generated prompt", () => {
     renderBuilder();
-    expect(screen.getByText(/Goals: Hypertrophy/)).toBeInTheDocument();
+    expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
     expect(screen.getByText(/- bad knee/)).toBeInTheDocument();
   });
 
   it("removes a field's text when its toggle is switched off", () => {
     renderBuilder();
     fireEvent.click(screen.getByLabelText("Goals"));
-    expect(screen.queryByText(/Goals: Hypertrophy/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
   });
 });
 
@@ -214,7 +214,7 @@ describe("PromptBuilderClient presets", () => {
 
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Goals: Hypertrophy/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Routine JSON schema/)).not.toBeInTheDocument();
   });
 
@@ -256,7 +256,7 @@ describe("PromptBuilderClient presets", () => {
     ];
     renderBuilder();
     fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
-    expect(screen.getByText(/Goals: Hypertrophy/)).toBeInTheDocument();
+    expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
   });
 
   it("field absent from preset defaults on", async () => {

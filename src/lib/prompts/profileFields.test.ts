@@ -28,8 +28,14 @@ describe("buildProfileFieldsBlock", () => {
     expect(block).toContain("Name: Alex");
     expect(block).toContain("Training age: 5 years");
     expect(block).toContain("Days per week: 4");
-    expect(block).toContain("Goals: Hypertrophy");
+    expect(block).toContain("Goals (priority order):\n1. Hypertrophy");
     expect(block).toContain("Equipment: Full gym");
+  });
+
+  it("numbers multiple goals in stored (priority) order", () => {
+    const p: ProfileDocument = { ...base, goals: ["Fix shoulder pain", "Compete again"] };
+    const block = buildProfileFieldsBlock(p, allOn());
+    expect(block).toContain("Goals (priority order):\n1. Fix shoulder pain\n2. Compete again");
   });
 
   it("includes the previously-dropped fields when present", () => {
@@ -50,7 +56,7 @@ describe("buildProfileFieldsBlock", () => {
   it("omits fields whose toggle is off", () => {
     const enabled = new Set([...allOn()].filter((k) => k !== "goals"));
     const block = buildProfileFieldsBlock(base, enabled);
-    expect(block).not.toContain("Goals:");
+    expect(block).not.toContain("Goals (priority order)");
   });
 
   it("returns empty string when no profile fields render", () => {
