@@ -66,9 +66,9 @@ describe("ProfileClient — no profile", () => {
 
   it("adds liked exercises while creating a profile", async () => {
     render(<MemoryRouter><ProfileClient /></MemoryRouter>);
-    const exerciseInput = screen.getByPlaceholderText(/add an exercise/i);
+    const exerciseInput = screen.getByRole("textbox", { name: /liked exercise/i });
     fireEvent.change(exerciseInput, { target: { value: "Front squat" } });
-    fireEvent.keyDown(exerciseInput, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /add liked exercise/i }));
     fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
 
     await waitFor(() => {
@@ -137,9 +137,9 @@ describe("ProfileClient — ranked goals (existing profile)", () => {
 
     expect(screen.getByRole("button", { name: /edit exercises i like/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /edit exercises i like/i }));
-    const exerciseInput = screen.getByPlaceholderText(/add an exercise/i);
+    const exerciseInput = screen.getByRole("textbox", { name: /liked exercise/i });
     fireEvent.change(exerciseInput, { target: { value: "Romanian deadlift" } });
-    fireEvent.keyDown(exerciseInput, { key: "Enter" });
+    fireEvent.click(screen.getByRole("button", { name: /add liked exercise/i }));
     fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
 
     await waitFor(() => {
