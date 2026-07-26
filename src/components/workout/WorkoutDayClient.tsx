@@ -699,7 +699,7 @@ function WorkoutBody({
       }
     })().catch((e) => console.error("[logRepo] session hydration failed", e));
     return () => { cancelled = true; };
-  }, [program.id, day.id]);
+  }, [program.id, day]);
 
   async function saveCells(
     { cells: c, notes: n, dayNote: dn }: { cells: CellMap; notes: Record<string, string>; dayNote: string },

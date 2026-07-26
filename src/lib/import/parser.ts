@@ -61,7 +61,7 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
       result.reason === "empty"
         ? "Paste the AI's JSON response first."
         : result.reason === "truncated"
-          ? "The pasted JSON looks cut off — paste the full response."
+          ? result.detail ?? "The pasted JSON looks cut off — paste the full response."
           : "The pasted content is not valid JSON.";
     throw new ImportError(result.reason, message);
   }

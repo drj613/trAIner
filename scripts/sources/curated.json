@@ -639,5 +639,242 @@
     "movementPatterns": ["skill", "isometric"],
     "muscles": { "primary": ["shoulders", "triceps"], "secondary": ["upper back", "core", "wrists", "forearms"] },
     "tags": ["skill", "calisthenics", "upper"]
+  },
+  {
+    "id": "banded-terminal-knee-extension",
+    "name": "Banded Terminal Knee Extension",
+    "aliases": ["band TKE", "banded TKE", "terminal knee extension with band"],
+    "equipment": ["resistance band"],
+    "movementPatterns": ["knee extension", "isolation"],
+    "muscles": { "primary": ["quads"], "secondary": [] },
+    "tags": ["warmup", "prehab", "knee"]
+  },
+  {
+    "id": "spanish-squat",
+    "name": "Spanish Squat",
+    "aliases": ["banded Spanish squat"],
+    "equipment": ["resistance band"],
+    "movementPatterns": ["squat", "isometric"],
+    "muscles": { "primary": ["quads"], "secondary": ["glutes"] },
+    "tags": ["strength", "prehab", "knee"]
+  },
+  {
+    "id": "spoto-press",
+    "name": "Spoto Press",
+    "aliases": ["Spoto bench press", "paused Spoto press"],
+    "equipment": ["barbell", "bench"],
+    "movementPatterns": ["horizontal press"],
+    "muscles": { "primary": ["chest"], "secondary": ["triceps", "front delts"] },
+    "tags": ["strength", "powerlifting", "push"]
+  },
+  {
+    "id": "trap-bar-carry",
+    "name": "Trap-Bar Carry",
+    "aliases": ["trap bar carry", "hex bar carry", "trap-bar walk"],
+    "equipment": ["trap bar"],
+    "movementPatterns": ["loaded carry"],
+    "muscles": { "primary": ["forearms", "traps", "core"], "secondary": ["glutes", "upper back"] },
+    "tags": ["strength", "functional", "loaded-carry"]
+  },
+  {
+    "id": "seal-row",
+    "name": "Seal Row",
+    "aliases": ["barbell seal row", "bench seal row"],
+    "equipment": ["barbell", "bench"],
+    "movementPatterns": ["horizontal pull"],
+    "muscles": { "primary": ["mid back", "lats"], "secondary": ["rear delts", "biceps"] },
+    "tags": ["strength", "hypertrophy", "pull", "back"]
+  },
+  {
+    "id": "cable-hip-abduction",
+    "name": "Cable Hip Abduction",
+    "aliases": ["standing cable hip abduction", "cable standing hip abduction", "cable Hip Abduction with slight hip hinge"],
+    "equipment": ["cable"],
+    "movementPatterns": ["hip abduction", "isolation"],
+    "muscles": { "primary": ["glute medius", "abductors"], "secondary": ["glutes"] },
+    "tags": ["hypertrophy", "isolation", "glutes"]
+  },
+  {
+    "id": "banded-standing-hip-abduction",
+    "name": "Banded Standing Hip Abduction",
+    "aliases": ["standing band hip abduction", "banded hip abduction"],
+    "equipment": ["resistance band"],
+    "movementPatterns": ["hip abduction", "isolation"],
+    "muscles": { "primary": ["glute medius", "abductors"], "secondary": ["glutes"] },
+    "tags": ["warmup", "hypertrophy", "isolation", "glutes"]
+  },
+  {
+    "id": "offset-front-rack-carry",
+    "name": "Offset Front-Rack Carry",
+    "aliases": ["single-arm front-rack carry", "uneven front-rack carry"],
+    "equipment": ["kettlebell", "dumbbell"],
+    "movementPatterns": ["loaded carry"],
+    "muscles": { "primary": ["core"], "secondary": ["forearms", "front delts", "upper back", "glutes"] },
+    "tags": ["strength", "functional", "loaded-carry", "unilateral"]
+  },
+  {
+    "id": "waiter-carry",
+    "name": "Waiter Carry",
+    "aliases": ["waiter's carry", "overhead waiter carry", "single-arm overhead carry"],
+    "equipment": ["kettlebell", "dumbbell"],
+    "movementPatterns": ["loaded carry", "isometric"],
+    "muscles": { "primary": ["shoulders", "core"], "secondary": ["triceps", "forearms", "upper back"] },
+    "tags": ["strength", "functional", "loaded-carry", "unilateral"]
+  },
+  {
+    "id": "hip-cars",
+    "aliases": ["Hip, Ankle and Thoracic CARs", "Hip CARs, Adductor Rockbacks and Ankle Mobilization"]
+  },
+  {
+    "id": "shoulder-cars",
+    "aliases": ["Thoracic Extension and Scapular CARs"]
+  },
+  {
+    "id": "wall-handstand-hold",
+    "aliases": ["Chest-to-Wall Handstand Hold", "Wall Kick-Up to Controlled Hold"]
+  },
+  {
+    "id": "smith-machine-hip-raise",
+    "aliases": ["Smith Machine Hip Thrust"]
+  },
+  {
+    "id": "barbell-hip-thrust",
+    "aliases": ["B-Stance Barbell Hip Thrust", "Paused Barbell Hip Thrust"]
+  },
+  {
+    "id": "ssb-back-squat",
+    "aliases": ["Safety-Bar Pin Squat to Comfortable Depth"]
+  },
+  {
+    "id": "ssb-box-squat",
+    "aliases": ["Tempo Safety-Bar Box Squat", "Safety-Bar Box Squat with Light Band at Knees"]
+  },
+  {
+    "id": "ssb-lunge",
+    "aliases": ["Safety-Bar Side Lunge", "Cable-Supported Safety-Bar Side Lunge"]
+  },
+  {
+    "id": "lateral-lunge-dumbbell",
+    "aliases": ["Dumbbell Lateral Lunge"]
+  },
+  {
+    "id": "cossack-squat",
+    "aliases": ["Safety-Bar Cossack Box Squat"]
+  },
+  {
+    "id": "reverse-nordic-curl",
+    "aliases": ["Reverse Nordic", "Assisted Reverse Nordic", "Eccentric Reverse Nordic"]
+  },
+  {
+    "id": "front-rack-march-kettlebell",
+    "aliases": ["Front-Rack Kettlebell Carry"]
+  },
+  {
+    "id": "banded-face-pull",
+    "aliases": ["Band Face Pull and External Rotation"]
+  },
+  {
+    "id": "barbell-bench-press",
+    "aliases": ["Paused Barbell Bench Press"]
+  },
+  {
+    "id": "close-grip-barbell-bench-press",
+    "aliases": ["Close-Grip Paused Barbell Bench Press"]
+  },
+  {
+    "id": "romanian-deadlift-from-deficit",
+    "aliases": ["Deficit Romanian Deadlift"]
+  },
+  {
+    "id": "snatch-grip-deadlift",
+    "aliases": ["Snatch-Grip Romanian Deadlift"]
+  },
+  {
+    "id": "pull-ups-neutral-grip",
+    "aliases": ["Neutral-Grip Pull-Up", "Neutral-Grip Pull-Up with 2-Second Eccentric"]
+  },
+  {
+    "id": "pull-up",
+    "aliases": ["Ring Pull-Up"]
+  },
+  {
+    "id": "bayesian-curl",
+    "aliases": ["Bayesian Cable Curl"]
+  },
+  {
+    "id": "farmer-carry",
+    "aliases": ["Farmer Carry with 2-Second March Pauses"]
+  },
+  {
+    "id": "banded-lateral-walk",
+    "aliases": ["Banded Glute Bridge and Lateral Walk"]
+  },
+  {
+    "id": "one-leg-front-foot-elevated-split-squat-dumbbell",
+    "aliases": ["Front-Foot-Elevated Bulgarian Split Squat", "Front-Foot-Elevated Bulgarian Split Squat with Forward Torso Lean"]
+  },
+  {
+    "id": "landmine-press",
+    "aliases": ["Half-Kneeling Landmine Press", "Tall-Kneeling Landmine Press", "Half-Kneeling Single-Arm Landmine Press"]
+  },
+  {
+    "id": "incline-dumbbell-press",
+    "aliases": ["Incline Neutral-Grip Dumbbell Press", "Neutral-Grip Incline Dumbbell Press"]
+  },
+  {
+    "id": "single-arm-row",
+    "aliases": ["Single-Arm Cable Row"]
+  },
+  {
+    "id": "chest-supported-dumbbell-row",
+    "aliases": ["Chest-Supported Wide-Elbow Row"]
+  },
+  {
+    "id": "seated-hip-abduction",
+    "aliases": ["Seated Hip Abduction Machine"]
+  },
+  {
+    "id": "hip-hinge",
+    "aliases": ["Cat-Camel, Thoracic Rotation and Hip Hinge Drill"]
+  },
+  {
+    "id": "band-pull-apart",
+    "aliases": ["Band Pull-Apart and Scapular Pull-Up"]
+  },
+  {
+    "id": "deadlift-trap-bar-high-handles",
+    "aliases": ["High-Handle Trap-Bar Deadlift", "High-Handle Trap-Bar Deadlift with 2-Second Pause Below Knee"]
+  },
+  {
+    "id": "rack-pull",
+    "aliases": ["Block Pull", "Conventional Deadlift from Blocks"]
+  },
+  {
+    "id": "push-up-hands-in-rings",
+    "aliases": ["Ring Push-Up"]
+  },
+  {
+    "id": "one-arm-lat-pulldown",
+    "aliases": ["Single-Arm Lat Pulldown", "Single-Arm Lat Pulldown with 2-Second Stretch"]
+  },
+  {
+    "id": "straight-arm-pulldown-cable",
+    "aliases": ["Straight-Arm Cable Pulldown"]
+  },
+  {
+    "id": "1-arm-half-kneeling-lat-pulldown",
+    "aliases": ["Kneeling Single-Arm Lat Pulldown"]
+  },
+  {
+    "id": "preacher-curl",
+    "aliases": ["Machine Preacher Curl", "Preacher Curl with 2-Second Eccentric"]
+  },
+  {
+    "id": "hammer-curl-cable-with-rope",
+    "aliases": ["Rope Hammer Curl"]
+  },
+  {
+    "id": "reverse-bar-curl",
+    "aliases": ["Reverse EZ-Bar Curl"]
   }
 ]

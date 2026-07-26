@@ -304,10 +304,11 @@ export function ProgramDetailClient({ id }: { id: string }) {
     programRepo.get(id).then(setProgram).catch(() => undefined);
   }, [id]);
 
+  const programId = program?.id;
   useEffect(() => {
-    if (!program) return;
-    logRepo.listForProgram(program.id).then(setLogs).catch(() => undefined);
-  }, [program?.id]);
+    if (!programId) return;
+    logRepo.listForProgram(programId).then(setLogs).catch(() => undefined);
+  }, [programId]);
 
   async function handleGoalChange(goal: TrainingGoal) {
     if (!program) return;

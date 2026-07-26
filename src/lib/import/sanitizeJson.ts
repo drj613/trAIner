@@ -3,7 +3,7 @@ export type RecoveryReason = JsonFailureReason | "not-object" | "no-days";
 
 export type LooseParseResult =
   | { ok: true; value: unknown }
-  | { ok: false; reason: JsonFailureReason };
+  | { ok: false; reason: JsonFailureReason; detail?: string };
 
 export function sanitizeJson(raw: string): string {
   let s = raw.trim();
@@ -22,7 +22,10 @@ export function parseLooseJson(raw: string): LooseParseResult {
   try {
     return { ok: true, value: JSON.parse(cleaned) };
   } catch {
-    return { ok: false, reason: isTruncated(cleaned) ? "truncated" : "syntax" };
+    if (isTruncated(cleaned)) {
+      return { ok: false, reason: "truncated", detail: describeTruncation(cleaned) };
+    }
+    return { ok: false, reason: "syntax" };
   }
 }
 
@@ -113,8 +116,33 @@ function removeTrailingCommas(s: string): string {
 }
 
 function isTruncated(s: string): boolean {
-  let depth = 0;
+  const structure = scanStructure(s);
+  return !structure.mismatched && (structure.inString || structure.unclosed.length > 0);
+}
+
+function describeTruncation(s: string): string {
+  const structure = scanStructure(s);
+  if (structure.inString) {
+    return "The pasted JSON ends inside a quoted string. Paste the missing text and closing quote.";
+  }
+
+  const expected = structure.unclosed
+    .slice()
+    .reverse()
+    .map((opener) => (opener === "{" ? "}" : "]"))
+    .join("");
+  const count = structure.unclosed.length;
+  return `The pasted JSON ends with ${count} unclosed ${count === 1 ? "structure" : "structures"}. Expected \`${expected}\` at the end.`;
+}
+
+function scanStructure(s: string): {
+  inString: boolean;
+  mismatched: boolean;
+  unclosed: Array<"{" | "[">;
+} {
+  const unclosed: Array<"{" | "["> = [];
   let inString = false;
+  let mismatched = false;
   for (let i = 0; i < s.length; i++) {
     const ch = s[i];
     if (inString) {
@@ -129,8 +157,17 @@ function isTruncated(s: string): boolean {
       inString = true;
       continue;
     }
-    if (ch === "{" || ch === "[") depth += 1;
-    else if (ch === "}" || ch === "]") depth -= 1;
+    if (ch === "{" || ch === "[") {
+      unclosed.push(ch);
+      continue;
+    }
+    if (ch === "}") {
+      if (unclosed.at(-1) === "{") unclosed.pop();
+      else mismatched = true;
+    } else if (ch === "]") {
+      if (unclosed.at(-1) === "[") unclosed.pop();
+      else mismatched = true;
+    }
   }
-  return depth > 0 || inString;
+  return { inString, mismatched, unclosed };
 }

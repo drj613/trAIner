@@ -775,10 +775,17 @@ describe("variant-aware resolution (Stage 5)", () => {
 
 describe("fixture: variants-multiweek resolution (Stage 7)", () => {
   it("unmatched variant surfaces a resolution item and applyResolutions patches all its week-clones", () => {
-    const { program, warnings } = normalizePayload(variantsFixture);
+    const payload = structuredClone(variantsFixture);
+    const unmatchedName = "Totally Fake Deficit Romanian Deadlift";
+    const rdlExercise = payload.days[0].sections[1].groups[0].exercises.find(
+      (exercise) => exercise.name === "Romanian deadlift",
+    );
+    if (!rdlExercise || !("variants" in rdlExercise)) throw new Error("RDL variant fixture is missing");
+    rdlExercise.variants[0].name = unmatchedName;
+    const { program, warnings } = normalizePayload(payload);
 
     const items = extractUnresolvedExercises(warnings);
-    const rdlVariant = items.find((i) => i.rawName === "Deficit Romanian deadlift")!;
+    const rdlVariant = items.find((i) => i.rawName === unmatchedName)!;
     expect(rdlVariant).toBeDefined();
     expect(rdlVariant.path).toMatch(/\.variants\.\d+$/);
 
@@ -786,10 +793,10 @@ describe("fixture: variants-multiweek resolution (Stage 7)", () => {
       { path: rdlVariant.path, canonicalId: "deficit_rdl_canonical" },
     ]);
 
-    // The Deficit RDL variant is active only on week 3 (day 1, section 1, ex 1)
+    // The unmatched RDL variant is active only on week 3 (day 1, section 1, ex 1)
     const week3Day1 = patched.days.find((d) => d.weekNumber === 3 && d.dayNumber === 1)!;
     const rdl = week3Day1.sections[1].groups[0].exercises[1];
-    expect(rdl.name).toBe("Deficit Romanian deadlift");
+    expect(rdl.name).toBe(unmatchedName);
     expect(rdl.canonicalExerciseId).toBe("deficit_rdl_canonical");
 
     // The base-week RDL clones keep their own (matched) canonical id, not the variant's

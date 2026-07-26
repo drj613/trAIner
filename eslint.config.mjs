@@ -1,30 +1,65 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier";
+import reactHooks from "eslint-plugin-react-hooks";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
+export default tseslint.config(
   {
-    ignores: [".next/**", "coverage/**", "node_modules/**", "jest.config.js", "dist/**", ".worktrees/**", "test-results/**", "playwright-report/**"]
+    ignores: [
+      "coverage/**",
+      "dist/**",
+      "node_modules/**",
+      ".pi-subagents/**",
+      ".worktrees/**",
+      "test-results/**",
+      "playwright-report/**",
+      "docs/research/persona-enrichment/_raw-scans/**",
+      "src/lib/catalog/exercises.generated.json",
+    ],
   },
   {
+    ...js.configs.recommended,
+    files: ["**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: ["public/sw.js"],
+    languageOptions: {
+      globals: globals.serviceworker,
+    },
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    extends: [...tseslint.configs.recommended],
+    plugins: {
+      "react-hooks": reactHooks,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
     rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
           argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_"
-        }
-      ]
-    }
-  }
-];
-
-export default eslintConfig;
+          varsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
+    files: ["**/*.{test,spec}.{ts,tsx}"],
+    languageOptions: {
+      globals: globals.jest,
+    },
+  },
+  eslintConfigPrettier,
+);
