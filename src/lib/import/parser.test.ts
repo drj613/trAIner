@@ -537,13 +537,16 @@ describe("parseProgramJson sanitizer integration", () => {
     expect(program.days[0].title).toBe("A");
   });
 
-  it("throws ImportError with reason 'truncated' for cut-off JSON", () => {
-    expect.assertions(2);
+  it("throws ImportError with an actionable message for cut-off JSON", () => {
+    expect.assertions(3);
     try {
       parseProgramJson('{"days":[{"title":"A"');
     } catch (e) {
       expect(e).toBeInstanceOf(ImportError);
       expect((e as ImportError).reason).toBe("truncated");
+      expect((e as ImportError).message).toBe(
+        "The pasted JSON ends with 3 unclosed structures. Expected `}]}` at the end.",
+      );
     }
   });
 

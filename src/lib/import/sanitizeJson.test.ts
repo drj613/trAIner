@@ -62,12 +62,29 @@ describe("parseLooseJson", () => {
   it("classifies empty input", () => {
     expect(parseLooseJson("   ")).toEqual({ ok: false, reason: "empty" });
   });
-  it("classifies truncated input (unbalanced braces)", () => {
+  it("classifies truncated input and reports the missing closing delimiters", () => {
     const r = parseLooseJson('{"days":[{"title":"A"');
-    expect(r).toEqual({ ok: false, reason: "truncated" });
+    expect(r).toEqual({
+      ok: false,
+      reason: "truncated",
+      detail: "The pasted JSON ends with 3 unclosed structures. Expected `}]}` at the end.",
+    });
+
+    expect(parseLooseJson('{"days":[{"title":"A')).toEqual({
+      ok: false,
+      reason: "truncated",
+      detail: "The pasted JSON ends inside a quoted string. Paste the missing text and closing quote.",
+    });
+
+    const missingRootClosures = parseLooseJson('{"days":[],"overrides":[{"scope":"week"}');
+    expect(missingRootClosures).toEqual({
+      ok: false,
+      reason: "truncated",
+      detail: "The pasted JSON ends with 2 unclosed structures. Expected `]}` at the end.",
+    });
   });
   it("classifies other syntax errors", () => {
-    const r = parseLooseJson('{"a": that}');
-    expect(r).toEqual({ ok: false, reason: "syntax" });
+    expect(parseLooseJson('{"a": that}')).toEqual({ ok: false, reason: "syntax" });
+    expect(parseLooseJson('{"a":]')).toEqual({ ok: false, reason: "syntax" });
   });
 });
