@@ -71,9 +71,11 @@ function ChipList({ items }: { items: string[] }) {
 function EditableChips({
   items,
   onChange,
+  placeholder = "Add item…",
 }: {
   items: string[];
   onChange: (items: string[]) => void;
+  placeholder?: string;
 }) {
   const [input, setInput] = useState("");
 
@@ -117,7 +119,7 @@ function EditableChips({
           className="input flex-1"
           style={{ fontSize: 12, padding: "3px 7px" }}
           value={input}
-          placeholder="Add item…"
+          placeholder={placeholder}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addItem()}
         />
@@ -377,6 +379,15 @@ export function ProfileClient() {
           <EditableChips
             items={draft.equipment}
             onChange={(equipment) => setDraft((d) => d && { ...d, equipment })}
+          />
+        </div>
+
+        <div className="panel">
+          <p className="tx-up mb-2">Exercises I like</p>
+          <EditableChips
+            items={draft.preferences ?? []}
+            onChange={(preferences) => setDraft((d) => d && { ...d, preferences })}
+            placeholder="Add an exercise…"
           />
         </div>
 
@@ -663,26 +674,25 @@ export function ProfileClient() {
         )}
       </ProfileCard>
 
-      {(editingSection === "preferences" || (profile.preferences ?? []).length > 0) && (
-        <ProfileCard
-          label="Exercises I like"
-          editing={editingSection === "preferences"}
-          onEdit={() => startEdit("preferences")}
-          onSave={() => void saveEdit()}
-          onCancel={cancelEdit}
-        >
-          {editingSection === "preferences" && draft ? (
-            <EditableChips
-              items={draft.preferences ?? []}
-              onChange={(preferences) =>
-                setDraft((d) => d && { ...d, preferences })
-              }
-            />
-          ) : (
-            <ChipList items={profile.preferences!} />
-          )}
-        </ProfileCard>
-      )}
+      <ProfileCard
+        label="Exercises I like"
+        editing={editingSection === "preferences"}
+        onEdit={() => startEdit("preferences")}
+        onSave={() => void saveEdit()}
+        onCancel={cancelEdit}
+      >
+        {editingSection === "preferences" && draft ? (
+          <EditableChips
+            items={draft.preferences ?? []}
+            onChange={(preferences) =>
+              setDraft((d) => d && { ...d, preferences })
+            }
+            placeholder="Add an exercise…"
+          />
+        ) : (
+          <ChipList items={profile.preferences ?? []} />
+        )}
+      </ProfileCard>
     </div>
   );
 }
