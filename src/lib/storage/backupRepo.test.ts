@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { backupRepo } from "./backupRepo";
-import { DB_NAME, resetDbConnection } from "./appDb";
+import { DB_NAME, getDb, resetDbConnection } from "./appDb";
 import type { BackupDocument } from "@/lib/programs/types";
 
 function makeBackup(exportedAt: string): BackupDocument {
@@ -16,6 +16,15 @@ function makeBackup(exportedAt: string): BackupDocument {
     bodyweight: [],
     promptPresets: [],
   } as unknown as BackupDocument;
+}
+
+/** Write directly to the store, bypassing backupRepo.save()'s auto-prune —
+ * used to seed more than SNAPSHOT_RETENTION records so a standalone
+ * prune() test actually exercises prune() instead of being made vacuous
+ * by save()'s own pruning. */
+async function seedRaw(exportedAt: string) {
+  const db = await getDb();
+  await db.put("backups", { ...makeBackup(exportedAt), id: exportedAt });
 }
 
 beforeEach(async () => {
@@ -39,13 +48,27 @@ describe("backupRepo", () => {
 
   it("prunes to the newest N snapshots", async () => {
     for (let d = 1; d <= 12; d++) {
-      await backupRepo.save(makeBackup(`2026-01-${String(d).padStart(2, "0")}T00:00:00.000Z`));
+      await seedRaw(`2026-01-${String(d).padStart(2, "0")}T00:00:00.000Z`);
     }
+    // Prove seeding bypassed save()'s auto-prune — otherwise the prune(10)
+    // call below would be a no-op and every assertion after it would pass
+    // regardless of whether prune() actually does anything.
+    expect(await backupRepo.list()).toHaveLength(12);
+
     await backupRepo.prune(10);
     const left = await backupRepo.list();
     expect(left).toHaveLength(10);
     expect(left.map((b) => b.id)).not.toContain("2026-01-01T00:00:00.000Z");
     expect(left.map((b) => b.id)).not.toContain("2026-01-02T00:00:00.000Z");
+  });
+
+  it("prune(keep) is a no-op when fewer than keep are stored", async () => {
+    await seedRaw("2026-03-01T00:00:00.000Z");
+    await seedRaw("2026-03-02T00:00:00.000Z");
+    await seedRaw("2026-03-03T00:00:00.000Z");
+    await backupRepo.prune(10);
+    const left = await backupRepo.list();
+    expect(left).toHaveLength(3);
   });
 
   it("save() auto-prunes to 10", async () => {

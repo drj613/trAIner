@@ -94,13 +94,17 @@ export function SettingsClient() {
   }
 
   useEffect(() => {
-    void refreshSnapshots();
+    refreshSnapshots().catch((e) => console.error("[settings] snapshot list failed", e));
   }, []);
 
   async function handleDeleteSnapshot(id: string) {
-    await backupRepo.delete(id);
-    await refreshSnapshots();
-    setStats(await loadWorkspaceStats());
+    try {
+      await backupRepo.delete(id);
+      await refreshSnapshots();
+      setStats(await loadWorkspaceStats());
+    } catch (e) {
+      console.error("[settings] snapshot delete failed", e);
+    }
   }
 
   function handleTheme(t: string) { setTheme(t); setThemeState(t); }

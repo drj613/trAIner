@@ -118,7 +118,13 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
       .mockResolvedValueOnce([{ id: "2026-08-01T00:00:00.000Z" }])
       .mockResolvedValue([]);
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
-    await userEvent.click(await screen.findByRole("button", { name: /delete/i }));
+    expect(await screen.findByText("2026-08-01 00:00")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /delete/i }));
     await waitFor(() => expect(backupRepo.delete).toHaveBeenCalledWith("2026-08-01T00:00:00.000Z"));
+    // The observable behaviour a user cares about: the row is actually gone
+    // from the list after the refresh that follows delete, not just that
+    // the mock was called.
+    await waitFor(() => expect(screen.queryByText("2026-08-01 00:00")).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
   });
 });
