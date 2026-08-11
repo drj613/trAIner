@@ -43,13 +43,24 @@ export function useDebouncedAutoSave<T>(
     } catch (e) {
       console.error("[autoSave] save failed", e);
       setStatus("error");
+      // A failed write means the value is still unsaved: keep it dirty so
+      // the next hide/pagehide (or value change) gets another shot at it,
+      // instead of silently giving up on the last retry opportunity.
+      dirtyRef.current = true;
     }
   }
 
   useEffect(() => {
-    if (Object.is(lastSeenValueRef.current, value)) return;
-    lastSeenValueRef.current = value;
-    dirtyRef.current = true;
+    if (Object.is(lastSeenValueRef.current, value)) {
+      // Same value, so this re-run came from a delayMs change. Its cleanup
+      // already cleared the live timer — re-arm rather than orphan a pending
+      // save. Nothing pending: stay idle (this is also the StrictMode
+      // mount-replay path, which must not arm anything).
+      if (!dirtyRef.current) return;
+    } else {
+      lastSeenValueRef.current = value;
+      dirtyRef.current = true;
+    }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => { void doSave(); }, delayMs);
     return () => {

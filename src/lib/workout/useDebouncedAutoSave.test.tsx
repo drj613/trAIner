@@ -154,4 +154,37 @@ describe("useDebouncedAutoSave lifecycle flush", () => {
     await act(async () => {});
     expect(save).not.toHaveBeenCalled();
   });
+
+  it("retries on the next hide after a failed save leaves the value dirty", async () => {
+    const save = jest.fn()
+      .mockRejectedValueOnce(new Error("nope"))
+      .mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" });
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    expect(save).toHaveBeenCalledTimes(1);
+    act(() => { fireVisibilityHidden(); });
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("b");
+  });
+
+  it("re-arms the timer instead of orphaning a pending save when only delayMs changes", async () => {
+    const save = jest.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value, delayMs }) => useDebouncedAutoSave(value, save, delayMs),
+      { initialProps: { value: "a", delayMs: 1500 } },
+    );
+    rerender({ value: "b", delayMs: 1500 });
+    act(() => { jest.advanceTimersByTime(1000); }); // partway through the debounce window
+    rerender({ value: "b", delayMs: 3000 }); // same value, new delay
+    act(() => { jest.advanceTimersByTime(1500); }); // past the old delay, not the new one
+    expect(save).not.toHaveBeenCalled();
+    await act(async () => { jest.advanceTimersByTime(1500); }); // past the new delay
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("b");
+  });
 });
