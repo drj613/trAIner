@@ -157,7 +157,7 @@ export function SettingsClient() {
 
   async function handleImport(file?: File) {
     if (!file) return;
-    if (!confirm("This will replace all local data. A backup file of the current workspace will be downloaded first — make sure you have it before continuing.")) return;
+    if (!confirm("This will replace all local data. A backup file of the current workspace will start downloading before anything is replaced. Continue?")) return;
     try {
       // A restore clears everything first. Push the current workspace to a
       // file so a bad import is recoverable.
