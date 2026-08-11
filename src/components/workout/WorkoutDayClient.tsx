@@ -826,6 +826,7 @@ function WorkoutBody({
 
   async function handleSkip(reason: string) {
     try {
+      await flush(); // drain pending autosave so it can't land after (and erase) the skip
       await saveCells(
         { cells, notes, dayNote },
         { skippedAt: new Date().toISOString(), skipReason: reason || undefined },

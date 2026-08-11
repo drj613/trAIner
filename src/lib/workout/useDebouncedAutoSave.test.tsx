@@ -188,3 +188,80 @@ describe("useDebouncedAutoSave lifecycle flush", () => {
     expect(save).toHaveBeenCalledWith("b");
   });
 });
+
+describe("useDebouncedAutoSave serialization", () => {
+  it("never starts a save while a previous save is still running", async () => {
+    let running = 0;
+    let maxConcurrent = 0;
+    const resolvers: Array<() => void> = [];
+    const save = jest.fn().mockImplementation(() => {
+      running += 1;
+      maxConcurrent = Math.max(maxConcurrent, running);
+      return new Promise<void>((resolve) => {
+        resolvers.push(() => { running -= 1; resolve(); });
+      });
+    });
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+
+    rerender({ value: "b" });
+    act(() => { jest.advanceTimersByTime(1500); });
+    // The queued save starts on a microtask — flush the microtask queue
+    // before asserting, or save #1 won't have started yet.
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("b"); // #1 running, unresolved
+
+    rerender({ value: "c" });
+    let flushPromise: Promise<void>;
+    act(() => { flushPromise = result.current.flush(); });
+    await act(async () => {});
+    expect(maxConcurrent).toBe(1); // #2 must be queued, not concurrent
+
+    await act(async () => { resolvers[0](); }); // finish #1 → #2 starts
+    await act(async () => { resolvers[1](); }); // finish #2
+    await act(async () => { await flushPromise!; });
+
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("c");
+  });
+
+  it("coalesces back-to-back hide events into one save", async () => {
+    // visibilitychange(hidden) and pagehide fire back-to-back on real tab
+    // closes, before any microtask runs — they must not enqueue two saves.
+    const save = jest.fn().mockResolvedValue(undefined);
+    const { rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" });
+    act(() => {
+      fireVisibilityHidden();
+      window.dispatchEvent(new Event("pagehide")); // same tick, no await between
+    });
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("retrying flush() after a failed save actually re-saves", async () => {
+    // Guards WorkoutDayClient's onRetrySave={() => void flush()}: a failed
+    // save must leave the value dirty so flush() isn't a no-op on retry.
+    const save = jest.fn()
+      .mockRejectedValueOnce(new Error("nope"))
+      .mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" });
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("error");
+
+    await act(async () => { await result.current.flush(); });
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("b");
+  });
+});
