@@ -396,15 +396,79 @@ describe("resetWorkspace", () => {
     expect(callOrder).toEqual(["reset", "delete"]);
   });
 
-  it("rejects with a user-readable message when deleteDatabase is blocked", async () => {
+  // IndexedDB gives no way to cancel a pending deleteDatabase request once
+  // onblocked fires — per spec it's purely informational, and the request
+  // stays live, completing (onsuccess) as soon as the last blocking
+  // connection closes. Rejecting here would tell the caller the reset
+  // failed right before it silently succeeds — the exact silent-data-loss
+  // bug this fix exists to close. So onblocked must notify via callback
+  // and leave the promise pending, not settle it.
+  it("invokes onBlocked when deleteDatabase is blocked, and does not reject", async () => {
+    const deleteDatabase = jest.fn().mockReturnValue({});
+    Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
+
+    const onBlocked = jest.fn();
+    const promise = resetWorkspace(onBlocked);
+    const req = deleteDatabase.mock.results[0].value;
+    req.onblocked?.();
+
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+
+    // Give any microtask queue a chance to settle the promise — it must not.
+    let settled = false;
+    promise.then(
+      () => { settled = true; },
+      () => { settled = true; },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    // Clean up: let the deferred deletion actually complete so it doesn't
+    // leave an unhandled rejection dangling past the test.
+    req.onsuccess?.();
+    await promise;
+  });
+
+  it("resolves once onsuccess fires after being blocked (blocked-then-completed)", async () => {
+    const deleteDatabase = jest.fn().mockReturnValue({});
+    Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
+
+    const onBlocked = jest.fn();
+    const promise = resetWorkspace(onBlocked);
+    const req = deleteDatabase.mock.results[0].value;
+    req.onblocked?.();
+    req.onsuccess?.();
+
+    await expect(promise).resolves.toBeUndefined();
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+  });
+
+  it("still rejects on onerror after being blocked", async () => {
+    const deleteDatabase = jest.fn().mockReturnValue({});
+    Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
+
+    const onBlocked = jest.fn();
+    const promise = resetWorkspace(onBlocked);
+    const req = deleteDatabase.mock.results[0].value;
+    req.onblocked?.();
+    const error = new DOMException("Delete failed");
+    Object.defineProperty(req, "error", { value: error });
+    req.onerror?.();
+
+    await expect(promise).rejects.toBe(error);
+  });
+
+  it("works with no onBlocked callback passed (optional parameter)", async () => {
     const deleteDatabase = jest.fn().mockReturnValue({});
     Object.defineProperty(global, "indexedDB", { value: { deleteDatabase }, configurable: true });
 
     const promise = resetWorkspace();
     const req = deleteDatabase.mock.results[0].value;
     req.onblocked?.();
+    req.onsuccess?.();
 
-    await expect(promise).rejects.toThrow(/blocked/i);
+    await expect(promise).resolves.toBeUndefined();
   });
 });
 

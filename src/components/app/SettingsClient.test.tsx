@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
@@ -83,6 +83,35 @@ describe("SettingsClient — reset workspace", () => {
       expect(resetWorkspace).toHaveBeenCalled();
       expect(reloadMock).toHaveBeenCalled();
     });
+  });
+
+  // resetWorkspace's onblocked can't cancel the pending deleteDatabase call
+  // (IndexedDB gives no cancellation API), so a blocked reset is NOT a
+  // failure — it's still in flight and will complete on its own once other
+  // tabs close. The UI must say that truthfully, not show an error, and
+  // must not let the user re-arm the confirm button to fire a second
+  // deleteDatabase request.
+  it("shows a waiting message (not an error) when the reset is blocked, and keeps the confirm button disabled", async () => {
+    let capturedOnBlocked: (() => void) | undefined;
+    (resetWorkspace as jest.Mock).mockImplementation((onBlocked?: () => void) => {
+      capturedOnBlocked = onBlocked;
+      return new Promise<void>(() => {}); // stays pending for this test
+    });
+
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
+    const confirmButton = screen.getByRole("button", { name: /yes, wipe everything/i });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => expect(capturedOnBlocked).toBeDefined());
+    act(() => capturedOnBlocked!());
+
+    expect(
+      await screen.findByText(/waiting for other trAIner tabs to close/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/reset failed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^blocked/i)).not.toBeInTheDocument();
+    expect(confirmButton).toBeDisabled();
   });
 });
 

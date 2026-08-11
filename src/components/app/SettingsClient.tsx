@@ -81,6 +81,13 @@ export function SettingsClient() {
   const [resetOpen, setResetOpen] = useState(false);
   const [wiping, setWiping] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  // Set when deleteDatabase's onblocked fires. This is NOT an error state:
+  // per the IndexedDB spec, the delete request stays pending and WILL
+  // complete on its own once other trAIner tabs close — resetWorkspace
+  // stays pending too. The UI just needs to tell the truth while it waits,
+  // and keep the confirm button disabled so a second click can't queue a
+  // second deleteDatabase request.
+  const [resetBlocked, setResetBlocked] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [persistence, setPersistence] = useState<PersistenceState | null>(null);
   const [snapshotList, setSnapshotList] = useState<{ id: string }[]>([]);
@@ -393,11 +400,13 @@ export function SettingsClient() {
                 onClick={async () => {
                   setWiping(true);
                   setResetError(null);
+                  setResetBlocked(false);
                   try {
-                    await resetWorkspace();
+                    await resetWorkspace(() => setResetBlocked(true));
                     window.location.reload();
                   } catch (e) {
                     setWiping(false);
+                    setResetBlocked(false);
                     setResetError(e instanceof Error ? e.message : "Reset failed. Please try again.");
                   }
                 }}
@@ -413,7 +422,7 @@ export function SettingsClient() {
                   opacity: wiping ? 0.7 : 1,
                 }}
               >
-                {wiping ? "Wiping…" : "Yes, wipe everything"}
+                {resetBlocked ? "Waiting…" : wiping ? "Wiping…" : "Yes, wipe everything"}
               </button>
               <button
                 type="button"
@@ -424,6 +433,11 @@ export function SettingsClient() {
                 Cancel
               </button>
             </div>
+            {resetBlocked && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--warn, #e6b664)", fontFamily: "var(--font-mono)" }}>
+                Waiting for other trAIner tabs to close — the reset will finish automatically.
+              </p>
+            )}
             {resetError && (
               <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>
                 {resetError}

@@ -216,13 +216,20 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   await tx.done;
 }
 
-export async function resetWorkspace(): Promise<void> {
+export async function resetWorkspace(onBlocked?: () => void): Promise<void> {
   resetDbConnection(); // close cached connection first — deleteDatabase blocks on open connections
   return new Promise((resolve, reject) => {
     const req = indexedDB.deleteDatabase(DB_NAME);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
-    req.onblocked = () =>
-      reject(new Error("Reset blocked — close other trAIner tabs and try again."));
+    // IndexedDB gives no way to cancel a deleteDatabase request once it's
+    // blocked — onblocked is purely informational per spec. The request
+    // stays live and WILL fire onsuccess as soon as the last blocking
+    // connection (e.g. another open tab) closes. The only honest options
+    // here are "wait" (leave this promise pending and let the eventual
+    // onsuccess/onerror settle it) or "lie" (reject now, then silently
+    // erase the database after telling the caller it failed). We wait —
+    // and let the caller show a truthful "waiting" state instead.
+    req.onblocked = () => onBlocked?.();
   });
 }
