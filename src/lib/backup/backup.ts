@@ -1,11 +1,4 @@
 import type { BackupDocument } from "@/lib/programs/types";
-import { profileRepo } from "@/lib/storage/profileRepo";
-import { programRepo } from "@/lib/storage/programRepo";
-import { logRepo } from "@/lib/storage/logRepo";
-import { aliasRepo } from "@/lib/storage/aliasRepo";
-import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
-import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
-import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
 
 // Fix 2: Deep validation helpers
@@ -74,16 +67,35 @@ function requireOverrideReplacements(programs: Record<string, unknown>[]): void 
 }
 
 export async function exportBackup(): Promise<BackupDocument> {
+  // One readonly transaction across every exported store: the file is a
+  // consistent point-in-time snapshot even if another tab writes mid-export.
+  const db = await getDb();
+  const tx = db.transaction(
+    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
+    "readonly",
+  );
+  const [profiles, programs, logs, aliases, userExercises, bodyweight, promptPresets] = await Promise.all([
+    tx.objectStore("profile").getAll(),
+    tx.objectStore("programs").getAll(),
+    tx.objectStore("logs").getAll(),
+    tx.objectStore("aliases").getAll(),
+    tx.objectStore("userExercises").getAll(),
+    tx.objectStore("bodyweight").getAll(),
+    tx.objectStore("promptPresets").getAll(),
+  ]);
+  await tx.done;
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    profile: await profileRepo.get(),
-    programs: await programRepo.list(),
-    logs: await logRepo.list(),
-    aliases: await aliasRepo.list(),
-    userExercises: await userExerciseRepo.list(),
-    bodyweight: await bodyweightRepo.list(),
-    promptPresets: await promptPresetRepo.list(),
+    // BackupDocument.profile is `ProfileDocument | undefined` — do NOT use
+    // `?? null`, strict typechecking rejects null here.
+    profile: profiles[0],
+    programs,
+    logs,
+    aliases,
+    userExercises,
+    bodyweight,
+    promptPresets,
   };
 }
 
@@ -171,7 +183,10 @@ export async function restoreBackup(backup: unknown): Promise<void> {
 
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"], "readwrite");
+  const tx = db.transaction(
+    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets", "metrics"],
+    "readwrite",
+  );
 
   tx.objectStore("profile").clear();
   tx.objectStore("programs").clear();
@@ -180,6 +195,10 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   tx.objectStore("userExercises").clear();
   tx.objectStore("bodyweight").clear();
   tx.objectStore("promptPresets").clear();
+  // metrics is a derived-cache store (currently unwritten anywhere). Clear it
+  // on restore so it can never hold values computed from data that no longer
+  // exists once someone starts using it.
+  tx.objectStore("metrics").clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);

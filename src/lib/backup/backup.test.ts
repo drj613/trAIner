@@ -1,16 +1,49 @@
 import { exportBackup, restoreBackup, resetWorkspace } from "./backup";
 import { resetDbConnection } from "@/lib/storage/appDb";
-import { programRepo } from "@/lib/storage/programRepo";
 
 const mockClear = jest.fn().mockResolvedValue(undefined);
 const mockPut = jest.fn();
+
+// Per-store seed data for transaction reads. Tests set e.g.
+// storeData.programs = [myProgram] instead of mocking programRepo.list.
+const storeData: Record<string, unknown[]> = {};
+const mockGetAll = jest.fn();
+const mockTransaction = jest.fn().mockImplementation(() => ({
+  objectStore: jest.fn().mockImplementation((name: string) => ({
+    clear: mockClear,
+    put: mockPut,
+    getAll: jest.fn().mockImplementation(() => {
+      mockGetAll(name);
+      return Promise.resolve(storeData[name] ?? []);
+    }),
+  })),
+  done: Promise.resolve(undefined),
+}));
 const mockGetDb = jest.fn().mockResolvedValue({
   clear: mockClear,
-  transaction: jest.fn().mockReturnValue({
-    objectStore: jest.fn().mockReturnValue({ clear: mockClear, put: mockPut }),
-    done: Promise.resolve(undefined),
-  }),
+  transaction: mockTransaction,
 });
+
+beforeEach(() => {
+  for (const k of Object.keys(storeData)) delete storeData[k];
+});
+
+// Shared fixture for restoreBackup validation and metrics tests below.
+const validDoc = {
+  version: 1,
+  exportedAt: "2026-08-10T00:00:00.000Z",
+  profile: null,
+  programs: [
+    {
+      id: "p1", title: "T", days: [], overrides: [],
+      createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
+    },
+  ],
+  logs: [
+    { id: "l1", programId: "p1", dayId: "d1", performedAt: "2026-01-02T00:00:00.000Z", entries: [] },
+  ],
+  aliases: [],
+};
 
 // Must be hoisted before imports in Jest
 jest.mock("@/lib/storage/appDb", () => ({
@@ -123,14 +156,14 @@ describe("countsTowardVolume — backup round trip", () => {
   });
 
   it("exportBackup preserves countsTowardVolume:true on a program exercise", async () => {
-    (programRepo.list as jest.Mock).mockResolvedValueOnce([makeProgramWithExercise(true)]);
+    storeData.programs = [makeProgramWithExercise(true)];
     const backup = await exportBackup();
     const exercise = backup.programs[0].days[0].sections[0].groups[0].exercises[0];
     expect(exercise.countsTowardVolume).toBe(true);
   });
 
   it("exportBackup preserves countsTowardVolume:false on a program exercise", async () => {
-    (programRepo.list as jest.Mock).mockResolvedValueOnce([makeProgramWithExercise(false)]);
+    storeData.programs = [makeProgramWithExercise(false)];
     const backup = await exportBackup();
     const exercise = backup.programs[0].days[0].sections[0].groups[0].exercises[0];
     expect(exercise.countsTowardVolume).toBe(false);
@@ -196,22 +229,6 @@ describe("restoreBackup — C7 validation", () => {
 });
 
 describe("restoreBackup deep validation", () => {
-  const validDoc = {
-    version: 1,
-    exportedAt: "2026-08-10T00:00:00.000Z",
-    profile: null,
-    programs: [
-      {
-        id: "p1", title: "T", days: [], overrides: [],
-        createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
-      },
-    ],
-    logs: [
-      { id: "l1", programId: "p1", dayId: "d1", performedAt: "2026-01-02T00:00:00.000Z", entries: [] },
-    ],
-    aliases: [],
-  };
-
   it("accepts a well-formed document", async () => {
     await expect(restoreBackup(validDoc)).resolves.toBeUndefined();
   });
@@ -368,5 +385,27 @@ describe("resetWorkspace", () => {
     req.onblocked?.();
 
     await expect(promise).rejects.toThrow(/blocked/i);
+  });
+});
+
+describe("exportBackup point-in-time", () => {
+  it("reads all stores in one readonly transaction", async () => {
+    mockTransaction.mockClear();
+    await exportBackup();
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+    const [stores, mode] = mockTransaction.mock.calls[0];
+    expect(mode).toBe("readonly");
+    expect([...stores].sort()).toEqual([
+      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+    ]);
+  });
+});
+
+describe("restoreBackup metrics", () => {
+  it("clears the metrics store", async () => {
+    mockTransaction.mockClear();
+    await restoreBackup(validDoc);
+    const [stores] = mockTransaction.mock.calls[0];
+    expect(stores).toContain("metrics");
   });
 });
