@@ -6,6 +6,7 @@ import { exportBackup, restoreBackup, resetWorkspace } from "@/lib/backup/backup
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { loadWorkspaceStats, type WorkspaceStats } from "@/lib/workspace/stats";
 import { getPersistenceState, requestPersistence, type PersistenceState } from "@/lib/storage/persistence";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 type Density = "comfy" | "default" | "dense";
 type Mono = "jetbrains" | "system";
@@ -266,6 +267,8 @@ export function SettingsClient() {
           </div>
         )}
       </div>
+
+      <InstallPrompt />
 
       {/* Local-first blurb */}
       <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r, 6px)", padding: 10, fontSize: 11.5, color: "var(--fg-2)", lineHeight: 1.55, marginBottom: 20 }}>
