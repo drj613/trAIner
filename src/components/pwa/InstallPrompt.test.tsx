@@ -44,11 +44,21 @@ describe("shouldShowInstallPrompt", () => {
 });
 
 describe("InstallPrompt", () => {
-  it("renders install steps and the data-migration warning on iOS", () => {
+  it("renders the Add to Home Screen instruction on iOS", () => {
     setEnv({ ios: true, standaloneNav: false, standaloneMedia: false });
     render(<InstallPrompt />);
     expect(screen.getByText(/Add to Home Screen/i)).toBeInTheDocument();
-    expect(screen.getByText(/download your profile data and import it into the installed app/i)).toBeInTheDocument();
+  });
+  it("names the real Settings actions for migrating data", () => {
+    setEnv({ ios: true, standaloneNav: false, standaloneMedia: false });
+    render(<InstallPrompt />);
+    expect(screen.getByText(/Download backup file/i)).toBeInTheDocument();
+    expect(screen.getByText(/Import workspace/i)).toBeInTheDocument();
+  });
+  it("explains why: the installed app starts with its own empty storage", () => {
+    setEnv({ ios: true, standaloneNav: false, standaloneMedia: false });
+    render(<InstallPrompt />);
+    expect(screen.getByText(/starts with its own empty storage/i)).toBeInTheDocument();
   });
   it("renders nothing when installed", () => {
     setEnv({ ios: true, standaloneNav: true, standaloneMedia: false });

@@ -4,17 +4,24 @@
  * iOS-only instructional install prompt. There is no programmatic install on
  * iOS (no beforeinstallprompt) — the user must do Share → Add to Home Screen.
  * Installing matters for durability: installed web apps are exempt from
- * Safari's 7-day storage cap and make persist() grantable.
+ * WebKit's ~7-day-of-non-use storage eviction (ITP) and make persist()
+ * grantable. Detection deliberately matches any iOS browser (Chrome,
+ * Firefox, etc. are all WebKit under the hood on iOS), not just Safari.
  *
- * CRITICAL COPY: installed iOS apps do NOT share IndexedDB with Safari. An
- * existing user who installs without exporting first opens an empty app.
- * The migration line below is load-bearing — do not remove it.
+ * CRITICAL COPY: installed iOS apps do NOT share IndexedDB with the browser
+ * tab. An existing user who installs without exporting first opens an empty
+ * app. The migration paragraph below is load-bearing — it must keep naming
+ * the real "Download backup file" / "Import workspace" actions and the
+ * "starts with its own empty storage" reason; do not remove or genericize it.
  */
 export function shouldShowInstallPrompt(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
   // iPadOS Safari defaults to a desktop ("Macintosh") user agent; the
-  // established signal is Mac UA + multitouch. Real Macs report 0 touch points.
+  // established heuristic is Mac UA + multitouch, since most Macs report 0
+  // touch points. This can false-positive on a touch-capable Mac (Touch Bar,
+  // an attached touchscreen) — harmless, since the only effect is showing a
+  // Mac user irrelevant iPhone install instructions, not any data loss.
   const isIos =
     /iPhone|iPad|iPod/.test(ua) ||
     (/Macintosh/.test(ua) && window.navigator.maxTouchPoints > 1);
@@ -44,13 +51,15 @@ export function InstallPrompt() {
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
         <span className="tx-up" style={{ color: "var(--accent)" }}>Protect your data — install</span>
       </div>
-      Safari deletes this app&apos;s data after 7 days without a visit. Installing
-      to your home screen exempts it: tap <strong>Share</strong> →{" "}
+      iOS clears this app&apos;s data if you don&apos;t open it for about a
+      week. Adding trAIner to your home screen exempts it, and lets the
+      browser grant persistent storage: tap <strong>Share</strong> →{" "}
       <strong>Add to Home Screen</strong>.
       <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
-        If you&apos;ve been using this in your browser, you&apos;ll need to
-        download your profile data and import it into the installed app — the
-        installed copy starts with its own empty storage.
+        If you&apos;ve been using trAIner in your browser, the installed app
+        starts with its own empty storage. Use <strong>Download backup file</strong>{" "}
+        here first, then <strong>Import workspace</strong> inside the
+        installed app — otherwise it opens with none of your history.
       </div>
     </div>
   );
