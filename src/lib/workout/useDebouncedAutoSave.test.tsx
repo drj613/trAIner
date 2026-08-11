@@ -264,4 +264,53 @@ describe("useDebouncedAutoSave serialization", () => {
     expect(save).toHaveBeenCalledTimes(2);
     expect(save).toHaveBeenLastCalledWith("b");
   });
+
+  it("runExclusive waits for an in-flight save, and a later autosave waits for runExclusive", async () => {
+    // Guards the finish/skip terminal-write path: a debounced save already
+    // running must finish before runExclusive's write starts, and a
+    // subsequent autosave must not jump ahead of runExclusive either —
+    // otherwise an autosave could rewrite the doc without completedAt/skippedAt.
+    const order: string[] = [];
+    let running = 0;
+    let maxConcurrent = 0;
+    const resolvers: Array<() => void> = [];
+    const save = jest.fn().mockImplementation((v: string) => {
+      running += 1;
+      maxConcurrent = Math.max(maxConcurrent, running);
+      order.push(`save:${v}`); // record on start, not on settle
+      return new Promise<void>((resolve) => {
+        resolvers.push(() => { running -= 1; resolve(); });
+      });
+    });
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+
+    rerender({ value: "b" });
+    act(() => { jest.advanceTimersByTime(1500); });
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1); // save("b") running, unresolved
+
+    const fn = jest.fn().mockImplementation(() => {
+      order.push("runExclusive");
+      return Promise.resolve("terminal");
+    });
+    let exclusivePromise: Promise<string>;
+    act(() => { exclusivePromise = result.current.runExclusive(fn); });
+    await act(async () => {});
+    expect(fn).not.toHaveBeenCalled(); // must wait for save("b") to settle
+    expect(maxConcurrent).toBe(1);
+
+    await act(async () => { resolvers[0](); }); // finish save("b") → fn starts
+    await act(async () => { await exclusivePromise!; });
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["save:b", "runExclusive"]);
+
+    // A later autosave chains onto the same queue and must run after fn.
+    rerender({ value: "c" });
+    await act(async () => { jest.advanceTimersByTime(1500); });
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(order).toEqual(["save:b", "runExclusive", "save:c"]);
+  });
 });

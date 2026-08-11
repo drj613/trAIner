@@ -6,6 +6,14 @@ export type UseDebouncedAutoSaveResult = {
   status: AutoSaveStatus;
   /** Force-flush the pending save (e.g. before unmount). */
   flush: () => Promise<void>;
+  /**
+   * Run `fn` on the same write queue as autosaves, so a terminal write
+   * (finish/skip) can never interleave with a debounced one. Callers that
+   * read-modify-write the whole document MUST go through this: an autosave
+   * that reads before the terminal write commits would rewrite the record
+   * without completedAt/skippedAt.
+   */
+  runExclusive: <R>(fn: () => Promise<R>) => Promise<R>;
 };
 
 /**
@@ -45,10 +53,16 @@ export function useDebouncedAutoSave<T>(
     // same tick, and both would otherwise see dirty=true and double-enqueue.
     dirtyRef.current = false;
     const run = queueRef.current.then(async () => {
+      const written = valueRef.current;
       setStatus("saving");
       try {
-        await saveRef.current(valueRef.current);
+        await saveRef.current(written);
         setStatus("saved");
+        // An older queued save may have failed and re-set dirty. If the value
+        // hasn't changed since this write began, that value is now on disk —
+        // drop the stale flag. If it HAS changed, a newer save is pending and
+        // dirtiness must stand.
+        if (Object.is(valueRef.current, written)) dirtyRef.current = false;
       } catch (e) {
         console.error("[autoSave] save failed", e);
         setStatus("error");
@@ -60,6 +74,29 @@ export function useDebouncedAutoSave<T>(
     });
     queueRef.current = run;
     return run;
+  }
+
+  /**
+   * Run `fn` on the same write queue as autosaves, so a terminal write can
+   * never interleave with a debounced one.
+   */
+  function runExclusive<R>(fn: () => Promise<R>): Promise<R> {
+    // Whatever fn writes supersedes the debounced value, so cancel the
+    // pending timer and drop dirtiness — otherwise the timer would enqueue a
+    // plain write straight after fn and undo its completedAt/skippedAt.
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    dirtyRef.current = false;
+    const result = queueRef.current.then(fn);
+    // Keep the queue non-rejected: a failed terminal write must not wedge
+    // every later autosave. The caller still sees the rejection via `result`.
+    queueRef.current = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
   }
 
   useEffect(() => {
@@ -81,9 +118,10 @@ export function useDebouncedAutoSave<T>(
   }, [value, delayMs]);
 
   useEffect(() => {
-    // On hide/unload the JS context may be about to die: start the write
-    // immediately. IndexedDB writes begun in pagehide usually complete;
-    // writes still sitting in a debounce timer never do.
+    // On hide/unload the JS context may be about to die: enqueue the write
+    // immediately (it may still wait behind a slow in-flight save). IndexedDB
+    // writes begun in pagehide usually complete; writes still sitting in a
+    // debounce timer never do.
     function flushIfDirty() {
       if (!dirtyRef.current) return;
       if (timerRef.current) {
@@ -117,5 +155,5 @@ export function useDebouncedAutoSave<T>(
     await doSave();
   }
 
-  return { status, flush };
+  return { status, flush, runExclusive };
 }
