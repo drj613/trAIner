@@ -265,21 +265,22 @@ describe("useDebouncedAutoSave serialization", () => {
     expect(save).toHaveBeenLastCalledWith("b");
   });
 
-  it("runExclusive waits for an in-flight save, and a later autosave waits for runExclusive", async () => {
+  it("runExclusive waits for an in-flight save, and a later autosave waits for runExclusive to settle", async () => {
     // Guards the finish/skip terminal-write path: a debounced save already
     // running must finish before runExclusive's write starts, and a
-    // subsequent autosave must not jump ahead of runExclusive either —
-    // otherwise an autosave could rewrite the doc without completedAt/skippedAt.
+    // subsequent autosave must not start while runExclusive is STILL in
+    // flight — otherwise an autosave could rewrite the doc without
+    // completedAt/skippedAt while the terminal write is mid-commit.
     const order: string[] = [];
-    let running = 0;
     let maxConcurrent = 0;
+    const running = { save: 0, fn: 0 };
     const resolvers: Array<() => void> = [];
     const save = jest.fn().mockImplementation((v: string) => {
-      running += 1;
-      maxConcurrent = Math.max(maxConcurrent, running);
-      order.push(`save:${v}`); // record on start, not on settle
+      running.save += 1;
+      maxConcurrent = Math.max(maxConcurrent, running.save + running.fn);
+      order.push(`save:${v}:start`);
       return new Promise<void>((resolve) => {
-        resolvers.push(() => { running -= 1; resolve(); });
+        resolvers.push(() => { running.save -= 1; order.push(`save:${v}:settle`); resolve(); });
       });
     });
     const { result, rerender } = renderHook(
@@ -292,9 +293,18 @@ describe("useDebouncedAutoSave serialization", () => {
     await act(async () => {});
     expect(save).toHaveBeenCalledTimes(1); // save("b") running, unresolved
 
+    let resolveFn: () => void;
     const fn = jest.fn().mockImplementation(() => {
-      order.push("runExclusive");
-      return Promise.resolve("terminal");
+      running.fn += 1;
+      maxConcurrent = Math.max(maxConcurrent, running.save + running.fn);
+      order.push("runExclusive:start");
+      return new Promise<string>((resolve) => {
+        resolveFn = () => {
+          running.fn -= 1;
+          order.push("runExclusive:settle");
+          resolve("terminal");
+        };
+      });
     });
     let exclusivePromise: Promise<string>;
     act(() => { exclusivePromise = result.current.runExclusive(fn); });
@@ -303,14 +313,51 @@ describe("useDebouncedAutoSave serialization", () => {
     expect(maxConcurrent).toBe(1);
 
     await act(async () => { resolvers[0](); }); // finish save("b") → fn starts
-    await act(async () => { await exclusivePromise!; });
-    expect(fn).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(["save:b", "runExclusive"]);
+    expect(fn).toHaveBeenCalledTimes(1); // fn now running, unresolved
 
-    // A later autosave chains onto the same queue and must run after fn.
+    // While fn is still in flight, a value change enqueues an autosave. It
+    // must sit behind fn, not run concurrently or ahead of it.
     rerender({ value: "c" });
-    await act(async () => { jest.advanceTimersByTime(1500); });
+    act(() => { jest.advanceTimersByTime(1500); });
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1); // save("c") must NOT have started yet
+    expect(maxConcurrent).toBe(1);
+
+    await act(async () => { resolveFn!(); }); // finish fn → save("c") starts
     expect(save).toHaveBeenCalledTimes(2);
-    expect(order).toEqual(["save:b", "runExclusive", "save:c"]);
+    await act(async () => { resolvers[1](); }); // finish save("c")
+    await act(async () => { await exclusivePromise!; });
+
+    expect(order).toEqual([
+      "save:b:start",
+      "save:b:settle",
+      "runExclusive:start",
+      "runExclusive:settle",
+      "save:c:start",
+      "save:c:settle",
+    ]);
+  });
+
+  it("restores dirtiness when a runExclusive write fails, so the next hide retries it", async () => {
+    // Guards finishWorkout/handleSkip: if the terminal write throws (shown
+    // to the user as "Failed to save... Please try again"), the pending
+    // edits must not silently die with the tab on the next background/close.
+    const save = jest.fn().mockResolvedValue(undefined);
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedAutoSave(value, save, 1500),
+      { initialProps: { value: "a" } },
+    );
+    rerender({ value: "b" }); // pending edit, not yet autosaved
+
+    const fn = jest.fn().mockRejectedValue(new Error("terminal write failed"));
+    await act(async () => {
+      await expect(result.current.runExclusive(fn)).rejects.toThrow();
+    });
+    expect(save).not.toHaveBeenCalled(); // runExclusive drops the debounce timer
+
+    act(() => { fireVisibilityHidden(); });
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith("b");
   });
 });

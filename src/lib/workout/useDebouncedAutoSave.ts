@@ -88,13 +88,26 @@ export function useDebouncedAutoSave<T>(
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    // The value fn is about to persist, captured now so the success path can
+    // tell whether the user has edited since.
+    const at = valueRef.current;
     dirtyRef.current = false;
     const result = queueRef.current.then(fn);
     // Keep the queue non-rejected: a failed terminal write must not wedge
     // every later autosave. The caller still sees the rejection via `result`.
     queueRef.current = result.then(
-      () => undefined,
-      () => undefined,
+      () => {
+        // An older queued autosave may have failed and re-set dirty. If the
+        // user hasn't edited since this write was queued, its data is now on
+        // disk — drop the stale flag. If they have, dirtiness must stand.
+        if (Object.is(valueRef.current, at)) dirtyRef.current = false;
+      },
+      () => {
+        // The terminal write failed, so the value it was meant to persist is
+        // still unsaved. Restore dirtiness so the next hide/pagehide (or the
+        // next edit's timer) gets another shot at it.
+        dirtyRef.current = true;
+      },
     );
     return result;
   }
