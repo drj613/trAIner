@@ -173,10 +173,38 @@ export function getDb() {
             db.createObjectStore("promptPresets", { keyPath: "id" });
           }
         }
-      }
+      },
+      blocked() {
+        // Another tab holds an older connection; this open will hang until
+        // it closes. Tell the UI so the user gets an instruction, not a
+        // silent forever-spinner.
+        window.dispatchEvent(new CustomEvent("trainer-db-blocked"));
+      },
+      blocking() {
+        // A newer tab (new deploy, higher DB_VERSION) wants to upgrade.
+        // This tab's code is stale and must reload — but NOT synchronously:
+        // an instant close+reload aborts any in-flight autosave write, which
+        // is exactly the data loss this whole effort exists to prevent.
+        // Give pending transactions a beat to commit, then reload; closing
+        // the connection right before reload releases the upgrade lock.
+        setTimeout(() => {
+          dbInstance?.close();
+          dbInstance = undefined;
+          dbPromise = undefined;
+          window.location.reload();
+        }, 1500);
+      },
+      terminated() {
+        // Browser killed the connection (e.g. storage pressure); allow reopen.
+        dbInstance = undefined;
+        dbPromise = undefined;
+      },
     }).then((db) => {
       dbInstance = db;
       return db;
+    }).catch((e) => {
+      dbPromise = undefined; // let the next getDb() retry instead of re-throwing forever
+      throw e;
     });
   }
 

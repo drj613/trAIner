@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/app/ThemeProvider";
 import { LocalDataProvider } from "@/components/app/LocalDataProvider";
 import { AppShell } from "@/components/app/AppShell";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import { DbBlockedBanner } from "@/components/app/DbBlockedBanner";
 import { TodayClient } from "@/components/workout/TodayClient";
 import { RoutinesIndexClient } from "@/components/workout/RoutinesIndexClient";
 import { RoutineBuilderClient } from "@/components/workout/RoutineBuilderClient";
@@ -67,6 +68,7 @@ export default function App() {
         </LocalDataProvider>
       </ThemeProvider>
       <ServiceWorkerRegistration />
+      <DbBlockedBanner />
     </BrowserRouter>
   );
 }
