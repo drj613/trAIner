@@ -10,7 +10,11 @@ const storeData: Record<string, unknown[]> = {};
 const mockGetAll = jest.fn();
 const mockTransaction = jest.fn().mockImplementation(() => ({
   objectStore: jest.fn().mockImplementation((name: string) => ({
-    clear: mockClear,
+    // Route through the shared spy so clear-per-store is attributable
+    // (e.g. `expect(mockClear).toHaveBeenCalledWith("metrics")`), while
+    // "db untouched" tests can still assert `mockClear` was never called
+    // at all, regardless of which store.
+    clear: jest.fn().mockImplementation(() => mockClear(name)),
     put: mockPut,
     getAll: jest.fn().mockImplementation(() => {
       mockGetAll(name);
@@ -235,9 +239,13 @@ describe("restoreBackup deep validation", () => {
 
   it("rejects a program that is only an id, without touching the db", async () => {
     mockClear.mockClear();
+    mockTransaction.mockClear();
+    mockGetDb.mockClear();
     const doc = { ...validDoc, programs: [{ id: "p1" }] };
     await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
     expect(mockClear).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 
   it("rejects a program with non-array days", async () => {
@@ -247,9 +255,13 @@ describe("restoreBackup deep validation", () => {
 
   it("rejects a log missing performedAt, without touching the db", async () => {
     mockClear.mockClear();
+    mockTransaction.mockClear();
+    mockGetDb.mockClear();
     const doc = { ...validDoc, logs: [{ id: "l1", programId: "p1", dayId: "d1", entries: [] }] };
     await expect(restoreBackup(doc)).rejects.toThrow(/logs\[0\]/);
     expect(mockClear).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 
   it("rejects a log with non-array entries", async () => {
@@ -269,9 +281,13 @@ describe("restoreBackup deep validation", () => {
     // unconditionally on every page that renders a program's days — a null
     // override element crashes that sort exactly like the days/entries case above.
     mockClear.mockClear();
+    mockTransaction.mockClear();
+    mockGetDb.mockClear();
     const doc = { ...validDoc, programs: [{ ...validDoc.programs[0], overrides: [null] }] };
     await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
     expect(mockClear).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockGetDb).not.toHaveBeenCalled();
   });
 
   describe("override.replacement", () => {
@@ -288,12 +304,16 @@ describe("restoreBackup deep validation", () => {
       // whose replacement is null crashes the `.find(r => r.dayNumber...)`
       // lookup on load once its weekNumber matches a real day.
       mockClear.mockClear();
+      mockTransaction.mockClear();
+      mockGetDb.mockClear();
       const doc = {
         ...validDoc,
         programs: [{ ...validDoc.programs[0], overrides: [{ ...baseOverride, replacement: null }] }],
       };
       await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
       expect(mockClear).not.toHaveBeenCalled();
+      expect(mockTransaction).not.toHaveBeenCalled();
+      expect(mockGetDb).not.toHaveBeenCalled();
     });
 
     it("rejects a missing replacement", async () => {
@@ -391,6 +411,7 @@ describe("resetWorkspace", () => {
 describe("exportBackup point-in-time", () => {
   it("reads all stores in one readonly transaction", async () => {
     mockTransaction.mockClear();
+    mockGetAll.mockClear();
     await exportBackup();
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     const [stores, mode] = mockTransaction.mock.calls[0];
@@ -398,14 +419,19 @@ describe("exportBackup point-in-time", () => {
     expect([...stores].sort()).toEqual([
       "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
     ]);
+    // Pins "reads every store, once, in the one transaction" — not just
+    // that the store list passed to transaction() was right.
+    expect(mockGetAll).toHaveBeenCalledTimes(7);
+    expect([...new Set(mockGetAll.mock.calls.map((call) => call[0]))].sort()).toEqual([
+      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+    ]);
   });
 });
 
 describe("restoreBackup metrics", () => {
   it("clears the metrics store", async () => {
-    mockTransaction.mockClear();
+    mockClear.mockClear();
     await restoreBackup(validDoc);
-    const [stores] = mockTransaction.mock.calls[0];
-    expect(stores).toContain("metrics");
+    expect(mockClear).toHaveBeenCalledWith("metrics");
   });
 });
