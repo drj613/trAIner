@@ -195,6 +195,59 @@ describe("restoreBackup — C7 validation", () => {
   });
 });
 
+describe("restoreBackup deep validation", () => {
+  const validDoc = {
+    version: 1,
+    exportedAt: "2026-08-10T00:00:00.000Z",
+    profile: null,
+    programs: [
+      {
+        id: "p1", title: "T", days: [], overrides: [],
+        createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ],
+    logs: [
+      { id: "l1", programId: "p1", dayId: "d1", performedAt: "2026-01-02T00:00:00.000Z", entries: [] },
+    ],
+    aliases: [],
+  };
+
+  it("accepts a well-formed document", async () => {
+    await expect(restoreBackup(validDoc)).resolves.toBeUndefined();
+  });
+
+  it("rejects a program that is only an id, without touching the db", async () => {
+    mockClear.mockClear();
+    const doc = { ...validDoc, programs: [{ id: "p1" }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
+    expect(mockClear).not.toHaveBeenCalled();
+  });
+
+  it("rejects a program with non-array days", async () => {
+    const doc = { ...validDoc, programs: [{ ...validDoc.programs[0], days: "nope" }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
+  });
+
+  it("rejects a log missing performedAt, without touching the db", async () => {
+    mockClear.mockClear();
+    const doc = { ...validDoc, logs: [{ id: "l1", programId: "p1", dayId: "d1", entries: [] }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/logs\[0\]/);
+    expect(mockClear).not.toHaveBeenCalled();
+  });
+
+  it("rejects a log with non-array entries", async () => {
+    const doc = { ...validDoc, logs: [{ ...validDoc.logs[0], entries: {} }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/logs\[0\]/);
+  });
+
+  it("rejects null elements inside days/entries", async () => {
+    const badProgram = { ...validDoc, programs: [{ ...validDoc.programs[0], days: [null] }] };
+    await expect(restoreBackup(badProgram)).rejects.toThrow(/programs\[0\]/);
+    const badLog = { ...validDoc, logs: [{ ...validDoc.logs[0], entries: [null] }] };
+    await expect(restoreBackup(badLog)).rejects.toThrow(/logs\[0\]/);
+  });
+});
+
 describe("resetWorkspace", () => {
   beforeEach(() => {
     const deleteDatabase = jest.fn().mockReturnValue({});

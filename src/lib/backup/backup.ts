@@ -20,6 +20,36 @@ function hasIds(arr: Record<string, unknown>[]): boolean {
   return arr.every((e) => typeof e["id"] === "string");
 }
 
+// Fix S5: deep validation of fields the app dereferences unconditionally.
+// Scope boundary (deliberate): this checks every field the app reads without
+// a guard, plus one level of nested element shape (days/entries must be
+// arrays of objects, so e.g. days: [null] is rejected). It is NOT a full
+// recursive schema validator — exhaustive schema validation (sections,
+// groups, exercises, sets, enums, timestamp formats, referential integrity)
+// belongs in S4's versioned-export design, where a schema will exist to
+// validate against. Until then, the two safety nets for deep-but-well-typed
+// corruption are the pre-restore auto-download and restore atomicity.
+function requireFields(
+  arr: Record<string, unknown>[],
+  storeName: string,
+  fields: { name: string; check: (v: unknown) => boolean; expected: string }[],
+): void {
+  arr.forEach((item, i) => {
+    for (const f of fields) {
+      if (!f.check(item[f.name])) {
+        throw new Error(
+          `Invalid backup: ${storeName}[${i}] (id ${String(item["id"])}) — '${f.name}' must be ${f.expected}.`,
+        );
+      }
+    }
+  });
+}
+
+const isString = (v: unknown) => typeof v === "string";
+const isArray = (v: unknown) => Array.isArray(v);
+const isArrayOfNonNullObjects = (v: unknown) =>
+  Array.isArray(v) && v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e));
+
 export async function exportBackup(): Promise<BackupDocument> {
   return {
     version: 1,
@@ -95,6 +125,23 @@ export async function restoreBackup(backup: unknown): Promise<void> {
       throw new Error("Invalid backup: 'promptPresets' entries must have string ids.");
     }
   }
+
+  // A record that passes the shallow id check but lacks required structure
+  // would commit, destroy the workspace, and crash every page that reads it.
+  // Validate everything the app dereferences unconditionally BEFORE clearing.
+  requireFields(doc["programs"], "programs", [
+    { name: "title", check: isString, expected: "a string" },
+    { name: "days", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+    { name: "overrides", check: isArray, expected: "an array" },
+    { name: "createdAt", check: isString, expected: "a string timestamp" },
+    { name: "updatedAt", check: isString, expected: "a string timestamp" },
+  ]);
+  requireFields(doc["logs"], "logs", [
+    { name: "programId", check: isString, expected: "a string" },
+    { name: "dayId", check: isString, expected: "a string" },
+    { name: "performedAt", check: isString, expected: "a string timestamp" },
+    { name: "entries", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+  ]);
 
   const b = backup as BackupDocument;
 

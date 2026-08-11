@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
-import { exportBackup, resetWorkspace } from "@/lib/backup/backup";
+import { exportBackup, restoreBackup, resetWorkspace } from "@/lib/backup/backup";
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { getPersistenceState } from "@/lib/storage/persistence";
 
@@ -169,5 +169,45 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
 
     resolveExport({ exportedAt: "2026-08-03T00:00:00.000Z", programs: [], logs: [], aliases: [] });
     await waitFor(() => expect(backupRepo.save).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("import flow", () => {
+  const calls: string[] = [];
+  beforeEach(() => {
+    calls.length = 0;
+    jest.spyOn(window, "confirm").mockReturnValue(true);
+    window.URL.createObjectURL = jest.fn().mockReturnValue("blob:x");
+    window.URL.revokeObjectURL = jest.fn();
+    jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => { calls.push("download"); });
+    (exportBackup as jest.Mock).mockReset().mockResolvedValue({ exportedAt: "2026-08-10T00:00:00.000Z" });
+    (restoreBackup as jest.Mock).mockReset().mockImplementation(async () => { calls.push("restore"); });
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  async function importFile() {
+    const { container } = render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    const input = container.querySelector('input[type="file"]')!;
+    const payload = JSON.stringify({ version: 1, programs: [], logs: [], aliases: [] });
+    const file = new File([payload], "b.json", { type: "application/json" });
+    // jsdom 20 (this repo's jest-environment-jsdom) does NOT implement
+    // File.prototype.text — without this stub, handleImport's JSON.parse
+    // throws, the catch swallows it, and the test fails in a way that looks
+    // like a production ordering bug. Stub it explicitly.
+    Object.defineProperty(file, "text", { value: async () => payload });
+    await userEvent.upload(input as HTMLInputElement, file);
+  }
+
+  it("downloads a pre-restore backup before restoring", async () => {
+    await importFile();
+    await waitFor(() => expect(calls).toEqual(["download", "restore"]));
+  });
+
+  it("does not restore when the pre-restore export fails", async () => {
+    (exportBackup as jest.Mock).mockRejectedValue(new Error("boom"));
+    jest.spyOn(window, "alert").mockImplementation(() => undefined);
+    await importFile();
+    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+    expect(restoreBackup).not.toHaveBeenCalled();
   });
 });

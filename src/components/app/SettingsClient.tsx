@@ -134,25 +134,38 @@ export function SettingsClient() {
   function handleDensity(d: Density) { setDensity(d); setDensityState(d); }
   function handleMono(m: Mono) { setMono(m); setMonoState(m); }
 
-  async function handleExport() {
-    const backup = await exportBackup();
+  function downloadBackupFile(backup: Awaited<ReturnType<typeof exportBackup>>, prefix = "trAIner-workspace") {
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `trAIner-workspace-${backup.exportedAt.slice(0, 10)}.json`;
+    a.download = `${prefix}-${backup.exportedAt.slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
+  async function handleExport() {
+    downloadBackupFile(await exportBackup());
+  }
+
   async function handleImport(file?: File) {
     if (!file) return;
-    if (!confirm("This will replace all local data. Continue?")) return;
+    if (!confirm("This will replace all local data. A backup file of the current workspace will download first. Continue?")) return;
+    try {
+      // A restore clears everything first. Push the current workspace to a
+      // file so a bad import is recoverable.
+      downloadBackupFile(await exportBackup(), "trAIner-pre-restore");
+    } catch (e) {
+      console.error("[settings] pre-restore backup failed", e);
+      alert("Could not create a safety backup first, so nothing was changed.");
+      return;
+    }
     try {
       const data = JSON.parse(await file.text());
       await restoreBackup(data);
       setStats(await loadWorkspaceStats());
-    } catch {
+    } catch (e) {
+      console.error("[settings] restore failed", e);
       alert("Failed to restore — invalid file format.");
     }
   }
