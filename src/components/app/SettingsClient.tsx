@@ -179,7 +179,7 @@ export function SettingsClient() {
           <span className="tx-up" style={{ color: "var(--good, #7fc77a)" }}>Local-first</span>
         </div>
         All data lives in your browser via IndexedDB. No account, no sync, no telemetry. Export to back up or move between devices.
-        {persistence !== "persisted" && persistence !== null && (
+        {persistence === "denied" && (
           <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
             The browser has not granted persistent storage — it may delete this
             data under disk pressure or inactivity. Export regularly.{" "}
@@ -191,6 +191,12 @@ export function SettingsClient() {
             >
               Request protection
             </button>
+          </div>
+        )}
+        {persistence === "unsupported" && (
+          <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
+            This browser can&apos;t protect local data from eviction. Download a
+            backup file regularly — it&apos;s the only safeguard here.
           </div>
         )}
       </div>

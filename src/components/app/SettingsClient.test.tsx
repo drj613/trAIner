@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
 import { resetWorkspace } from "@/lib/backup/backup";
+import { getPersistenceState } from "@/lib/storage/persistence";
 
 jest.mock("@/lib/backup/backup", () => ({
   exportBackup: jest.fn().mockResolvedValue({ exportedAt: "2026-05-06T00:00:00.000Z", programs: [], logs: [], aliases: [] }),
@@ -82,5 +83,19 @@ describe("SettingsClient — storage persistence", () => {
   it("shows storage protection state", async () => {
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     expect(await screen.findByText(/^protected$/)).toBeInTheDocument();
+  });
+
+  it("shows evictable state with a Request protection button when denied", async () => {
+    (getPersistenceState as jest.Mock).mockResolvedValueOnce("denied");
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByText(/^evictable$/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /request protection/i })).toBeInTheDocument();
+  });
+
+  it("shows unprotected state with no button when unsupported", async () => {
+    (getPersistenceState as jest.Mock).mockResolvedValueOnce("unsupported");
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByText(/^unprotected$/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /request protection/i })).not.toBeInTheDocument();
   });
 });

@@ -60,11 +60,15 @@ describe("getPersistenceState", () => {
   beforeEach(() => { resetPersistenceForTests(); });
 
   it("reports persisted() without re-requesting", async () => {
+    const persisted = jest.fn().mockResolvedValue(true);
+    const persist = jest.fn();
     Object.defineProperty(navigator, "storage", {
       configurable: true,
-      value: { persisted: jest.fn().mockResolvedValue(true) },
+      value: { persisted, persist },
     });
     await expect(getPersistenceState()).resolves.toBe("persisted");
+    expect(persisted).toHaveBeenCalledTimes(1);
+    expect(persist).not.toHaveBeenCalled();
   });
 
   it("awaits an in-flight requestPersistence() instead of racing it", async () => {

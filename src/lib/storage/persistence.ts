@@ -16,7 +16,8 @@ export function requestPersistence(): Promise<PersistenceState> {
       try {
         if (!navigator.storage?.persist) return "unsupported";
         return (await navigator.storage.persist()) ? "persisted" : "denied";
-      } catch {
+      } catch (e) {
+        console.error("[persistence] storage.persist() failed", e);
         return "unsupported";
       }
     })().then((state) => {
@@ -45,7 +46,8 @@ export async function getPersistenceState(): Promise<PersistenceState> {
   try {
     if (!navigator.storage?.persisted) return "unsupported";
     return (await navigator.storage.persisted()) ? "persisted" : "denied";
-  } catch {
+  } catch (e) {
+    console.error("[persistence] storage.persisted() failed", e);
     return "unsupported";
   }
 }
