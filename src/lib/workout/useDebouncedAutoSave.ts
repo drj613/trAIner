@@ -12,6 +12,10 @@ export type UseDebouncedAutoSaveResult = {
  * Run `save(value)` `delayMs` after `value` last changes.
  * Holds onto the original save reference per render via a ref so changing the
  * callback identity does not re-arm the timer.
+ *
+ * Also flushes pending edits when the page is hidden or unloading
+ * (`visibilitychange`/`pagehide`) — the debounce window must not be able to
+ * lose the last edits of a workout when a tab or installed PWA is closed.
  */
 export function useDebouncedAutoSave<T>(
   value: T,
@@ -21,12 +25,17 @@ export function useDebouncedAutoSave<T>(
   const [status, setStatus] = useState<AutoSaveStatus>("idle");
   const saveRef = useRef(save);
   saveRef.current = save;
-  const firstRunRef = useRef(true);
   const valueRef = useRef(value);
   valueRef.current = value;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dirtyRef = useRef(false);
+  // Dirtiness is detected by value identity, not by counting effect runs:
+  // StrictMode replays mount effects in dev, so a firstRun flag would mark
+  // the untouched initial value dirty and write it on every page hide.
+  const lastSeenValueRef = useRef(value);
 
   async function doSave() {
+    dirtyRef.current = false;
     setStatus("saving");
     try {
       await saveRef.current(valueRef.current);
@@ -38,16 +47,38 @@ export function useDebouncedAutoSave<T>(
   }
 
   useEffect(() => {
-    if (firstRunRef.current) {
-      firstRunRef.current = false;
-      return;
-    }
+    if (Object.is(lastSeenValueRef.current, value)) return;
+    lastSeenValueRef.current = value;
+    dirtyRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => { void doSave(); }, delayMs);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [value, delayMs]);
+
+  useEffect(() => {
+    // On hide/unload the JS context may be about to die: start the write
+    // immediately. IndexedDB writes begun in pagehide usually complete;
+    // writes still sitting in a debounce timer never do.
+    function flushIfDirty() {
+      if (!dirtyRef.current) return;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      void doSave();
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") flushIfDirty();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", flushIfDirty);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", flushIfDirty);
+    };
+  }, []);
 
   async function flush() {
     if (timerRef.current) {
