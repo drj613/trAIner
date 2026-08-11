@@ -74,6 +74,11 @@ export async function exportBackup(): Promise<BackupDocument> {
     ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
     "readonly",
   );
+  // tx.done is included in the same Promise.all (last, resolves to
+  // undefined, ignored below) rather than awaited afterward — if a getAll()
+  // rejects, Promise.all rejects immediately and control would otherwise
+  // never reach a standalone `await tx.done`, leaving its rejection (the
+  // transaction aborts when a request fails) unhandled.
   const [profiles, programs, logs, aliases, userExercises, bodyweight, promptPresets] = await Promise.all([
     tx.objectStore("profile").getAll(),
     tx.objectStore("programs").getAll(),
@@ -82,8 +87,8 @@ export async function exportBackup(): Promise<BackupDocument> {
     tx.objectStore("userExercises").getAll(),
     tx.objectStore("bodyweight").getAll(),
     tx.objectStore("promptPresets").getAll(),
+    tx.done,
   ]);
-  await tx.done;
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
