@@ -20,20 +20,14 @@ function hasIds(arr: Record<string, unknown>[]): boolean {
   return arr.every((e) => typeof e["id"] === "string");
 }
 
-// Fix S5: deep validation of fields the app dereferences unconditionally.
-// Scope boundary (deliberate): this checks every field the app reads without
-// a guard, plus one level of nested element shape for every array the app
-// iterates immediately on a normal page load (days/entries/overrides must
-// be arrays of non-null objects, so e.g. overrides: [null] — which would
-// otherwise crash getRenderableDays' `[...program.overrides].sort(...)` on
-// `a.scope` — is rejected here instead). It does NOT validate fields nested
-// one level deeper (an override's own scope/replacement/weekNumber/dayId, a
-// day's sections, a log entry's sets) — those are read behind conditional
-// guards in the app (e.g. applyOverride only reads weekNumber/dayId/
-// replacement after matching on scope, and fails closed otherwise) or belong
-// to S4's versioned-export design, where a schema will exist to validate
-// against. Until then, the two safety nets for deep-but-well-typed
-// corruption are the pre-restore auto-download and restore atomicity.
+// Fix S5: deep validation of fields the app dereferences unconditionally on
+// a normal page load — for programs, logs, and each program's overrides.
+// Everything below that level (sections/groups/exercises/sets, enums,
+// timestamp formats, referential integrity) is deliberately NOT validated
+// here; it's deferred to S4's versioned-export design, where a schema will
+// exist to validate against. Until then, the two safety nets for
+// deep-but-well-typed corruption are the pre-restore auto-download and
+// restore atomicity.
 function requireFields(
   arr: Record<string, unknown>[],
   storeName: string,
@@ -53,6 +47,31 @@ function requireFields(
 const isString = (v: unknown) => typeof v === "string";
 const isArrayOfNonNullObjects = (v: unknown) =>
   Array.isArray(v) && v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e));
+
+// getOverrideReplacementDays accepts either shape: a single day object, or
+// an array of them. A missing/null replacement on a week-scope override
+// crashes getRenderableDays on load — applyOverride reads it after the
+// scope/weekNumber guards pass, inside `.find(r => r.dayNumber === ...)`,
+// which throws on a null/undefined element. Validated for every override
+// regardless of scope, since applyOverride reads `replacement` unconditionally
+// before branching on scope.
+const isDayOrDayArray = (v: unknown) =>
+  Array.isArray(v)
+    ? v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e))
+    : v !== null && typeof v === "object";
+
+function requireOverrideReplacements(programs: Record<string, unknown>[]): void {
+  programs.forEach((program, pi) => {
+    const overrides = program["overrides"] as Record<string, unknown>[];
+    overrides.forEach((override, oi) => {
+      if (!isDayOrDayArray(override["replacement"])) {
+        throw new Error(
+          `Invalid backup: programs[${pi}] (id ${String(program["id"])}) — overrides[${oi}].replacement must be a day object or an array of day objects.`,
+        );
+      }
+    });
+  });
+}
 
 export async function exportBackup(): Promise<BackupDocument> {
   return {
@@ -146,6 +165,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     { name: "performedAt", check: isString, expected: "a string timestamp" },
     { name: "entries", check: isArrayOfNonNullObjects, expected: "an array of objects" },
   ]);
+  requireOverrideReplacements(doc["programs"]);
 
   const b = backup as BackupDocument;
 

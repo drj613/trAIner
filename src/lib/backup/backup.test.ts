@@ -256,6 +256,54 @@ describe("restoreBackup deep validation", () => {
     await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
     expect(mockClear).not.toHaveBeenCalled();
   });
+
+  describe("override.replacement", () => {
+    const singleDay = { id: "d1", dayNumber: 1 };
+    const dayArray = [{ id: "d1", dayNumber: 1 }, { id: "d2", dayNumber: 2 }];
+    const baseOverride = {
+      id: "o1", scope: "week", programId: "p1", weekNumber: 1,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    it("rejects a null replacement, without touching the db", async () => {
+      // applyOverride reads `replacement` (via getOverrideReplacementDays)
+      // unconditionally before branching on scope; a week-scope override
+      // whose replacement is null crashes the `.find(r => r.dayNumber...)`
+      // lookup on load once its weekNumber matches a real day.
+      mockClear.mockClear();
+      const doc = {
+        ...validDoc,
+        programs: [{ ...validDoc.programs[0], overrides: [{ ...baseOverride, replacement: null }] }],
+      };
+      await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
+      expect(mockClear).not.toHaveBeenCalled();
+    });
+
+    it("rejects a missing replacement", async () => {
+      const { replacement: _unused, ...overrideWithoutReplacement } = { ...baseOverride, replacement: singleDay };
+      const doc = {
+        ...validDoc,
+        programs: [{ ...validDoc.programs[0], overrides: [overrideWithoutReplacement] }],
+      };
+      await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
+    });
+
+    it("accepts a single day object as replacement", async () => {
+      const doc = {
+        ...validDoc,
+        programs: [{ ...validDoc.programs[0], overrides: [{ ...baseOverride, replacement: singleDay }] }],
+      };
+      await expect(restoreBackup(doc)).resolves.toBeUndefined();
+    });
+
+    it("accepts an array of day objects as replacement", async () => {
+      const doc = {
+        ...validDoc,
+        programs: [{ ...validDoc.programs[0], overrides: [{ ...baseOverride, replacement: dayArray }] }],
+      };
+      await expect(restoreBackup(doc)).resolves.toBeUndefined();
+    });
+  });
 });
 
 describe("resetWorkspace", () => {
