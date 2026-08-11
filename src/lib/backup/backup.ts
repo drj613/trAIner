@@ -22,12 +22,17 @@ function hasIds(arr: Record<string, unknown>[]): boolean {
 
 // Fix S5: deep validation of fields the app dereferences unconditionally.
 // Scope boundary (deliberate): this checks every field the app reads without
-// a guard, plus one level of nested element shape (days/entries must be
-// arrays of objects, so e.g. days: [null] is rejected). It is NOT a full
-// recursive schema validator — exhaustive schema validation (sections,
-// groups, exercises, sets, enums, timestamp formats, referential integrity)
-// belongs in S4's versioned-export design, where a schema will exist to
-// validate against. Until then, the two safety nets for deep-but-well-typed
+// a guard, plus one level of nested element shape for every array the app
+// iterates immediately on a normal page load (days/entries/overrides must
+// be arrays of non-null objects, so e.g. overrides: [null] — which would
+// otherwise crash getRenderableDays' `[...program.overrides].sort(...)` on
+// `a.scope` — is rejected here instead). It does NOT validate fields nested
+// one level deeper (an override's own scope/replacement/weekNumber/dayId, a
+// day's sections, a log entry's sets) — those are read behind conditional
+// guards in the app (e.g. applyOverride only reads weekNumber/dayId/
+// replacement after matching on scope, and fails closed otherwise) or belong
+// to S4's versioned-export design, where a schema will exist to validate
+// against. Until then, the two safety nets for deep-but-well-typed
 // corruption are the pre-restore auto-download and restore atomicity.
 function requireFields(
   arr: Record<string, unknown>[],
@@ -46,7 +51,6 @@ function requireFields(
 }
 
 const isString = (v: unknown) => typeof v === "string";
-const isArray = (v: unknown) => Array.isArray(v);
 const isArrayOfNonNullObjects = (v: unknown) =>
   Array.isArray(v) && v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e));
 
@@ -132,7 +136,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   requireFields(doc["programs"], "programs", [
     { name: "title", check: isString, expected: "a string" },
     { name: "days", check: isArrayOfNonNullObjects, expected: "an array of objects" },
-    { name: "overrides", check: isArray, expected: "an array" },
+    { name: "overrides", check: isArrayOfNonNullObjects, expected: "an array of objects" },
     { name: "createdAt", check: isString, expected: "a string timestamp" },
     { name: "updatedAt", check: isString, expected: "a string timestamp" },
   ]);

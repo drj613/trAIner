@@ -246,6 +246,16 @@ describe("restoreBackup deep validation", () => {
     const badLog = { ...validDoc, logs: [{ ...validDoc.logs[0], entries: [null] }] };
     await expect(restoreBackup(badLog)).rejects.toThrow(/logs\[0\]/);
   });
+
+  it("rejects a null element inside overrides, without touching the db", async () => {
+    // getRenderableDays does [...program.overrides].sort((a, b) => ... a.scope ...)
+    // unconditionally on every page that renders a program's days — a null
+    // override element crashes that sort exactly like the days/entries case above.
+    mockClear.mockClear();
+    const doc = { ...validDoc, programs: [{ ...validDoc.programs[0], overrides: [null] }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/programs\[0\]/);
+    expect(mockClear).not.toHaveBeenCalled();
+  });
 });
 
 describe("resetWorkspace", () => {

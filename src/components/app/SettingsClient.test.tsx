@@ -179,7 +179,12 @@ describe("import flow", () => {
     jest.spyOn(window, "confirm").mockReturnValue(true);
     window.URL.createObjectURL = jest.fn().mockReturnValue("blob:x");
     window.URL.revokeObjectURL = jest.fn();
-    jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => { calls.push("download"); });
+    // Capture the anchor's `download` attribute, not just that a click
+    // happened — a regression that downloads the plain (non-pre-restore)
+    // export here would still produce a "click" but with the wrong filename.
+    jest.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      calls.push(`download:${this.download}`);
+    });
     (exportBackup as jest.Mock).mockReset().mockResolvedValue({ exportedAt: "2026-08-10T00:00:00.000Z" });
     (restoreBackup as jest.Mock).mockReset().mockImplementation(async () => { calls.push("restore"); });
   });
@@ -198,16 +203,20 @@ describe("import flow", () => {
     await userEvent.upload(input as HTMLInputElement, file);
   }
 
-  it("downloads a pre-restore backup before restoring", async () => {
+  it("downloads a pre-restore backup (not the plain export) before restoring", async () => {
     await importFile();
-    await waitFor(() => expect(calls).toEqual(["download", "restore"]));
+    await waitFor(() =>
+      expect(calls).toEqual(["download:trAIner-pre-restore-2026-08-10.json", "restore"]),
+    );
   });
 
-  it("does not restore when the pre-restore export fails", async () => {
+  it("does not restore when the pre-restore export fails, and shows the export-failure message specifically", async () => {
     (exportBackup as jest.Mock).mockRejectedValue(new Error("boom"));
-    jest.spyOn(window, "alert").mockImplementation(() => undefined);
+    const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => undefined);
     await importFile();
-    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Could not create a safety backup first, so nothing was changed."),
+    );
     expect(restoreBackup).not.toHaveBeenCalled();
   });
 });

@@ -137,11 +137,18 @@ export function SettingsClient() {
   function downloadBackupFile(backup: Awaited<ReturnType<typeof exportBackup>>, prefix = "trAIner-workspace") {
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${prefix}-${backup.exportedAt.slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${prefix}-${backup.exportedAt.slice(0, 10)}.json`;
+      a.click();
+    } finally {
+      // Defer the revoke instead of calling it synchronously right after
+      // click() — that gives the browser a moment to actually start the
+      // download, and the finally+setTimeout combination means the object
+      // URL is still released even if click() itself throws.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
   }
 
   async function handleExport() {
@@ -150,7 +157,7 @@ export function SettingsClient() {
 
   async function handleImport(file?: File) {
     if (!file) return;
-    if (!confirm("This will replace all local data. A backup file of the current workspace will download first. Continue?")) return;
+    if (!confirm("This will replace all local data. A backup file of the current workspace will be downloaded first — make sure you have it before continuing.")) return;
     try {
       // A restore clears everything first. Push the current workspace to a
       // file so a bad import is recoverable.
