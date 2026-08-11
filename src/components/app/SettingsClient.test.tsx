@@ -113,6 +113,34 @@ describe("SettingsClient — reset workspace", () => {
     expect(screen.queryByText(/^blocked/i)).not.toBeInTheDocument();
     expect(confirmButton).toBeDisabled();
   });
+
+  // A Cancel button that stays clickable during an uncancellable pending
+  // deletion implies it can cancel it. It can't — deleteDatabase has no
+  // cancellation API — so clicking Cancel would just hide the panel and
+  // the waiting message while the wipe still happens in the background.
+  // Disable it for the whole in-flight/blocked window, same as Confirm.
+  it("disables Cancel while a reset is pending, and keeps it disabled once blocked", async () => {
+    let capturedOnBlocked: (() => void) | undefined;
+    (resetWorkspace as jest.Mock).mockImplementation((onBlocked?: () => void) => {
+      capturedOnBlocked = onBlocked;
+      return new Promise<void>(() => {}); // stays pending for this test
+    });
+
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
+    const cancelButton = screen.getByRole("button", { name: /cancel/i });
+    fireEvent.click(screen.getByRole("button", { name: /yes, wipe everything/i }));
+
+    // Pending, not yet blocked: still must not be cancellable.
+    await waitFor(() => expect(cancelButton).toBeDisabled());
+
+    await waitFor(() => expect(capturedOnBlocked).toBeDefined());
+    act(() => capturedOnBlocked!());
+
+    // Blocked: still must not be cancellable.
+    expect(await screen.findByText(/waiting for other trAIner tabs to close/i)).toBeInTheDocument();
+    expect(cancelButton).toBeDisabled();
+  });
 });
 
 describe("SettingsClient — storage persistence", () => {

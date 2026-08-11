@@ -427,7 +427,8 @@ export function SettingsClient() {
               <button
                 type="button"
                 className="btn ghost"
-                style={{ fontSize: 12, padding: "7px 12px" }}
+                disabled={wiping}
+                style={{ fontSize: 12, padding: "7px 12px", cursor: wiping ? "not-allowed" : "pointer", opacity: wiping ? 0.6 : 1 }}
                 onClick={() => setResetOpen(false)}
               >
                 Cancel
