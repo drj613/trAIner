@@ -26,6 +26,11 @@ jest.mock("@/components/app/ThemeProvider", () => ({
   setMono: jest.fn(),
 }));
 
+jest.mock("@/lib/storage/persistence", () => ({
+  getPersistenceState: jest.fn().mockResolvedValue("persisted"),
+  requestPersistence: jest.fn().mockResolvedValue("persisted"),
+}));
+
 describe("SettingsClient — reset workspace", () => {
   let originalLocation: typeof window.location;
 
@@ -70,5 +75,12 @@ describe("SettingsClient — reset workspace", () => {
       expect(resetWorkspace).toHaveBeenCalled();
       expect(reloadMock).toHaveBeenCalled();
     });
+  });
+});
+
+describe("SettingsClient — storage persistence", () => {
+  it("shows storage protection state", async () => {
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByText(/^protected$/)).toBeInTheDocument();
   });
 });

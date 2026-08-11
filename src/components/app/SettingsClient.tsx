@@ -5,6 +5,7 @@ import { setDensity, setTheme, setMono } from "@/components/app/ThemeProvider";
 import { exportBackup, restoreBackup, resetWorkspace } from "@/lib/backup/backup";
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { loadWorkspaceStats, type WorkspaceStats } from "@/lib/workspace/stats";
+import { getPersistenceState, requestPersistence, type PersistenceState } from "@/lib/storage/persistence";
 
 type Density = "comfy" | "default" | "dense";
 type Mono = "jetbrains" | "system";
@@ -76,9 +77,14 @@ export function SettingsClient() {
   const [wiping, setWiping] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [persistence, setPersistence] = useState<PersistenceState | null>(null);
 
   useEffect(() => {
     loadWorkspaceStats().then(setStats);
+  }, []);
+
+  useEffect(() => {
+    getPersistenceState().then(setPersistence);
   }, []);
 
   function handleTheme(t: string) { setTheme(t); setThemeState(t); }
@@ -139,7 +145,13 @@ export function SettingsClient() {
           <span className="tx-up">Workspace</span>
           <span style={{ flex: 1 }} />
           <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-3)" }}>
-            local · {sizeLabel}
+            local · {sizeLabel} ·{" "}
+            <span style={{ color: persistence === "persisted" ? "var(--good, #7fc77a)" : "var(--warn, #e6b664)" }}>
+              {persistence === "persisted" ? "protected"
+                : persistence === "denied" ? "evictable"
+                : persistence === "unsupported" ? "unprotected"
+                : "…"}
+            </span>
           </span>
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" }}>
@@ -167,6 +179,20 @@ export function SettingsClient() {
           <span className="tx-up" style={{ color: "var(--good, #7fc77a)" }}>Local-first</span>
         </div>
         All data lives in your browser via IndexedDB. No account, no sync, no telemetry. Export to back up or move between devices.
+        {persistence !== "persisted" && persistence !== null && (
+          <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
+            The browser has not granted persistent storage — it may delete this
+            data under disk pressure or inactivity. Export regularly.{" "}
+            <button
+              type="button"
+              className="btn ghost"
+              style={{ fontSize: 11, padding: "2px 8px" }}
+              onClick={() => requestPersistence().then(setPersistence)}
+            >
+              Request protection
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Appearance */}

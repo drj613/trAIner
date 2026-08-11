@@ -17,6 +17,9 @@ import { ImportClient } from "@/components/import/ImportClient";
 import { ProfileClient } from "@/components/profile/ProfileClient";
 import { SettingsClient } from "@/components/app/SettingsClient";
 import { PromptBuilderClient } from "@/components/prompts/PromptBuilderClient";
+import { requestPersistence } from "@/lib/storage/persistence";
+
+void requestPersistence();
 
 function ProgramDetailRoute() {
   const { id } = useParams<{ id: string }>();
