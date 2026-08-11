@@ -12,6 +12,7 @@ export type WorkspaceStats = {
   snapshots: number;
   lastSnapshotAt: string | null;
   sizeKB: number;
+  snapshotKB: number;
 };
 
 export async function loadWorkspaceStats(): Promise<WorkspaceStats> {
@@ -26,6 +27,9 @@ export async function loadWorkspaceStats(): Promise<WorkspaceStats> {
 
   const sorted = [...snapshots].sort((a, b) => b.id.localeCompare(a.id));
   const lastSnapshotAt = sorted[0]?.id ? sorted[0].id.slice(0, 10) : null;
+  const snapshotKB = Math.round(
+    snapshots.reduce((sum, s) => sum + JSON.stringify(s).length, 0) / 1024,
+  );
 
   return {
     profile: profile ? 1 : 0,
@@ -35,5 +39,6 @@ export async function loadWorkspaceStats(): Promise<WorkspaceStats> {
     snapshots: snapshots.length,
     lastSnapshotAt,
     sizeKB: Math.round((storageEstimate.usage ?? 0) / 1024),
+    snapshotKB,
   };
 }

@@ -78,6 +78,7 @@ export function SettingsClient() {
   const [resetError, setResetError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [persistence, setPersistence] = useState<PersistenceState | null>(null);
+  const [snapshotList, setSnapshotList] = useState<{ id: string }[]>([]);
 
   useEffect(() => {
     loadWorkspaceStats().then(setStats);
@@ -86,6 +87,21 @@ export function SettingsClient() {
   useEffect(() => {
     getPersistenceState().then(setPersistence);
   }, []);
+
+  async function refreshSnapshots() {
+    const all = await backupRepo.list();
+    setSnapshotList(all.map((b) => ({ id: b.id })).sort((a, b) => b.id.localeCompare(a.id)));
+  }
+
+  useEffect(() => {
+    void refreshSnapshots();
+  }, []);
+
+  async function handleDeleteSnapshot(id: string) {
+    await backupRepo.delete(id);
+    await refreshSnapshots();
+    setStats(await loadWorkspaceStats());
+  }
 
   function handleTheme(t: string) { setTheme(t); setThemeState(t); }
   function handleDensity(d: Density) { setDensity(d); setDensityState(d); }
@@ -119,6 +135,7 @@ export function SettingsClient() {
     try {
       const backup = await exportBackup();
       await backupRepo.save(backup);
+      await refreshSnapshots();
       setStats(await loadWorkspaceStats());
     } finally {
       setSnapshotting(false);
@@ -130,7 +147,7 @@ export function SettingsClient() {
     : "…";
 
   const snapshotSub = stats?.snapshots
-    ? `${stats.snapshots} snapshot${stats.snapshots !== 1 ? "s" : ""} · last ${stats.lastSnapshotAt ?? "—"}`
+    ? `${stats.snapshots} snapshot${stats.snapshots !== 1 ? "s" : ""} · ${stats.snapshotKB} KB · last ${stats.lastSnapshotAt ?? "—"}`
     : "no snapshots";
 
   const exportSub = stats
@@ -166,11 +183,27 @@ export function SettingsClient() {
 
       {/* Actions */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-        <ActionRow label="Export full workspace" sub={exportSub} variant="primary" onClick={handleExport} />
+        <ActionRow label="Download backup file" sub={exportSub} variant="primary" onClick={handleExport} />
         <ActionRow label="Import workspace" sub="Replace all local data — destructive" variant="warn" onClick={() => fileRef.current?.click()}>
           <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0])} />
         </ActionRow>
-        <ActionRow label={snapshotting ? "Saving…" : "Snapshot current state"} sub={snapshotSub} onClick={handleSnapshot} />
+        <ActionRow
+          label={snapshotting ? "Saving…" : "Snapshot (undo point)"}
+          sub={`${snapshotSub} · stored in-browser, wiped with it — not a backup`}
+          onClick={handleSnapshot}
+        />
+        {snapshotList.length > 0 && (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+            {snapshotList.map((s) => (
+              <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 12px", borderBottom: "1px dashed var(--line)", color: "var(--fg-3)" }}>
+                <span>{s.id.slice(0, 16).replace("T", " ")}</span>
+                <button type="button" className="btn ghost" style={{ fontSize: 10, padding: "1px 6px" }} onClick={() => handleDeleteSnapshot(s.id)}>
+                  delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Local-first blurb */}
@@ -178,7 +211,7 @@ export function SettingsClient() {
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <span className="tx-up" style={{ color: "var(--good, #7fc77a)" }}>Local-first</span>
         </div>
-        All data lives in your browser via IndexedDB. No account, no sync, no telemetry. Export to back up or move between devices.
+        All data lives in your browser via IndexedDB. No account, no sync, no telemetry. Download a backup file to protect your history or move between devices — in-browser snapshots vanish with the browser data they copy.
         {persistence === "denied" && (
           <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
             The browser has not granted persistent storage — it may delete this

@@ -1,7 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
 import { resetWorkspace } from "@/lib/backup/backup";
+import { backupRepo } from "@/lib/storage/backupRepo";
 import { getPersistenceState } from "@/lib/storage/persistence";
 
 jest.mock("@/lib/backup/backup", () => ({
@@ -11,13 +13,17 @@ jest.mock("@/lib/backup/backup", () => ({
 }));
 
 jest.mock("@/lib/storage/backupRepo", () => ({
-  backupRepo: { save: jest.fn().mockResolvedValue(undefined) },
+  backupRepo: {
+    save: jest.fn().mockResolvedValue(undefined),
+    list: jest.fn().mockResolvedValue([]),
+    delete: jest.fn().mockResolvedValue(undefined),
+  },
 }));
 
 jest.mock("@/lib/workspace/stats", () => ({
   loadWorkspaceStats: jest.fn().mockResolvedValue({
     profile: 1, programs: 2, logs: 5, aliases: 3, snapshots: 0,
-    sizeKB: 42, lastSnapshotAt: null,
+    sizeKB: 42, snapshotKB: 0, lastSnapshotAt: null,
   }),
 }));
 
@@ -97,5 +103,22 @@ describe("SettingsClient — storage persistence", () => {
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     expect(await screen.findByText(/^unprotected$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /request protection/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("SettingsClient — snapshot labeling and deletion", () => {
+  it("labels snapshots as undo points, not backups", async () => {
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByText(/undo point/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a backup/i)).toBeInTheDocument();
+  });
+
+  it("deletes a snapshot from the list", async () => {
+    (backupRepo.list as jest.Mock)
+      .mockResolvedValueOnce([{ id: "2026-08-01T00:00:00.000Z" }])
+      .mockResolvedValue([]);
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    await userEvent.click(await screen.findByRole("button", { name: /delete/i }));
+    await waitFor(() => expect(backupRepo.delete).toHaveBeenCalledWith("2026-08-01T00:00:00.000Z"));
   });
 });
