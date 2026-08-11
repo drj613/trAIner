@@ -27,12 +27,14 @@ function ActionRow({
   label,
   sub,
   variant = "default",
+  disabled = false,
   onClick,
   children,
 }: {
   label: string;
   sub: string;
   variant?: "primary" | "warn" | "danger" | "default";
+  disabled?: boolean;
   onClick?: () => void;
   children?: React.ReactNode;
 }) {
@@ -46,11 +48,13 @@ function ActionRow({
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: "flex", alignItems: "center", textAlign: "left",
         padding: "10px 12px", background: "var(--bg-2)",
         border: "1px solid var(--line)", borderRadius: "var(--r, 6px)",
-        cursor: "pointer", width: "100%", gap: 8,
+        cursor: disabled ? "not-allowed" : "pointer", width: "100%", gap: 8,
+        opacity: disabled ? 0.6 : 1,
       }}
     >
       <div style={{ flex: 1 }}>
@@ -79,6 +83,11 @@ export function SettingsClient() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [persistence, setPersistence] = useState<PersistenceState | null>(null);
   const [snapshotList, setSnapshotList] = useState<{ id: string }[]>([]);
+  // Which row's delete button is armed (needs a second click to confirm).
+  // A single click-to-arm state covers "arm a row" (first click), "confirm"
+  // (second click on the same row), and "disarm" (arming a different row,
+  // or a successful delete) without a modal.
+  const [armedDeleteId, setArmedDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     loadWorkspaceStats().then(setStats);
@@ -89,8 +98,12 @@ export function SettingsClient() {
   }, []);
 
   async function refreshSnapshots() {
-    const all = await backupRepo.list();
-    setSnapshotList(all.map((b) => ({ id: b.id })).sort((a, b) => b.id.localeCompare(a.id)));
+    // Ids only: loadWorkspaceStats() already materializes every full
+    // snapshot record for its size/count readout, so fetching full records
+    // again here would be a second full read of up to SNAPSHOT_RETENTION
+    // complete workspace copies just to render a list of timestamps.
+    const ids = await backupRepo.listIds();
+    setSnapshotList([...ids].sort((a, b) => b.localeCompare(a)).map((id) => ({ id })));
   }
 
   useEffect(() => {
@@ -104,6 +117,16 @@ export function SettingsClient() {
       setStats(await loadWorkspaceStats());
     } catch (e) {
       console.error("[settings] snapshot delete failed", e);
+    } finally {
+      setArmedDeleteId(null);
+    }
+  }
+
+  function handleDeleteClick(id: string) {
+    if (armedDeleteId === id) {
+      void handleDeleteSnapshot(id);
+    } else {
+      setArmedDeleteId(id);
     }
   }
 
@@ -150,8 +173,12 @@ export function SettingsClient() {
     ? stats.sizeKB >= 1024 ? `${(stats.sizeKB / 1024).toFixed(2)} MB` : `${stats.sizeKB} KB`
     : "…";
 
+  // snapshotKB is an approximate encoded-byte size — round to zero reads as
+  // a bug when snapshots actually exist, so floor it at "<1 KB" instead.
+  const snapshotSizeLabel = stats && stats.snapshotKB > 0 ? `~${stats.snapshotKB} KB` : "<1 KB";
+
   const snapshotSub = stats?.snapshots
-    ? `${stats.snapshots} snapshot${stats.snapshots !== 1 ? "s" : ""} · ${stats.snapshotKB} KB · last ${stats.lastSnapshotAt ?? "—"}`
+    ? `${stats.snapshots} snapshot${stats.snapshots !== 1 ? "s" : ""} · ${snapshotSizeLabel} · last ${stats.lastSnapshotAt ?? "—"}`
     : "no snapshots";
 
   const exportSub = stats
@@ -194,18 +221,28 @@ export function SettingsClient() {
         <ActionRow
           label={snapshotting ? "Saving…" : "Snapshot (undo point)"}
           sub={`${snapshotSub} · stored in-browser, wiped with it — not a backup`}
+          disabled={snapshotting}
           onClick={handleSnapshot}
         />
         {snapshotList.length > 0 && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
-            {snapshotList.map((s) => (
-              <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 12px", borderBottom: "1px dashed var(--line)", color: "var(--fg-3)" }}>
-                <span>{s.id.slice(0, 16).replace("T", " ")}</span>
-                <button type="button" className="btn ghost" style={{ fontSize: 10, padding: "1px 6px" }} onClick={() => handleDeleteSnapshot(s.id)}>
-                  delete
-                </button>
-              </div>
-            ))}
+            {snapshotList.map((s) => {
+              const armed = armedDeleteId === s.id;
+              return (
+                <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 12px", borderBottom: "1px dashed var(--line)", color: "var(--fg-3)" }}>
+                  <span>{s.id.slice(0, 16).replace("T", " ")}</span>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    style={{ fontSize: 10, padding: "1px 6px", color: armed ? "var(--bad, #ef9a9a)" : undefined }}
+                    aria-label={`${armed ? "confirm delete" : "delete"} snapshot ${s.id}`}
+                    onClick={() => handleDeleteClick(s.id)}
+                  >
+                    {armed ? "confirm?" : "delete"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

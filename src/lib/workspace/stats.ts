@@ -27,8 +27,12 @@ export async function loadWorkspaceStats(): Promise<WorkspaceStats> {
 
   const sorted = [...snapshots].sort((a, b) => b.id.localeCompare(a.id));
   const lastSnapshotAt = sorted[0]?.id ? sorted[0].id.slice(0, 10) : null;
+  // Encoded byte length via Blob, not UTF-16 code-unit length (.length), so
+  // "KB" in the UI actually means kilobytes rather than a smaller-looking
+  // approximation of them. (TextEncoder isn't available in this repo's
+  // jsdom test environment; Blob is, and both give byte-accurate UTF-8 size.)
   const snapshotKB = Math.round(
-    snapshots.reduce((sum, s) => sum + JSON.stringify(s).length, 0) / 1024,
+    snapshots.reduce((sum, s) => sum + new Blob([JSON.stringify(s)]).size, 0) / 1024,
   );
 
   return {

@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
-import { resetWorkspace } from "@/lib/backup/backup";
+import { exportBackup, resetWorkspace } from "@/lib/backup/backup";
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { getPersistenceState } from "@/lib/storage/persistence";
 
@@ -16,6 +16,7 @@ jest.mock("@/lib/storage/backupRepo", () => ({
   backupRepo: {
     save: jest.fn().mockResolvedValue(undefined),
     list: jest.fn().mockResolvedValue([]),
+    listIds: jest.fn().mockResolvedValue([]),
     delete: jest.fn().mockResolvedValue(undefined),
   },
 }));
@@ -113,18 +114,60 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
     expect(screen.getByText(/not a backup/i)).toBeInTheDocument();
   });
 
-  it("deletes a snapshot from the list", async () => {
-    (backupRepo.list as jest.Mock)
-      .mockResolvedValueOnce([{ id: "2026-08-01T00:00:00.000Z" }])
+  it("a single click arms the delete button but does not delete", async () => {
+    (backupRepo.listIds as jest.Mock).mockResolvedValue(["2026-08-01T00:00:00.000Z"]);
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByText("2026-08-01 00:00")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^delete snapshot/i }));
+
+    expect(backupRepo.delete).not.toHaveBeenCalled();
+    // Armed state relabels the same row so a second click means "confirm".
+    expect(await screen.findByRole("button", { name: /^confirm delete snapshot/i })).toBeInTheDocument();
+    expect(screen.getByText("2026-08-01 00:00")).toBeInTheDocument();
+  });
+
+  it("deletes a snapshot from the list on the second (confirm) click", async () => {
+    (backupRepo.listIds as jest.Mock)
+      .mockResolvedValueOnce(["2026-08-01T00:00:00.000Z"])
       .mockResolvedValue([]);
     render(<MemoryRouter><SettingsClient /></MemoryRouter>);
     expect(await screen.findByText("2026-08-01 00:00")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /delete/i }));
+
+    await userEvent.click(screen.getByRole("button", { name: /^delete snapshot/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^confirm delete snapshot/i }));
+
     await waitFor(() => expect(backupRepo.delete).toHaveBeenCalledWith("2026-08-01T00:00:00.000Z"));
     // The observable behaviour a user cares about: the row is actually gone
     // from the list after the refresh that follows delete, not just that
     // the mock was called.
     await waitFor(() => expect(screen.queryByText("2026-08-01 00:00")).not.toBeInTheDocument());
     expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it("gives each snapshot row's delete button a distinct accessible name", async () => {
+    (backupRepo.listIds as jest.Mock).mockResolvedValue([
+      "2026-08-01T00:00:00.000Z",
+      "2026-08-02T00:00:00.000Z",
+    ]);
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    expect(await screen.findByRole("button", { name: "delete snapshot 2026-08-01T00:00:00.000Z" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "delete snapshot 2026-08-02T00:00:00.000Z" })).toBeInTheDocument();
+  });
+
+  it("disables the snapshot button while saving so a rapid double-click can't create two snapshots with the same id", async () => {
+    let resolveExport!: (v: unknown) => void;
+    (exportBackup as jest.Mock).mockReturnValueOnce(
+      new Promise((resolve) => { resolveExport = resolve; }),
+    );
+
+    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    const button = await screen.findByRole("button", { name: /snapshot \(undo point\)/i });
+    await userEvent.click(button);
+
+    expect(await screen.findByRole("button", { name: /saving/i })).toBeDisabled();
+
+    resolveExport({ exportedAt: "2026-08-03T00:00:00.000Z", programs: [], logs: [], aliases: [] });
+    await waitFor(() => expect(backupRepo.save).toHaveBeenCalledTimes(1));
   });
 });
