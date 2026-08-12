@@ -234,26 +234,35 @@ describe("PromptBuilderClient presets", () => {
     expect(screen.queryByText(/Routine JSON schema/)).not.toBeInTheDocument();
   });
 
+  // Seeded with "pl" so the load visibly changes the coach: that proves a real load
+  // happened around the ad-hoc injury rather than the assertion passing by default.
   it("load leaves ad-hoc injuries untouched", async () => {
-    mockPresets = [seed()];
+    mockPresets = [seed({ personaIds: ["pl"] })];
     await renderBuilder();
     const input = screen.getByPlaceholderText(/temporary injury/i);
     fireEvent.change(input, { target: { value: "tweaked wrist" } });
     fireEvent.keyDown(input, { key: "Enter" });
 
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
+    expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
+    expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
     expect(screen.getByText(/- tweaked wrist/)).toBeInTheDocument();
   });
 
+  // "pl" rather than the default "rp", so the surviving id is only observable if
+  // loadPreset actually ran — with ["rp"] this passed even when loadPreset was a no-op.
   it("persona id no longer in DEFAULT_PERSONAS is skipped on load", async () => {
-    mockPresets = [seed({ personaIds: ["rp", "bogus-removed"] })];
+    mockPresets = [seed({ personaIds: ["pl", "bogus-removed"] })];
     await renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
 
-    expect(screen.getByText(/Coach: Hypertrophy Methodologist/)).toBeInTheDocument();
-    expect(screen.queryByText(/Coach: bogus-removed/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
+    expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/bogus-removed/)).not.toBeInTheDocument();
   });
 
+  // equipment:false makes the load observable; ancientKey is the unknown key that
+  // must be dropped without disturbing the real ones.
   it("unknown fieldOn key is ignored on load", async () => {
     mockPresets = [
       seed({
@@ -261,7 +270,7 @@ describe("PromptBuilderClient presets", () => {
           basics: true,
           history: true,
           goals: true,
-          equipment: true,
+          equipment: false,
           schedule: true,
           body: true,
           preferences: true,
@@ -273,11 +282,17 @@ describe("PromptBuilderClient presets", () => {
     await renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
     expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
+    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
   });
 
+  // The `?? true` default is only observable when the field starts off, so switch
+  // it off first: loading a preset that omits the key must switch it back on.
   it("field absent from preset defaults on", async () => {
     mockPresets = [seed({ fieldOn: { goals: true } })];
     await renderBuilder();
+    fireEvent.click(screen.getByLabelText("Equipment"));
+    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
     expect(screen.getByText(/Equipment: Full gym/)).toBeInTheDocument();
   });
