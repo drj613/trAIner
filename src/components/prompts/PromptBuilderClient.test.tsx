@@ -305,4 +305,51 @@ describe("PromptBuilderClient presets", () => {
     expect(promptPresetRepo.remove).toHaveBeenCalledWith("seed-1");
     expect(screen.queryByRole("button", { name: "Push focus" })).not.toBeInTheDocument();
   });
+
+  // deletePreset awaits the repo and then refreshes, so deleting two rows in quick
+  // succession puts two list() calls in flight. Each carries the truthful state at
+  // the time it was issued, so if the earlier one resolves last it restores a row
+  // that has already been deleted. Each resolver is captured right after its click
+  // rather than by array position, so the test doesn't depend on reaction ordering.
+  it("ignores a stale presets response that resolves after a newer refresh", async () => {
+    const rowA = seed({ id: "row-a", name: "Row A" });
+    const rowB = seed({ id: "row-b", name: "Row B" });
+    const pending: Array<(value: PromptPresetDocument[]) => void> = [];
+    promptPresetRepo.list.mockImplementation(
+      () => new Promise<PromptPresetDocument[]>((resolve) => pending.push(resolve)),
+    );
+
+    render(
+      <MemoryRouter>
+        <PromptBuilderClient />
+      </MemoryRouter>,
+    );
+
+    // Settle the mount refresh so both rows and their delete buttons exist.
+    await act(async () => pending.shift()!([rowA, rowB]));
+    expect(screen.getByRole("button", { name: "Row A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Row B" })).toBeInTheDocument();
+
+    // Delete A. Its refresh is issued against a store that still holds B.
+    fireEvent.click(screen.getByRole("button", { name: /delete .*row a/i }));
+    await act(async () => {});
+    expect(pending).toHaveLength(1);
+    const afterDeletingA = pending.shift()!;
+
+    // Delete B before A's refresh has come back. Its refresh sees an empty store.
+    fireEvent.click(screen.getByRole("button", { name: /delete .*row b/i }));
+    await act(async () => {});
+    expect(pending).toHaveLength(1);
+    const afterDeletingB = pending.shift()!;
+    expect(promptPresetRepo.remove.mock.calls.map((c) => c[0])).toEqual(["row-a", "row-b"]);
+
+    // The newer refresh lands first with the correct empty list...
+    await act(async () => afterDeletingB([]));
+    expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
+
+    // ...then A's superseded response arrives late, still listing B.
+    await act(async () => afterDeletingA([rowB]));
+    expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Row A" })).not.toBeInTheDocument();
+  });
 });
