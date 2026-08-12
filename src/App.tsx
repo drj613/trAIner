@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/app/ThemeProvider";
 import { LocalDataProvider } from "@/components/app/LocalDataProvider";
 import { AppShell } from "@/components/app/AppShell";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import { DbBlockedBanner } from "@/components/app/DbBlockedBanner";
 import { TodayClient } from "@/components/workout/TodayClient";
 import { RoutinesIndexClient } from "@/components/workout/RoutinesIndexClient";
 import { RoutineBuilderClient } from "@/components/workout/RoutineBuilderClient";
@@ -17,6 +18,9 @@ import { ImportClient } from "@/components/import/ImportClient";
 import { ProfileClient } from "@/components/profile/ProfileClient";
 import { SettingsClient } from "@/components/app/SettingsClient";
 import { PromptBuilderClient } from "@/components/prompts/PromptBuilderClient";
+import { requestPersistence } from "@/lib/storage/persistence";
+
+void requestPersistence();
 
 function ProgramDetailRoute() {
   const { id } = useParams<{ id: string }>();
@@ -64,6 +68,7 @@ export default function App() {
         </LocalDataProvider>
       </ThemeProvider>
       <ServiceWorkerRegistration />
+      <DbBlockedBanner />
     </BrowserRouter>
   );
 }

@@ -173,10 +173,48 @@ export function getDb() {
             db.createObjectStore("promptPresets", { keyPath: "id" });
           }
         }
-      }
+      },
+      blocked() {
+        // Another tab holds an older connection; this open will hang until
+        // it closes. Tell the UI so the user gets an instruction, not a
+        // silent forever-spinner.
+        window.dispatchEvent(new CustomEvent("trainer-db-blocked"));
+      },
+      blocking() {
+        // This tab's open connection is blocking another IDBOpenDBRequest
+        // from proceeding. Two distinct triggers land here: a newer tab/
+        // deploy trying to upgrade to a higher DB_VERSION, or another tab
+        // calling indexedDB.deleteDatabase during a workspace reset (see
+        // resetWorkspace in src/lib/backup/backup.ts). Either way, this
+        // tab's connection must close before the other side can continue.
+        //
+        // We deliberately do NOT close the connection or reload here. A
+        // queued-but-not-yet-started autosave write, or an edit the user
+        // makes right after this fires, would be discarded by a reload the
+        // user never asked for — exactly the data loss this whole effort
+        // exists to prevent. Surface it instead and let the user choose
+        // when to reload; the other tab is already showing its own
+        // "blocked" banner telling *them* to close tabs, so both sides give
+        // coherent, actionable advice without anything being destroyed
+        // without consent.
+        window.dispatchEvent(new CustomEvent("trainer-db-blocking"));
+      },
+      terminated() {
+        // Browser killed the connection (e.g. storage pressure); allow reopen.
+        dbInstance = undefined;
+        dbPromise = undefined;
+      },
     }).then((db) => {
       dbInstance = db;
+      // Whatever open request was previously stuck behind another
+      // connection (if any) has now resolved on its own — clear any
+      // "blocked" banner the UI may be showing. No-op if nothing was
+      // blocked.
+      window.dispatchEvent(new CustomEvent("trainer-db-unblocked"));
       return db;
+    }).catch((e) => {
+      dbPromise = undefined; // let the next getDb() retry instead of re-throwing forever
+      throw e;
     });
   }
 

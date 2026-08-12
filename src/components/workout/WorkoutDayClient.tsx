@@ -764,7 +764,7 @@ function WorkoutBody({
   }
 
   const autoSavePayload = useMemo(() => ({ cells, notes, dayNote }), [cells, notes, dayNote]);
-  const { status: autoSaveStatus, flush } = useDebouncedAutoSave(autoSavePayload, saveCells, 1500);
+  const { status: autoSaveStatus, flush, runExclusive } = useDebouncedAutoSave(autoSavePayload, saveCells, 1500);
 
   useEffect(() => {
     return () => { void flush(); };
@@ -801,8 +801,7 @@ function WorkoutBody({
     saving.current = true;
     setSaveError(null);
     try {
-      await flush();
-      await saveCells({ cells, notes, dayNote }, { markCompleted: true });
+      await runExclusive(() => saveCells({ cells, notes, dayNote }, { markCompleted: true }));
       await trackWorkoutEvent({
         type: "workout_saved",
         programId: program.id,
@@ -826,9 +825,13 @@ function WorkoutBody({
 
   async function handleSkip(reason: string) {
     try {
-      await saveCells(
-        { cells, notes, dayNote },
-        { skippedAt: new Date().toISOString(), skipReason: reason || undefined },
+      // Run on the autosave queue so a pending/racing autosave can't land
+      // after (and erase) the skip.
+      await runExclusive(() =>
+        saveCells(
+          { cells, notes, dayNote },
+          { skippedAt: new Date().toISOString(), skipReason: reason || undefined },
+        ),
       );
       setSkipMode(false);
       await navigateToNextIncompleteDay();

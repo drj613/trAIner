@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PromptBuilderClient } from "./PromptBuilderClient";
 import { DEFAULT_PERSONAS } from "@/lib/prompts/personas";
@@ -55,62 +55,78 @@ beforeEach(() => {
   };
 });
 
-function renderBuilder() {
-  return render(
+// The component loads presets in a mount effect via an un-awaited
+// promptPresetRepo.list() chain, so preset rows are absent from the first
+// commit. Flushing that chain inside act() here makes the loaded state a
+// precondition of every test rather than something to wait for: previously the
+// preset tests raced findByRole's 1s wall-clock budget, which expires when the
+// suite runs under CPU contention.
+async function renderBuilder() {
+  const result = render(
     <MemoryRouter>
       <PromptBuilderClient />
     </MemoryRouter>,
   );
+  await act(async () => {});
+  return result;
+}
+
+// Flushes an async click handler's promise chain (savePreset / deletePreset both
+// await the repo and then refresh) so the resulting commit lands before asserting.
+async function clickAndSettle(el: HTMLElement) {
+  await act(async () => {
+    fireEvent.click(el);
+  });
 }
 
 describe("PromptBuilderClient no-profile warning", () => {
-  it("shows a no-profile warning when profile is undefined", () => {
+  it("shows a no-profile warning when profile is undefined", async () => {
     mockProfile = undefined;
-    renderBuilder();
+    await renderBuilder();
     expect(screen.getByText(/no profile found/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile");
   });
 
-  it("does not show the warning when a profile exists", () => {
-    renderBuilder();
+  it("does not show the warning when a profile exists", async () => {
+    await renderBuilder();
     expect(screen.queryByText(/no profile found/i)).not.toBeInTheDocument();
   });
 });
 
 describe("PromptBuilderClient field toggles", () => {
-  it("includes enabled profile fields in the generated prompt", () => {
-    renderBuilder();
+  it("includes enabled profile fields in the generated prompt", async () => {
+    await renderBuilder();
     expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
     expect(screen.getByText(/- bad knee/)).toBeInTheDocument();
   });
 
-  it("removes a field's text when its toggle is switched off", () => {
-    renderBuilder();
+  it("removes a field's text when its toggle is switched off", async () => {
+    await renderBuilder();
     fireEvent.click(screen.getByLabelText("Goals"));
     expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
   });
 });
 
 describe("PromptBuilderClient nudge", () => {
-  it("nudges when an enabled important field is empty", () => {
+  it("nudges when an enabled important field is empty", async () => {
     mockProfile = { ...mockProfile!, injuries: [], schedule: [] };
-    renderBuilder();
+    await renderBuilder();
     const nudge = screen.getByRole("note");
     expect(nudge).toHaveTextContent(/Injuries/);
     expect(nudge).toHaveTextContent(/Schedule/);
     expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile");
   });
 
-  it("does not nudge when important fields are filled", () => {
+  it("does not nudge when important fields are filled", async () => {
     mockProfile = { ...mockProfile!, schedule: ["Mon/Wed/Fri"] }; // injuries already set in beforeEach
-    renderBuilder();
+    await renderBuilder();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });
 
 describe("PromptBuilderClient ad-hoc injuries", () => {
-  it("merges a typed temporary injury into the constraints block", () => {
-    renderBuilder();
+  it("merges a typed temporary injury into the constraints block", async () => {
+    await renderBuilder();
     const input = screen.getByPlaceholderText(/temporary injury/i);
     fireEvent.change(input, { target: { value: "tweaked lower back" } });
     fireEvent.keyDown(input, { key: "Enter" });
@@ -120,15 +136,15 @@ describe("PromptBuilderClient ad-hoc injuries", () => {
 });
 
 describe("PromptBuilderClient multi-coach synthesis", () => {
-  it("instructs multi-coach prompts to resolve conflicts with explicit rules", () => {
-    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+  it("instructs multi-coach prompts to resolve conflicts with explicit rules", async () => {
+    await renderBuilder();
     // rp is selected by default; select a second persona to trigger synthesis
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
     expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
   });
 
-  it("states persona precedence even in the default single-coach flow (no synthesis block emitted)", () => {
-    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+  it("states persona precedence even in the default single-coach flow (no synthesis block emitted)", async () => {
+    await renderBuilder();
     // Default state selects a single persona (rp), so the multi-coach synthesis
     // block is NOT emitted — but the precedence subordination must still appear.
     expect(screen.queryByText(/resolve each conflict with an explicit rule/i)).not.toBeInTheDocument();
@@ -139,8 +155,8 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps persona precedence present in the multi-coach flow too", () => {
-    render(<MemoryRouter><PromptBuilderClient /></MemoryRouter>);
+  it("keeps persona precedence present in the multi-coach flow too", async () => {
+    await renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
     expect(
       screen.getByText(
@@ -164,12 +180,12 @@ describe("PromptBuilderClient presets", () => {
   });
 
   it("save creates a preset capturing selections", async () => {
-    renderBuilder();
+    await renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
     fireEvent.change(screen.getByPlaceholderText(/name this preset/i), {
       target: { value: "My mix" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
+    await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
 
     expect(promptPresetRepo.save).toHaveBeenCalledTimes(1);
     const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
@@ -179,21 +195,21 @@ describe("PromptBuilderClient presets", () => {
   });
 
   it("editedBlocks stores only genuinely edited persona text", async () => {
-    renderBuilder();
+    await renderBuilder();
     fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
       target: { value: "my custom block" },
     });
     fireEvent.change(screen.getByPlaceholderText(/name this preset/i), {
       target: { value: "Edited" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
+    await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
 
     const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
     expect(saved.editedBlocks).toEqual({ rp: "my custom block" });
   });
 
   it("editedBlocks excludes verbatim-default text", async () => {
-    renderBuilder();
+    await renderBuilder();
     const defaultBlock = DEFAULT_PERSONAS.find((p) => p.id === "rp")!.block;
     fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
       target: { value: defaultBlock },
@@ -201,7 +217,7 @@ describe("PromptBuilderClient presets", () => {
     fireEvent.change(screen.getByPlaceholderText(/name this preset/i), {
       target: { value: "NoChange" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
+    await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
 
     const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
     expect(saved.editedBlocks).toEqual({});
@@ -209,8 +225,8 @@ describe("PromptBuilderClient presets", () => {
 
   it("load overwrites selections and toggles", async () => {
     mockPresets = [seed({ personaIds: ["pl"], fieldOn: { goals: false }, schemaOn: false })];
-    renderBuilder();
-    fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
 
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
@@ -218,26 +234,35 @@ describe("PromptBuilderClient presets", () => {
     expect(screen.queryByText(/Routine JSON schema/)).not.toBeInTheDocument();
   });
 
+  // Seeded with "pl" so the load visibly changes the coach: that proves a real load
+  // happened around the ad-hoc injury rather than the assertion passing by default.
   it("load leaves ad-hoc injuries untouched", async () => {
-    mockPresets = [seed()];
-    renderBuilder();
+    mockPresets = [seed({ personaIds: ["pl"] })];
+    await renderBuilder();
     const input = screen.getByPlaceholderText(/temporary injury/i);
     fireEvent.change(input, { target: { value: "tweaked wrist" } });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
+    expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
+    expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
     expect(screen.getByText(/- tweaked wrist/)).toBeInTheDocument();
   });
 
+  // "pl" rather than the default "rp", so the surviving id is only observable if
+  // loadPreset actually ran — with ["rp"] this passed even when loadPreset was a no-op.
   it("persona id no longer in DEFAULT_PERSONAS is skipped on load", async () => {
-    mockPresets = [seed({ personaIds: ["rp", "bogus-removed"] })];
-    renderBuilder();
-    fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
+    mockPresets = [seed({ personaIds: ["pl", "bogus-removed"] })];
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
 
-    expect(screen.getByText(/Coach: Hypertrophy Methodologist/)).toBeInTheDocument();
-    expect(screen.queryByText(/Coach: bogus-removed/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
+    expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/bogus-removed/)).not.toBeInTheDocument();
   });
 
+  // equipment:false makes the load observable; ancientKey is the unknown key that
+  // must be dropped without disturbing the real ones.
   it("unknown fieldOn key is ignored on load", async () => {
     mockPresets = [
       seed({
@@ -245,7 +270,7 @@ describe("PromptBuilderClient presets", () => {
           basics: true,
           history: true,
           goals: true,
-          equipment: true,
+          equipment: false,
           schedule: true,
           body: true,
           preferences: true,
@@ -254,27 +279,77 @@ describe("PromptBuilderClient presets", () => {
         },
       }),
     ];
-    renderBuilder();
-    fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
     expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
+    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
   });
 
+  // The `?? true` default is only observable when the field starts off, so switch
+  // it off first: loading a preset that omits the key must switch it back on.
   it("field absent from preset defaults on", async () => {
     mockPresets = [seed({ fieldOn: { goals: true } })];
-    renderBuilder();
-    fireEvent.click(await screen.findByRole("button", { name: "Push focus" }));
+    await renderBuilder();
+    fireEvent.click(screen.getByLabelText("Equipment"));
+    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
     expect(screen.getByText(/Equipment: Full gym/)).toBeInTheDocument();
   });
 
   it("delete removes a preset row", async () => {
     mockPresets = [seed()];
-    renderBuilder();
-    const del = await screen.findByRole("button", { name: /delete .*push focus/i });
-    fireEvent.click(del);
+    await renderBuilder();
+    await clickAndSettle(screen.getByRole("button", { name: /delete .*push focus/i }));
 
     expect(promptPresetRepo.remove).toHaveBeenCalledWith("seed-1");
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "Push focus" })).not.toBeInTheDocument(),
+    expect(screen.queryByRole("button", { name: "Push focus" })).not.toBeInTheDocument();
+  });
+
+  // deletePreset awaits the repo and then refreshes, so deleting two rows in quick
+  // succession puts two list() calls in flight. Each carries the truthful state at
+  // the time it was issued, so if the earlier one resolves last it restores a row
+  // that has already been deleted. Each resolver is captured right after its click
+  // rather than by array position, so the test doesn't depend on reaction ordering.
+  it("ignores a stale presets response that resolves after a newer refresh", async () => {
+    const rowA = seed({ id: "row-a", name: "Row A" });
+    const rowB = seed({ id: "row-b", name: "Row B" });
+    const pending: Array<(value: PromptPresetDocument[]) => void> = [];
+    promptPresetRepo.list.mockImplementation(
+      () => new Promise<PromptPresetDocument[]>((resolve) => pending.push(resolve)),
     );
+
+    render(
+      <MemoryRouter>
+        <PromptBuilderClient />
+      </MemoryRouter>,
+    );
+
+    // Settle the mount refresh so both rows and their delete buttons exist.
+    await act(async () => pending.shift()!([rowA, rowB]));
+    expect(screen.getByRole("button", { name: "Row A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Row B" })).toBeInTheDocument();
+
+    // Delete A. Its refresh is issued against a store that still holds B.
+    fireEvent.click(screen.getByRole("button", { name: /delete .*row a/i }));
+    await act(async () => {});
+    expect(pending).toHaveLength(1);
+    const afterDeletingA = pending.shift()!;
+
+    // Delete B before A's refresh has come back. Its refresh sees an empty store.
+    fireEvent.click(screen.getByRole("button", { name: /delete .*row b/i }));
+    await act(async () => {});
+    expect(pending).toHaveLength(1);
+    const afterDeletingB = pending.shift()!;
+    expect(promptPresetRepo.remove.mock.calls.map((c) => c[0])).toEqual(["row-a", "row-b"]);
+
+    // The newer refresh lands first with the correct empty list...
+    await act(async () => afterDeletingB([]));
+    expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
+
+    // ...then A's superseded response arrives late, still listing B.
+    await act(async () => afterDeletingA([rowB]));
+    expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Row A" })).not.toBeInTheDocument();
   });
 });

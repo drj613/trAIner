@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { markPromptCopied } from "@/lib/workspace/onboarding";
@@ -30,10 +30,17 @@ export function PromptBuilderClient() {
   const [presets, setPresets] = useState<PromptPresetDocument[]>([]);
   const [presetName, setPresetName] = useState("");
 
-  const refreshPresets = () =>
-    promptPresetRepo.list().then((all) =>
-      setPresets([...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))),
-    );
+  // savePreset and deletePreset each await the repo and then refresh, so two
+  // refreshes can overlap. Stamp each one and drop any response that a later
+  // refresh has already superseded, otherwise a slow earlier list() can resolve
+  // last and restore rows that were just deleted.
+  const refreshGeneration = useRef(0);
+  const refreshPresets = async () => {
+    const generation = ++refreshGeneration.current;
+    const all = await promptPresetRepo.list();
+    if (generation !== refreshGeneration.current) return;
+    setPresets([...all].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  };
   useEffect(() => {
     void refreshPresets();
   }, []);

@@ -1,11 +1,4 @@
 import type { BackupDocument } from "@/lib/programs/types";
-import { profileRepo } from "@/lib/storage/profileRepo";
-import { programRepo } from "@/lib/storage/programRepo";
-import { logRepo } from "@/lib/storage/logRepo";
-import { aliasRepo } from "@/lib/storage/aliasRepo";
-import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
-import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
-import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
 
 // Fix 2: Deep validation helpers
@@ -20,17 +13,94 @@ function hasIds(arr: Record<string, unknown>[]): boolean {
   return arr.every((e) => typeof e["id"] === "string");
 }
 
+// Fix S5: deep validation of fields the app dereferences unconditionally on
+// a normal page load — for programs, logs, and each program's overrides.
+// Everything below that level (sections/groups/exercises/sets, enums,
+// timestamp formats, referential integrity) is deliberately NOT validated
+// here; it's deferred to S4's versioned-export design, where a schema will
+// exist to validate against. Until then, the two safety nets for
+// deep-but-well-typed corruption are the pre-restore auto-download and
+// restore atomicity.
+function requireFields(
+  arr: Record<string, unknown>[],
+  storeName: string,
+  fields: { name: string; check: (v: unknown) => boolean; expected: string }[],
+): void {
+  arr.forEach((item, i) => {
+    for (const f of fields) {
+      if (!f.check(item[f.name])) {
+        throw new Error(
+          `Invalid backup: ${storeName}[${i}] (id ${String(item["id"])}) — '${f.name}' must be ${f.expected}.`,
+        );
+      }
+    }
+  });
+}
+
+const isString = (v: unknown) => typeof v === "string";
+const isArrayOfNonNullObjects = (v: unknown) =>
+  Array.isArray(v) && v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e));
+
+// getOverrideReplacementDays accepts either shape: a single day object, or
+// an array of them. A missing/null replacement on a week-scope override
+// crashes getRenderableDays on load — applyOverride reads it after the
+// scope/weekNumber guards pass, inside `.find(r => r.dayNumber === ...)`,
+// which throws on a null/undefined element. Validated for every override
+// regardless of scope, since applyOverride reads `replacement` unconditionally
+// before branching on scope.
+const isDayOrDayArray = (v: unknown) =>
+  Array.isArray(v)
+    ? v.every((e) => e !== null && typeof e === "object" && !Array.isArray(e))
+    : v !== null && typeof v === "object";
+
+function requireOverrideReplacements(programs: Record<string, unknown>[]): void {
+  programs.forEach((program, pi) => {
+    const overrides = program["overrides"] as Record<string, unknown>[];
+    overrides.forEach((override, oi) => {
+      if (!isDayOrDayArray(override["replacement"])) {
+        throw new Error(
+          `Invalid backup: programs[${pi}] (id ${String(program["id"])}) — overrides[${oi}].replacement must be a day object or an array of day objects.`,
+        );
+      }
+    });
+  });
+}
+
 export async function exportBackup(): Promise<BackupDocument> {
+  // One readonly transaction across every exported store: the file is a
+  // consistent point-in-time snapshot even if another tab writes mid-export.
+  const db = await getDb();
+  const tx = db.transaction(
+    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
+    "readonly",
+  );
+  // tx.done is included in the same Promise.all (last, resolves to
+  // undefined, ignored below) rather than awaited afterward — if a getAll()
+  // rejects, Promise.all rejects immediately and control would otherwise
+  // never reach a standalone `await tx.done`, leaving its rejection (the
+  // transaction aborts when a request fails) unhandled.
+  const [profiles, programs, logs, aliases, userExercises, bodyweight, promptPresets] = await Promise.all([
+    tx.objectStore("profile").getAll(),
+    tx.objectStore("programs").getAll(),
+    tx.objectStore("logs").getAll(),
+    tx.objectStore("aliases").getAll(),
+    tx.objectStore("userExercises").getAll(),
+    tx.objectStore("bodyweight").getAll(),
+    tx.objectStore("promptPresets").getAll(),
+    tx.done,
+  ]);
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    profile: await profileRepo.get(),
-    programs: await programRepo.list(),
-    logs: await logRepo.list(),
-    aliases: await aliasRepo.list(),
-    userExercises: await userExerciseRepo.list(),
-    bodyweight: await bodyweightRepo.list(),
-    promptPresets: await promptPresetRepo.list(),
+    // BackupDocument.profile is `ProfileDocument | undefined` — do NOT use
+    // `?? null`, strict typechecking rejects null here.
+    profile: profiles[0],
+    programs,
+    logs,
+    aliases,
+    userExercises,
+    bodyweight,
+    promptPresets,
   };
 }
 
@@ -96,11 +166,32 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     }
   }
 
+  // A record that passes the shallow id check but lacks required structure
+  // would commit, destroy the workspace, and crash every page that reads it.
+  // Validate everything the app dereferences unconditionally BEFORE clearing.
+  requireFields(doc["programs"], "programs", [
+    { name: "title", check: isString, expected: "a string" },
+    { name: "days", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+    { name: "overrides", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+    { name: "createdAt", check: isString, expected: "a string timestamp" },
+    { name: "updatedAt", check: isString, expected: "a string timestamp" },
+  ]);
+  requireFields(doc["logs"], "logs", [
+    { name: "programId", check: isString, expected: "a string" },
+    { name: "dayId", check: isString, expected: "a string" },
+    { name: "performedAt", check: isString, expected: "a string timestamp" },
+    { name: "entries", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+  ]);
+  requireOverrideReplacements(doc["programs"]);
+
   const b = backup as BackupDocument;
 
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  const tx = db.transaction(["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"], "readwrite");
+  const tx = db.transaction(
+    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets", "metrics"],
+    "readwrite",
+  );
 
   tx.objectStore("profile").clear();
   tx.objectStore("programs").clear();
@@ -109,6 +200,10 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   tx.objectStore("userExercises").clear();
   tx.objectStore("bodyweight").clear();
   tx.objectStore("promptPresets").clear();
+  // metrics is a derived-cache store (currently unwritten anywhere). Clear it
+  // on restore so it can never hold values computed from data that no longer
+  // exists once someone starts using it.
+  tx.objectStore("metrics").clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);
@@ -121,13 +216,20 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   await tx.done;
 }
 
-export async function resetWorkspace(): Promise<void> {
+export async function resetWorkspace(onBlocked?: () => void): Promise<void> {
   resetDbConnection(); // close cached connection first — deleteDatabase blocks on open connections
   return new Promise((resolve, reject) => {
     const req = indexedDB.deleteDatabase(DB_NAME);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
-    req.onblocked = () =>
-      reject(new Error("Reset blocked — close other trAIner tabs and try again."));
+    // IndexedDB gives no way to cancel a deleteDatabase request once it's
+    // blocked — onblocked is purely informational per spec. The request
+    // stays live and WILL fire onsuccess as soon as the last blocking
+    // connection (e.g. another open tab) closes. The only honest options
+    // here are "wait" (leave this promise pending and let the eventual
+    // onsuccess/onerror settle it) or "lie" (reject now, then silently
+    // erase the database after telling the caller it failed). We wait —
+    // and let the caller show a truthful "waiting" state instead.
+    req.onblocked = () => onBlocked?.();
   });
 }
