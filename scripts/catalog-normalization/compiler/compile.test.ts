@@ -110,6 +110,10 @@ test("package CLI entrypoints execute", async () => {
   ).toBe(0);
 });
 
+test("checker accepts the checked-in catalogue output", async () => {
+  expect((await runProcess(["bun", "scripts/catalog-normalization/compiler/check.ts"])).exitCode).toBe(0);
+});
+
 test("does not execute an imported entrypoint when its importer has the CLI filename", async () => {
   const runnerRoot = await mkdtemp(join(tmpdir(), "catalog-entrypoint-import-"));
   const sourceRoot = process.cwd();

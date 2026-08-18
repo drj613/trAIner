@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    { "exerciseId": "barbell-squat", "movementId": "squat", "movementModifierIds": ["barbell", "back-rack"] },
+    { "exerciseId": "barbell-bench-press", "movementId": "bench-press", "movementModifierIds": ["barbell"] },
+    { "exerciseId": "barbell-deadlift", "movementId": "deadlift-hinge", "movementModifierIds": ["barbell"] },
+    { "exerciseId": "bent-over-barbell-row", "movementId": "row", "movementModifierIds": ["barbell"] },
+    { "exerciseId": "pull-up", "movementId": "pull-up-pulldown", "movementModifierIds": ["bodyweight"] },
+    { "exerciseId": "overhead-press", "movementId": "overhead-landmine-press", "movementModifierIds": ["barbell", "overhead"] },
+    { "exerciseId": "dumbbell-lunges", "movementId": "lunge-split-squat", "movementModifierIds": ["dumbbell"] },
+    { "exerciseId": "push-up", "movementId": "push-up", "movementModifierIds": ["bodyweight"] },
+    { "exerciseId": "dumbbell-biceps-curl", "movementId": "curl", "movementModifierIds": ["dumbbell"] },
+    { "exerciseId": "triceps-pushdown", "movementId": "triceps-extension-pushdown", "movementModifierIds": ["cable"] },
+    { "exerciseId": "lateral-raise-dumbbell", "movementId": "raise-fly", "movementModifierIds": ["dumbbell"] },
+    { "exerciseId": "farmer-carry", "movementId": "loaded-carry", "movementModifierIds": ["dumbbell"] }
+  ]
+}

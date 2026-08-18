@@ -23,7 +23,15 @@ export async function createCompilerFixtureRoot(options: { snapshotRecords: numb
   const root = await mkdtemp(join(tmpdir(), "catalog-fixture-"));
   const catalogRoot = join(root, "scripts/catalog-normalization");
   const snapshot = `${JSON.stringify(
-    Array.from({ length: options.snapshotRecords }, (_, index) => ({ id: `fixture-${index}`, name: `Fixture ${index}` })),
+    Array.from({ length: options.snapshotRecords }, (_, index) => ({
+      id: `fixture-${index}`,
+      name: `Fixture ${index}`,
+      aliases: [],
+      equipment: [],
+      movementPatterns: [],
+      muscles: { primary: [], secondary: [] },
+      tags: [],
+    })),
     null,
     2,
   )}\n`;

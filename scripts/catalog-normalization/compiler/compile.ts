@@ -1,4 +1,6 @@
 export * from "./core";
+export { buildRegistries, canonicalizeModifiers, flattenMerges, signatureFor, validateNormalizedCatalogue } from "./normalize";
+export { validateAliasOutcomes, validateRegistries } from "./validate";
 
 import { runCompilerCli } from "./core";
 

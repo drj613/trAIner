@@ -1,0 +1,248 @@
+import type {
+  AliasClassification,
+  BuildRegistries,
+  MovementDefinition,
+  MovementModifierDefinition,
+  RegistrySignature,
+} from "./types";
+
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function sortedUnique(ids: Iterable<string>): string[] {
+  return [...new Set(ids)].sort(compareText);
+}
+
+function closureForModifier(
+  modifierId: string,
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+  visiting: Set<string>,
+  resolved: Map<string, string[]>,
+): string[] {
+  const cached = resolved.get(modifierId);
+  if (cached) return cached;
+  if (visiting.has(modifierId)) throw new Error(`Modifier implication cycle: ${modifierId}`);
+
+  const modifier = modifiersById.get(modifierId);
+  if (!modifier) throw new Error(`Unknown modifier: ${modifierId}`);
+  visiting.add(modifierId);
+  const closure = new Set<string>([modifierId]);
+  for (const impliedId of modifier.implies ?? []) {
+    for (const id of closureForModifier(impliedId, modifiersById, visiting, resolved)) closure.add(id);
+  }
+  visiting.delete(modifierId);
+  const result = sortedUnique(closure);
+  resolved.set(modifierId, result);
+  return result;
+}
+
+export function modifierClosure(
+  modifierIds: readonly string[],
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+): string[] {
+  const resolved = new Map<string, string[]>();
+  const closure = new Set<string>();
+  for (const modifierId of modifierIds) {
+    for (const id of closureForModifier(modifierId, modifiersById, new Set(), resolved)) closure.add(id);
+  }
+  return sortedUnique(closure);
+}
+
+function modifierSort(
+  modifierIds: readonly string[],
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+): string[] {
+  return [...modifierIds].sort((a, b) => {
+    const aModifier = modifiersById.get(a);
+    const bModifier = modifiersById.get(b);
+    if (!aModifier) throw new Error(`Unknown modifier: ${a}`);
+    if (!bModifier) throw new Error(`Unknown modifier: ${b}`);
+    return aModifier.sortOrder - bModifier.sortOrder || compareText(a, b);
+  });
+}
+
+function validateModifierSelection(
+  movement: MovementDefinition,
+  modifierIds: readonly string[],
+  registries: BuildRegistries,
+): string[] {
+  const ids = modifierSort(modifierClosure(modifierIds, registries.modifiersById), registries.modifiersById);
+  const exclusiveGroups = new Set<string>();
+  for (const modifierId of ids) {
+    const modifier = registries.modifiersById.get(modifierId)!;
+    if (!modifier.identity) throw new Error(`Non-identity modifier in signature: ${modifierId}`);
+    if (!movement.allowedModifierCategories.includes(modifier.category)) {
+      throw new Error(`Modifier category not allowed for movement: ${modifierId}`);
+    }
+    if (!movement.allowedModifierIds.includes(modifierId)) {
+      throw new Error(`Modifier not allowed for movement: ${modifierId}`);
+    }
+    if (modifier.exclusiveGroup) {
+      if (exclusiveGroups.has(modifier.exclusiveGroup)) {
+        throw new Error(`Exclusive-group conflict: ${modifier.exclusiveGroup}`);
+      }
+      exclusiveGroups.add(modifier.exclusiveGroup);
+    }
+    const excluded = new Set(modifier.excludes ?? []);
+    if (ids.some((candidate) => candidate !== modifierId && excluded.has(candidate))) {
+      throw new Error(`Modifier closure conflict: ${modifierId}`);
+    }
+  }
+  if (ids.length > movement.maxIdentityModifiers) {
+    throw new Error(`Too many identity modifiers: ${movement.id}`);
+  }
+  return ids;
+}
+
+function validateModifierReferences(registries: BuildRegistries): void {
+  for (const modifier of registries.modifiersById.values()) {
+    for (const impliedId of modifier.implies ?? []) {
+      if (!registries.modifiersById.has(impliedId)) throw new Error(`Unknown modifier: ${impliedId}`);
+    }
+    for (const excludedId of modifier.excludes ?? []) {
+      const excluded = registries.modifiersById.get(excludedId);
+      if (!excluded) throw new Error(`Unknown modifier: ${excludedId}`);
+      if (!(excluded.excludes ?? []).includes(modifier.id)) {
+        throw new Error(`Asymmetric exclusion: ${modifier.id}/${excludedId}`);
+      }
+    }
+    if (!Number.isSafeInteger(modifier.sortOrder) || modifier.sortOrder < 0) {
+      throw new Error(`Invalid modifier sort order: ${modifier.id}`);
+    }
+  }
+}
+
+function validateDefinitionNames(
+  definitions: Iterable<{ id: string; name: string; aliases: string[] }>,
+  kind: string,
+): void {
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  for (const definition of definitions) {
+    if (!definition.id || ids.has(definition.id)) throw new Error(`Duplicate ${kind} ID: ${definition.id}`);
+    ids.add(definition.id);
+    const name = definition.name.trim().toLowerCase();
+    if (!name || names.has(name)) throw new Error(`Duplicate ${kind} name: ${definition.name}`);
+    names.add(name);
+  }
+}
+
+function validateSignatures(registries: BuildRegistries): void {
+  const signatures = new Set<string>();
+  const exerciseIds = new Set<string>();
+  for (const signature of registries.signatures) {
+    const movement = registries.movementsById.get(signature.movementId);
+    if (!movement) throw new Error(`Unknown movement: ${signature.movementId}`);
+    const ids = validateModifierSelection(movement, signature.modifierIds, registries);
+    const key = signatureFor(signature.movementId, ids);
+    if (signatures.has(key)) throw new Error(`Duplicate signature: ${key}`);
+    signatures.add(key);
+    if (signature.exerciseId) {
+      if (exerciseIds.has(signature.exerciseId)) throw new Error(`Duplicate exercise ID: ${signature.exerciseId}`);
+      exerciseIds.add(signature.exerciseId);
+    }
+  }
+}
+
+export function validateRegistries(registries: BuildRegistries): void {
+  validateDefinitionNames(registries.movementsById.values(), "movement");
+  validateDefinitionNames(registries.modifiersById.values(), "modifier");
+  for (const movement of registries.movementsById.values()) {
+    if (!Number.isSafeInteger(movement.sortOrder) || movement.sortOrder < 0) {
+      throw new Error(`Invalid movement sort order: ${movement.id}`);
+    }
+    if (!Number.isSafeInteger(movement.maxIdentityModifiers) || movement.maxIdentityModifiers < 0) {
+      throw new Error(`Invalid movement maximum: ${movement.id}`);
+    }
+    for (const modifierId of movement.allowedModifierIds) {
+      if (!registries.modifiersById.has(modifierId)) {
+        throw new Error(`Unknown modifier: ${modifierId}`);
+      }
+    }
+  }
+  validateModifierReferences(registries);
+  modifierClosure([...registries.modifiersById.keys()], registries.modifiersById);
+  for (const modifier of registries.modifiersById.values()) {
+    const closure = modifierClosure([modifier.id], registries.modifiersById);
+    const excluded = new Set(modifier.excludes ?? []);
+    if (closure.some((id) => excluded.has(id))) {
+      throw new Error(`Modifier closure conflict: ${modifier.id}`);
+    }
+  }
+  validateSignatures(registries);
+}
+
+export function canonicalModifierIds(
+  movementId: string,
+  modifierIds: readonly string[],
+  registries: BuildRegistries,
+): string[] {
+  const movement = registries.movementsById.get(movementId);
+  if (!movement) throw new Error(`Unknown movement: ${movementId}`);
+  return validateModifierSelection(movement, modifierIds, registries);
+}
+
+export function signatureFor(movementId: string, modifierIds: readonly string[]): string {
+  return [movementId, ...modifierIds].join("|");
+}
+
+export function flattenMerges(
+  merges: Readonly<Record<string, string>>,
+  survivingIds: ReadonlySet<string>,
+): Record<string, string> {
+  const flattened: Record<string, string> = {};
+  for (const fromId of Object.keys(merges).sort(compareText)) {
+    let current = fromId;
+    const chain = new Set<string>();
+    while (merges[current] !== undefined) {
+      if (chain.has(current)) throw new Error(`Merge cycle: ${current}`);
+      chain.add(current);
+      const next = merges[current];
+      if (!next) throw new Error(`Merge target missing: ${current}`);
+      current = next;
+    }
+    if (!survivingIds.has(current)) throw new Error(`Merge target missing: ${current}`);
+    if (current === fromId) throw new Error(`Merge cycle: ${fromId}`);
+    flattened[fromId] = current;
+  }
+  return flattened;
+}
+
+export function validateAliasOutcomes(
+  aliases: ReadonlyMap<string, readonly string[]>,
+  classifications: ReadonlyMap<string, AliasClassification>,
+): void {
+  for (const [token, ids] of aliases) {
+    const candidates = sortedUnique(ids);
+    if (candidates.length < 2) continue;
+    const classification = classifications.get(token);
+    if (!classification) throw new Error(`Unclassified alias collision: ${token}`);
+    if (classification.normalizedToken !== token) {
+      throw new Error(`Alias classification token mismatch: ${token}`);
+    }
+    if (classification.outcome === "unique" && !candidates.includes(classification.exerciseId)) {
+      throw new Error(`Alias classification target missing: ${token}`);
+    }
+    if (
+      classification.outcome === "underspecified" &&
+      !sameIds(sortedUnique(classification.candidateIds), candidates)
+    ) {
+      throw new Error(`Alias classification candidates mismatch: ${token}`);
+    }
+    if (classification.outcome === "removed-noise" && !classification.reason.trim()) {
+      throw new Error(`Alias classification reason missing: ${token}`);
+    }
+  }
+}
+
+export function signatureFromRecord(signature: RegistrySignature, registries: BuildRegistries): string {
+  return signatureFor(
+    signature.movementId,
+    canonicalModifierIds(signature.movementId, signature.modifierIds, registries),
+  );
+}

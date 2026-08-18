@@ -3,11 +3,18 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type {
+  AliasClassification,
+  Assignment,
   CatalogBuildReport,
+  CatalogExercise,
   CompileOptions,
   CompilerCliResult,
+  Merge,
+  MovementDefinition,
+  MovementModifierDefinition,
   VersionedArtifact,
 } from "./types";
+import { validateNormalizedCatalogue } from "./normalize";
 
 export type { CatalogBuildReport, CompileOptions, CompilerCliResult, VersionedArtifact } from "./types";
 
@@ -22,7 +29,7 @@ export const REPORT_FILE = "reports/catalog-normalization-report.json" as const;
 
 const SNAPSHOT_FILE = "scripts/catalog-normalization/catalog-v1.snapshot.json";
 const DIGEST_FILE = "scripts/catalog-normalization/catalog-v1.sha256";
-const COMPLETE_MANIFESTS = [
+const CURATION_MANIFESTS = [
   "scripts/catalog-normalization/movements.json",
   "scripts/catalog-normalization/modifiers.json",
   "scripts/catalog-normalization/merges.json",
@@ -30,8 +37,6 @@ const COMPLETE_MANIFESTS = [
   "scripts/catalog-normalization/alias-classifications.json",
   "scripts/catalog-normalization/disambiguations.json",
   "scripts/catalog-normalization/variant-rules.json",
-  "scripts/catalog-normalization/reviews/variant-candidates.json",
-  "scripts/catalog-normalization/reviews/variant-adversarial-review.json",
 ] as const;
 
 const EMPTY_ARTIFACT = `${JSON.stringify({ schemaVersion: 1, records: [] })}\n`;
@@ -64,22 +69,37 @@ export async function assertSnapshotDigest(snapshotPath: string, digestPath: str
   return actual;
 }
 
-async function loadCompleteManifests(rootDir: string): Promise<{
+type CurationArtifacts = {
   hashes: Record<string, string>;
   schemaVersions: Record<string, number>;
-}> {
+  movements: MovementDefinition[];
+  modifiers: MovementModifierDefinition[];
+  merges: Merge[];
+  assignments: Assignment[];
+  aliasClassifications: AliasClassification[];
+};
+
+async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts> {
   const hashes: Record<string, string> = {};
   const schemaVersions: Record<string, number> = {};
-  for (const relativePath of COMPLETE_MANIFESTS) {
+  const artifacts = new Map<string, VersionedArtifact<unknown>>();
+  for (const relativePath of CURATION_MANIFESTS) {
     const absolutePath = join(rootDir, relativePath);
     const contents = await readFile(absolutePath, "utf8");
     const artifact = await readVersionedArtifact(absolutePath);
+    artifacts.set(relativePath, artifact);
     hashes[relativePath] = sha256(contents);
     schemaVersions[relativePath] = artifact.schemaVersion;
   }
   return {
     hashes: stableRecord(hashes) as Record<string, string>,
     schemaVersions: stableRecord(schemaVersions) as Record<string, number>,
+    movements: artifacts.get("scripts/catalog-normalization/movements.json")!.records as MovementDefinition[],
+    modifiers: artifacts.get("scripts/catalog-normalization/modifiers.json")!.records as MovementModifierDefinition[],
+    merges: artifacts.get("scripts/catalog-normalization/merges.json")!.records as Merge[],
+    assignments: artifacts.get("scripts/catalog-normalization/assignments.json")!.records as Assignment[],
+    aliasClassifications: artifacts.get("scripts/catalog-normalization/alias-classifications.json")!
+      .records as AliasClassification[],
   };
 }
 
@@ -93,11 +113,10 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
 
   const inputHashes: Record<string, string> = { [SNAPSHOT_FILE]: snapshotSha256 };
   const inputSchemaVersions: Record<string, number> = {};
-  if (options.stage === "complete") {
-    const manifests = await loadCompleteManifests(options.rootDir);
-    Object.assign(inputHashes, manifests.hashes);
-    Object.assign(inputSchemaVersions, manifests.schemaVersions);
-  }
+  const manifests = await loadCurationManifests(options.rootDir);
+  Object.assign(inputHashes, manifests.hashes);
+  Object.assign(inputSchemaVersions, manifests.schemaVersions);
+  const normalized = validateNormalizedCatalogue(records as CatalogExercise[], manifests);
 
   const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = {
     "exercises.generated.json": snapshot,
@@ -114,7 +133,7 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     compilerVersion: 1,
     snapshotSha256,
     inputCount: records.length,
-    survivingCount: records.length,
+    survivingCount: normalized.exercises.length,
     generatedVariantCount: 0,
     stageCounts: { existing: records.length, complete: options.stage === "complete" ? records.length : 0 },
     inputSchemaVersions: stableRecord(inputSchemaVersions) as Record<string, number>,

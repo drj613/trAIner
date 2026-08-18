@@ -3,6 +3,92 @@ export type VersionedArtifact<T> = {
   records: T[];
 };
 
+export type ModifierCategory =
+  | "implement"
+  | "grip"
+  | "position"
+  | "stance"
+  | "support"
+  | "range-of-motion"
+  | "laterality"
+  | "attachment"
+  | "execution";
+
+export type MovementDefinition = {
+  id: string;
+  name: string;
+  aliases: string[];
+  sortOrder: number;
+  allowedModifierCategories: ModifierCategory[];
+  allowedModifierIds: string[];
+  maxIdentityModifiers: number;
+  displayTemplate: string;
+};
+
+export type MovementModifierDefinition = {
+  id: string;
+  name: string;
+  aliases: string[];
+  category: ModifierCategory;
+  exclusiveGroup?: string;
+  identity: boolean;
+  sortOrder: number;
+  implies?: string[];
+  excludes?: string[];
+};
+
+export type Assignment = {
+  exerciseId: string;
+  movementId: string | null;
+  movementModifierIds: string[];
+  metadataOverrides?: Record<string, unknown>;
+};
+
+export type AliasClassification =
+  | { normalizedToken: string; outcome: "unique"; exerciseId: string }
+  | { normalizedToken: string; outcome: "underspecified"; movementId: string; candidateIds: string[] }
+  | { normalizedToken: string; outcome: "removed-noise"; reason: string };
+
+export type Merge = {
+  fromExerciseId: string;
+  toExerciseId: string;
+};
+
+export type RegistrySignature = {
+  movementId: string;
+  modifierIds: string[];
+  exerciseId?: string;
+};
+
+export type BuildRegistries = {
+  movementsById: ReadonlyMap<string, MovementDefinition>;
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>;
+  signatures: readonly RegistrySignature[];
+};
+
+export type CatalogExercise = {
+  id: string;
+  name: string;
+  aliases: string[];
+  equipment: string[];
+  movementPatterns: string[];
+  muscles: { primary: string[]; secondary: string[] };
+  tags: string[];
+};
+
+export type NormalizedCatalogExercise = CatalogExercise & {
+  movementId: string | null;
+  movementModifierIds: string[];
+};
+
+export type ValidatedNormalizedCatalogue = {
+  exercises: NormalizedCatalogExercise[];
+  registries: BuildRegistries;
+  redirects: Record<string, string>;
+  aliasOutcomes: ReadonlyMap<string, AliasClassification>;
+  aliasCandidates: ReadonlyMap<string, string[]>;
+};
+
 export type CatalogBuildReport = {
   schemaVersion: 1;
   compilerVersion: 1;
