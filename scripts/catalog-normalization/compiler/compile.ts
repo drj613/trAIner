@@ -1,6 +1,13 @@
 export * from "./core";
 export { buildRegistries, canonicalizeModifiers, flattenMerges, signatureFor, validateNormalizedCatalogue } from "./normalize";
-export { validateAliasOutcomes, validateRegistries } from "./validate";
+export {
+  loadVariantCandidates,
+  TIER_1_MOVEMENT_IDS,
+  validateAliasOutcomes,
+  validateRegistries,
+  validateVariantCandidates,
+} from "./validate";
+export type { VariantCandidate, VariantRule } from "./types";
 
 import { runCompilerCli } from "./core";
 

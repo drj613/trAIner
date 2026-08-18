@@ -98,6 +98,22 @@ export type NearDuplicateCandidate = {
   disposition: "review-required" | "merged";
 };
 
+export type VariantRule = {
+  id: string;
+  movementId: string;
+  movementModifierIds: string[];
+  metadataFromExerciseId: string;
+  metadataOverrides?: Partial<Pick<CatalogExercise, "equipment" | "movementPatterns" | "muscles" | "tags">>;
+  approvedAliases: string[];
+  coverageTier: 1 | 2;
+  status: "candidate" | "approved" | "rejected";
+};
+
+export type VariantCandidate = VariantRule & {
+  status: "candidate";
+  rationale: string;
+};
+
 export type CatalogBuildReport = {
   schemaVersion: 1;
   compilerVersion: 1;

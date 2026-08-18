@@ -4,7 +4,13 @@ import {
   findNearDuplicateCandidates,
   signatureFor,
 } from "./normalize";
-import { flattenMerges, validateAliasOutcomes, validateRegistries } from "./validate";
+import {
+  flattenMerges,
+  loadVariantCandidates,
+  validateAliasOutcomes,
+  validateRegistries,
+  validateVariantCandidates,
+} from "./validate";
 import type {
   BuildRegistries,
   CatalogExercise,
@@ -14,6 +20,36 @@ import type {
 } from "./types";
 import movementsArtifact from "../movements.json";
 import modifiersArtifact from "../modifiers.json";
+import snapshotArtifact from "../catalog-v1.snapshot.json";
+
+export const TIER_1_MOVEMENT_IDS = [
+  "squat",
+  "bench-press",
+  "deadlift-hinge",
+  "row",
+  "pull-up-pulldown",
+  "overhead-landmine-press",
+  "lunge-split-squat",
+  "push-up",
+  "curl",
+  "triceps-extension-pushdown",
+  "raise-fly",
+  "loaded-carry",
+] as const;
+
+test("candidate artifact covers Tier-1 and respects the cap", async () => {
+  const artifact = await loadVariantCandidates();
+  expect(new Set(artifact.records.map((r) => r.movementId))).toEqual(new Set(TIER_1_MOVEMENT_IDS));
+  expect(artifact.records.length).toBeLessThanOrEqual(300);
+  expect(artifact.records.every((r) => r.status === "candidate" && r.rationale.length >= 20)).toBe(true);
+
+  const registries = buildRegistries(
+    movementsArtifact.records as MovementDefinition[],
+    modifiersArtifact.records as MovementModifierDefinition[],
+  );
+  const snapshot = snapshotArtifact as CatalogExercise[];
+  validateVariantCandidates(artifact.records, registries, new Set(snapshot.map((exercise) => exercise.id)));
+});
 
 function makeModifierRegistryFixture(input: {
   movementId: string;

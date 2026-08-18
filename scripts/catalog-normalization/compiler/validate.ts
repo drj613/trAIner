@@ -1,10 +1,29 @@
+import { readFile } from "node:fs/promises";
 import type {
   AliasClassification,
   BuildRegistries,
   MovementDefinition,
   MovementModifierDefinition,
   RegistrySignature,
+  VariantCandidate,
 } from "./types";
+
+export type { VariantCandidate, VariantRule } from "./types";
+
+export const TIER_1_MOVEMENT_IDS = [
+  "squat",
+  "bench-press",
+  "deadlift-hinge",
+  "row",
+  "pull-up-pulldown",
+  "overhead-landmine-press",
+  "lunge-split-squat",
+  "push-up",
+  "curl",
+  "triceps-extension-pushdown",
+  "raise-fly",
+  "loaded-carry",
+] as const;
 
 function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -16,6 +35,115 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
 
 function sortedUnique(ids: Iterable<string>): string[] {
   return [...new Set(ids)].sort(compareText);
+}
+
+type CandidateRecord = Record<string, unknown>;
+
+function isPlainCandidateObject(value: unknown): value is CandidateRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function invalidCandidateRecord(): never {
+  throw new Error("Invalid variant candidate manifest record");
+}
+
+function assertCandidateKeys(record: CandidateRecord, keys: readonly string[]): void {
+  const allowed = new Set(keys);
+  if (Object.keys(record).some((key) => !allowed.has(key))) invalidCandidateRecord();
+}
+
+function candidateString(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) invalidCandidateRecord();
+  return value;
+}
+
+function candidateStringArray(value: unknown): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) {
+    invalidCandidateRecord();
+  }
+  const result = [...value];
+  if (new Set(result).size !== result.length) invalidCandidateRecord();
+  return result;
+}
+
+function candidateEnum(value: unknown): 1 | 2 {
+  if (value !== 1 && value !== 2) invalidCandidateRecord();
+  return value;
+}
+
+function candidateMetadataOverrides(value: unknown): VariantCandidate["metadataOverrides"] {
+  if (!isPlainCandidateObject(value)) invalidCandidateRecord();
+  assertCandidateKeys(value, ["equipment", "movementPatterns", "muscles", "tags"]);
+  if (Object.keys(value).length === 0) invalidCandidateRecord();
+
+  const result: VariantCandidate["metadataOverrides"] = {};
+  for (const key of ["equipment", "movementPatterns", "tags"] as const) {
+    if (value[key] !== undefined) result[key] = candidateStringArray(value[key]);
+  }
+  if (value.muscles !== undefined) {
+    if (!isPlainCandidateObject(value.muscles)) invalidCandidateRecord();
+    assertCandidateKeys(value.muscles, ["primary", "secondary"]);
+    if (value.muscles.primary === undefined || value.muscles.secondary === undefined) {
+      invalidCandidateRecord();
+    }
+    result.muscles = {
+      primary: candidateStringArray(value.muscles.primary),
+      secondary: candidateStringArray(value.muscles.secondary),
+    };
+  }
+  return result;
+}
+
+function decodeVariantCandidate(value: unknown): VariantCandidate {
+  if (!isPlainCandidateObject(value)) invalidCandidateRecord();
+  assertCandidateKeys(value, [
+    "id",
+    "movementId",
+    "movementModifierIds",
+    "metadataFromExerciseId",
+    "metadataOverrides",
+    "approvedAliases",
+    "coverageTier",
+    "status",
+    "rationale",
+  ]);
+  if (value.status !== "candidate") invalidCandidateRecord();
+  const rationale = candidateString(value.rationale);
+  if (rationale.trim().length < 20) invalidCandidateRecord();
+  const movementModifierIds = candidateStringArray(value.movementModifierIds);
+  if (movementModifierIds.length === 0) invalidCandidateRecord();
+  return {
+    id: candidateString(value.id),
+    movementId: candidateString(value.movementId),
+    movementModifierIds,
+    metadataFromExerciseId: candidateString(value.metadataFromExerciseId),
+    ...(value.metadataOverrides === undefined
+      ? {}
+      : { metadataOverrides: candidateMetadataOverrides(value.metadataOverrides) }),
+    approvedAliases: candidateStringArray(value.approvedAliases),
+    coverageTier: candidateEnum(value.coverageTier),
+    status: "candidate",
+    rationale,
+  };
+}
+
+export async function loadVariantCandidates(
+  path = "scripts/catalog-normalization/reviews/variant-candidates.json",
+): Promise<{ schemaVersion: 1; records: VariantCandidate[] }> {
+  const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
+  if (!isPlainCandidateObject(parsed)) throw new Error("Invalid variant candidate artifact");
+  assertCandidateKeys(parsed, ["schemaVersion", "records"]);
+  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.records)) {
+    throw new Error("Invalid variant candidate artifact");
+  }
+  if (parsed.records.length > 300) throw new Error("Tier-1 candidate cap exceeded");
+  const records = parsed.records.map(decodeVariantCandidate);
+  const ids = new Set<string>();
+  for (const record of records) {
+    if (ids.has(record.id)) throw new Error(`Duplicate variant candidate ID: ${record.id}`);
+    ids.add(record.id);
+  }
+  return { schemaVersion: 1, records };
 }
 
 function closureForModifier(
@@ -276,4 +404,83 @@ export function signatureFromRecord(signature: RegistrySignature, registries: Bu
     signature.movementId,
     canonicalModifierIds(signature.movementId, signature.modifierIds, registries),
   );
+}
+
+function normalizeCandidateText(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function candidateMarkerPresent(alias: string, marker: string): boolean {
+  const aliasTokens = new Set(normalizeCandidateText(alias).split(" ").filter(Boolean));
+  const markerTokens = normalizeCandidateText(marker).split(" ").filter(Boolean);
+  if (markerTokens.length === 0) return false;
+  if (markerTokens.length === 1) return aliasTokens.has(markerTokens[0]);
+  const aliasText = normalizeCandidateText(alias);
+  return aliasText.includes(markerTokens.join(" "));
+}
+
+function assertCandidateAliasIdentity(
+  candidate: VariantCandidate,
+  movement: MovementDefinition,
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+  modifierIds: readonly string[],
+): void {
+  if (candidate.approvedAliases.length === 0) return;
+  for (const alias of candidate.approvedAliases) {
+    for (const modifierId of modifierIds) {
+      const modifier = modifiersById.get(modifierId);
+      if (!modifier) throw new Error(`Unknown modifier: ${modifierId}`);
+      const markers = [modifier.name, ...(modifier.aliases ?? [])];
+      if (!markers.some((marker) => candidateMarkerPresent(alias, marker))) {
+        throw new Error(`Identity-erasing candidate alias: ${candidate.id}`);
+      }
+    }
+    const genericMovementTokens = [movement.name, ...(movement.aliases ?? [])]
+      .map(normalizeCandidateText)
+      .filter(Boolean);
+    if (genericMovementTokens.includes(normalizeCandidateText(alias))) {
+      throw new Error(`Identity-erasing candidate alias: ${candidate.id}`);
+    }
+  }
+}
+
+export function validateVariantCandidates(
+  candidates: readonly VariantCandidate[],
+  registries: BuildRegistries,
+  metadataExerciseIds: ReadonlySet<string>,
+  requiredMovementIds: readonly string[] = TIER_1_MOVEMENT_IDS,
+): void {
+  if (candidates.length > 300) throw new Error("Tier-1 candidate cap exceeded");
+  const required = new Set(requiredMovementIds);
+  const seenIds = new Set<string>();
+  const seenSignatures = new Set<string>();
+  const seenMovements = new Set<string>();
+  for (const candidate of candidates) {
+    if (candidate.status !== "candidate") throw new Error(`Invalid candidate status: ${candidate.id}`);
+    if (!required.has(candidate.movementId)) {
+      throw new Error(`Candidate movement is not Tier-1: ${candidate.movementId}`);
+    }
+    if (seenIds.has(candidate.id)) throw new Error(`Duplicate variant candidate ID: ${candidate.id}`);
+    seenIds.add(candidate.id);
+    if (!metadataExerciseIds.has(candidate.metadataFromExerciseId)) {
+      throw new Error(`Candidate metadata base missing: ${candidate.metadataFromExerciseId}`);
+    }
+    const movement = registries.movementsById.get(candidate.movementId);
+    if (!movement) throw new Error(`Unknown candidate movement: ${candidate.movementId}`);
+    const modifierIds = canonicalModifierIds(candidate.movementId, candidate.movementModifierIds, registries);
+    const signature = signatureFor(candidate.movementId, modifierIds);
+    if (seenSignatures.has(signature)) throw new Error(`Duplicate candidate signature: ${signature}`);
+    seenSignatures.add(signature);
+    seenMovements.add(candidate.movementId);
+    assertCandidateAliasIdentity(candidate, movement, registries.modifiersById, modifierIds);
+  }
+  for (const movementId of required) {
+    if (!seenMovements.has(movementId)) throw new Error(`Missing Tier-1 candidate family: ${movementId}`);
+  }
 }

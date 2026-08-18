@@ -144,6 +144,12 @@ export function canonicalizeModifiers(
 }
 
 export { flattenMerges, signatureFor } from "./validate";
+export {
+  loadVariantCandidates,
+  TIER_1_MOVEMENT_IDS,
+  validateVariantCandidates,
+} from "./validate";
+export type { VariantCandidate, VariantRule } from "./types";
 
 type CurationInputs = {
   movements: readonly MovementDefinition[];
