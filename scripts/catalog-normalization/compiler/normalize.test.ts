@@ -1,11 +1,19 @@
-import { canonicalizeModifiers, signatureFor } from "./normalize";
+import {
+  buildRegistries,
+  canonicalizeModifiers,
+  findNearDuplicateCandidates,
+  signatureFor,
+} from "./normalize";
 import { flattenMerges, validateAliasOutcomes, validateRegistries } from "./validate";
 import type {
   BuildRegistries,
+  CatalogExercise,
   ModifierCategory,
   MovementDefinition,
   MovementModifierDefinition,
 } from "./types";
+import movementsArtifact from "../movements.json";
+import modifiersArtifact from "../modifiers.json";
 
 function makeModifierRegistryFixture(input: {
   movementId: string;
@@ -84,6 +92,17 @@ function invalidRegistryFixtures(): Array<{ name: string; registries: BuildRegis
         modifiersById: modifiers({
           a: { implies: ["b"], excludes: ["b"] },
           b: { excludes: ["a"] },
+        }),
+      }),
+      expected: "Modifier closure conflict",
+    },
+    {
+      name: "transitive closure conflict",
+      registries: withRegistries(base, {
+        modifiersById: modifiers({
+          a: { implies: ["b", "c"] },
+          b: { excludes: ["c"] },
+          c: { excludes: ["b"] },
         }),
       }),
       expected: "Modifier closure conflict",
@@ -174,4 +193,78 @@ test("rejects unclassified alias collisions", () => {
 
 test.each(invalidRegistryFixtures())("rejects $name", ({ registries, expected }) => {
   expect(() => validateRegistries(registries)).toThrow(expected);
+});
+
+test("rejects duplicate movement and modifier registry orders", () => {
+  const duplicateModifierOrder = makeModifierRegistryFixture({
+    movementId: "squat",
+    allowedModifierIds: ["a", "b"],
+    modifiers: [{ id: "a", sortOrder: 1 }, { id: "b", sortOrder: 1 }],
+  });
+  expect(() => validateRegistries(duplicateModifierOrder)).toThrow("Duplicate modifier sort order");
+
+  const uniqueModifierOrder = makeModifierRegistryFixture({
+    movementId: "squat",
+    allowedModifierIds: ["a", "b"],
+    modifiers: [{ id: "a", sortOrder: 1 }, { id: "b", sortOrder: 2 }],
+  });
+  const duplicateMovementOrder = withRegistries(uniqueModifierOrder, {
+    movementsById: new Map([
+      ...uniqueModifierOrder.movementsById,
+      [
+        "lunge",
+        {
+          ...uniqueModifierOrder.movementsById.get("squat")!,
+          id: "lunge",
+          name: "lunge",
+        },
+      ],
+    ]),
+  });
+  expect(() => validateRegistries(duplicateMovementOrder)).toThrow("Duplicate movement sort order");
+});
+
+test("rejects front rack with an implied back rack", () => {
+  const registries = buildRegistries(
+    movementsArtifact.records as MovementDefinition[],
+    modifiersArtifact.records as MovementModifierDefinition[],
+  );
+
+  expect(() => canonicalizeModifiers("squat", ["front-rack", "high-bar"], registries)).toThrow(
+    "Modifier closure conflict",
+  );
+});
+
+test("reports close canonical names for review without merging them", () => {
+  const exercises: CatalogExercise[] = [
+    {
+      id: "bench-press",
+      name: "Bench Press",
+      aliases: [],
+      equipment: [],
+      movementPatterns: [],
+      muscles: { primary: [], secondary: [] },
+      tags: [],
+    },
+    {
+      id: "bench-pres",
+      name: "Bench Pres",
+      aliases: [],
+      equipment: [],
+      movementPatterns: [],
+      muscles: { primary: [], secondary: [] },
+      tags: [],
+    },
+  ];
+
+  expect(findNearDuplicateCandidates(exercises)).toEqual([
+    {
+      exerciseIdA: "bench-pres",
+      exerciseIdB: "bench-press",
+      normalizedNameA: "bench pres",
+      normalizedNameB: "bench press",
+      similarity: 0.9091,
+      disposition: "review-required",
+    },
+  ]);
 });

@@ -89,6 +89,15 @@ export type ValidatedNormalizedCatalogue = {
   aliasCandidates: ReadonlyMap<string, string[]>;
 };
 
+export type NearDuplicateCandidate = {
+  exerciseIdA: string;
+  exerciseIdB: string;
+  normalizedNameA: string;
+  normalizedNameB: string;
+  similarity: number;
+  disposition: "review-required" | "merged";
+};
+
 export type CatalogBuildReport = {
   schemaVersion: 1;
   compilerVersion: 1;
@@ -104,6 +113,7 @@ export type CatalogBuildReport = {
   unclassifiedAliasCollisionCount: number;
   redirectChainCount: number;
   automaticFuzzyMergeCount: number;
+  nearDuplicateCandidates: NearDuplicateCandidate[];
 };
 
 export type CompileOptions = {

@@ -10,11 +10,12 @@ import type {
   CompileOptions,
   CompilerCliResult,
   Merge,
+  ModifierCategory,
   MovementDefinition,
   MovementModifierDefinition,
   VersionedArtifact,
 } from "./types";
-import { validateNormalizedCatalogue } from "./normalize";
+import { findNearDuplicateCandidates, validateNormalizedCatalogue } from "./normalize";
 
 export type { CatalogBuildReport, CompileOptions, CompilerCliResult, VersionedArtifact } from "./types";
 
@@ -40,6 +41,17 @@ const CURATION_MANIFESTS = [
 ] as const;
 
 const EMPTY_ARTIFACT = `${JSON.stringify({ schemaVersion: 1, records: [] })}\n`;
+const MODIFIER_CATEGORIES = new Set<ModifierCategory>([
+  "implement",
+  "grip",
+  "position",
+  "stance",
+  "support",
+  "range-of-motion",
+  "laterality",
+  "attachment",
+  "execution",
+]);
 
 function sha256(value: string | Buffer): string {
   return createHash("sha256").update(value).digest("hex");
@@ -50,11 +62,167 @@ function stableRecord(value: Record<string, number | string>): Record<string, nu
 }
 
 async function readVersionedArtifact(path: string): Promise<VersionedArtifact<unknown>> {
-  const artifact = JSON.parse(await readFile(path, "utf8")) as VersionedArtifact<unknown>;
+  const artifact = JSON.parse(await readFile(path, "utf8")) as unknown;
+  if (!isPlainObject(artifact)) throw new Error(`invalid schema-v1 artifact: ${path}`);
   if (artifact.schemaVersion !== 1 || !Array.isArray(artifact.records)) {
     throw new Error(`invalid schema-v1 artifact: ${path}`);
   }
-  return artifact;
+  return { schemaVersion: 1, records: artifact.records };
+}
+
+type ManifestRecord = Record<string, unknown>;
+
+function isPlainObject(value: unknown): value is ManifestRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function invalidManifestRecord(kind: string): never {
+  throw new Error(`Invalid ${kind} manifest record`);
+}
+
+function assertOnlyKeys(record: ManifestRecord, keys: readonly string[], kind: string): void {
+  const allowed = new Set(keys);
+  if (Object.keys(record).some((key) => !allowed.has(key))) invalidManifestRecord(kind);
+}
+
+function nonEmptyString(value: unknown, kind: string): string {
+  if (typeof value !== "string" || !value.trim()) invalidManifestRecord(kind);
+  return value;
+}
+
+function stringArray(value: unknown, kind: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) {
+    invalidManifestRecord(kind);
+  }
+  return [...value];
+}
+
+function integer(value: unknown, kind: string): number {
+  if (!Number.isSafeInteger(value)) invalidManifestRecord(kind);
+  return value as number;
+}
+
+function optionalStringArray(
+  record: ManifestRecord,
+  key: string,
+  kind: string,
+): string[] | undefined {
+  return record[key] === undefined ? undefined : stringArray(record[key], kind);
+}
+
+function isModifierCategory(value: unknown): value is ModifierCategory {
+  return typeof value === "string" && MODIFIER_CATEGORIES.has(value as ModifierCategory);
+}
+
+function manifestRecords(artifact: VersionedArtifact<unknown>, kind: string): ManifestRecord[] {
+  return artifact.records.map((record) => {
+    if (!isPlainObject(record)) invalidManifestRecord(kind);
+    return record;
+  });
+}
+
+function decodeMovements(artifact: VersionedArtifact<unknown>): MovementDefinition[] {
+  return manifestRecords(artifact, "movement").map((record) => {
+    assertOnlyKeys(record, [
+      "id", "name", "aliases", "sortOrder", "allowedModifierCategories", "allowedModifierIds",
+      "maxIdentityModifiers", "displayTemplate",
+    ], "movement");
+    const categories = stringArray(record.allowedModifierCategories, "movement");
+    if (categories.some((category) => !isModifierCategory(category))) invalidManifestRecord("movement");
+    return {
+      id: nonEmptyString(record.id, "movement"),
+      name: nonEmptyString(record.name, "movement"),
+      aliases: stringArray(record.aliases, "movement"),
+      sortOrder: integer(record.sortOrder, "movement"),
+      allowedModifierCategories: categories as ModifierCategory[],
+      allowedModifierIds: stringArray(record.allowedModifierIds, "movement"),
+      maxIdentityModifiers: integer(record.maxIdentityModifiers, "movement"),
+      displayTemplate: nonEmptyString(record.displayTemplate, "movement"),
+    };
+  });
+}
+
+function decodeModifiers(artifact: VersionedArtifact<unknown>): MovementModifierDefinition[] {
+  return manifestRecords(artifact, "modifier").map((record) => {
+    assertOnlyKeys(record, [
+      "id", "name", "aliases", "category", "exclusiveGroup", "identity", "sortOrder", "implies", "excludes",
+    ], "modifier");
+    if (!isModifierCategory(record.category) || typeof record.identity !== "boolean") {
+      invalidManifestRecord("modifier");
+    }
+    const exclusiveGroup = record.exclusiveGroup === undefined
+      ? undefined
+      : nonEmptyString(record.exclusiveGroup, "modifier");
+    return {
+      id: nonEmptyString(record.id, "modifier"),
+      name: nonEmptyString(record.name, "modifier"),
+      aliases: stringArray(record.aliases, "modifier"),
+      category: record.category,
+      ...(exclusiveGroup ? { exclusiveGroup } : {}),
+      identity: record.identity,
+      sortOrder: integer(record.sortOrder, "modifier"),
+      ...(record.implies === undefined ? {} : { implies: optionalStringArray(record, "implies", "modifier")! }),
+      ...(record.excludes === undefined ? {} : { excludes: optionalStringArray(record, "excludes", "modifier")! }),
+    };
+  });
+}
+
+function decodeMerges(artifact: VersionedArtifact<unknown>): Merge[] {
+  return manifestRecords(artifact, "merge").map((record) => {
+    assertOnlyKeys(record, ["fromExerciseId", "toExerciseId"], "merge");
+    return {
+      fromExerciseId: nonEmptyString(record.fromExerciseId, "merge"),
+      toExerciseId: nonEmptyString(record.toExerciseId, "merge"),
+    };
+  });
+}
+
+function decodeAssignments(artifact: VersionedArtifact<unknown>): Assignment[] {
+  return manifestRecords(artifact, "assignment").map((record) => {
+    assertOnlyKeys(record, ["exerciseId", "movementId", "movementModifierIds", "metadataOverrides"], "assignment");
+    if (record.movementId !== null && (typeof record.movementId !== "string" || !record.movementId.trim())) {
+      invalidManifestRecord("assignment");
+    }
+    if (record.metadataOverrides !== undefined && !isPlainObject(record.metadataOverrides)) {
+      invalidManifestRecord("assignment");
+    }
+    return {
+      exerciseId: nonEmptyString(record.exerciseId, "assignment"),
+      movementId: record.movementId,
+      movementModifierIds: stringArray(record.movementModifierIds, "assignment"),
+      ...(record.metadataOverrides === undefined ? {} : { metadataOverrides: record.metadataOverrides }),
+    };
+  });
+}
+
+function decodeAliasClassifications(artifact: VersionedArtifact<unknown>): AliasClassification[] {
+  return manifestRecords(artifact, "alias classification").map((record) => {
+    const normalizedToken = nonEmptyString(record.normalizedToken, "alias classification");
+    if (record.outcome === "unique") {
+      assertOnlyKeys(record, ["normalizedToken", "outcome", "exerciseId"], "alias classification");
+      return { normalizedToken, outcome: "unique", exerciseId: nonEmptyString(record.exerciseId, "alias classification") };
+    }
+    if (record.outcome === "underspecified") {
+      assertOnlyKeys(record, ["normalizedToken", "outcome", "movementId", "candidateIds"], "alias classification");
+      const candidateIds = stringArray(record.candidateIds, "alias classification");
+      if (candidateIds.length === 0) invalidManifestRecord("alias classification");
+      return {
+        normalizedToken,
+        outcome: "underspecified",
+        movementId: nonEmptyString(record.movementId, "alias classification"),
+        candidateIds,
+      };
+    }
+    if (record.outcome === "removed-noise") {
+      assertOnlyKeys(record, ["normalizedToken", "outcome", "reason"], "alias classification");
+      return { normalizedToken, outcome: "removed-noise", reason: nonEmptyString(record.reason, "alias classification") };
+    }
+    return invalidManifestRecord("alias classification");
+  });
+}
+
+function validateUnmodeledManifestRecords(artifact: VersionedArtifact<unknown>, kind: string): void {
+  manifestRecords(artifact, kind);
 }
 
 export async function assertSnapshotDigest(snapshotPath: string, digestPath: string): Promise<string> {
@@ -91,15 +259,28 @@ async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts
     hashes[relativePath] = sha256(contents);
     schemaVersions[relativePath] = artifact.schemaVersion;
   }
+  const movements = artifacts.get("scripts/catalog-normalization/movements.json")!;
+  const modifiers = artifacts.get("scripts/catalog-normalization/modifiers.json")!;
+  const merges = artifacts.get("scripts/catalog-normalization/merges.json")!;
+  const assignments = artifacts.get("scripts/catalog-normalization/assignments.json")!;
+  const aliasClassifications = artifacts.get("scripts/catalog-normalization/alias-classifications.json")!;
+  validateUnmodeledManifestRecords(
+    artifacts.get("scripts/catalog-normalization/disambiguations.json")!,
+    "disambiguation",
+  );
+  validateUnmodeledManifestRecords(
+    artifacts.get("scripts/catalog-normalization/variant-rules.json")!,
+    "variant rule",
+  );
+
   return {
     hashes: stableRecord(hashes) as Record<string, string>,
     schemaVersions: stableRecord(schemaVersions) as Record<string, number>,
-    movements: artifacts.get("scripts/catalog-normalization/movements.json")!.records as MovementDefinition[],
-    modifiers: artifacts.get("scripts/catalog-normalization/modifiers.json")!.records as MovementModifierDefinition[],
-    merges: artifacts.get("scripts/catalog-normalization/merges.json")!.records as Merge[],
-    assignments: artifacts.get("scripts/catalog-normalization/assignments.json")!.records as Assignment[],
-    aliasClassifications: artifacts.get("scripts/catalog-normalization/alias-classifications.json")!
-      .records as AliasClassification[],
+    movements: decodeMovements(movements),
+    modifiers: decodeModifiers(modifiers),
+    merges: decodeMerges(merges),
+    assignments: decodeAssignments(assignments),
+    aliasClassifications: decodeAliasClassifications(aliasClassifications),
   };
 }
 
@@ -117,6 +298,7 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   Object.assign(inputHashes, manifests.hashes);
   Object.assign(inputSchemaVersions, manifests.schemaVersions);
   const normalized = validateNormalizedCatalogue(records as CatalogExercise[], manifests);
+  const nearDuplicateCandidates = findNearDuplicateCandidates(normalized.exercises);
 
   const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = {
     "exercises.generated.json": snapshot,
@@ -142,7 +324,10 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     blockingErrors: [],
     unclassifiedAliasCollisionCount: 0,
     redirectChainCount: 0,
-    automaticFuzzyMergeCount: 0,
+    automaticFuzzyMergeCount: nearDuplicateCandidates.filter(
+      (candidate) => candidate.disposition === "merged",
+    ).length,
+    nearDuplicateCandidates,
   };
 
   await mkdir(options.catalogOutputDir, { recursive: true });

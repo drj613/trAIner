@@ -117,6 +117,41 @@ function validateModifierReferences(registries: BuildRegistries): void {
   }
 }
 
+function validateClosureConflicts(
+  modifierIds: readonly string[],
+  registries: BuildRegistries,
+): void {
+  for (let index = 0; index < modifierIds.length; index += 1) {
+    const left = registries.modifiersById.get(modifierIds[index])!;
+    for (let otherIndex = index + 1; otherIndex < modifierIds.length; otherIndex += 1) {
+      const right = registries.modifiersById.get(modifierIds[otherIndex])!;
+      if (
+        (left.exclusiveGroup && left.exclusiveGroup === right.exclusiveGroup) ||
+        (left.excludes ?? []).includes(right.id) ||
+        (right.excludes ?? []).includes(left.id)
+      ) {
+        throw new Error(`Modifier closure conflict: ${left.id}/${right.id}`);
+      }
+    }
+  }
+}
+
+function validateDistinctSortOrders(
+  definitions: Iterable<{ id: string; sortOrder: number }>,
+  kind: "movement" | "modifier",
+): void {
+  const idsBySortOrder = new Map<number, string>();
+  for (const definition of definitions) {
+    if (!Number.isSafeInteger(definition.sortOrder) || definition.sortOrder < 0) {
+      throw new Error(`Invalid ${kind} sort order: ${definition.id}`);
+    }
+    if (idsBySortOrder.has(definition.sortOrder)) {
+      throw new Error(`Duplicate ${kind} sort order: ${definition.sortOrder}`);
+    }
+    idsBySortOrder.set(definition.sortOrder, definition.id);
+  }
+}
+
 function validateDefinitionNames(
   definitions: Iterable<{ id: string; name: string; aliases: string[] }>,
   kind: string,
@@ -152,10 +187,9 @@ function validateSignatures(registries: BuildRegistries): void {
 export function validateRegistries(registries: BuildRegistries): void {
   validateDefinitionNames(registries.movementsById.values(), "movement");
   validateDefinitionNames(registries.modifiersById.values(), "modifier");
+  validateDistinctSortOrders(registries.movementsById.values(), "movement");
+  validateDistinctSortOrders(registries.modifiersById.values(), "modifier");
   for (const movement of registries.movementsById.values()) {
-    if (!Number.isSafeInteger(movement.sortOrder) || movement.sortOrder < 0) {
-      throw new Error(`Invalid movement sort order: ${movement.id}`);
-    }
     if (!Number.isSafeInteger(movement.maxIdentityModifiers) || movement.maxIdentityModifiers < 0) {
       throw new Error(`Invalid movement maximum: ${movement.id}`);
     }
@@ -169,10 +203,7 @@ export function validateRegistries(registries: BuildRegistries): void {
   modifierClosure([...registries.modifiersById.keys()], registries.modifiersById);
   for (const modifier of registries.modifiersById.values()) {
     const closure = modifierClosure([modifier.id], registries.modifiersById);
-    const excluded = new Set(modifier.excludes ?? []);
-    if (closure.some((id) => excluded.has(id))) {
-      throw new Error(`Modifier closure conflict: ${modifier.id}`);
-    }
+    validateClosureConflicts(closure, registries);
   }
   validateSignatures(registries);
 }

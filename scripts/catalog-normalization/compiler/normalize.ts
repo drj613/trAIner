@@ -6,6 +6,7 @@ import type {
   Merge,
   MovementDefinition,
   MovementModifierDefinition,
+  NearDuplicateCandidate,
   NormalizedCatalogExercise,
   ValidatedNormalizedCatalogue,
 } from "./types";
@@ -24,6 +25,9 @@ function uniqueStrings(values: Iterable<string>): string[] {
   return [...new Set(values)].sort(compareText);
 }
 
+const NEAR_DUPLICATE_SIMILARITY = 0.9;
+const MAX_NEAR_DUPLICATE_CANDIDATES = 500;
+
 export function normalizeToken(value: string): string {
   return value
     .normalize("NFKD")
@@ -34,6 +38,77 @@ export function normalizeToken(value: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
+}
+
+function levenshteinDistance(left: string, right: string): number {
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + Number(left[leftIndex - 1] !== right[rightIndex - 1]),
+      );
+    }
+    previous = current;
+  }
+  return previous[right.length];
+}
+
+function similarityKeys(normalizedName: string): string[] {
+  const keys = new Set<string>([normalizedName]);
+  for (let index = 0; index < normalizedName.length; index += 1) {
+    keys.add(`${normalizedName.slice(0, index)}${normalizedName.slice(index + 1)}`);
+  }
+  return [...keys];
+}
+
+export function findNearDuplicateCandidates(
+  exercises: readonly CatalogExercise[],
+): NearDuplicateCandidate[] {
+  const names = exercises
+    .map((exercise) => ({ exerciseId: exercise.id, normalizedName: normalizeToken(exercise.name) }))
+    .filter(({ normalizedName }) => normalizedName.length > 0)
+    .sort((a, b) => compareText(a.exerciseId, b.exerciseId));
+  const indexesBySimilarityKey = new Map<string, number[]>();
+  for (const [index, name] of names.entries()) {
+    for (const key of similarityKeys(name.normalizedName)) {
+      const indexes = indexesBySimilarityKey.get(key) ?? [];
+      indexes.push(index);
+      indexesBySimilarityKey.set(key, indexes);
+    }
+  }
+  const candidates: NearDuplicateCandidate[] = [];
+
+  for (let leftIndex = 0; leftIndex < names.length; leftIndex += 1) {
+    const left = names[leftIndex];
+    const candidateIndexes = new Set<number>();
+    for (const key of similarityKeys(left.normalizedName)) {
+      for (const index of indexesBySimilarityKey.get(key) ?? []) {
+        if (index > leftIndex) candidateIndexes.add(index);
+      }
+    }
+    for (const rightIndex of [...candidateIndexes].sort((a, b) => a - b)) {
+      const right = names[rightIndex];
+      if (left.normalizedName === right.normalizedName) continue;
+      const longestName = Math.max(left.normalizedName.length, right.normalizedName.length);
+      const similarity = Number(
+        (1 - levenshteinDistance(left.normalizedName, right.normalizedName) / longestName).toFixed(4),
+      );
+      if (similarity <= NEAR_DUPLICATE_SIMILARITY) continue;
+      candidates.push({
+        exerciseIdA: left.exerciseId,
+        exerciseIdB: right.exerciseId,
+        normalizedNameA: left.normalizedName,
+        normalizedNameB: right.normalizedName,
+        similarity,
+        disposition: "review-required",
+      });
+      if (candidates.length === MAX_NEAR_DUPLICATE_CANDIDATES) return candidates;
+    }
+  }
+  return candidates;
 }
 
 function assertUniqueDefinitions<T extends { id: string }>(

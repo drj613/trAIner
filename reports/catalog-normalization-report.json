@@ -24,7 +24,7 @@
     "scripts/catalog-normalization/catalog-v1.snapshot.json": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
     "scripts/catalog-normalization/disambiguations.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
-    "scripts/catalog-normalization/modifiers.json": "83738d25d7b439f6bc2b4ac676e7924805483ceccfc8515088affd32ffa165c8",
+    "scripts/catalog-normalization/modifiers.json": "593c3183c7ed4a50d52c1c14ba7849e2d716dc871a8c44e5c193e55e0f8f0289",
     "scripts/catalog-normalization/movements.json": "64b0e13512caba24d9acfd0fb6132f65667d85a1cadce81fd4b46eece087746f",
     "scripts/catalog-normalization/variant-rules.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98"
   },
@@ -38,5 +38,527 @@
   "blockingErrors": [],
   "unclassifiedAliasCollisionCount": 0,
   "redirectChainCount": 0,
-  "automaticFuzzyMergeCount": 0
+  "automaticFuzzyMergeCount": 0,
+  "nearDuplicateCandidates": [
+    {
+      "exerciseIdA": "all-fours-quad-stretch",
+      "exerciseIdB": "all-fours-squad-stretch",
+      "normalizedNameA": "all fours quad stretch",
+      "normalizedNameB": "all fours squad stretch",
+      "similarity": 0.9565,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "band-pull-apart",
+      "exerciseIdB": "band-pull-aparts",
+      "normalizedNameA": "band pull apart",
+      "normalizedNameB": "band pull aparts",
+      "similarity": 0.9375,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "band-skull-crusher",
+      "exerciseIdB": "band-skullcrusher",
+      "normalizedNameA": "band skull crusher",
+      "normalizedNameB": "band skullcrusher",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "barbell-back-squat",
+      "exerciseIdB": "barbell-hack-squat",
+      "normalizedNameA": "barbell back squat",
+      "normalizedNameB": "barbell hack squat",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "barbell-hack-squat",
+      "exerciseIdB": "barbell-hack-squats",
+      "normalizedNameA": "barbell hack squat",
+      "normalizedNameB": "barbell hack squats",
+      "similarity": 0.9474,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "barbell-step-up",
+      "exerciseIdB": "barbell-step-ups",
+      "normalizedNameA": "barbell step up",
+      "normalizedNameB": "barbell step ups",
+      "similarity": 0.9375,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "barbell-upright-row-v-2",
+      "exerciseIdB": "barbell-upright-row-v-3",
+      "normalizedNameA": "barbell upright row v 2",
+      "normalizedNameB": "barbell upright row v 3",
+      "similarity": 0.9565,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "cable-cross-over",
+      "exerciseIdB": "cable-crossover",
+      "normalizedNameA": "cable cross over",
+      "normalizedNameB": "cable crossover",
+      "similarity": 0.9375,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "cable-curl",
+      "exerciseIdB": "cable-curls",
+      "normalizedNameA": "cable curl",
+      "normalizedNameB": "cable curls",
+      "similarity": 0.9091,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "cable-deadlift",
+      "exerciseIdB": "cable-deadlifts",
+      "normalizedNameA": "cable deadlift",
+      "normalizedNameB": "cable deadlifts",
+      "similarity": 0.9333,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "cable-hip-abduction",
+      "exerciseIdB": "cable-hip-adduction",
+      "normalizedNameA": "cable hip abduction",
+      "normalizedNameB": "cable hip adduction",
+      "similarity": 0.9474,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "cable-shrug",
+      "exerciseIdB": "cable-shrugs",
+      "normalizedNameA": "cable shrug",
+      "normalizedNameB": "cable shrugs",
+      "similarity": 0.9167,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "concentration-curl",
+      "exerciseIdB": "concentration-curls",
+      "normalizedNameA": "concentration curl",
+      "normalizedNameB": "concentration curls",
+      "similarity": 0.9474,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "diamond-push-up",
+      "exerciseIdB": "diamond-push-ups",
+      "normalizedNameA": "diamond push up",
+      "normalizedNameB": "diamond push ups",
+      "similarity": 0.9375,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "donkey-calf-raise",
+      "exerciseIdB": "donkey-calf-raises",
+      "normalizedNameA": "donkey calf raise",
+      "normalizedNameB": "donkey calf raises",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-alternate-bicep-curl",
+      "exerciseIdB": "dumbbell-alternate-biceps-curl",
+      "normalizedNameA": "dumbbell alternate bicep curl",
+      "normalizedNameB": "dumbbell alternate biceps curl",
+      "similarity": 0.9667,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-bicep-curl",
+      "exerciseIdB": "dumbbell-biceps-curl",
+      "normalizedNameA": "dumbbell bicep curl",
+      "normalizedNameB": "dumbbell biceps curl",
+      "similarity": 0.95,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-incline-t-raise",
+      "exerciseIdB": "dumbbell-incline-y-raise",
+      "normalizedNameA": "dumbbell incline t raise",
+      "normalizedNameB": "dumbbell incline y raise",
+      "similarity": 0.9583,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-seated-triceps-extension",
+      "exerciseIdB": "dumbbells-seated-triceps-extension",
+      "normalizedNameA": "dumbbell seated triceps extension",
+      "normalizedNameB": "dumbbells seated triceps extension",
+      "similarity": 0.9706,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-step-up",
+      "exerciseIdB": "dumbbell-step-ups",
+      "normalizedNameA": "dumbbell step up",
+      "normalizedNameB": "dumbbell step ups",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "dumbbell-tate-press",
+      "exerciseIdB": "dumbell-tate-press",
+      "normalizedNameA": "dumbbell tate press",
+      "normalizedNameB": "dumbell tate press",
+      "similarity": 0.9474,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "flutter-kick",
+      "exerciseIdB": "flutter-kicks",
+      "normalizedNameA": "flutter kick",
+      "normalizedNameB": "flutter kicks",
+      "similarity": 0.9231,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "front-squat",
+      "exerciseIdB": "front-squats",
+      "normalizedNameA": "front squat",
+      "normalizedNameB": "front squats",
+      "similarity": 0.9167,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "gironda-sternum-chin",
+      "exerciseIdB": "gironda-sternum-chins",
+      "normalizedNameA": "gironda sternum chin",
+      "normalizedNameB": "gironda sternum chins",
+      "similarity": 0.9524,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "good-morning",
+      "exerciseIdB": "good-mornings",
+      "normalizedNameA": "good morning",
+      "normalizedNameB": "good mornings",
+      "similarity": 0.9231,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "hack-squat",
+      "exerciseIdB": "hack-squats",
+      "normalizedNameA": "hack squat",
+      "normalizedNameB": "hack squats",
+      "similarity": 0.9091,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "hammer-curl",
+      "exerciseIdB": "hammer-curls",
+      "normalizedNameA": "hammer curl",
+      "normalizedNameB": "hammer curls",
+      "similarity": 0.9167,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "handstand-push-up",
+      "exerciseIdB": "handstand-push-ups",
+      "normalizedNameA": "handstand push up",
+      "normalizedNameB": "handstand push ups",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "handstand-push-up",
+      "exerciseIdB": "handstand-pushup",
+      "normalizedNameA": "handstand push up",
+      "normalizedNameB": "handstand pushup",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "hanging-leg-raise",
+      "exerciseIdB": "hanging-leg-raises",
+      "normalizedNameA": "hanging leg raise",
+      "normalizedNameB": "hanging leg raises",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "hip-abduction-machine",
+      "exerciseIdB": "hip-adduction-machine",
+      "normalizedNameA": "hip abduction machine",
+      "normalizedNameB": "hip adduction machine",
+      "similarity": 0.9524,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "hyperextension",
+      "exerciseIdB": "hyperextensions",
+      "normalizedNameA": "hyperextension",
+      "normalizedNameB": "hyperextensions",
+      "similarity": 0.9333,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "incline-hammer-curl",
+      "exerciseIdB": "incline-hammer-curls",
+      "normalizedNameA": "incline hammer curl",
+      "normalizedNameB": "incline hammer curls",
+      "similarity": 0.95,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "inverted-row",
+      "exerciseIdB": "inverted-rows",
+      "normalizedNameA": "inverted row",
+      "normalizedNameB": "inverted rows",
+      "similarity": 0.9231,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "isometric-chest-squeeze",
+      "exerciseIdB": "isometric-chest-squeezes",
+      "normalizedNameA": "isometric chest squeeze",
+      "normalizedNameB": "isometric chest squeezes",
+      "similarity": 0.9583,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "kettlebell-swing",
+      "exerciseIdB": "kettlebell-swings",
+      "normalizedNameA": "kettlebell swing",
+      "normalizedNameB": "kettlebell swings",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "l-sit-on-floor",
+      "exerciseIdB": "v-sit-on-floor",
+      "normalizedNameA": "l sit on floor",
+      "normalizedNameB": "v sit on floor",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "landmine-180",
+      "exerciseIdB": "landmine-180s",
+      "normalizedNameA": "landmine 180",
+      "normalizedNameB": "landmine 180s",
+      "similarity": 0.9231,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "leg-extension",
+      "exerciseIdB": "leg-extensions",
+      "normalizedNameA": "leg extension",
+      "normalizedNameB": "leg extensions",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "lever-seated-hip-abduction",
+      "exerciseIdB": "lever-seated-hip-adduction",
+      "normalizedNameA": "lever seated hip abduction",
+      "normalizedNameB": "lever seated hip adduction",
+      "similarity": 0.9615,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "lever-shoulder-press-v-2",
+      "exerciseIdB": "lever-shoulder-press-v-3",
+      "normalizedNameA": "lever shoulder press v 2",
+      "normalizedNameB": "lever shoulder press v 3",
+      "similarity": 0.9583,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "london-bridge",
+      "exerciseIdB": "london-bridges",
+      "normalizedNameA": "london bridge",
+      "normalizedNameB": "london bridges",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "low-pulley-cable-ffly",
+      "exerciseIdB": "low-pulley-cable-fly",
+      "normalizedNameA": "low pulley cable ffly",
+      "normalizedNameB": "low pulley cable fly",
+      "similarity": 0.9524,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "lying-leg-curl",
+      "exerciseIdB": "lying-leg-curls",
+      "normalizedNameA": "lying leg curl",
+      "normalizedNameB": "lying leg curls",
+      "similarity": 0.9333,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "mountain-climber",
+      "exerciseIdB": "mountain-climbers",
+      "normalizedNameA": "mountain climber",
+      "normalizedNameB": "mountain climbers",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "overhead-cable-tricep-extension",
+      "exerciseIdB": "overhead-cable-triceps-extension",
+      "normalizedNameA": "overhead cable tricep extension",
+      "normalizedNameB": "overhead cable triceps extension",
+      "similarity": 0.9688,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "preacher-curl",
+      "exerciseIdB": "preacher-curls",
+      "normalizedNameA": "preacher curl",
+      "normalizedNameB": "preacher curls",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "pull-up-neutral-grip",
+      "exerciseIdB": "pull-ups-neutral-grip",
+      "normalizedNameA": "pull up neutral grip",
+      "normalizedNameB": "pull ups neutral grip",
+      "similarity": 0.9524,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "rear-delt-raise",
+      "exerciseIdB": "rear-delt-raises",
+      "normalizedNameA": "rear delt raise",
+      "normalizedNameB": "rear delt raises",
+      "similarity": 0.9375,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "seated-cable-row",
+      "exerciseIdB": "seated-cable-rows",
+      "normalizedNameA": "seated cable row",
+      "normalizedNameB": "seated cable rows",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "seated-dumbbell-curl",
+      "exerciseIdB": "seated-dumbbell-curls",
+      "normalizedNameA": "seated dumbbell curl",
+      "normalizedNameB": "seated dumbbell curls",
+      "similarity": 0.9524,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "seated-hip-abduction",
+      "exerciseIdB": "seated-hip-adduction",
+      "normalizedNameA": "seated hip abduction",
+      "normalizedNameB": "seated hip adduction",
+      "similarity": 0.95,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "shoulder-press-dumbbell",
+      "exerciseIdB": "shoulder-press-dumbbells",
+      "normalizedNameA": "shoulder press dumbbell",
+      "normalizedNameB": "shoulder press dumbbells",
+      "similarity": 0.9583,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "side-lying-hip-abduction",
+      "exerciseIdB": "side-lying-hip-adduction",
+      "normalizedNameA": "side lying hip abduction",
+      "normalizedNameB": "side lying hip adduction",
+      "similarity": 0.9583,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "side-to-side-chin",
+      "exerciseIdB": "side-to-side-chins",
+      "normalizedNameA": "side to side chin",
+      "normalizedNameB": "side to side chins",
+      "similarity": 0.9444,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "skull-crusher-dumbbell",
+      "exerciseIdB": "skullcrusher-dumbbells",
+      "normalizedNameA": "skull crusher dumbbell",
+      "normalizedNameB": "skullcrusher dumbbells",
+      "similarity": 0.9091,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "smith-incline-shoulder-raise",
+      "exerciseIdB": "smith-incline-shoulder-raises",
+      "normalizedNameA": "smith incline shoulder raise",
+      "normalizedNameB": "smith incline shoulder raises",
+      "similarity": 0.9655,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "squat-with-bands",
+      "exerciseIdB": "squats-with-bands",
+      "normalizedNameA": "squat with bands",
+      "normalizedNameB": "squats with bands",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "stair-master",
+      "exerciseIdB": "stairmaster",
+      "normalizedNameA": "stair master",
+      "normalizedNameB": "stairmaster",
+      "similarity": 0.9167,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "standing-calf-raise",
+      "exerciseIdB": "standing-calf-raises",
+      "normalizedNameA": "standing calf raise",
+      "normalizedNameB": "standing calf raises",
+      "similarity": 0.95,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "thigh-abductor",
+      "exerciseIdB": "thigh-adductor",
+      "normalizedNameA": "thigh abductor",
+      "normalizedNameB": "thigh adductor",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "walking-lunge",
+      "exerciseIdB": "walking-lunges",
+      "normalizedNameA": "walking lunge",
+      "normalizedNameB": "walking lunges",
+      "similarity": 0.9286,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "wall-slide",
+      "exerciseIdB": "wall-slides",
+      "normalizedNameA": "wall slide",
+      "normalizedNameB": "wall slides",
+      "similarity": 0.9091,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "weighted-pull-up",
+      "exerciseIdB": "weighted-pull-ups",
+      "normalizedNameA": "weighted pull up",
+      "normalizedNameB": "weighted pull ups",
+      "similarity": 0.9412,
+      "disposition": "review-required"
+    },
+    {
+      "exerciseIdA": "world-greatest-stretch",
+      "exerciseIdB": "worlds-greatest-stretch",
+      "normalizedNameA": "world greatest stretch",
+      "normalizedNameB": "worlds greatest stretch",
+      "similarity": 0.9565,
+      "disposition": "review-required"
+    }
+  ]
 }

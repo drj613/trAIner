@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -112,6 +113,98 @@ test("package CLI entrypoints execute", async () => {
 
 test("checker accepts the checked-in catalogue output", async () => {
   expect((await runProcess(["bun", "scripts/catalog-normalization/compiler/check.ts"])).exitCode).toBe(0);
+});
+
+test.each([
+  {
+    name: "an alias classification with an unknown outcome",
+    fileName: "alias-classifications.json",
+    records: [{ normalizedToken: "fixture", outcome: "auto", exerciseId: "fixture-0" }],
+    expected: "Invalid alias classification manifest record",
+  },
+  {
+    name: "an assignment without a movement decision",
+    fileName: "assignments.json",
+    records: [{ exerciseId: "fixture-0", movementModifierIds: [] }],
+    expected: "Invalid assignment manifest record",
+  },
+  {
+    name: "a movement with an unknown modifier category",
+    fileName: "movements.json",
+    records: [{
+      id: "fixture-movement",
+      name: "Fixture Movement",
+      aliases: [],
+      sortOrder: 1,
+      allowedModifierCategories: ["unsupported-category"],
+      allowedModifierIds: [],
+      maxIdentityModifiers: 0,
+      displayTemplate: "{movement}",
+    }],
+    expected: "Invalid movement manifest record",
+  },
+])("rejects $name", async ({ fileName, records, expected }) => {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  const outputDir = await mkdtemp(join(tmpdir(), "catalog-invalid-manifest-"));
+  await writeFile(
+    join(rootDir, "scripts/catalog-normalization", fileName),
+    `${JSON.stringify({ schemaVersion: 1, records })}\n`,
+  );
+
+  await expect(compileCatalog({
+    rootDir,
+    catalogOutputDir: outputDir,
+    reportOutputPath: join(outputDir, "report.json"),
+    stage: "existing",
+  })).rejects.toThrow(expected);
+});
+
+test("reports near duplicates for review without automatically merging them", async () => {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  const outputDir = await mkdtemp(join(tmpdir(), "catalog-near-duplicate-"));
+  const snapshot = `${JSON.stringify([
+    {
+      id: "bench-pres",
+      name: "Bench Pres",
+      aliases: [],
+      equipment: [],
+      movementPatterns: [],
+      muscles: { primary: [], secondary: [] },
+      tags: [],
+    },
+    {
+      id: "bench-press",
+      name: "Bench Press",
+      aliases: [],
+      equipment: [],
+      movementPatterns: [],
+      muscles: { primary: [], secondary: [] },
+      tags: [],
+    },
+  ], null, 2)}\n`;
+  const catalogRoot = join(rootDir, "scripts/catalog-normalization");
+  await writeFile(join(catalogRoot, "catalog-v1.snapshot.json"), snapshot);
+  await writeFile(
+    join(catalogRoot, "catalog-v1.sha256"),
+    `${createHash("sha256").update(snapshot).digest("hex")}\n`,
+  );
+
+  const report = await compileCatalog({
+    rootDir,
+    catalogOutputDir: outputDir,
+    reportOutputPath: join(outputDir, "report.json"),
+    stage: "existing",
+  });
+
+  expect(report.automaticFuzzyMergeCount).toBe(0);
+  expect(report.nearDuplicateCandidates).toEqual([
+    expect.objectContaining({
+      exerciseIdA: "bench-pres",
+      exerciseIdB: "bench-press",
+      similarity: 0.9091,
+      disposition: "review-required",
+    }),
+  ]);
 });
 
 test("does not execute an imported entrypoint when its importer has the CLI filename", async () => {
