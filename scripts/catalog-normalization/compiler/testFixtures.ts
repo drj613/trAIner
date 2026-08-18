@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { OUTPUT_FILES } from "./compile";
+import { OUTPUT_FILES } from "./core";
 
 const COMPLETE_MANIFESTS = [
   "movements.json",

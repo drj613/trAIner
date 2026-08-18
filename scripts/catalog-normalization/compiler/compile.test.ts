@@ -1,7 +1,7 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { assertSnapshotDigest, compileCatalog, runCompilerCli } from "./compile";
+import { join, resolve } from "node:path";
+import { assertSnapshotDigest, compileCatalog, runCompilerCli } from "./core";
 import { createCompilerFixtureRoot, runProcess } from "./testFixtures";
 import { runIngestion } from "../ingest";
 
@@ -108,4 +108,25 @@ test("package CLI entrypoints execute", async () => {
       ])
     ).exitCode,
   ).toBe(0);
+});
+
+test("does not execute an imported entrypoint when its importer has the CLI filename", async () => {
+  const runnerRoot = await mkdtemp(join(tmpdir(), "catalog-entrypoint-import-"));
+  const sourceRoot = process.cwd();
+
+  for (const entrypoint of ["compile", "check"] as const) {
+    const runnerPath = join(runnerRoot, "scripts/catalog-normalization/compiler", `${entrypoint}.ts`);
+    await mkdir(join(runnerPath, ".."), { recursive: true });
+    await writeFile(
+      runnerPath,
+      [
+        `process.chdir(${JSON.stringify(runnerRoot)});`,
+        `await import(${JSON.stringify(resolve(sourceRoot, "scripts/catalog-normalization/compiler", `${entrypoint}.ts`))});`,
+      ].join("\n"),
+    );
+
+    const result = await runProcess(["bun", runnerPath]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe("");
+  }
 });

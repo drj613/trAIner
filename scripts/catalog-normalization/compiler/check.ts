@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { compileCatalog, OUTPUT_FILES } from "./compile";
+import { compileCatalog, OUTPUT_FILES } from "./core";
 
 function sha256(value: Buffer): string {
   return createHash("sha256").update(value).digest("hex");
@@ -37,9 +37,4 @@ export async function runCatalogCheck(argv: string[]): Promise<void> {
   }
 }
 
-if (process.argv[1]?.endsWith("scripts/catalog-normalization/compiler/check.ts")) {
-  void runCatalogCheck(process.argv.slice(2)).catch((error: unknown) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-}
+if (import.meta.main) await runCatalogCheck(process.argv.slice(2));
