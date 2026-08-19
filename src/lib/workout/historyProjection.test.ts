@@ -730,6 +730,10 @@ describe("unreadable entry fields", () => {
     expect(projection.rows).toHaveLength(1);
     expect(projection.rows[0].performedName).toBe("7");
     expect(typeof projection.rows[0].performedName).toBe("string");
+    // Summary labels come from the same unreadable value and carry the same
+    // promise.
+    expect(projection.familySummaries.get("slot:7")?.label).toBe("7");
+    expect(projection.versionSummaries.get("slot:7")?.label).toBe("7");
   });
 
   it("does not pass an unreadable note or name through to a row", () => {
@@ -741,5 +745,25 @@ describe("unreadable entry fields", () => {
     expect(projection.rows[0].note).toBeUndefined();
     expect(typeof projection.rows[0].performedName).toBe("string");
     expect(projection.rows[0].performedName).toBe("slot-x");
+  });
+});
+
+describe("summary labels with nothing to name them", () => {
+  // Pins that the label comes from the row rather than an invented placeholder.
+  // It cannot distinguish `labelOf` from plain `textOf` — see that function's
+  // comment for why no input can.
+  it("labels a family from the row when the resolver has no display label", () => {
+    // No canonical id, no stored name and no slot id, so the resolver's
+    // displayLabel is absent and the label must come from the next candidate.
+    const projection = projectExerciseHistory([{
+      id: "l-nolabel", programId: "p1", dayId: "d1",
+      performedAt: "2027-01-01T14:00:00.000Z", performedDate: "2027-01-01",
+      entries: [{ notes: "did something" }],
+    } as unknown as WorkoutLogDocument], context);
+    expect(projection.rows).toHaveLength(1);
+    const family = [...projection.familySummaries.values()][0];
+    expect(family.label).toBe(projection.rows[0].performedName);
+    expect([...projection.versionSummaries.values()][0].label)
+      .toBe(projection.rows[0].performedName);
   });
 });

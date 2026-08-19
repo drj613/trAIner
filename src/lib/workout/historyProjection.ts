@@ -227,6 +227,22 @@ function compareSetsByStrength(left: WorkoutSetLog, right: WorkoutSetLog): numbe
     || (right.reps ?? 0) - (left.reps ?? 0);
 }
 
+/**
+ * A summary label as text, or `undefined` when there is nothing there, so an
+ * absent `displayLabel` falls through to the next candidate rather than becoming
+ * an empty label — `textOf` alone returns `""`, which is not nullish.
+ *
+ * Measured: replacing this with plain `textOf` kills 0 tests, and by
+ * construction it cannot be killed. For a stored exercise `displayLabel` is
+ * absent only when the performed name, canonical id and slot id are all absent,
+ * and then `row.performedName` is `""` as well, so the two branches agree. The
+ * nullish check is here so the fall-through survives a change to either
+ * fallback, not because a current input distinguishes them.
+ */
+function labelOf(value: unknown): string | undefined {
+  return value == null ? undefined : textOf(value);
+}
+
 function pushInto<K, V>(map: Map<K, V[]>, key: K, value: V): void {
   const existing = map.get(key);
   if (existing) existing.push(value);
@@ -312,7 +328,12 @@ export function projectExerciseHistory(
     familySummaries.set(familyKey, {
       familyKey,
       movementId: latest.identity.movementId,
-      label: latest.identity.movementName ?? latest.identity.displayLabel ?? latest.row.performedName,
+      // `labelOf` for the same reason as the row label: `displayLabel` falls
+      // back to the stored slot id, which a corrupt log can hold as a
+      // non-string.
+      label: latest.identity.movementName
+        ?? labelOf(latest.identity.displayLabel)
+        ?? latest.row.performedName,
       workoutCount: new Set(items.map((item) => item.row.logId)).size,
       latestDate: latest.row.performedDate,
       latestPerformedAt: latest.row.performedAt,
@@ -359,7 +380,9 @@ export function projectExerciseHistory(
       versionKey,
       concreteExerciseId: latest.identity.concreteExerciseId,
       familyKey: latest.familyKey,
-      label: latest.identity.currentVersionLabel ?? latest.identity.displayLabel ?? latest.row.performedName,
+      label: latest.identity.currentVersionLabel
+        ?? labelOf(latest.identity.displayLabel)
+        ?? latest.row.performedName,
       sessionCount: sessions.length,
       entryCount: items.length,
       sessionVolumesLb: sessions.map((session) => session.volumeLb),
