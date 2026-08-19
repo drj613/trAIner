@@ -18,6 +18,7 @@ import { deleteDB } from "idb";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import { logRepo } from "@/lib/storage/logRepo";
+import { aliasRepo } from "@/lib/storage/aliasRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import type { ProgramDocument } from "@/lib/programs/types";
 
@@ -816,5 +817,91 @@ describe("a log we cannot read must not disable the day screen", () => {
     } finally {
       listForDay.mockRestore();
     }
+  });
+});
+
+/**
+ * The invariant the whole normalization plan turns on.
+ *
+ * A correction changes how history is GROUPED and what the CURRENT badge says.
+ * It never rewrites the label the user logged: `exerciseName` is what happened,
+ * and the catalogue's opinion of it can change afterwards without editing the
+ * past. These run through the rendered component against fake-indexeddb because
+ * the failure is a wiring failure — a projection unit test cannot tell whether
+ * the drawer recomputes when the identity context changes.
+ */
+describe("a correction regroups history without rewriting what was logged", () => {
+  const misspelled = "Bench Pressss";
+
+  async function seedTwoNamings() {
+    await logRepo.save({
+      id: "l-typo", programId: "p0", dayId: "old-day",
+      performedAt: "2026-05-01T22:00:00.000Z",
+      completedAt: "2026-05-01T23:00:00.000Z",
+      entries: [{
+        exerciseId: "old-slot",
+        exerciseName: misspelled,
+        sets: [{ setNumber: 1, weight: 135, reps: 5 }],
+      }],
+    });
+    await logRepo.save({
+      id: "l-named", programId: "p0", dayId: "old-day",
+      performedAt: "2026-05-08T22:00:00.000Z",
+      completedAt: "2026-05-08T23:00:00.000Z",
+      entries: [{
+        exerciseId: "old-slot",
+        exerciseName: "Bench Press",
+        sets: [{ setNumber: 1, weight: 145, reps: 5 }],
+      }],
+    });
+  }
+
+  async function openDrawer() {
+    const user = userEvent.setup();
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await user.click(screen.getByRole("button", { name: "History for Bench Press" }));
+    return { user, drawer: await screen.findByRole("dialog", { name: "History for Bench Press" }) };
+  }
+
+  it("leaves an unrecognised name out of the family until it is corrected", async () => {
+    await seedTwoNamings();
+    const { drawer } = await openDrawer();
+
+    await waitFor(() => expect(within(drawer).getByText("145x5")).toBeInTheDocument());
+    // The misspelling resolves to nothing, so it is its own history, not this one.
+    expect(within(drawer).queryByText("135x5")).not.toBeInTheDocument();
+  });
+
+  it("pulls the corrected name into the family and keeps its performed label", async () => {
+    await seedTwoNamings();
+    const { drawer } = await openDrawer();
+    await waitFor(() => expect(within(drawer).getByText("145x5")).toBeInTheDocument());
+
+    // The correction. `aliasRepo.save` publishes the identity-changed event, so
+    // the provider reloads and the open drawer recomputes from the logs it
+    // already holds — no second read of IndexedDB, no reopening.
+    await act(async () => {
+      await aliasRepo.save({
+        alias: misspelled,
+        // The catalogue version the slot itself resolves to, so the corrected
+        // row joins the very family the drawer is showing.
+        canonicalExerciseId: "bench-press",
+        provenance: "remembered",
+      });
+    });
+
+    await waitFor(() => expect(within(drawer).getByText("135x5")).toBeInTheDocument());
+    // Still both workouts, and the misspelling is still exactly what it was.
+    expect(within(drawer).getByText("145x5")).toBeInTheDocument();
+    expect(within(drawer).getByText(misspelled)).toBeInTheDocument();
+    // The stored log is untouched — a correction is not an edit of history.
+    const stored = await logRepo.list();
+    expect(stored.find((log) => log.id === "l-typo")?.entries[0].exerciseName).toBe(misspelled);
+    // And the badge is where the current catalogue name shows up instead.
+    const correctedRow = within(drawer).getByText(misspelled).closest("[data-testid='history-row']");
+    expect(correctedRow).not.toBeNull();
+    expect(within(correctedRow as HTMLElement).getByTestId("history-row-current-version"))
+      .toHaveTextContent("Bench Press");
   });
 });

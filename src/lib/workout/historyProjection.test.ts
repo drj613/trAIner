@@ -261,6 +261,19 @@ describe("summaries", () => {
     });
   });
 
+  // The Today drawer filters by version, and a row can belong to a version that
+  // has no `concreteExerciseId` (an underspecified name keys on
+  // `movement:<id>`). Carrying the key on the row is what lets a surface group
+  // by version without deriving a second, divergent rule.
+  it("stamps every row with the version bucket it was counted in", () => {
+    const projection = projectExerciseHistory(logs, context);
+    for (const [versionKey, rows] of projection.rowsByVersionKey) {
+      expect(rows.map((row) => row.versionKey)).toEqual(rows.map(() => versionKey));
+    }
+    expect(new Set(projection.rows.map((row) => row.versionKey)))
+      .toEqual(new Set(projection.versionSummaries.keys()));
+  });
+
   it("keeps other families out of a family's rows", () => {
     const projection = projectExerciseHistory(logs, context);
     const benchIdentity = resolveExerciseIdentity(
