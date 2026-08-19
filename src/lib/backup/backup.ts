@@ -273,9 +273,10 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     if (!isArrayOfObjects(doc["normalizationOverrides"])) {
       throw new Error("Invalid backup: 'normalizationOverrides' must be an array of objects.");
     }
-    if (!hasIds(doc["normalizationOverrides"])) {
-      throw new Error("Invalid backup: 'normalizationOverrides' entries must have string ids.");
-    }
+    // No id check, deliberately: canonicalNormalizationOverride derives the id
+    // from the target, so a file's id is never read. A guard that cannot fail
+    // for any input is exactly what the recipe in v10Identity.ts legislates
+    // against — it reads as protection while asserting nothing.
     requireFields(doc["normalizationOverrides"], "normalizationOverrides", [
       { name: "targetKind", check: isString, expected: "a string" },
       { name: "targetValue", check: isString, expected: "a string" },
