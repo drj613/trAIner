@@ -27,6 +27,7 @@ import {
   entrySetLabels,
   entryVolumeLb,
   formatSetLabel,
+  readableEntries,
   setVolume,
   setWeightInLb,
 } from "./historyUtils";
@@ -252,7 +253,7 @@ export function projectExerciseHistory(
     const performedDate = logLocalDate(log);
     // Iterate every entry — never `find`. One workout can log the same
     // exercise twice, and the second entry is real recorded work.
-    log.entries.forEach((entry, entryIndex) => {
+    readableEntries(log).forEach(({ entry, entryIndex }) => {
       if (!entryHasHistoryData(entry)) return;
       const identity = resolveEntry(entry);
       projected.push({

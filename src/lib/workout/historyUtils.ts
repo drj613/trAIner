@@ -93,6 +93,36 @@ export function entryVolumeLb(entry: WorkoutLogEntry): number {
   return readableSets(entry).reduce((sum, s) => sum + setVolume(s), 0);
 }
 
+/** A log entry paired with its position in the stored `entries` array. */
+export type IndexedLogEntry = { entry: WorkoutLogEntry; entryIndex: number };
+
+/**
+ * The entries of a log we can actually read, each keeping its stored position.
+ *
+ * `src/lib/storage/appDb.ts:186-195` deliberately retains a log whose `entries`
+ * is not an array and whose elements are not records, and the plan's v7 ruling
+ * retains a log whose only entry is `null` — in both cases because the
+ * unreadable value may stand in for real sets. Those logs therefore exist in
+ * storage by design, and one of them must never remove another workout's
+ * readable history from view.
+ *
+ * The index is carried through rather than recomputed after filtering, because
+ * a row's identity is `(logId, entryIndex)` against the stored array; skipping
+ * an unreadable element must not renumber the ones after it.
+ */
+export function readableEntries(log: WorkoutLogDocument): IndexedLogEntry[] {
+  if (!Array.isArray(log.entries)) return [];
+  const readable: IndexedLogEntry[] = [];
+  log.entries.forEach((entry, entryIndex) => {
+    // Same shape rule as `isRecord` in `v10Identity.ts:148`: an array-shaped
+    // entry is not a record either.
+    if (entry !== null && typeof entry === "object" && !Array.isArray(entry)) {
+      readable.push({ entry, entryIndex });
+    }
+  });
+  return readable;
+}
+
 /**
  * Volume trend over chronologically ordered session volumes: the mean of the
  * last three sessions against the three before them, with a 3% dead band so
@@ -123,7 +153,7 @@ export function aggregateExerciseHistory(
     // Every matching entry, never `find`: one workout can log the same
     // exercise twice (a top set plus a back-off block), and dropping the
     // second entry would silently lose recorded work.
-    for (const entry of log.entries) {
+    for (const { entry } of readableEntries(log)) {
       const matches = canonicalExerciseId && entry.canonicalExerciseId
         // Prefer canonical-id match when both sides supply one.
         ? entry.canonicalExerciseId === canonicalExerciseId

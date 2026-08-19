@@ -607,3 +607,63 @@ describe("deterministic ordering with unreadable timestamps", () => {
     });
   });
 });
+
+// ─── Unreadable entries lists ────────────────────────────────────────────────
+
+describe("unreadable entries", () => {
+  // `appDb.ts:186-195` keeps a log whose `entries` is not an array or whose
+  // entry elements are not records, and the v7 ruling keeps a log whose only
+  // entry is `null`, both because they may stand in for real sets. So these
+  // logs are in storage by design, and one of them must not erase every other
+  // workout's history.
+  const goodLog: WorkoutLogDocument = {
+    id: "l-good", programId: "p1", dayId: "d1",
+    performedAt: "2026-11-01T14:00:00.000Z", performedDate: "2026-11-01",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      sets: [{ setNumber: 1, weight: 405, reps: 1 }],
+    }],
+  };
+  const withEntries = (entries: unknown): WorkoutLogDocument => ({
+    id: "l-bad", programId: "p1", dayId: "d1",
+    performedAt: "2026-11-02T14:00:00.000Z", performedDate: "2026-11-02", entries,
+  } as unknown as WorkoutLogDocument);
+
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["a string", "corrupt"],
+    ["a number", 7],
+    ["an object", {}],
+    ["an array holding null", [null]],
+    ["an array holding a string", ["corrupt"]],
+  ])("keeps every other workout's history when one log's entries is %s", (_label, entries) => {
+    const projection = projectExerciseHistory([withEntries(entries), goodLog], context);
+    expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`)).toEqual(["l-good#0"]);
+    expect(projection.rows[0]).toMatchObject({ sets: ["405x1"], volumeLb: 405 });
+    expect(projection.versionSummaries.get(highBar.id)?.sessionCount).toBe(1);
+  });
+
+  it("keeps the readable entries of a log that also holds an unreadable one", () => {
+    // The row identity is the entry's position in the stored array, so skipping
+    // an unreadable element must not renumber the ones after it.
+    const mixed = withEntries([
+      null,
+      {
+        exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+        sets: [{ setNumber: 1, weight: 315, reps: 3 }],
+      },
+    ]);
+    const projection = projectExerciseHistory([mixed], context);
+    expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`)).toEqual(["l-bad#1"]);
+  });
+
+  it("keeps the drawer path readable too", () => {
+    const rows = aggregateExerciseHistory(
+      [withEntries("corrupt"), goodLog] as WorkoutLogDocument[],
+      "slot",
+      highBar.id,
+    );
+    expect(rows).toEqual([{ date: "2026-11-01", sets: ["405x1"], note: undefined, volume: 405 }]);
+  });
+});
