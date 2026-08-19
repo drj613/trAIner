@@ -470,12 +470,12 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
       }
     : emptyTags();
 
-  if (match.kind === "unmatched") {
+  if (match.kind !== "matched") {
     warnings.push({
       path,
       message: `${name} was imported without a catalog match.`,
       rawName: name,
-      suggestions: match.suggestions,
+      suggestions: match.kind === "underspecified" ? match.candidates : match.suggestions,
       sectionType,
     });
   }
@@ -568,7 +568,7 @@ function parseVariants(
           path: `${basePath}.variants.${variantIndex}`,
           message: `${fields.name} was imported without a catalog match.`,
           rawName: fields.name,
-          suggestions: match.suggestions,
+          suggestions: match.kind === "underspecified" ? match.candidates : match.suggestions,
           sectionType,
         });
       }
