@@ -200,6 +200,12 @@ test("metadata bases do not promote narrower identities into generic variant IDs
   expect(byId.get("speed-band-overhead-triceps")?.movementId).toBeNull();
   expect(byId.get("deadlift-hinge--barbell--paused")?.aliases).toEqual(["paused barbell deadlift"]);
   expect(byId.get("loaded-carry--dumbbell--neutral-grip")).toBeUndefined();
+  expect(byId.get("barbell-curl")?.movementId).toBe("curl");
+  expect(byId.get("curl--barbell")).toBeUndefined();
+  expect(byId.get("decline-barbell-bench-press")?.movementId).toBe("bench-press");
+  expect(byId.get("bench-press--barbell--decline")).toBeUndefined();
+  expect(byId.get("dumbbell-deadlift")?.movementId).toBe("deadlift-hinge");
+  expect(byId.get("deadlift-hinge--dumbbell")).toBeUndefined();
   expect(byId.get("farmer-carry")?.aliases).toEqual([
     "farmers carry",
     "farmers walk",

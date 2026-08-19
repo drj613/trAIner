@@ -4,10 +4,10 @@
   "snapshotSha256": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
   "inputCount": 3072,
   "survivingCount": 3072,
-  "generatedVariantCount": 130,
+  "generatedVariantCount": 103,
   "stageCounts": {
     "existing": 3072,
-    "complete": 3202,
+    "complete": 3175,
     "variantsProposed": 161,
     "variantsApproved": 142,
     "variantsRejected": 19
@@ -27,7 +27,7 @@
   },
   "inputHashes": {
     "scripts/catalog-normalization/alias-classifications.json": "54cf2ed460f3bc4ef21e17bcda20541e5c05664039a7a334cc66ac1cf075d302",
-    "scripts/catalog-normalization/assignments.json": "1a4d256e4b0dd8041215a29c5076781066d6ca049a387bfb6be81ce217aad040",
+    "scripts/catalog-normalization/assignments.json": "78e3047ceb831a4cc474846f7857299ac01d4d8dc548f77a917e0c9afc4cec94",
     "scripts/catalog-normalization/catalog-v1.snapshot.json": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
     "scripts/catalog-normalization/disambiguations.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
@@ -40,7 +40,7 @@
     "variantCandidates": "e5f3ce6cf1eee8804988928afc605510ff296b5afc2a5cb3f7d17648aa857946"
   },
   "outputHashes": {
-    "exercises.generated.json": "cd7976e6495bc4a987e9425a63babf7e9440bef3b6ba23f15535da9ff9824a18",
+    "exercises.generated.json": "151d3a50582f406017de76de5964e76d7c6c486b6f7fd5f89f23327e244dabef",
     "importDisambiguations.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "legacyRedirects.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "modifiers.generated.json": "8b02d1d1194336b56514130ba9edb27ddf0f3fd8f5a18dc54582de6850f87b26",

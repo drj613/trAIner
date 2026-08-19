@@ -373,6 +373,7 @@ export function validateNormalizedCatalogue(
     exercises: normalizedExercises,
     registries,
     redirects,
+    aliasClassifications: classifications,
     aliasOutcomes: completeAliasOutcomes(candidates, classifications),
     aliasCandidates: candidates,
   };

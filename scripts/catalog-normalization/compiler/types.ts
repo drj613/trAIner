@@ -85,6 +85,7 @@ export type ValidatedNormalizedCatalogue = {
   exercises: NormalizedCatalogExercise[];
   registries: BuildRegistries;
   redirects: Record<string, string>;
+  aliasClassifications: ReadonlyMap<string, AliasClassification>;
   aliasOutcomes: ReadonlyMap<string, AliasClassification>;
   aliasCandidates: ReadonlyMap<string, string[]>;
 };

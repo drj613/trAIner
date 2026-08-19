@@ -488,6 +488,9 @@ export function validateAliasOutcomes(
     if (classification.outcome === "unique" && !candidates.includes(classification.exerciseId)) {
       throw new Error(`Alias classification target missing: ${token}`);
     }
+    if (classification.outcome === "unique") {
+      throw new Error(`Alias classification cannot mark a collision unique: ${token}`);
+    }
     if (
       classification.outcome === "underspecified" &&
       !sameIds(sortedUnique(classification.candidateIds), candidates)

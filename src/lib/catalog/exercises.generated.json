@@ -5343,8 +5343,10 @@
       "isolation",
       "pull"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "curl",
+    "movementModifierIds": [
+      "barbell"
+    ]
   },
   {
     "id": "barbell-curls-lying-against-an-incline",
@@ -5917,8 +5919,12 @@
       "lower",
       "squat"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "squat",
+    "movementModifierIds": [
+      "barbell",
+      "back-rack",
+      "high-bar"
+    ]
   },
   {
     "id": "barbell-hip-thrust",
@@ -6245,8 +6251,12 @@
       "squat",
       "powerlifting"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "squat",
+    "movementModifierIds": [
+      "barbell",
+      "back-rack",
+      "low-bar"
+    ]
   },
   {
     "id": "barbell-lunge",
@@ -6280,8 +6290,10 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "lunge-split-squat",
+    "movementModifierIds": [
+      "barbell"
+    ]
   },
   {
     "id": "barbell-lunges-standing",
@@ -9070,37 +9082,6 @@
     "movementModifierIds": []
   },
   {
-    "id": "bench-press--barbell--decline",
-    "name": "Decline Barbell Bench Press",
-    "aliases": [
-      "decline barbell bench press"
-    ],
-    "equipment": [
-      "barbell",
-      "bench"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "barbell",
-      "decline"
-    ]
-  },
-  {
     "id": "bench-press--barbell--incline",
     "name": "Incline Barbell Bench Press",
     "aliases": [
@@ -9163,163 +9144,6 @@
     "movementModifierIds": [
       "barbell",
       "partial"
-    ]
-  },
-  {
-    "id": "bench-press--barbell--paused",
-    "name": "Paused Barbell Bench Press",
-    "aliases": [
-      "paused barbell bench press"
-    ],
-    "equipment": [
-      "barbell",
-      "bench"
-    ],
-    "movementPatterns": [
-      "chest"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "triceps"
-      ]
-    },
-    "tags": [
-      "chest"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "barbell",
-      "paused"
-    ]
-  },
-  {
-    "id": "bench-press--cable",
-    "name": "Cable Bench Press",
-    "aliases": [
-      "cable bench press"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "triceps",
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "cable"
-    ]
-  },
-  {
-    "id": "bench-press--dumbbell",
-    "name": "Dumbbell Bench Press",
-    "aliases": [
-      "dumbbell bench press"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "dumbbell"
-    ]
-  },
-  {
-    "id": "bench-press--dumbbell--decline",
-    "name": "Decline Dumbbell Bench Press",
-    "aliases": [
-      "decline dumbbell bench press"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "dumbbell",
-      "decline"
-    ]
-  },
-  {
-    "id": "bench-press--dumbbell--incline",
-    "name": "Incline Dumbbell Bench Press",
-    "aliases": [
-      "incline dumbbell bench press"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "chest"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "chest"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "dumbbell",
-      "incline"
     ]
   },
   {
@@ -9392,40 +9216,6 @@
     "movementModifierIds": [
       "dumbbell",
       "single-arm"
-    ]
-  },
-  {
-    "id": "bench-press--machine",
-    "name": "Machine Bench Press",
-    "aliases": [
-      "machine bench press"
-    ],
-    "equipment": [
-      "machine"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
-    ],
-    "movementId": "bench-press",
-    "movementModifierIds": [
-      "machine"
     ]
   },
   {
@@ -11145,8 +10935,10 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "squat",
+    "movementModifierIds": [
+      "bodyweight"
+    ]
   },
   {
     "id": "bodyweight-squat-hd",
@@ -12577,8 +12369,10 @@
     "tags": [
       "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "cable"
+    ]
   },
   {
     "id": "cable-chest-press",
@@ -12923,8 +12717,10 @@
       "biceps",
       "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "curl",
+    "movementModifierIds": [
+      "cable"
+    ]
   },
   {
     "id": "cable-curl-bar",
@@ -13169,7 +12965,9 @@
     "id": "cable-fly",
     "name": "Cable Fly",
     "aliases": [],
-    "equipment": [],
+    "equipment": [
+      "cable"
+    ],
     "movementPatterns": [
       "chest"
     ],
@@ -13177,13 +12975,18 @@
       "primary": [
         "chest"
       ],
-      "secondary": []
+      "secondary": [
+        "shoulders"
+      ]
     },
     "tags": [
       "chest"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "raise-fly",
+    "movementModifierIds": [
+      "cable",
+      "fly"
+    ]
   },
   {
     "id": "cable-fly-lower-chest",
@@ -13869,8 +13672,10 @@
       "delts",
       "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "raise-fly",
+    "movementModifierIds": [
+      "cable"
+    ]
   },
   {
     "id": "cable-lateral-raises-single-arm",
@@ -14714,8 +14519,10 @@
     "tags": [
       "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "pull-up-pulldown",
+    "movementModifierIds": [
+      "cable"
+    ]
   },
   {
     "id": "cable-pulldown-bicep-curl",
@@ -18249,8 +18056,11 @@
       "pull",
       "back"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "row",
+    "movementModifierIds": [
+      "dumbbell",
+      "chest-supported"
+    ]
   },
   {
     "id": "chest-supported-rear-delt-raise",
@@ -20421,72 +20231,6 @@
     "movementModifierIds": []
   },
   {
-    "id": "curl--barbell",
-    "name": "Barbell Curl",
-    "aliases": [
-      "barbell curl"
-    ],
-    "equipment": [
-      "barbell"
-    ],
-    "movementPatterns": [
-      "strength",
-      "pull",
-      "isolation"
-    ],
-    "muscles": {
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [
-        "forearms"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "isolation",
-      "pull"
-    ],
-    "movementId": "curl",
-    "movementModifierIds": [
-      "barbell"
-    ]
-  },
-  {
-    "id": "curl--cable",
-    "name": "Cable Curl",
-    "aliases": [
-      "cable curl"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "isolation",
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [
-        "brachialis",
-        "forearms"
-      ]
-    },
-    "tags": [
-      "hypertrophy",
-      "isolation",
-      "biceps",
-      "strength"
-    ],
-    "movementId": "curl",
-    "movementModifierIds": [
-      "cable"
-    ]
-  },
-  {
     "id": "curl--cable--ez-bar",
     "name": "EZ Bar Cable Curl",
     "aliases": [
@@ -20654,38 +20398,6 @@
     "movementModifierIds": [
       "cable",
       "supinated-grip"
-    ]
-  },
-  {
-    "id": "curl--dumbbell--incline",
-    "name": "Incline Dumbbell Curl",
-    "aliases": [
-      "incline dumbbell curl"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "arms",
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [
-        "brachialis",
-        "forearms"
-      ]
-    },
-    "tags": [
-      "arms",
-      "strength"
-    ],
-    "movementId": "curl",
-    "movementModifierIds": [
-      "dumbbell",
-      "incline"
     ]
   },
   {
@@ -21727,41 +21439,6 @@
     ]
   },
   {
-    "id": "deadlift-hinge--dumbbell",
-    "name": "Dumbbell Deadlift And Hinge",
-    "aliases": [
-      "dumbbell deadlift"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "glutes",
-        "hamstrings",
-        "lower back"
-      ],
-      "secondary": [
-        "calves",
-        "forearms",
-        "traps",
-        "quads",
-        "hamstrings",
-        "lower back"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "deadlift-hinge",
-    "movementModifierIds": [
-      "dumbbell"
-    ]
-  },
-  {
     "id": "deadlift-hinge--dumbbell--hinge--romanian",
     "name": "Romanian Dumbbell Deadlift And Hinge",
     "aliases": [
@@ -21856,44 +21533,6 @@
     "movementId": "deadlift-hinge",
     "movementModifierIds": [
       "kettlebell"
-    ]
-  },
-  {
-    "id": "deadlift-hinge--trap-bar",
-    "name": "Trap Bar Deadlift And Hinge",
-    "aliases": [
-      "trap bar deadlift"
-    ],
-    "equipment": [
-      "other",
-      "trap bar"
-    ],
-    "movementPatterns": [
-      "strength",
-      "pull",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "glutes",
-        "hamstrings",
-        "quads",
-        "lower back"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "pull"
-    ],
-    "movementId": "deadlift-hinge",
-    "movementModifierIds": [
-      "trap-bar"
     ]
   },
   {
@@ -22048,12 +21687,11 @@
       "Decline BB Bench"
     ],
     "equipment": [
-      "barbell"
+      "barbell",
+      "bench"
     ],
     "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
+      "strength"
     ],
     "muscles": {
       "primary": [
@@ -22065,13 +21703,13 @@
       ]
     },
     "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
+      "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "barbell",
+      "decline"
+    ]
   },
   {
     "id": "decline-bench-leg-raise",
@@ -22257,8 +21895,11 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "dumbbell",
+      "decline"
+    ]
   },
   {
     "id": "decline-dumbbell-flyes",
@@ -23908,8 +23549,10 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "dumbbell"
+    ]
   },
   {
     "id": "dumbbell-bench-press-with-neutral-grip",
@@ -24655,17 +24298,30 @@
       "dumbbell"
     ],
     "movementPatterns": [
-      "legs"
+      "strength"
     ],
     "muscles": {
-      "primary": [],
-      "secondary": []
+      "primary": [
+        "glutes",
+        "hamstrings",
+        "lower back"
+      ],
+      "secondary": [
+        "calves",
+        "forearms",
+        "traps",
+        "quads",
+        "hamstrings",
+        "lower back"
+      ]
     },
     "tags": [
-      "legs"
+      "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "deadlift-hinge",
+    "movementModifierIds": [
+      "dumbbell"
+    ]
   },
   {
     "id": "dumbbell-decline-bench-press",
@@ -24993,8 +24649,11 @@
     "tags": [
       "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "raise-fly",
+    "movementModifierIds": [
+      "dumbbell",
+      "fly"
+    ]
   },
   {
     "id": "dumbbell-fly-on-exercise-ball",
@@ -29757,8 +29416,10 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "squat",
+    "movementModifierIds": [
+      "dumbbell"
+    ]
   },
   {
     "id": "dumbbell-squat-to-a-bench",
@@ -30553,8 +30214,10 @@
     "tags": [
       "arms"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "triceps-extension-pushdown",
+    "movementModifierIds": [
+      "dumbbell"
+    ]
   },
   {
     "id": "dumbbell-twisting-bench-press",
@@ -39527,8 +39190,11 @@
     "tags": [
       "chest"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "dumbbell",
+      "incline"
+    ]
   },
   {
     "id": "incline-dumbbell-bench-with-palms-facing-in",
@@ -39572,24 +39238,27 @@
       "dumbbell"
     ],
     "movementPatterns": [
-      "strength",
-      "pull",
-      "isolation"
+      "arms",
+      "strength"
     ],
     "muscles": {
       "primary": [
         "biceps"
       ],
-      "secondary": []
+      "secondary": [
+        "brachialis",
+        "forearms"
+      ]
     },
     "tags": [
-      "strength",
-      "beginner",
-      "isolation",
-      "pull"
+      "arms",
+      "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "curl",
+    "movementModifierIds": [
+      "dumbbell",
+      "incline"
+    ]
   },
   {
     "id": "incline-dumbbell-fly",
@@ -43823,8 +43492,10 @@
     "tags": [
       "shoulders"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "overhead-landmine-press",
+    "movementModifierIds": [
+      "landmine"
+    ]
   },
   {
     "id": "landmine-rotation",
@@ -44216,19 +43887,29 @@
       "lateral raise machine",
       "machine lateral raise"
     ],
-    "equipment": [],
-    "movementPatterns": [],
+    "equipment": [
+      "machine"
+    ],
+    "movementPatterns": [
+      "strength"
+    ],
     "muscles": {
       "primary": [
-        "side delts"
+        "side delts",
+        "shoulders"
       ],
       "secondary": [
-        "front delts"
+        "front delts",
+        "traps"
       ]
     },
-    "tags": [],
-    "movementId": null,
-    "movementModifierIds": []
+    "tags": [
+      "strength"
+    ],
+    "movementId": "raise-fly",
+    "movementModifierIds": [
+      "machine"
+    ]
   },
   {
     "id": "lateral-raise-with-bands",
@@ -48032,43 +47713,6 @@
     "movementModifierIds": []
   },
   {
-    "id": "lunge-split-squat--barbell",
-    "name": "Barbell Lunge And Split Squat",
-    "aliases": [
-      "barbell lunge"
-    ],
-    "equipment": [
-      "barbell"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "calves",
-        "glutes",
-        "hamstrings",
-        "quads"
-      ]
-    },
-    "tags": [
-      "strength",
-      "intermediate",
-      "compound",
-      "push"
-    ],
-    "movementId": "lunge-split-squat",
-    "movementModifierIds": [
-      "barbell"
-    ]
-  },
-  {
     "id": "lunge-split-squat--barbell--single-leg",
     "name": "Single Leg Barbell Lunge And Split Squat",
     "aliases": [
@@ -49512,8 +49156,10 @@
       "compound",
       "push"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "machine"
+    ]
   },
   {
     "id": "machine-bicep-curl",
@@ -49822,24 +49468,23 @@
       "machine"
     ],
     "movementPatterns": [
-      "strength",
-      "push",
-      "isolation"
+      "strength"
     ],
     "muscles": {
       "primary": [
         "triceps"
       ],
-      "secondary": []
+      "secondary": [
+        "shoulders"
+      ]
     },
     "tags": [
-      "strength",
-      "beginner",
-      "isolation",
-      "push"
+      "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "triceps-extension-pushdown",
+    "movementModifierIds": [
+      "machine"
+    ]
   },
   {
     "id": "march-or-jog-in-place",
@@ -54389,21 +54034,24 @@
       "cable"
     ],
     "movementPatterns": [
-      "isolation"
+      "strength"
     ],
     "muscles": {
       "primary": [
         "triceps"
       ],
-      "secondary": []
+      "secondary": [
+        "shoulders"
+      ]
     },
     "tags": [
-      "hypertrophy",
-      "isolation",
-      "triceps"
+      "strength"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "triceps-extension-pushdown",
+    "movementModifierIds": [
+      "cable",
+      "overhead"
+    ]
   },
   {
     "id": "overhead-landmine-press--barbell--seated",
@@ -54633,35 +54281,6 @@
     "movementModifierIds": [
       "kettlebell",
       "overhead"
-    ]
-  },
-  {
-    "id": "overhead-landmine-press--landmine",
-    "name": "Landmine Overhead And Landmine Press",
-    "aliases": [
-      "landmine press"
-    ],
-    "equipment": [
-      "barbell"
-    ],
-    "movementPatterns": [
-      "shoulders"
-    ],
-    "muscles": {
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "chest",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "shoulders"
-    ],
-    "movementId": "overhead-landmine-press",
-    "movementModifierIds": [
-      "landmine"
     ]
   },
   {
@@ -55353,8 +54972,11 @@
     "tags": [
       "chest"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "bench-press",
+    "movementModifierIds": [
+      "barbell",
+      "paused"
+    ]
   },
   {
     "id": "pause-deadlift-barbell",
@@ -57704,35 +57326,6 @@
     ]
   },
   {
-    "id": "pull-up-pulldown--cable",
-    "name": "Cable Pull-up And Pulldown",
-    "aliases": [
-      "cable pulldown"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "lats"
-      ],
-      "secondary": [
-        "biceps",
-        "forearms"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "pull-up-pulldown",
-    "movementModifierIds": [
-      "cable"
-    ]
-  },
-  {
     "id": "pull-up-pulldown--cable--neutral-grip",
     "name": "Neutral Grip Cable Pull-up And Pulldown",
     "aliases": [
@@ -60012,69 +59605,6 @@
     ]
   },
   {
-    "id": "raise-fly--cable",
-    "name": "Cable Raise And Fly",
-    "aliases": [
-      "cable lateral raise"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "isolation",
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "side delts",
-        "shoulders"
-      ],
-      "secondary": [
-        "traps",
-        "triceps"
-      ]
-    },
-    "tags": [
-      "hypertrophy",
-      "isolation",
-      "delts",
-      "strength"
-    ],
-    "movementId": "raise-fly",
-    "movementModifierIds": [
-      "cable"
-    ]
-  },
-  {
-    "id": "raise-fly--cable--fly",
-    "name": "Fly Cable Raise And Fly",
-    "aliases": [
-      "cable fly"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "chest"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "chest"
-    ],
-    "movementId": "raise-fly",
-    "movementModifierIds": [
-      "cable",
-      "fly"
-    ]
-  },
-  {
     "id": "raise-fly--cable--single-arm",
     "name": "Single Arm Cable Raise And Fly",
     "aliases": [
@@ -60142,35 +59672,6 @@
     "movementModifierIds": [
       "cable",
       "strict"
-    ]
-  },
-  {
-    "id": "raise-fly--dumbbell--fly",
-    "name": "Fly Dumbbell Raise And Fly",
-    "aliases": [
-      "dumbbell fly"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "raise-fly",
-    "movementModifierIds": [
-      "dumbbell",
-      "fly"
     ]
   },
   {
@@ -60269,36 +59770,6 @@
     "movementModifierIds": [
       "dumbbell",
       "strict"
-    ]
-  },
-  {
-    "id": "raise-fly--machine",
-    "name": "Machine Raise And Fly",
-    "aliases": [
-      "machine lateral raise"
-    ],
-    "equipment": [
-      "machine"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "side delts",
-        "shoulders"
-      ],
-      "secondary": [
-        "front delts",
-        "traps"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "raise-fly",
-    "movementModifierIds": [
-      "machine"
     ]
   },
   {
@@ -63463,40 +62934,6 @@
     "movementId": "row",
     "movementModifierIds": [
       "dumbbell"
-    ]
-  },
-  {
-    "id": "row--dumbbell--chest-supported",
-    "name": "Chest Supported Dumbbell Row",
-    "aliases": [
-      "chest supported dumbbell row"
-    ],
-    "equipment": [
-      "dumbbell",
-      "bench"
-    ],
-    "movementPatterns": [
-      "horizontal pull"
-    ],
-    "muscles": {
-      "primary": [
-        "lats",
-        "mid back"
-      ],
-      "secondary": [
-        "rear delts",
-        "biceps"
-      ]
-    },
-    "tags": [
-      "hypertrophy",
-      "pull",
-      "back"
-    ],
-    "movementId": "row",
-    "movementModifierIds": [
-      "dumbbell",
-      "chest-supported"
     ]
   },
   {
@@ -73452,87 +72889,6 @@
     ]
   },
   {
-    "id": "squat--barbell--back-rack--high-bar",
-    "name": "High Bar Back Squat",
-    "aliases": [
-      "barbell high bar back rack squat"
-    ],
-    "equipment": [
-      "barbell",
-      "rack"
-    ],
-    "movementPatterns": [
-      "squat",
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "hamstrings",
-        "adductors",
-        "core",
-        "calves",
-        "quads"
-      ]
-    },
-    "tags": [
-      "strength",
-      "lower",
-      "squat"
-    ],
-    "movementId": "squat",
-    "movementModifierIds": [
-      "barbell",
-      "back-rack",
-      "high-bar"
-    ]
-  },
-  {
-    "id": "squat--barbell--back-rack--low-bar",
-    "name": "Low Bar Back Squat",
-    "aliases": [
-      "barbell low bar back rack squat"
-    ],
-    "equipment": [
-      "barbell",
-      "rack"
-    ],
-    "movementPatterns": [
-      "squat",
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "glutes",
-        "hamstrings",
-        "quads"
-      ],
-      "secondary": [
-        "adductors",
-        "lower back",
-        "core",
-        "calves",
-        "quads",
-        "hamstrings"
-      ]
-    },
-    "tags": [
-      "strength",
-      "lower",
-      "squat",
-      "powerlifting"
-    ],
-    "movementId": "squat",
-    "movementModifierIds": [
-      "barbell",
-      "back-rack",
-      "low-bar"
-    ]
-  },
-  {
     "id": "squat--barbell--back-rack--partial",
     "name": "Partial Back Barbell Squat",
     "aliases": [
@@ -73686,40 +73042,6 @@
     ]
   },
   {
-    "id": "squat--bodyweight",
-    "name": "Bodyweight Squat",
-    "aliases": [
-      "bodyweight squat"
-    ],
-    "equipment": [
-      "bodyweight"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "quads"
-      ],
-      "secondary": [
-        "glutes",
-        "hamstrings"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
-    ],
-    "movementId": "squat",
-    "movementModifierIds": [
-      "bodyweight"
-    ]
-  },
-  {
     "id": "squat--bodyweight--single-leg",
     "name": "Single Leg Bodyweight Squat",
     "aliases": [
@@ -73748,44 +73070,6 @@
     "movementModifierIds": [
       "bodyweight",
       "single-leg"
-    ]
-  },
-  {
-    "id": "squat--dumbbell",
-    "name": "Dumbbell Squat",
-    "aliases": [
-      "dumbbell squat"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "strength",
-      "push",
-      "compound"
-    ],
-    "muscles": {
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "calves",
-        "glutes",
-        "hamstrings",
-        "lower back",
-        "quads"
-      ]
-    },
-    "tags": [
-      "strength",
-      "beginner",
-      "compound",
-      "push"
-    ],
-    "movementId": "squat",
-    "movementModifierIds": [
-      "dumbbell"
     ]
   },
   {
@@ -79279,8 +78563,10 @@
       "compound",
       "pull"
     ],
-    "movementId": null,
-    "movementModifierIds": []
+    "movementId": "deadlift-hinge",
+    "movementModifierIds": [
+      "trap-bar"
+    ]
   },
   {
     "id": "trap-bar-squat",
@@ -79697,35 +78983,6 @@
     ]
   },
   {
-    "id": "triceps-extension-pushdown--cable--overhead",
-    "name": "Overhead Cable Triceps Extension And Pushdown",
-    "aliases": [
-      "overhead cable triceps extension"
-    ],
-    "equipment": [
-      "cable"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "triceps-extension-pushdown",
-    "movementModifierIds": [
-      "cable",
-      "overhead"
-    ]
-  },
-  {
     "id": "triceps-extension-pushdown--cable--rope",
     "name": "Rope Cable Triceps Extension And Pushdown",
     "aliases": [
@@ -79813,35 +79070,6 @@
     ]
   },
   {
-    "id": "triceps-extension-pushdown--dumbbell",
-    "name": "Dumbbell Triceps Extension And Pushdown",
-    "aliases": [
-      "dumbbell triceps extension"
-    ],
-    "equipment": [
-      "dumbbell"
-    ],
-    "movementPatterns": [
-      "arms"
-    ],
-    "muscles": {
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [
-        "shoulders",
-        "chest"
-      ]
-    },
-    "tags": [
-      "arms"
-    ],
-    "movementId": "triceps-extension-pushdown",
-    "movementModifierIds": [
-      "dumbbell"
-    ]
-  },
-  {
     "id": "triceps-extension-pushdown--dumbbell--overhead",
     "name": "Overhead Dumbbell Triceps Extension And Pushdown",
     "aliases": [
@@ -79904,34 +79132,6 @@
     "movementModifierIds": [
       "dumbbell",
       "single-arm"
-    ]
-  },
-  {
-    "id": "triceps-extension-pushdown--machine",
-    "name": "Machine Triceps Extension And Pushdown",
-    "aliases": [
-      "machine triceps extension"
-    ],
-    "equipment": [
-      "machine"
-    ],
-    "movementPatterns": [
-      "strength"
-    ],
-    "muscles": {
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [
-        "shoulders"
-      ]
-    },
-    "tags": [
-      "strength"
-    ],
-    "movementId": "triceps-extension-pushdown",
-    "movementModifierIds": [
-      "machine"
     ]
   },
   {

@@ -660,9 +660,9 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   const finalAliasCandidates = aliasCandidates(reviewed.exercises);
   const unclassifiedAliasCollisionCount = countUnclassifiedAliasCollisions(
     finalAliasCandidates,
-    normalized.aliasOutcomes,
+    normalized.aliasClassifications,
   );
-  validateAliasOutcomes(finalAliasCandidates, normalized.aliasOutcomes);
+  validateAliasOutcomes(finalAliasCandidates, normalized.aliasClassifications);
   const candidateBytes = await readFile(
     join(options.rootDir, "scripts/catalog-normalization/reviews/variant-candidates.json"),
   );

@@ -72,6 +72,21 @@ test("candidate artifact covers Tier-1 and respects the cap", async () => {
   );
 });
 
+test("alias collision validation rejects a synthesized former-unique outcome", () => {
+  const finalAliases = new Map([["barbell curl", ["barbell-curl", "curl--barbell"]]]);
+  const synthesizedFormerUnique = new Map([
+    ["barbell curl", {
+      normalizedToken: "barbell curl",
+      outcome: "unique" as const,
+      exerciseId: "barbell-curl",
+    }],
+  ]);
+
+  expect(() => validateAliasOutcomes(finalAliases, synthesizedFormerUnique)).toThrow(
+    "Alias classification cannot mark a collision unique: barbell curl",
+  );
+});
+
 test("candidate validation rejects empty required metadata from a full snapshot", async () => {
   const artifact = await loadVariantCandidates();
   const registries = buildRegistries(
