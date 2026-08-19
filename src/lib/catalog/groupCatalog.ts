@@ -142,6 +142,31 @@ export function groupCatalogItems(
   return ordered.sort(compareGroups);
 }
 
+/**
+ * Applies a per-version filter (equipment, muscle) to already-grouped rows.
+ * Written once because two things have to happen together and only one of them
+ * is obvious: a group left with no versions disappears, and a highlight whose
+ * version was removed is forgotten — otherwise a family would open itself on a
+ * row that is no longer there.
+ */
+export function filterGroupVersions(
+  groups: readonly CatalogGroup[],
+  keep: (version: SelectableExercise) => boolean,
+): CatalogGroup[] {
+  const filtered: CatalogGroup[] = [];
+  for (const group of groups) {
+    const versions = group.versions.filter(keep);
+    if (versions.length === 0) continue;
+    const kept = new Set(versions.map((version) => version.id));
+    filtered.push({
+      ...group,
+      versions,
+      matchedVersionIds: group.matchedVersionIds.filter((id) => kept.has(id)),
+    });
+  }
+  return filtered;
+}
+
 function versionMatches(version: SelectableExercise, query: string): boolean {
   if (version.name.toLowerCase().includes(query)) return true;
   const catalogItem = version.catalogItem;

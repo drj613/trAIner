@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Check } from "lucide-react";
 import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import {
+  filterGroupVersions,
   groupCatalogItems,
   searchCatalogGroups,
   type CatalogGroup,
@@ -20,7 +21,7 @@ import { toTitleCase } from "@/lib/catalog/normalize";
  */
 
 /** How many groups a sheet renders before asking the user to narrow. */
-export const PICKER_GROUP_LIMIT = 60;
+const PICKER_GROUP_LIMIT = 60;
 
 /**
  * Everything a picker can offer: the bundled catalogue plus the user's own
@@ -28,7 +29,7 @@ export const PICKER_GROUP_LIMIT = 60;
  * written into the program as a catalogue reference, and a name has no id to
  * write.
  */
-export function useSelectableCatalogGroups(): CatalogGroup[] {
+function useSelectableCatalogGroups(): CatalogGroup[] {
   const { context, resolve } = useExerciseNormalization();
 
   const selectable = useMemo<SelectableExercise[]>(
@@ -52,29 +53,16 @@ export function useSelectableCatalogGroups(): CatalogGroup[] {
   return useMemo(() => groupCatalogItems(selectable, resolve), [selectable, resolve]);
 }
 
-function matchesMuscle(version: SelectableExercise, muscle: string): boolean {
-  return version.catalogItem?.muscles.primary.includes(muscle) ?? false;
-}
-
-export function filterGroupsByMuscle(groups: readonly CatalogGroup[], muscle: string): CatalogGroup[] {
-  const filtered: CatalogGroup[] = [];
-  for (const group of groups) {
-    const versions = group.versions.filter((version) => matchesMuscle(version, muscle));
-    if (versions.length === 0) continue;
-    filtered.push({
-      ...group,
-      versions,
-      matchedVersionIds: group.matchedVersionIds.filter((id) => versions.some((v) => v.id === id)),
-    });
-  }
-  return filtered;
-}
-
 export function usePickerGroups(query: string, muscleFilter: string | null): CatalogGroup[] {
   const allGroups = useSelectableCatalogGroups();
   return useMemo(() => {
     const searched = searchCatalogGroups(allGroups, query);
-    return muscleFilter ? filterGroupsByMuscle(searched, muscleFilter) : searched;
+    return muscleFilter
+      ? filterGroupVersions(
+        searched,
+        (version) => version.catalogItem?.muscles.primary.includes(muscleFilter) ?? false,
+      )
+      : searched;
   }, [allGroups, query, muscleFilter]);
 }
 

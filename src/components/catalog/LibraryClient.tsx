@@ -6,6 +6,7 @@ import { useExerciseNormalization } from "@/components/app/ExerciseNormalization
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { exerciseCatalog } from "@/lib/catalog/exercises";
 import {
+  filterGroupVersions,
   groupCatalogItems,
   searchCatalogGroups,
   type CatalogGroup,
@@ -348,20 +349,6 @@ function groupByMuscle(groups: readonly CatalogGroup[]): Map<string, CatalogGrou
     map.get(key)!.push(group);
   }
   return new Map([...map.entries()].sort((a, b) => a[0].localeCompare(b[0])));
-}
-
-function filterGroupsByEquipment(groups: readonly CatalogGroup[], equipment: string): CatalogGroup[] {
-  const filtered: CatalogGroup[] = [];
-  for (const group of groups) {
-    const versions = group.versions.filter((version) => version.catalogItem?.equipment.includes(equipment));
-    if (versions.length === 0) continue;
-    filtered.push({
-      ...group,
-      versions,
-      matchedVersionIds: group.matchedVersionIds.filter((id) => versions.some((v) => v.id === id)),
-    });
-  }
-  return filtered;
 }
 
 function countVersions(groups: readonly CatalogGroup[]): number {
@@ -793,7 +780,11 @@ export function LibraryClient() {
 
   const grouped = useMemo(() => {
     const searched = searchCatalogGroups(allGroups, q);
-    return groupByMuscle(equipment ? filterGroupsByEquipment(searched, equipment) : searched);
+    return groupByMuscle(
+      equipment
+        ? filterGroupVersions(searched, (version) => version.catalogItem?.equipment.includes(equipment) ?? false)
+        : searched,
+    );
   }, [allGroups, q, equipment]);
 
   const totalShown = useMemo(
@@ -824,7 +815,7 @@ export function LibraryClient() {
         </span>
       </div>
       <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
-        Full exercise catalog. Click a row to expand aliases and details.
+        Full exercise catalog. Movements hold their versions; click a row to expand aliases and details.
       </p>
 
       {/* Search */}

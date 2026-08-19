@@ -1,4 +1,9 @@
-import { groupCatalogItems, searchCatalogGroups, type CatalogGroup } from "./groupCatalog";
+import {
+  filterGroupVersions,
+  groupCatalogItems,
+  searchCatalogGroups,
+  type CatalogGroup,
+} from "./groupCatalog";
 import { makeSquatCatalogFixture, squatUserExercise } from "./groupCatalog.testFixtures";
 import type { UserExerciseDocument } from "@/lib/programs/types";
 
@@ -219,5 +224,53 @@ describe("searchCatalogGroups", () => {
       "exercise:barbell-back-squat",
       "exercise:user-zercher",
     ]);
+  });
+});
+
+describe("filterGroupVersions", () => {
+  function groups() {
+    const { squatItems, resolve } = makeSquatCatalogFixture();
+    return searchCatalogGroups(groupCatalogItems(squatItems, resolve), "high bar");
+  }
+
+  it("narrows a family to the versions that survive and drops the ones left empty", () => {
+    const result = filterGroupVersions(
+      groups(),
+      (version) => version.catalogItem?.muscles.primary.includes("quads") ?? false,
+    );
+
+    expect(idsOf(result)).toEqual(["movement:squat"]);
+    // `barbell-low-bar-squat` is a glutes entry in the same family.
+    expect(versionIdsOf(result, "movement:squat")).toEqual([
+      "barbell-squat",
+      "barbell-high-bar-squat",
+    ]);
+  });
+
+  it("removes a group the filter emptied instead of leaving a headless row", () => {
+    const { squatItems, resolve } = makeSquatCatalogFixture();
+    const all = groupCatalogItems(squatItems, resolve);
+
+    const barbellOnly = filterGroupVersions(
+      all,
+      (version) => version.catalogItem?.equipment.includes("barbell") ?? false,
+    );
+
+    // The Squat family keeps its barbell versions; the ab wheel entry and the
+    // user exercise have nothing left and are gone, not left showing zero.
+    expect(idsOf(barbellOnly)).toEqual([
+      "movement:squat",
+      "movement:bench-press",
+      "exercise:barbell-back-squat",
+    ]);
+  });
+
+  it("forgets a highlight whose version the filter removed", () => {
+    const kept = filterGroupVersions(groups(), (version) => version.id === "barbell-squat");
+
+    // The high-bar version was the match, and it is gone; claiming it is still
+    // highlighted would open the family on a row that is not there.
+    expect(kept[0].matchedVersionIds).toEqual([]);
+    expect(versionIdsOf(kept, "movement:squat")).toEqual(["barbell-squat"]);
   });
 });
