@@ -341,5 +341,14 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
     // One warning path; four week-clones actually mapped.
     expect(screen.getByText(/4 exercises mapped to catalog/i)).toBeInTheDocument();
     expect(screen.queryByText(/1 exercise mapped to catalog/i)).not.toBeInTheDocument();
+
+    // The custom tally is the same claim about the same routine, so it counts
+    // the same way. Pinned separately because it is computed separately.
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.click(screen.getByRole("button", { name: /keep as custom/i }));
+    await user.click(screen.getByRole("button", { name: /review import/i }));
+    expect(screen.getByText(/4 exercises imported as custom/i)).toBeInTheDocument();
+    expect(screen.queryByText(/1 exercise imported as custom/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mapped to catalog/i)).not.toBeInTheDocument();
   });
 });
