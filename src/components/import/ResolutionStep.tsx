@@ -35,7 +35,7 @@ type Props = {
    */
   storedCounts: Record<string, number>;
   resolutions: Record<string, string>;
-  /** groupKey -> the user explicitly ticked "Remember this interpretation". */
+  /** groupKey -> the user explicitly ticked Remember for this group. */
   remembered: Record<string, boolean>;
   userExercises: UserExerciseDocument[];
   onChange: (path: string, canonicalId: string) => void;
@@ -168,8 +168,8 @@ export function ResolutionStep({
 
       {/* One decision per repeated name. Every group stays on screen after it
           is decided: the selector doubles as the change affordance, and
-          `Remember this interpretation` is only reachable once a version has
-          been chosen. */}
+          the Remember tick is only reachable once a version has been
+          chosen. */}
       <div className="stack">
         {groups.map((group) => (
           <GroupCard
@@ -236,8 +236,8 @@ type GroupCardProps = {
  * `applyResolutions` keeps its name/path guards and a grouped choice cannot
  * bypass them.
  *
- * `Remember this interpretation` starts unticked on purpose: a choice made here
- * is local to this import, and only an explicit tick persists a global alias.
+ * The Remember tick starts unticked on purpose: a choice made here is local to
+ * this import, and only an explicit tick persists a global alias.
  */
 function GroupCard({
   group,
@@ -444,6 +444,14 @@ function GroupCard({
   );
 }
 
+/**
+ * The spec names this action `Remember this interpretation` (design ~443). The
+ * shipped label names the exercise and the chosen version instead, because one
+ * screen can carry several ambiguous names and the spec's wording makes every
+ * one of their checkboxes read identically to a screen reader. The wording,
+ * not the rule, moved; the shipped string is pinned by
+ * `names the exercise and the chosen version in the Remember label`.
+ */
 function rememberLabel(displayName: string, targetName: string | undefined): string {
   const quoted = `Remember "${displayName}"`;
   return targetName ? `${quoted} as ${toTitleCase(targetName)}` : quoted;

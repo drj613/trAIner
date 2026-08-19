@@ -1,7 +1,10 @@
 // Import save, driven through the REAL parser, resolution grouping, and
 // catalogue — only the repositories and the router are mocked. The rule under
 // test is the product rule: a resolution chosen during import is LOCAL to that
-// import, and only an explicit "Remember this interpretation" writes an alias.
+// import, and only an explicit Remember tick writes an alias. (The spec names
+// that action `Remember this interpretation`; the shipped control is labelled
+// `Remember "<name>" as <version>` so a screen reader can tell two ambiguous
+// names apart. The shipped string is pinned in ResolutionStep.test.tsx.)
 //
 // The "already taken" and "rejected outright" tests are the regression guards
 // for the alias-conflict break: alias save rejects a token that already means

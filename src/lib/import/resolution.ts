@@ -85,8 +85,9 @@ export type ResolutionOccurrence = {
 // A derived (never persisted) view: every occurrence sharing a resolution kind
 // and a normalized raw name, so the user makes ONE decision that fans out to
 // all of them. `remember` starts false — an ordinary grouped choice is local
-// to this import, and only an explicit "Remember this interpretation" marks
-// the group for alias persistence.
+// to this import, and only an explicit Remember tick (the spec's
+// `Remember this interpretation` action) marks the group for alias
+// persistence.
 export type ResolutionGroup = {
   groupKey: string;
   normalizedRawName: string;
@@ -272,6 +273,14 @@ export function dedupeAliasResolutions(
  *  - the occurrences were resolved separately to DIFFERENT ids,
  *  - at least one occurrence is still undecided,
  *  - the agreed answer is "keep as custom", which is not a catalogue identity.
+ *
+ * It deliberately does NOT consider the group's stored count. A group whose
+ * decision reaches zero stored exercises (a structurally ambiguous day) can
+ * still be remembered, and that is correct: an alias is a statement about what
+ * the NAME means, not about what this one routine does with it. The row already
+ * says the decision won't apply here; refusing to remember it as well would
+ * throw away a true statement because of an unrelated structural problem in the
+ * paste. Raised as a possible oversight in review and kept on purpose.
  */
 export function rememberableTarget(
   group: ResolutionGroup,
@@ -286,7 +295,7 @@ export function rememberableTarget(
 
 /**
  * The aliases an import should persist: ONLY groups the user explicitly marked
- * `Remember this interpretation`. An ordinary grouped or occurrence-level
+ * with the Remember tick. An ordinary grouped or occurrence-level
  * choice is local to this import and produces nothing here — which is why an
  * import that remembers nothing performs no alias write and dispatches no
  * identity event at all.
