@@ -60,12 +60,17 @@ describe("userExerciseRepo", () => {
     }
   });
 
-  it("dispatches once after remove and can suppress internal-write events", async () => {
-    const saved = await userExerciseRepo.save("Hatfield Squat", { dispatch: false });
+  it("dispatches once after remove, and dispatch:false announces nothing at all", async () => {
     const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
+      // The listener has to exist before the suppressed write for
+      // `not.toHaveBeenCalled()` to mean anything.
+      const saved = await userExerciseRepo.save("Hatfield Squat", { dispatch: false });
+      await expect(userExerciseRepo.get(saved.id)).resolves.toBeDefined();
+      expect(listener).not.toHaveBeenCalled();
+
       await userExerciseRepo.remove(saved.id);
       expect(listener).toHaveBeenCalledTimes(1);
       await expect(userExerciseRepo.get(saved.id)).resolves.toBeUndefined();

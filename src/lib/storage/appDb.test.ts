@@ -683,6 +683,9 @@ describe("DB v10 — malformed legacy documents", () => {
   // Each case therefore asserts a completion canary — the `metrics` store is
   // deleted by the block's last statement, so its absence proves the whole
   // migration ran rather than bailing midway.
+  // `expected` is the post-migration record: absent means byte-identical,
+  // present means the readable part of the document was normalized while the
+  // malformed part was left exactly as stored.
   const programCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
     {
       name: "program with no days array",
@@ -750,7 +753,7 @@ describe("DB v10 — malformed legacy documents", () => {
     },
   ];
 
-  it.each(programCases)("passes through a $name unchanged", async ({ seeded, expected }) => {
+  it.each(programCases)("program: $name — readable parts migrated, malformed part left alone", async ({ seeded, expected }) => {
     await seedVersion9Records({ programs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
@@ -763,7 +766,7 @@ describe("DB v10 — malformed legacy documents", () => {
       .toBe(false);
   });
 
-  const logCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
+  const logCases: Array<{ name: string; seeded: unknown }> = [
     {
       name: "v7-surviving log with no entries array",
       seeded: {
@@ -798,12 +801,12 @@ describe("DB v10 — malformed legacy documents", () => {
     },
   ];
 
-  it.each(logCases)("passes through a $name unchanged", async ({ seeded, expected }) => {
+  it.each(logCases)("log: $name — readable parts migrated, malformed part left alone", async ({ seeded }) => {
     await seedVersion9Records({ logs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     const id = (seeded as { id: string }).id;
-    expect(await readRawRecord("logs", id)).toEqual(expected ?? seeded);
+    expect(await readRawRecord("logs", id)).toEqual(seeded);
     // Completion canary: deleting `metrics` is the last statement of the
     // v10 block, so its absence proves the migration ran to the end instead
     // of bailing midway and leaving the record un-migrated.
@@ -811,7 +814,7 @@ describe("DB v10 — malformed legacy documents", () => {
       .toBe(false);
   });
 
-  // Fix round 2: leaf *string* fields, not just container shapes. Each of
+  // Leaf *string* fields, not just container shapes. Each of
   // these reaches normalizeExerciseName / prepareImportName and throws on a
   // non-string, which the v10 block's catch turns into a rolled-back upgrade
   // that never reaches version 10. restoreBackup only checks aliases with
@@ -862,7 +865,7 @@ describe("DB v10 — malformed legacy documents", () => {
     },
   ];
 
-  it.each(leafProgramCases)("passes through a $name unchanged", async ({ seeded }) => {
+  it.each(leafProgramCases)("program: $name — left exactly as stored", async ({ seeded }) => {
     await seedVersion9Records({ programs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
@@ -897,7 +900,7 @@ describe("DB v10 — malformed legacy documents", () => {
     },
   ];
 
-  it.each(leafLogCases)("passes through a $name unchanged", async ({ seeded }) => {
+  it.each(leafLogCases)("log: $name — left exactly as stored", async ({ seeded }) => {
     await seedVersion9Records({ logs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();

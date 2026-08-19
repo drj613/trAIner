@@ -129,13 +129,14 @@ function canonicalizeExplicitExerciseId(
 }
 
 // Legacy documents are not guaranteed to have every array this traversal
-// walks: the v7/v8 blocks above already read `(log.entries ?? [])` because
-// pre-entries logs exist, and backup.ts validates null override replacements
-// because those exist too. An unguarded `.map` on one of those shapes throws,
-// and the v10 block's catch then aborts the upgrade — so the user's data is
-// safe, but their database never reaches version 10 and every load pays a
-// failed migration. Tolerate the malformed shape and pass the record through
-// untouched instead; a record we cannot read is a record we must not rewrite.
+// walks: the v7/v8 blocks in the upgrade below read `(log.entries ?? [])`
+// because logs predating that field exist, and backup.ts validates null
+// override replacements because those exist too. An unguarded `.map` on one of
+// those shapes throws, and the upgrade's catch then aborts — so the user's data
+// is safe, but their database never reaches the current version and every load
+// pays a failed migration. Tolerate the malformed shape and pass the record
+// through untouched instead; a record we cannot read is one we must not
+// rewrite.
 function mapArray<T>(value: T[], mapper: (item: T) => T): T[] {
   return Array.isArray(value) ? value.map(mapper) : value;
 }

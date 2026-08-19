@@ -545,3 +545,89 @@ bun run lint
 $ eslint .
 (clean)
 ```
+
+## Cleanup round — stale comments, test strength, and plan jargon
+
+Eight items fixed (A1-A6, A8, A9); A7 deferred to Task 7 as ruled. No production behaviour changed anywhere in this round except nothing — every edit is a comment, a test name, a test body, or a fixture.
+
+### A3 (the substantive one) — `{ dispatch: false }` suppression now has real coverage
+
+You were right that this was an unverified spec requirement, not polish. In all four tests the suppressed write ran *before* `addEventListener`, so the listener could not have seen an event either way. All four now attach the listener first, assert `not.toHaveBeenCalled()` after the suppressed write (plus that the write itself landed), then perform the unsuppressed write and assert exactly one event:
+
+- `aliasRepo.test.ts` — `putRaw(..., { dispatch: false })` before `replaceRemembered`
+- `aliasRepo.test.ts` — `saveMany(..., { dispatch: false })` before `removeMany`
+- `userExerciseRepo.test.ts` — `save(..., { dispatch: false })` before `remove`
+- `normalizationOverrideRepo.test.ts` — `save(..., { dispatch: false })` before `remove`
+
+Mutation evidence, breaking suppression in all three repos (`dispatchAfterWrite` dispatches unconditionally):
+
+```text
+mutation + new tests:        Tests: 4 failed, 30 passed, 34 total
+                             Expected number of calls: 0
+                             Received number of calls: 1   (×4)
+
+mutation + old committed tests: Tests: 34 passed, 34 total
+```
+
+The second line is the finding in one number: the requirement had zero coverage. Both repos and tests restored byte-for-byte afterwards; the guard expression is back to `if (options?.dispatch !== false)`.
+
+### A4 — the sibling test no longer implies ordering it cannot prove
+
+"dispatches once after a multi-alias transaction commits" read the alias from inside the listener, which the very next test's comment explains proves nothing (the read is serialised behind the open transaction either way). Renamed to "dispatches once for a whole multi-alias transaction, not once per alias", the listener-read machinery is gone, and a comment points at the transaction-lifecycle test that owns the ordering claim.
+
+### A1, A2 — comments that misdescribed the code
+
+- `backup.test.ts:13` cited `expect(mockClear).toHaveBeenCalledWith("metrics")` as the example for the shared spy, while the live assertion is now `not.toHaveBeenCalledWith("metrics")`. Example changed to `"aliases"`.
+- `appDb.ts` container-guard comment said "the v7/v8 blocks **above**" (they are ~270 lines *below*) and "the **v10 block's** catch" (round 4 replaced it with the whole-callback catch). Both corrected, and the version-specific phrasing replaced with "the current version" so it does not rot at v11.
+
+### A5, A6 — test tables
+
+All four `it.each` titles were the identical string `"passes through a $name unchanged"`, and three `programCases` deliberately *do* change (`removed-squat-id` → `surviving-squat-id`). Now table-identifying and honest:
+
+```text
+program: override with a null replacement — readable parts migrated, malformed part left alone
+log:     log holding a null entry — readable parts migrated, malformed part left alone
+program: exercise with a non-string name — left exactly as stored
+log:     log entry with a non-string exerciseName — left exactly as stored
+```
+
+`programCases` also gained a comment explaining what `expected` means (absent = byte-identical). `logCases`' `expected?` field was dead — no case set it — so it and the `expected ?? seeded` fallback are gone.
+
+### A8, A9 — rename and fixture integrity
+
+- `describe("DB v10 — upgrade failure safety")` → `"DB upgrade failure safety — every block"`, since half its tests are v7/v8-era.
+- `appDb.testFixtures.ts` now calls the real `normalizeExerciseName` instead of a hand-rolled `toLocaleLowerCase().replace(...)` copy, with a comment saying why: a divergence would seed index keys the app can no longer look up while the tests kept passing.
+
+### Plan jargon removed from source
+
+`backup.ts` ("Task 6 restore safety", "backup v2 (Task 7)"), `backup.test.ts` (test name "…before Task 7"), `appDb.test.ts` ("Fix round 2: …"). All now state the behaviour instead of the ticket. `grep -rn "Task 6\|Task 7\|Task 9\|Fix round" src/` returns nothing.
+
+### Task 7 input (A7, deferred)
+
+`dispatchAfterWrite` is byte-identical in `aliasRepo.ts:39`, `userExerciseRepo.ts:15`, `normalizationOverrideRepo.ts:121`, and the event name `"trainer-exercise-identity-changed"` is hand-written in **21** places across implementation and tests. A typo in any one of them is a silently dead listener, so the shared constant should land with the consolidation and the `migrations/v10Identity.ts` extraction.
+
+### Constraints honoured
+
+`git diff 22ba71f --numstat -- src/lib/storage/appDb.test.ts` is still **752 insertions, 1 deletion** (that deletion remains the original `aliasRepo.save` provenance line), and `sessionPersistence.test.ts` — which owns the real v5/v7/v8 coverage — does not appear in the diff at all. Test count is unchanged at 1146: this round strengthened bodies rather than adding cases.
+
+### Gates after the cleanup round
+
+```text
+bun run test -- --runInBand
+Test Suites: 93 passed, 93 total
+Tests:       1146 passed, 1146 total
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.54s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```

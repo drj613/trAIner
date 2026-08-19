@@ -157,12 +157,17 @@ describe("normalizationOverrideRepo", () => {
     }
   });
 
-  it("dispatches once after remove and supports suppressing migration/restore events", async () => {
-    const saved = await normalizationOverrideRepo.save(validOverride, { dispatch: false });
+  it("dispatches once after remove, and dispatch:false announces nothing at all", async () => {
     const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
+      // Suppression is what migration and restore rely on; observing it
+      // requires the listener to predate the suppressed write.
+      const saved = await normalizationOverrideRepo.save(validOverride, { dispatch: false });
+      await expect(normalizationOverrideRepo.get(saved.id)).resolves.toBeDefined();
+      expect(listener).not.toHaveBeenCalled();
+
       await normalizationOverrideRepo.remove(saved.id);
       expect(listener).toHaveBeenCalledTimes(1);
       await expect(normalizationOverrideRepo.get(saved.id)).resolves.toBeUndefined();

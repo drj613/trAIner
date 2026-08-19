@@ -204,11 +204,11 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);
   for (const l of b.logs) tx.objectStore("logs").put(l);
-  // Task 6 restore safety: v1 backups predate alias provenance. Preserve
-  // every stored field (id, alias, normalizedAlias, canonicalExerciseId,
-  // createdAt) verbatim and only fill in a missing/unrecognized provenance
-  // with "legacy-auto" — the same classification the v10 migration gives
-  // pre-existing aliases. Exporting provenance explicitly is backup v2 (Task 7).
+  // Version-1 backups predate alias provenance. Preserve every stored field
+  // (id, alias, normalizedAlias, canonicalExerciseId, createdAt) verbatim and
+  // only fill in a missing or unrecognized provenance with "legacy-auto" — the
+  // same classification the v10 database migration gives pre-existing aliases.
+  // A later backup version will export provenance explicitly.
   for (const a of b.aliases) {
     const provenance =
       a.provenance === "remembered" || a.provenance === "legacy-auto" ? a.provenance : "legacy-auto";

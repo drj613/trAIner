@@ -1,4 +1,5 @@
 import { deleteDB, openDB, type DBSchema } from "idb";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import { getOverrideReplacementDays } from "@/lib/programs/overrides";
 import type {
   AliasDocument,
@@ -231,7 +232,7 @@ async function openEmptyVersion9Database() {
 }
 
 /**
- * Seeds arbitrary (deliberately malformed) v9 records. Typed repositories
+ * Seeds arbitrary v9 records, usually deliberately malformed ones. Typed repositories
  * cannot express "a log that predates the entries field", so these go in as
  * raw objects — which is exactly the shape real v7-surviving documents have.
  */
@@ -319,7 +320,10 @@ export async function seedVersion9Database(fixture: V9Fixture): Promise<SeededV9
   fixture.aliases.forEach((alias, index) => tx.objectStore("aliases").put({
     id: `alias-${index + 1}`,
     alias: alias.alias,
-    normalizedAlias: alias.alias.toLocaleLowerCase().replace(/[^a-z0-9]+/g, " ").trim(),
+    // The real normalizer, not a copy of it: a divergence here would seed
+    // index keys the app can no longer look up, and the tests would keep
+    // passing while asserting nothing.
+    normalizedAlias: normalizeExerciseName(alias.alias),
     canonicalExerciseId: alias.canonicalExerciseId,
     ...(alias.provenance ? { provenance: alias.provenance } : {}),
     createdAt: NOW,

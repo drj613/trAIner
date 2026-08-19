@@ -64,7 +64,7 @@ afterEach(() => {
   resetDbConnection();
 });
 
-describe("DB v10 — upgrade failure safety", () => {
+describe("DB upgrade failure safety — every block", () => {
   it("aborts the upgrade, leaving version 9 and its data intact, and retries on the next open", async () => {
     await seedVersion9Database(v9Fixture);
     const before = await openDB(DB_NAME, 9);

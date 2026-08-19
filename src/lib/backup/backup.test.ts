@@ -11,7 +11,7 @@ const mockGetAll = jest.fn();
 const mockTransaction = jest.fn().mockImplementation(() => ({
   objectStore: jest.fn().mockImplementation((name: string) => ({
     // Route through the shared spy so clear-per-store is attributable
-    // (e.g. `expect(mockClear).toHaveBeenCalledWith("metrics")`), while
+    // (e.g. `expect(mockClear).toHaveBeenCalledWith("aliases")`), while
     // "db untouched" tests can still assert `mockClear` was never called
     // at all, regardless of which store.
     clear: jest.fn().mockImplementation(() => mockClear(name)),
@@ -506,7 +506,7 @@ describe("restoreBackup v10 store safety", () => {
     expect(mockClear).not.toHaveBeenCalledWith("metrics");
   });
 
-  it("preserves legacy alias ids and defaults missing provenance before Task 7", async () => {
+  it("preserves legacy alias ids and defaults a missing provenance", async () => {
     mockPut.mockClear();
     await restoreBackup({
       ...validDoc,

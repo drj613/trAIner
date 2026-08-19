@@ -79,11 +79,11 @@ describe("aliasRepo.save", () => {
     expect(all).toHaveLength(2);
   });
 
-  it("dispatches once after a multi-alias transaction commits", async () => {
-    let committedRead: ReturnType<typeof aliasRepo.find> | undefined;
-    const listener = jest.fn(() => {
-      committedRead = aliasRepo.find("RDL");
-    });
+  it("dispatches once for a whole multi-alias transaction, not once per alias", async () => {
+    // Only the count is asserted here. Reading the data from inside the
+    // listener would prove nothing about ordering — that claim belongs to the
+    // transaction-lifecycle test below, which can actually observe it.
+    const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
@@ -92,7 +92,7 @@ describe("aliasRepo.save", () => {
         { alias: "RDL", canonicalExerciseId: "romanian-deadlift", provenance: "remembered" },
       ]);
       expect(listener).toHaveBeenCalledTimes(1);
-      await expect(committedRead).resolves.toMatchObject({ canonicalExerciseId: "romanian-deadlift" });
+      await expect(aliasRepo.list()).resolves.toHaveLength(2);
     } finally {
       window.removeEventListener("trainer-exercise-identity-changed", listener);
     }
@@ -155,17 +155,22 @@ describe("aliasRepo.save", () => {
   });
 
   it("replaceRemembered is the explicit one-transaction correction path", async () => {
-    await aliasRepo.putRaw({
-      id: "legacy-alias-id",
-      alias: "Back Squat",
-      normalizedAlias: "back squat",
-      canonicalExerciseId: "barbell-back-squat",
-      createdAt: "2026-08-18T00:00:00.000Z",
-    }, { dispatch: false });
     const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
+      // Registered before the suppressed write, so `not.toHaveBeenCalled()`
+      // is a real observation rather than a vacuous one.
+      await aliasRepo.putRaw({
+        id: "legacy-alias-id",
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "barbell-back-squat",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }, { dispatch: false });
+      await expect(aliasRepo.find("Back Squat")).resolves.toBeDefined();
+      expect(listener).not.toHaveBeenCalled();
+
       await aliasRepo.replaceRemembered({
         alias: "Back Squat",
         canonicalExerciseId: "barbell-high-bar-squat",
@@ -181,16 +186,21 @@ describe("aliasRepo.save", () => {
     }
   });
 
-  it("removeMany dispatches once and dispatch:false suppresses internal writes", async () => {
-    await aliasRepo.saveMany([
-      { alias: "RDL", canonicalExerciseId: "romanian-deadlift", provenance: "remembered" },
-      { alias: "Strict Pullup", canonicalExerciseId: "pull-up", provenance: "remembered" },
-    ], { dispatch: false });
-    const ids = (await aliasRepo.list()).map((alias) => alias.id);
+  it("removeMany dispatches once, and dispatch:false announces nothing at all", async () => {
     const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
+      // Suppression is what migration and restore rely on: the write lands,
+      // the event does not. Asserting that needs the listener attached first.
+      await aliasRepo.saveMany([
+        { alias: "RDL", canonicalExerciseId: "romanian-deadlift", provenance: "remembered" },
+        { alias: "Strict Pullup", canonicalExerciseId: "pull-up", provenance: "remembered" },
+      ], { dispatch: false });
+      const ids = (await aliasRepo.list()).map((alias) => alias.id);
+      expect(ids).toHaveLength(2);
+      expect(listener).not.toHaveBeenCalled();
+
       await aliasRepo.removeMany(ids);
       expect(listener).toHaveBeenCalledTimes(1);
       await expect(aliasRepo.list()).resolves.toEqual([]);
