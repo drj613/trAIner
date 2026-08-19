@@ -324,142 +324,159 @@ export function getDb() {
     let upgradeError: unknown;
     dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
       async upgrade(db, oldVersion, _newVersion, tx) {
-        // v0 → v1: create all initial stores
-        if (oldVersion < 1) {
-          db.createObjectStore("profile", { keyPath: "id" });
-          db.createObjectStore("programs", { keyPath: "id" });
-          const logs = db.createObjectStore("logs", { keyPath: "id" });
-          logs.createIndex("by-program", "programId");
-          logs.createIndex("by-day", "dayId");
-          const aliases = db.createObjectStore("aliases", { keyPath: "id" });
-          aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
-          aliases.createIndex("by-exercise", "canonicalExerciseId");
-          db.createObjectStore("backups", { keyPath: "id" });
-        }
-
-        // v1 → v2: add metrics store
-        if (oldVersion < 2) {
-          if (!(db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
-            (db as unknown as IDBPDatabase<LegacyMetricsDb>)
-              .createObjectStore("metrics", { keyPath: "exerciseId" });
+        // idb does not await this callback, so an unhandled throw after the
+        // first `await` does NOT abort anything: the versionchange transaction
+        // commits whatever was already issued and the new version is stamped,
+        // so the block that failed never runs again — a silent, permanent
+        // half-migration (and, past the v10 alias clear(), an emptied alias
+        // store). Spec: "Migration and restore failures abort their
+        // transaction rather than committing a partially normalized
+        // database." Every block is wrapped, not just the newest one, so the
+        // older backfills and whatever v11 adds get the same guarantee.
+        try {
+          // v0 → v1: create all initial stores
+          if (oldVersion < 1) {
+            db.createObjectStore("profile", { keyPath: "id" });
+            db.createObjectStore("programs", { keyPath: "id" });
+            const logs = db.createObjectStore("logs", { keyPath: "id" });
+            logs.createIndex("by-program", "programId");
+            logs.createIndex("by-day", "dayId");
+            const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+            aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+            aliases.createIndex("by-exercise", "canonicalExerciseId");
+            db.createObjectStore("backups", { keyPath: "id" });
           }
-        }
 
-        // v2 → v3: add userExercises store
-        if (oldVersion < 3) {
-          if (!db.objectStoreNames.contains("userExercises")) {
-            db.createObjectStore("userExercises", { keyPath: "id" });
-          }
-        }
-
-        // v3 → v4: add bodyweight store
-        if (oldVersion < 4) {
-          if (!db.objectStoreNames.contains("bodyweight")) {
-            db.createObjectStore("bodyweight", { keyPath: "id" });
-          }
-        }
-
-        // v4 → v5: backfill completedAt on pre-existing logs.
-        // Before this version, every saved log was effectively a finished
-        // workout (no autosave-only logs existed beyond a ~2-day window).
-        // Treat any log lacking completedAt as completed at its performedAt.
-        if (oldVersion < 5 && oldVersion >= 1) {
-          const store = tx.objectStore("logs");
-          let cursor = await store.openCursor();
-          while (cursor) {
-            const log = cursor.value as WorkoutLogDocument;
-            if (!log.completedAt) {
-              await cursor.update({ ...log, completedAt: log.performedAt });
+          // v1 → v2: add metrics store
+          if (oldVersion < 2) {
+            if (!(db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
+              (db as unknown as IDBPDatabase<LegacyMetricsDb>)
+                .createObjectStore("metrics", { keyPath: "exerciseId" });
             }
-            cursor = await cursor.continue();
           }
-        }
 
-        // v5 → v6: dayNote, skippedAt, skipReason added as optional fields on logs.
-        // No migration needed; existing records are valid as-is.
-        if (oldVersion < 6) {
-          // intentionally empty — optional fields, no schema change
-        }
-
-        // v6 → v7: session-identity hardening.
-        //  - Backfill performedDate (the local calendar date the session
-        //    belongs to) from performedAt, using the device timezone.
-        //  - Delete phantom logs: an autosave bug used to write an empty log
-        //    whenever a day page was merely visited. A log with no recorded
-        //    sets, no notes, and no completion/skip marker carries zero
-        //    information and only pollutes history and session lookup.
-        if (oldVersion < 7 && oldVersion >= 1) {
-          const store = tx.objectStore("logs");
-          let cursor = await store.openCursor();
-          while (cursor) {
-            const log = cursor.value as WorkoutLogDocument;
-            const hasData =
-              !!log.completedAt || !!log.skippedAt || !!log.dayNote || !!log.notes ||
-              (log.entries ?? []).some((e) => (e.sets?.length ?? 0) > 0 || !!e.notes);
-            if (!hasData) {
-              await cursor.delete();
-            } else if (!log.performedDate) {
-              await cursor.update({ ...log, performedDate: localDateOf(log.performedAt) });
+          // v2 → v3: add userExercises store
+          if (oldVersion < 3) {
+            if (!db.objectStoreNames.contains("userExercises")) {
+              db.createObjectStore("userExercises", { keyPath: "id" });
             }
-            cursor = await cursor.continue();
           }
-        }
 
-        // v7 → v8: rescue kg cells. Before per-exercise units existed, a cell
-        // like "10kg x10" failed to parse and was stored as unparseable
-        // rawCell text (contributing zero volume). Re-parse those into
-        // weight/reps with unit "kg". Unitless numeric weights stay as-is
-        // (absent unit = lb).
-        if (oldVersion < 8 && oldVersion >= 1) {
-          const kgCell = /^\+?\s*(\d+(?:\.\d+)?)\s*kgs?\s*x\s*(\d+)$/i;
-          const store = tx.objectStore("logs");
-          let cursor = await store.openCursor();
-          while (cursor) {
-            const log = cursor.value as WorkoutLogDocument;
-            let changed = false;
-            const entries = (log.entries ?? []).map((entry) => ({
-              ...entry,
-              sets: (entry.sets ?? []).map((set) => {
-                if (set.weight !== undefined || !set.rawCell) return set;
-                const m = kgCell.exec(set.rawCell.trim());
-                if (!m) return set;
-                changed = true;
-                const { rawCell: _drop, ...rest } = set;
-                return {
-                  ...rest,
-                  weight: parseFloat(m[1]),
-                  unit: "kg" as const,
-                  reps: parseInt(m[2], 10),
-                };
-              }),
-            }));
-            if (changed) await cursor.update({ ...log, entries });
-            cursor = await cursor.continue();
+          // v3 → v4: add bodyweight store
+          if (oldVersion < 4) {
+            if (!db.objectStoreNames.contains("bodyweight")) {
+              db.createObjectStore("bodyweight", { keyPath: "id" });
+            }
           }
-        }
 
-        // v8 → v9: add promptPresets store. Create-only; no existing data to migrate.
-        if (oldVersion < 9) {
-          if (!db.objectStoreNames.contains("promptPresets")) {
-            db.createObjectStore("promptPresets", { keyPath: "id" });
+          // v4 → v5: backfill completedAt on pre-existing logs.
+          // Before this version, every saved log was effectively a finished
+          // workout (no autosave-only logs existed beyond a ~2-day window).
+          // Treat any log lacking completedAt as completed at its performedAt.
+          if (oldVersion < 5 && oldVersion >= 1) {
+            const store = tx.objectStore("logs");
+            let cursor = await store.openCursor();
+            while (cursor) {
+              const log = cursor.value as WorkoutLogDocument;
+              if (!log.completedAt) {
+                await cursor.update({ ...log, completedAt: log.performedAt });
+              }
+              cursor = await cursor.continue();
+            }
           }
-        }
 
-        // v9 → v10: persist normalization overrides, normalize every stored
-        // catalogue reference in the same upgrade transaction, classify old
-        // automatic aliases, and drop the unused derived metrics cache.
-        if (oldVersion < 10) {
-          // idb does not await this callback, so an unhandled throw after the
-          // first `await` does NOT abort anything: the versionchange
-          // transaction commits whatever was already issued, the open
-          // resolves at version 10, and `oldVersion < 10` never runs again —
-          // a silent, permanent half-migration (and, past the clear() below,
-          // an emptied alias store). Spec: "Migration and restore failures
-          // abort their transaction rather than committing a partially
-          // normalized database." So catch, abort explicitly, and rethrow:
-          // the open then rejects, the stored version stays at 9, and the
-          // next load retries the whole migration from clean data.
-          try {
+          // v5 → v6: dayNote, skippedAt, skipReason added as optional fields on logs.
+          // No migration needed; existing records are valid as-is.
+          if (oldVersion < 6) {
+            // intentionally empty — optional fields, no schema change
+          }
+
+          // v6 → v7: session-identity hardening.
+          //  - Backfill performedDate (the local calendar date the session
+          //    belongs to) from performedAt, using the device timezone.
+          //  - Delete phantom logs: an autosave bug used to write an empty log
+          //    whenever a day page was merely visited. A log with no recorded
+          //    sets, no notes, and no completion/skip marker carries zero
+          //    information and only pollutes history and session lookup.
+          if (oldVersion < 7 && oldVersion >= 1) {
+            const store = tx.objectStore("logs");
+            let cursor = await store.openCursor();
+            while (cursor) {
+              const log = cursor.value as WorkoutLogDocument;
+              // `?? []` guards undefined but not a corrupt non-array, and the
+              // callback below dereferences each element. Absent entries still
+              // mean "no information" (unchanged), but a truthy non-array is
+              // unreadable — something is there we cannot parse — so the log
+              // counts as having data and is kept rather than deleted.
+              const entries: unknown = log.entries;
+              const unreadableEntries =
+                entries !== undefined && entries !== null && !Array.isArray(entries);
+              const hasData =
+                !!log.completedAt || !!log.skippedAt || !!log.dayNote || !!log.notes ||
+                unreadableEntries ||
+                (log.entries ?? []).some(
+                  (e) => isRecord(e) && ((e.sets?.length ?? 0) > 0 || !!e.notes),
+                );
+              if (!hasData) {
+                await cursor.delete();
+              } else if (!log.performedDate) {
+                await cursor.update({ ...log, performedDate: localDateOf(log.performedAt) });
+              }
+              cursor = await cursor.continue();
+            }
+          }
+
+          // v7 → v8: rescue kg cells. Before per-exercise units existed, a cell
+          // like "10kg x10" failed to parse and was stored as unparseable
+          // rawCell text (contributing zero volume). Re-parse those into
+          // weight/reps with unit "kg". Unitless numeric weights stay as-is
+          // (absent unit = lb).
+          if (oldVersion < 8 && oldVersion >= 1) {
+            const kgCell = /^\+?\s*(\d+(?:\.\d+)?)\s*kgs?\s*x\s*(\d+)$/i;
+            const store = tx.objectStore("logs");
+            let cursor = await store.openCursor();
+            while (cursor) {
+              const log = cursor.value as WorkoutLogDocument;
+              let changed = false;
+              // Same class as the v7 block: `?? []` does not make a corrupt
+              // non-array iterable, `!set.rawCell` does not make a non-string
+              // trimmable, and neither guard survives a null element. mapArray
+              // returns its input untouched when it is not an array, so an
+              // unreadable log is passed through instead of aborting the
+              // upgrade for every load.
+              const entries = mapArray(log.entries ?? [], (entry) => (isRecord(entry) ? {
+                ...entry,
+                sets: mapArray(entry.sets ?? [], (set) => {
+                  if (!isRecord(set)) return set;
+                  if (set.weight !== undefined || !isReadableText(set.rawCell)) return set;
+                  const m = kgCell.exec(set.rawCell.trim());
+                  if (!m) return set;
+                  changed = true;
+                  const { rawCell: _drop, ...rest } = set;
+                  return {
+                    ...rest,
+                    weight: parseFloat(m[1]),
+                    unit: "kg" as const,
+                    reps: parseInt(m[2], 10),
+                  };
+                }),
+              } : entry));
+              if (changed) await cursor.update({ ...log, entries });
+              cursor = await cursor.continue();
+            }
+          }
+
+          // v8 → v9: add promptPresets store. Create-only; no existing data to migrate.
+          if (oldVersion < 9) {
+            if (!db.objectStoreNames.contains("promptPresets")) {
+              db.createObjectStore("promptPresets", { keyPath: "id" });
+            }
+          }
+
+          // v9 → v10: persist normalization overrides, normalize every stored
+          // catalogue reference in the same upgrade transaction, classify old
+          // automatic aliases, and drop the unused derived metrics cache.
+          if (oldVersion < 10) {
             if (!db.objectStoreNames.contains("normalizationOverrides")) {
               db.createObjectStore("normalizationOverrides", { keyPath: "id" });
             }
@@ -488,23 +505,23 @@ export function getDb() {
               (db as unknown as IDBPDatabase<LegacyMetricsDb>).deleteObjectStore("metrics");
             }
             shouldDispatchIdentityChange = oldVersion > 0;
-          } catch (error) {
-            upgradeError = error;
-            // Mark the transaction's own rejection as handled before aborting;
-            // otherwise idb's cached `done` promise rejects with nobody
-            // listening and the AbortError surfaces as an unhandled rejection.
-            void tx.done.catch(() => {});
-            try {
-              tx.abort();
-            } catch {
-              // Already aborted — a failed IDB request aborts its own
-              // transaction, and abort() on a finished transaction throws.
-            }
-            // Deliberately not rethrown: idb never awaits this callback, so a
-            // throw here would only become another unhandled rejection. The
-            // abort is what fails the open request; the catch below then
-            // reports this real cause instead of the generic AbortError.
           }
+        } catch (error) {
+          upgradeError = error;
+          // Mark the transaction's own rejection as handled before aborting;
+          // otherwise idb's cached `done` promise rejects with nobody
+          // listening and the AbortError surfaces as an unhandled rejection.
+          void tx.done.catch(() => {});
+          try {
+            tx.abort();
+          } catch {
+            // Already aborted — a failed IDB request aborts its own
+            // transaction, and abort() on a finished transaction throws.
+          }
+          // Deliberately not rethrown: idb never awaits this callback, so a
+          // throw here would only become another unhandled rejection. The
+          // abort is what fails the open request; the catch below then reports
+          // this real cause instead of the generic AbortError.
         }
       },
       blocked() {

@@ -1,6 +1,6 @@
 import { deleteDB, openDB } from "idb";
 import { DB_NAME, getDb, resetDbConnection } from "./appDb";
-import { seedVersion9Database, v9Fixture } from "./appDb.testFixtures";
+import { seedLegacyLogs, seedVersion9Database, v9Fixture } from "./appDb.testFixtures";
 
 // A migration failure must not commit half a migration. idb does not await
 // the `upgrade` callback's promise, so a throw after the first `await` would
@@ -8,7 +8,11 @@ import { seedVersion9Database, v9Fixture } from "./appDb.testFixtures";
 // already issued — including the `aliases.clear()` that precedes the re-puts.
 // Injecting the failure through the resolver is the closest stand-in for the
 // real cause: an unreadable field the guards do not cover yet.
-const failure = { inject: false, onCanonicalId: undefined as string | undefined };
+const failure = {
+  inject: false,
+  onCanonicalId: undefined as string | undefined,
+  inV7: false,
+};
 jest.mock("@/lib/catalog/identity", () => {
   const actual = jest.requireActual<typeof import("@/lib/catalog/identity")>(
     "@/lib/catalog/identity",
@@ -28,17 +32,35 @@ jest.mock("@/lib/catalog/identity", () => {
   };
 });
 
+// The v7 block's one external call, and the only injection point that does
+// not require poisoning data the guards now tolerate.
+jest.mock("@/lib/workout/localDate", () => {
+  const actual = jest.requireActual<typeof import("@/lib/workout/localDate")>(
+    "@/lib/workout/localDate",
+  );
+  return {
+    ...actual,
+    localDateOf: (iso: string) => {
+      if (failure.inV7) throw new Error("injected v7 failure");
+      return actual.localDateOf(iso);
+    },
+  };
+});
+
 beforeEach(async () => {
   failure.inject = false;
   failure.onCanonicalId = undefined;
+  failure.inV7 = false;
   resetDbConnection();
   await deleteDB(DB_NAME);
   resetDbConnection();
 });
 
 afterEach(() => {
+  jest.restoreAllMocks();
   failure.inject = false;
   failure.onCanonicalId = undefined;
+  failure.inV7 = false;
   resetDbConnection();
 });
 
@@ -93,5 +115,69 @@ describe("DB v10 — upgrade failure safety", () => {
     expect(await after.getAll("aliases")).toHaveLength(v9Fixture.aliases.length);
     after.close();
     resetDbConnection();
+  });
+
+  it("aborts a v7-era failure, leaving version 6 and its logs intact", async () => {
+    const log = {
+      id: "legacy-1",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-05-10T10:00:00.000Z",
+      completedAt: "2026-05-10T11:00:00.000Z",
+      entries: [],
+    };
+    await seedLegacyLogs(6, [log]);
+
+    failure.inV7 = true;
+    await expect(getDb()).rejects.toThrow("injected v7 failure");
+    resetDbConnection();
+
+    const after = await openDB(DB_NAME, 6);
+    expect(after.version).toBe(6);
+    expect(await after.get("logs", "legacy-1")).toEqual(log);
+    expect(after.objectStoreNames.contains("metrics")).toBe(true);
+    expect(after.objectStoreNames.contains("normalizationOverrides")).toBe(false);
+    after.close();
+    resetDbConnection();
+
+    failure.inV7 = false;
+    const migrated = await getDb();
+    expect(migrated.version).toBe(10);
+    expect((await migrated.get("logs", "legacy-1"))?.performedDate).toBe("2026-05-10");
+  });
+
+  it("aborts a v8-era failure, leaving version 7 and its raw cells intact", async () => {
+    const log = {
+      id: "legacy-2",
+      programId: "p1",
+      dayId: "d1",
+      performedAt: "2026-05-10T10:00:00.000Z",
+      performedDate: "2026-05-10",
+      completedAt: "2026-05-10T11:00:00.000Z",
+      entries: [{ exerciseId: "slot-1", sets: [{ setNumber: 1, rawCell: "10kg x10" }] }],
+    };
+    await seedLegacyLogs(7, [log]);
+
+    // The v8 block calls no project module, so the injection point is the
+    // global it does call, narrowed to the value this fixture parses.
+    const parse = jest.spyOn(globalThis, "parseFloat").mockImplementation((value: string) => {
+      if (value === "10") throw new Error("injected v8 failure");
+      return Number(value);
+    });
+    await expect(getDb()).rejects.toThrow("injected v8 failure");
+    parse.mockRestore();
+    resetDbConnection();
+
+    const after = await openDB(DB_NAME, 7);
+    expect(after.version).toBe(7);
+    expect(await after.get("logs", "legacy-2")).toEqual(log);
+    expect(after.objectStoreNames.contains("normalizationOverrides")).toBe(false);
+    after.close();
+    resetDbConnection();
+
+    const migrated = await getDb();
+    expect(migrated.version).toBe(10);
+    expect((await migrated.get("logs", "legacy-2"))?.entries[0].sets[0])
+      .toEqual({ setNumber: 1, weight: 10, unit: "kg", reps: 10 });
   });
 });

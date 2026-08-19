@@ -262,6 +262,37 @@ export async function seedVersion9Records(records: {
   resetDbConnection();
 }
 
+/**
+ * Seeds logs into a database at a pre-v10 version so the v7/v8 upgrade blocks
+ * run against them. The store set is the v4-through-v8 one (promptPresets
+ * arrives at v9).
+ */
+export async function seedLegacyLogs(version: number, logs: unknown[]): Promise<void> {
+  resetDbConnection();
+  await deleteDB(DB_NAME);
+  const legacy = await openDB<Version9Db>(DB_NAME, version, {
+    upgrade(db) {
+      db.createObjectStore("profile", { keyPath: "id" });
+      db.createObjectStore("programs", { keyPath: "id" });
+      const logStore = db.createObjectStore("logs", { keyPath: "id" });
+      logStore.createIndex("by-program", "programId");
+      logStore.createIndex("by-day", "dayId");
+      const aliases = db.createObjectStore("aliases", { keyPath: "id" });
+      aliases.createIndex("by-normalized-alias", "normalizedAlias", { unique: true });
+      aliases.createIndex("by-exercise", "canonicalExerciseId");
+      db.createObjectStore("backups", { keyPath: "id" });
+      db.createObjectStore("metrics", { keyPath: "exerciseId" });
+      db.createObjectStore("userExercises", { keyPath: "id" });
+      db.createObjectStore("bodyweight", { keyPath: "id" });
+    },
+  });
+  const tx = legacy.transaction("logs", "readwrite");
+  for (const log of logs) tx.objectStore("logs").put(log as never);
+  await tx.done;
+  legacy.close();
+  resetDbConnection();
+}
+
 export async function readRawRecord(
   storeName: "programs" | "logs" | "aliases" | "userExercises",
   id: string,

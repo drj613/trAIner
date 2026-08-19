@@ -18,6 +18,7 @@ import {
   readLogCanonicalIdForName,
   readRawRecord,
   readRawStore,
+  seedLegacyLogs,
   seedVersion9Database,
   seedVersion9Records,
   snapshotNormalizedStores,
@@ -1044,5 +1045,99 @@ describe("v10 migration idempotency (pure helpers)", () => {
       const once = migrateLog(log, context);
       expect(migrateLog(once, context)).toEqual(once);
     }
+  });
+});
+
+describe("DB v7/v8 — malformed legacy logs", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  // The v7 phantom-log check and the v8 kg rescue guard `undefined` but not a
+  // non-array (`log.entries ?? []`) and falsy but not a non-string
+  // (`!set.rawCell`). Since the whole upgrade callback now aborts on any
+  // throw, one such record would otherwise turn every load into a failed
+  // migration — a deterministic wall instead of a net. Each malformed log
+  // below carries completedAt (so v7 keeps it) and performedDate (so v7 has
+  // nothing to backfill), which makes "unchanged" mean byte-identical.
+  const healthyLog = {
+    id: "healthy",
+    programId: "p1",
+    dayId: "d1",
+    performedAt: "2026-05-10T10:00:00.000Z",
+    completedAt: "2026-05-10T11:00:00.000Z",
+    entries: [{ exerciseId: "slot-1", sets: [{ setNumber: 1, rawCell: "10kg x10" }] }],
+  };
+  const malformedLogs: Array<{ name: string; log: Record<string, unknown> }> = [
+    {
+      name: "entries that are not an array",
+      log: { id: "m1", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", performedDate: "2026-05-10", completedAt: "2026-05-10T11:00:00.000Z", entries: "corrupt" },
+    },
+    {
+      name: "a null entry",
+      log: { id: "m2", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", performedDate: "2026-05-10", completedAt: "2026-05-10T11:00:00.000Z", entries: [null] },
+    },
+    {
+      name: "sets that are not an array",
+      log: { id: "m3", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", performedDate: "2026-05-10", completedAt: "2026-05-10T11:00:00.000Z", entries: [{ exerciseId: "slot-1", sets: "corrupt" }] },
+    },
+    {
+      name: "a null set",
+      log: { id: "m4", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", performedDate: "2026-05-10", completedAt: "2026-05-10T11:00:00.000Z", entries: [{ exerciseId: "slot-1", sets: [null] }] },
+    },
+    {
+      name: "a non-string rawCell",
+      log: { id: "m5", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", performedDate: "2026-05-10", completedAt: "2026-05-10T11:00:00.000Z", entries: [{ exerciseId: "slot-1", sets: [{ setNumber: 1, rawCell: 42 }] }] },
+    },
+  ];
+
+  it.each(malformedLogs)("completes the upgrade past a log with $name", async ({ log }) => {
+    await seedLegacyLogs(6, [log, healthyLog]);
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+
+    // The malformed record is passed through untouched...
+    expect(await readRawRecord("logs", log["id"] as string)).toEqual(log);
+    // ...the healthy one alongside it still gets both the v7 performedDate
+    // backfill and the v8 kg rescue...
+    expect(await readRawRecord("logs", "healthy")).toEqual({
+      ...healthyLog,
+      performedDate: "2026-05-10",
+      entries: [{ exerciseId: "slot-1", sets: [{ setNumber: 1, weight: 10, unit: "kg", reps: 10 }] }],
+    });
+    // ...and the migration ran all the way to the v10 block's last statement.
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
+  });
+
+  it("keeps a log whose entries are unreadable rather than deleting it as a phantom", async () => {
+    // No completedAt/skippedAt/notes, so v7's phantom check reaches
+    // log.entries. A truthy non-array is unreadable — something is there and
+    // we cannot parse it — so the log is kept. (Contrast the next test: a
+    // null entry is readable, and demonstrably carries nothing.)
+    const unreadable = { id: "unreadable", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: "corrupt" };
+    await seedLegacyLogs(6, [unreadable]);
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("logs", "unreadable"))
+      .toEqual({ ...unreadable, performedDate: "2026-05-10" });
+  });
+
+  it("still treats a log whose only content is unreadable as a phantom", async () => {
+    // v7 semantics, unchanged: no sets, no notes, no completion or skip
+    // marker means zero information. A null entry carries no information
+    // either, so such a log is still deleted rather than kept.
+    const phantom = { id: "phantom", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: [null] };
+    await seedLegacyLogs(6, [phantom, healthyLog]);
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("logs", "phantom")).toBeUndefined();
+    expect(await readRawRecord("logs", "healthy")).toBeDefined();
   });
 });

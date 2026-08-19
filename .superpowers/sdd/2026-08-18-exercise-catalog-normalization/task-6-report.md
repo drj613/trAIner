@@ -415,3 +415,92 @@ None on the three must-fixes or the cosmetic item — all four were right and on
 ### Untouched, per the coordinator's scoping
 
 `ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2, and the `migrations/v10Identity.ts` extraction (Task 7).
+
+## Fix round 4 — abort and guard every upgrade block
+
+Ruling implemented as given, and I agree with your reasoning over mine: abort alone would have converted a silent partial commit into a deterministic brick for any user holding a malformed log, which is not an improvement. Guards make the abort a net.
+
+### 1. The abort now wraps the whole `upgrade` callback
+
+The v10-only `try` is gone; the entire callback body is wrapped in one `try`/`catch`. All three round-3 subtleties are preserved verbatim: the guarded `tx.abort()` (a failed IDB request aborts its own transaction, so a second `abort()` throws `InvalidStateError` and would mask the real cause), the no-rethrow/`upgradeError` routing (rethrowing adds a second unhandled rejection because idb ignores the callback's promise), and `void tx.done.catch(() => {})` before the abort (idb's cached `done` promise otherwise rejects unobserved).
+
+### 2. Before/after for the older blocks
+
+v7 block, failure injected at its one external call (`localDateOf`), seeded at version 6:
+
+```text
+before:  outcome=resolved                          version=10  performedDate=undefined  hasOverrides=false
+after:   outcome=rejected(injected v7 failure)     version=6   performedDate=undefined  hasOverrides=false
+```
+
+The "before" line is worse than I described last round. The database is stamped **version 10** while `normalizationOverrides` was never created and the v7 backfill never ran — so every later `normalizationOverrideRepo.list()` would fail against a store that does not exist, permanently, with no version left that would ever re-run the migration. After the fix the open rejects with the real cause and the database is untouched at version 6.
+
+v8 block, failure injected at the only global it calls (`parseFloat`, narrowed to the fixture's value), seeded at version 7: same shape — the open now rejects, the version stays at 7, the raw cell is untouched, `normalizationOverrides` does not exist, and a retry with the failure removed migrates to version 10 and rescues the cell.
+
+Both new abort tests fail without the abort with `Received promise resolved instead of rejected` (all four tests in `appDbUpgradeFailure.test.ts` do).
+
+### 3. v7/v8 guards, per site
+
+Only helpers already in the file (`mapArray`, `isRecord`, `isReadableText`) plus one inline `Array.isArray` — no new abstraction:
+
+| Site | Failure before | Guard |
+| --- | --- | --- |
+| v7 phantom check, `log.entries` non-array | `.some is not a function` (only when no completedAt/skippedAt/dayNote/notes short-circuits first) | truthy non-array counts as *unreadable*, so the log has data and is kept |
+| v7 phantom check, null entry element | `Cannot read properties of null (reading 'sets')` | `isRecord(e) && …` |
+| v8 `(log.entries ?? []).map` | `.map is not a function` | `mapArray` |
+| v8 null entry element | `Cannot read properties of null (reading 'sets')` | `isRecord(entry) ? … : entry` |
+| v8 `(entry.sets ?? []).map` | `.map is not a function` | `mapArray` |
+| v8 null set element | `Cannot read properties of null (reading 'weight')` | `isRecord(set)` |
+| v8 `set.rawCell.trim()` | `set.rawCell.trim is not a function` | `isReadableText(set.rawCell)` |
+
+RED first: the six malformed-log cases failed with exactly those TypeErrors before any guard existed (`Tests: 6 failed, 51 passed, 57 total`). Every guard is individually load-bearing — removing them one at a time, restoring the file between runs, fails 1, 1, 2, 1, 1, 1, 1 tests respectively.
+
+One judgement call worth review, because it is a semantic choice and not a mechanical guard: **v7 keeps a log whose `entries` is a truthy non-array, but still deletes one whose only content is a null entry.** A non-array is unreadable — something is stored there and we cannot parse it, so deleting it would be destroying data we never read. A `[null]` element is readable and demonstrably carries nothing, which is exactly the phantom-log definition the v7 block already implements. Both directions are pinned by their own test.
+
+### 4. Healthy behaviour unchanged, and no existing test modified
+
+Every malformed case seeds a healthy log in the same database and asserts it still receives the v7 `performedDate` backfill *and* the v8 kg rescue *and* that the migration reached the v10 block's last statement (the `metrics` canary from round 3). So the guards demonstrably make the abort a net, not a wall.
+
+`git diff 22ba71f --numstat -- src/lib/storage/appDb.test.ts` reports **731 insertions, 1 deletion** across all of Task 6, and that single deletion is the `aliasRepo.save` call that had to gain `provenance` in the original task. **No v5, v7, or v8 test was modified in any round** — the new coverage is additive only, in a new `describe("DB v7/v8 — malformed legacy logs")` block plus two tests in `appDbUpgradeFailure.test.ts`.
+
+### Task 7 input: restore stamps version 10 without ever running the migration
+
+Not fixed here, per your instruction. The mechanism, for Task 7 (spec line 373):
+
+- `restoreBackup` (`src/lib/backup/backup.ts:190`) calls `getDb()`, which opens at `DB_VERSION` and runs the v10 upgrade against whatever is in the stores *at that moment* — then clears and repopulates every user store from the backup file inside its own transaction (`backup.ts:198-217`).
+- So restored records never pass through the v10 migration: the version is already 10, `oldVersion < 10` is false forever, and the restored programs, logs, and aliases keep whatever legacy canonical IDs and unclassified aliases the file carried. The only normalization applied today is the alias `provenance` default I added in the original task (`backup.ts:206-213`).
+- `restoreBackup` is *not* exposed to the silent-partial-commit class, because it awaits its own transaction: a failed `put` aborts and `await tx.done` rejects into the caller.
+- Task 7 therefore needs restore-side classification and redirect rewriting explicitly — the same `migrateProgram` / `migrateLog` / `classifyAliases` helpers this task exported, applied to the incoming document before the restore transaction. That is also the natural moment for the `migrations/v10Identity.ts` extraction you assigned there.
+
+### Gates after fix round 4
+
+```text
+bun run test -- --runInBand
+Test Suites: 93 passed, 93 total
+Tests:       1145 passed, 1145 total   (was 1136; +9)
+
+bun run test -- --runInBand src/lib/storage
+Tests:       130 passed, 130 total
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.68s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```
+
+### Disagreements
+
+None with the ruling. The one thing I want on the record as a decision rather than a mechanism is the keep-vs-delete line in the v7 phantom check described above; if you read it the other way, say so and I will invert it.
+
+### Untouched, per the coordinator's scoping
+
+`ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2, and the `migrations/v10Identity.ts` extraction (Task 7).
