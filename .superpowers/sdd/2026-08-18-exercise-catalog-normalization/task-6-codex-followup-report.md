@@ -188,12 +188,18 @@ notes and tags are covered by construction rather than by whoever remembered to
 list them. The log document gets the same treatment.
 
 Mutation (`migrateProgram` sets `progression: []`): the preservation test fails.
-Honest caveat: 25 malformed-document tests fail on that mutation too, because
-Task 6's malformed cases already use whole-document `toStrictEqual` — so this
-particular mutation was not *completely* uncovered. The gap the brief describes
-is real for the preservation test specifically: its old assertions were
-`toMatchObject` over a hand-listed field set that never mentioned `progression`,
-so it passed for a mutation that destroys it.
+
+**Number corrected in fix round 2.** My first mutation wrote `progression: []`
+unconditionally, which *adds* the key to the malformed fixtures that never had
+one — a key-set change, which the key-set suite catches for reasons that have
+nothing to do with preservation. Re-measured with the key set held constant
+(`...(Array.isArray(program.progression) ? { progression: [] } : {})`), the
+value-only mutation is caught by **exactly one test: the preservation test**
+(1 failed, 255 passed across `src/lib/storage` + `src/lib/backup`). The
+key-set-changing variant fails 30 tests in the same sweep. So the gap the brief
+describes was real and completely uncovered before gap (d): the old assertions
+were `toMatchObject` over a hand-listed field set that never mentioned
+`progression`.
 
 ## Noted only
 

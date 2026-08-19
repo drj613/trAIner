@@ -500,8 +500,12 @@ It left the suite green before.
 a *legacy* alias and failed: `readCanonicalIdForName("Mystery lift")` →
 `undefined`. A legacy alias is only retained when its token already has exactly
 one concrete catalogue outcome — in which case the name resolves without the alias
-— so after v10 **no `legacy-auto` alias can ever be the sole reason a name
-resolves**. Only `remembered` rows can. That is now stated in the test.
+— so a row classified in that pass cannot be what the fixture measures.
+
+**Corrected in fix round 2 — see I-3 there.** I generalised that into "after v10
+no `legacy-auto` alias can ever be the sole reason a name resolves", which is
+false, and the ledger repeated it. The narrow true claim is about rows classified
+in-process, at the moment they are classified.
 
 ## Concurrency with Task 8
 
@@ -571,5 +575,234 @@ some); the 3 remaining failures are theirs.
    colliding `legacy-auto` rows arriving from a file.
 4. **C-4 closing a retired connection** (detailed in the Codex report) — the one
    place I chose to break a caller rather than leak.
+
+DONE
+
+
+---
+
+# Fix round 2
+
+Commits:
+- `1fdacdf` — `fix: scope alias classification by file version, not by row` (m-2 ruling)
+- `00188b3` — `fix: report the real cause when a restore write is rejected` (I-1, I-2, m-4)
+- `c1f25da` — `fix: one alias-token rule, and order collisions by instant` (m-5, m-6, m-1 edges)
+- `4864676` — `test: seed the second store the profile guard is meant to protect` (m-3)
+- `f001285` — `docs: correct the claim that a legacy-auto alias cannot matter` (I-3)
+
+## I-1 — `issue()` threw away the real cause
+
+Fixed with the recipe from `appDb.ts`: the per-request catch keeps
+`writeError ??= error`, and the catch block throws `writeError ?? error`. The
+`?? error` fallback preserves today's behaviour on the synchronous-throw path,
+where no request ever failed.
+
+Mutations:
+- discard the request cause (the previous code): **1 failed, 146 passed** — the
+  new I-2 test.
+- `=` instead of `??=`: **147 passed, 0 failed.** Not a gap, and worth the detail
+  because I went looking for a scenario that would discriminate and measured why
+  none exists. I probed fake-indexeddb directly with a colliding put followed by a
+  put to another store:
+
+  ```
+  PROBE outcomes at catch time: ["failing:ConstraintError"] done:AbortError
+  PROBE outcomes after a tick:  ["failing:ConstraintError","after:AbortError"]
+  ```
+
+  The AbortError rejections of requests queued behind the failing one arrive a
+  tick *after* `tx.done` rejects — so by the time the catch reads `writeError`,
+  nothing has overwritten anything, with `=` or `??=`. I kept `??=` because that
+  ordering is not something to depend on across engines and it costs one
+  character, and I wrote the measurement into the comment so nobody "simplifies"
+  it later on the grounds that a mutation does not catch it.
+
+## I-2 — the asynchronous rejection path on restore
+
+New test `aborts and reports the real cause when a write is rejected
+asynchronously`: patches `IDBObjectStore.prototype.put` for the `aliases` store to
+force two rows onto one `normalizedAlias`, so the second write is rejected by the
+unique index rather than throwing.
+
+RED before I-1: `rejects.toMatchObject({ name: "ConstraintError" })` received
+`AbortError`. The rollback was reporting itself.
+
+The test also carries a `bodyweight` row, written *after* the aliases, so the
+abort rejects a second request too — that is what makes the first-cause-wins
+question observable at all (see the probe above for why it still is not, under
+this engine).
+
+Mutation (drop the `tx.abort()` branch): **1 failed, 146 passed** — the
+rollback assertion.
+
+## I-3 — the false insight, corrected in code and pinned by a test
+
+You are right, and the refutation reproduces. Corrected in three places:
+
+- `appDb.test.ts`, the divergence fixture's comment — now says the redundancy
+  claim is about rows classified *in that pass, at that moment*, and explicitly
+  records that the earlier version claimed otherwise.
+- `v10Identity.ts`, at the outcome gate — a new paragraph states what the gate
+  does **not** establish, gives both mechanisms (a version-2 file's rows are never
+  re-classified under the new scope rule; the resolver consults `context.aliases`
+  before the underspecified check and before catalogue name matching; and
+  regenerating the catalogue does the same to a row retained under an older one),
+  and says in as many words: do not treat "drop every legacy-auto row" at the
+  September 30 removal as safe on the grounds that they cannot matter.
+- this report, above.
+
+Prose is not enough for something a future task will be tempted by, so the
+general case is now a test: `lets a restored legacy-auto alias be the only reason
+a name resolves` restores the same program twice, once with no aliases (slot
+resolves to `undefined`) and once with a `legacy-auto` "Back Squat" row (slot
+resolves to `barbell-back-squat`).
+
+Verified it is load-bearing on the scope rule: forcing v2 files through scope
+`"all"` fails it along with the two other v2 retention tests (**3 failed, 96
+passed**).
+
+## m-2 ruling — classification scoped by file version
+
+`classifyAliases` takes an explicit `AliasClassificationScope`:
+
+- `"all"` — the v10 upgrade and version-1 files. Both predate the provenance
+  field, so a provenance found in one was hand-written and is not evidence that
+  anything classified the row.
+- `"unclassified"` — version-2 files, whose provenance was written by a build that
+  did classify the row.
+- `remembered` is retained under both (spec line 560).
+
+This also closed a second instance of the same hole I had not been asked about:
+the **migration** was reading a hand-planted provenance on a pre-v10 row as
+evidence of classification, since the pre-Task-7 restore wrote alias rows verbatim
+behind a string-id check. That is now `"all"`, restoring Task 6's semantics.
+
+RED: `purges an ambiguous v1 alias carrying a hand-added legacy-auto provenance`
+→ received the retained row. (The unrecognized-provenance variant of that case
+already passed: an unknown value falls through to classification.)
+
+Mutations:
+- row-level rule, ignoring the scope: **3 failed, 163 passed** (v1 smuggling, the
+  migration's hand-planted row, and the pure scope test).
+- restore passes `"unclassified"` for a v1 file: **1 failed, 165 passed**.
+- restore passes `"all"` for a v2 file: **2 failed, 164 passed**.
+- the v10 migration passes `"unclassified"`: **1 failed, 165 passed**.
+
+## m-3 — the vacuous log assertion
+
+The rejected-restore cases now seed a log and assert it survived, instead of
+asserting an empty store is still empty. Mutation (drop the profile validation):
+**3 failed, 95 passed**, where the same mutation previously left that line
+untouched.
+
+## m-4 — `issue` renamed
+
+`issueTransactionWrite`, typed `Promise<IDBValidKey | void>`. Recorded honestly in
+the comment that the type cannot carry the invariant — an `async` validation
+returning `Promise<void>` would still type-check — so the name is what carries it.
+
+## m-5 — `putRaw` aligned with `classifyAliases`
+
+Both now call one exported `aliasLookupToken(alias)`, which returns the token and
+which field it came from, or `undefined` when nothing is usable. `classifyAliases`
+drops those rows; `putRaw` rejects them rather than storing a row `find()` could
+never reach.
+
+RED (restore `putRaw`'s old unguarded `normalizeExerciseName(input.alias)`):
+**3 failed, 12 passed**, with `Received message: "value.toLowerCase is not a
+function"` — the exact row `b1706fc` taught the classifier to recover.
+
+Kept rather than deleted, per the Task 6 brief's interface mandate. Still no
+production callers; it is now at least consistent with the path that has them.
+
+## m-6 — `saveMany`, and a push-back on half of it
+
+Input-shape validation (`assertRememberedInput`) moved before the transaction, so
+a rejected call no longer leaves a readwrite transaction dangling. New test
+asserts no `readwrite` transaction is opened at all for either input-shape error;
+mutation (validate inside the loop again): **2 failed, 15 passed**.
+
+**The conflict check stays inside the transaction, deliberately.** Moving *that*
+out would be a downgrade, not a fix: it needs the stored rows, and a
+read-then-write across two transactions lets a concurrent tab claim the same token
+in between — at which point this write takes a fresh UUID for a token another row
+already holds and the unique index rejects it. That is the write-rejection class
+this whole effort exists to avoid. The current wart is benign by comparison: the
+throw happens after `getAll` and before any `put`, so the transaction commits
+nothing and only a brief readwrite lock is lost. `normalizationOverrideRepo.save`
+is not a counter-example — its pre-transaction read is a *different* store
+(`userExercises`), so it has no read-write race to lose. Reasoning is in the code.
+
+## m-1 edges — both fixed
+
+`winsCollision` compares `Date.parse` instants, not strings: these rows can come
+from a hand-edited file and ISO 8601 permits an offset, so
+`…T23:00:00.000-02:00` sorted before `…T00:00:00.000Z` while being an hour later.
+And an unreadable timestamp now loses to a readable one instead of winning by
+arriving first — no evidence should not outrank evidence.
+
+Two RED tests before the change: `compares createdAt as an instant, not as a
+string` and `prefers the row whose createdAt can be read at all` (**2 failed, 20
+passed**).
+
+## Number corrected from fix round 1
+
+The `progression` claim in `task-6-codex-followup-report.md` is fixed in place.
+Re-measured with the key set held constant, the **value-only** mutation is caught
+by **exactly one test** — the preservation test — so the gap I closed was real and
+was completely uncovered. My earlier "25 malformed-document tests catch it too"
+came from a mutation that wrote `progression: []` unconditionally and therefore
+*added* the key to fixtures that never had one; that key-set-changing variant
+fails 30 tests in the same sweep. Substance held, number did not.
+
+## Gates
+
+```text
+$ bun run test -- --runInBand src/lib/storage src/lib/backup src/lib/catalog
+Test Suites: 18 passed, 18 total
+Tests:       306 passed, 306 total
+
+my lane, individually:
+  backup.test.ts                    49 passed
+  appDb.test.ts                     99 passed
+  migrations/v10Identity.test.ts    22 passed
+  aliasRepo.test.ts                 17 passed
+  appDbConnection.test.ts            4 passed
+  appDbUpgradeFailure.test.ts        6 passed
+
+$ bun run test -- --runInBand           (whole repo)
+Test Suites: 1 failed, 98 passed, 99 total
+Tests:       3 failed, 1333 passed, 1336 total
+
+$ bun run typecheck
+(clean)
+
+$ bun run lint
+(clean)
+
+$ bun run build
+✓ built in 2.16s   (only the pre-existing >500 kB chunk advisory)
+
+$ git diff --check
+(clean)
+```
+
+The one failing suite is `src/components/import/ImportClient.remember.test.tsx`
+(3 tests) — the import agent's lane, attributed by filename and not touched.
+Typecheck and lint were both dirty from that lane mid-round and are clean again
+now; nothing in my lane contributed to either.
+
+## What a reviewer should scrutinise most, this round
+
+1. **The scope rule's third caller** — I applied `"all"` to the v10 upgrade,
+   which is a behaviour change beyond the ruling's letter (it restores Task 6
+   semantics for a hand-planted provenance on a pre-v10 row). Argued in the commit
+   message and pinned by a test; worth confirming it is wanted.
+2. **`saveMany`'s conflict check staying inside the transaction** — the one place
+   I declined half a minor, with reasoning above.
+3. **`??=` in `issueTransactionWrite`** — kept although no mutation catches it,
+   with the probe measurement recorded as the reason.
+4. **The I-3 test** — whether restoring the same document twice in one test is
+   the clearest way to show the alias is the sole cause.
 
 DONE
