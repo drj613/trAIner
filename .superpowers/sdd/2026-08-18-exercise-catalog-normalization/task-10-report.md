@@ -364,3 +364,376 @@ What a reviewer should scrutinise most in this round:
 2. **The assign refusal** — refusing is a product decision. The alternative was to drop the alias and write the override, which honours the click but destroys a remembered mapping the user never offered up.
 3. **The post-write verification's falsifiability** — it is killed only by a fault-injected `removeMany` that resolves without deleting (F4). That injection is legitimate (it reproduces a concurrent re-occupier's end state) but it is an injection, not a natural path.
 4. **`I1`'s numbers** — 10 preview rows and collapsed-by-default are judgement, not measurement. The measurement is only that 142/3,175 entries carry a movement.
+
+---
+
+# Fix round 2
+
+Answering `task-10-review-2.md` (NEW-1 … NEW-5) plus Task 9's N1, and the
+controller's mid-round empty-token hazard. Started from the six RED tests the
+previous agent left uncommitted; inherited them critically, as instructed.
+
+Commits, in order:
+
+| SHA | What |
+|---|---|
+| `eb74798` | Item 2 — drop the unfalsifiable verbatim alias-token comparison |
+| `dc154cf` | Item 1 + 3 + 5 — key name corrections on the resolver's token; write order; copy |
+| `1701427` | Item 1 (import half) — the same keying for `Remember this interpretation` |
+| `0ca5499` | Controller's hazard — refuse an annotation-only name in plain words |
+| `1671076` | Simplification found while mutation-testing — derive the token in one place |
+| `a62c8e4` | Self-review tidy — memo key, stray blank line |
+
+## Critical assessment of the six inherited tests
+
+All six were RED, and five were RED for the right reason. Measured baseline
+before I touched anything: **6 failed / 25 passed** across the two catalog
+suites, matching the controller's own reading. Real error text:
+
+```
+● keys an assigned annotated name on the token the resolver reads
+    expect(received).toBe(expected)
+    Expected: "squat"
+    Received: undefined
+    > 425 | expect((await resolveStoredName(annotatedName)).movementId).toBe("squat");
+
+● keys a mapped annotated name on the resolver's token but keeps the user's words
+    Expected: "barbell-high-bar-squat"
+    Received: undefined
+    > 445 | expect((await resolveStoredName(annotatedName)).concreteExerciseId).toBe(...)
+
+● refuses to correct a name that offers a choice of exercises
+    TestingLibraryElementError: Unable to find an accessible element with the role "alert"
+
+● leaves an alias stored on a token the resolver never reads alone
+    > 499 | expect(await screen.findByRole("status")).toHaveTextContent("Saved");
+    (the alert on screen read: “3 second paused Hatfield Squat” is mapped to
+     High Bar Back Squat. — i.e. a refusal blocking a correction the user is
+     entitled to make)
+
+● keeps the remembered mapping when the standalone override write is rejected
+    expect(received).toBeDefined()
+    Received: undefined
+    > 527 | expect(await aliasRepo.find("Hatfield Squat")).toBeDefined();
+
+● returns an alias-governed name to standalone by dropping the alias   [modified, not new]
+    Expected: Saved — returned to standalone; the mapping to High Bar Back Squat was removed.
+    Received: Saved — returned to standalone.
+```
+
+Every one of those asserts against **storage or the DOM**, not against a spy, so
+none of them can pass by the sheet merely claiming success. Three things I found
+and changed:
+
+1. **The sixth test was never RED, and it is not in the sheet suite.**
+   `does not collapse two entries that share a name but not a canonical id`
+   (NEW-3) passed from the start, because the shipped cache key was already
+   correct — NEW-3 was a *test gap*, not a bug. The sixth failure in the 6/25
+   baseline is the previous agent's edit to the existing clearing test. I kept
+   the test and proved it earns its place by mutation instead of by RED: **R13**
+   (drop `canonicalExerciseId` from `resolutionCacheKey`) went from surviving
+   25/25 in the review to **1 failed / 30 passed**.
+
+2. **`leaves an alias stored on a token the resolver never reads alone` had a
+   fixture that my own fix would have invalidated.** It built the "old build"
+   row with `aliasRepo.save`, which is the path I was about to re-key — so after
+   the fix the fixture would have stored a *stripped* token and the test would
+   have failed on its own canary rather than on the behaviour. Changed to
+   `aliasRepo.putRaw`, which is the restore/migration path and derives the token
+   from display text, so the fixture models a legacy row no matter what `save`
+   keys on. Added an assertion that the planted row really holds the unstripped
+   token.
+
+3. **The governing-alias comparison was only half covered.** Mutation **M-F**
+   (compare on `normalizeExerciseName(target.value)`) killed only the
+   false-*refusal* direction. The false-*success* direction — an alias that
+   really governs an annotated name, missed, so an assignment is written and
+   reported as saved — had no test. Added
+   `refuses to assign a movement while an alias governs another spelling of the
+   name`: the mapping is made for the 3-second variant and the sheet is opened
+   on the 5-second one. M-F now kills **2**.
+
+Everything else in the six I kept as written; the canary helper
+`expectAnnotationIsStripped` is the right shape and guards against the shipped
+disambiguation artifact changing under the lane (it did change under me — the
+catalogue agent edited `importDisambiguations.generated.json` mid-round).
+
+## Item 1 — NEW-1, the token keying (CRITICAL)
+
+Implemented the ruling: corrections key on
+`prepareImportName(value, disambiguations).normalizedName`.
+
+**Approach, and why it differs from the shape the ruling sketched.** The ruling
+suggested letting a caller supply the lookup token while `alias` keeps the
+display text. I built that first, then removed it, and the reason is measured:
+mutation **M-O** (drop the sheet's explicit `normalizedAlias`) killed 2 tests —
+but *only* spy-argument assertions, because `aliasRepo` derives the identical
+token from `alias` anyway. An optional field that no input needs is one more way
+for two surfaces to key one name differently, which is the defect being
+removed. So the derivation lives in **one** place, `rememberedAliasToken` in
+`aliasRepo.ts`, and both writers get it whether or not they think about it. Both
+of the ruling's constraints hold:
+
+- **No schema change, no unique-index change, no migration.**
+  `by-normalized-alias` is still the only unique index, still no
+  `IDBObjectStore.add()` anywhere. `putRaw` is untouched, so restored and
+  migrated rows keep `aliasLookupToken`'s rule and resolve exactly as before —
+  only NEW writes key differently.
+- **Display text preserved.** `alias` is stored verbatim; the token never
+  passes through it. Pinned by
+  `keys a mapped annotated name on the resolver's token but keeps the user's
+  words`, which asserts both fields.
+
+Also re-keyed, all three siblings the review named:
+`overrideTargetFor`'s `targetValue`; `governingAliases`, now byte-for-byte
+`identity.ts:283-286`'s comparison; the post-write `aliasRepo.find` check; and
+the map path's override-cleanup key.
+
+**`reject-alternative` refuses**, in the same style as the C2 refusal, and it is
+said *up front* on render rather than after a click that pretends to work:
+
+> “Hatfield Squat or Lunge” names more than one exercise, so there is no single
+> identity to correct. Change the name in the program or log to the one exercise
+> you did.
+
+**The one permitted line in `resolution.ts` was not enough, and I took three.**
+Reported loudly rather than folded in. With the token derived inside `aliasRepo`
+the alias *construction* at line 204 needed no change at all — but two
+comparison keys in the same file did, and leaving them would have been worse
+than the bug:
+
+- `dedupeAliasResolutions`' key: two duration variants of one name now share a
+  stored token, so keying them apart hands `saveMany` two answers for one unique
+  index key. It rejects the **whole batch** — taking every unrelated alias in the
+  same import with it. Keyed on the stored token, the conflict is dropped where
+  the function already drops conflicts.
+- `rememberedAliasConflicts`' input key: same reason, across imports rather than
+  within one.
+
+I also had to move the helper. My first version imported `rememberedAliasToken`
+from `aliasRepo` into `resolution.ts`; that broke five tests in
+`ImportClient.remember.test.tsx`, whose `jest.mock("@/lib/storage/aliasRepo")`
+exports only `aliasRepo`. Rather than edit a file outside my lane I gave
+`resolution.ts` its own two-line `storedAliasToken` built from the catalogue
+primitives, which is better anyway: a pure-rules module should not drag
+IndexedDB into its import graph, and the shared rule is `prepareImportName`
+itself, not a wrapper. **Finding for the held Task 9 round:** that mock is the
+same booby trap the controller already ruled on for `ImportClient.test.tsx` — it
+will throw for the next person who adds an export.
+
+## Item 2 — Task 9's N1, the dead superset
+
+**Verified the reviewer's idempotence premise myself before deleting anything**,
+as instructed. Throwaway probe, run and deleted: `normalizeExerciseName` is
+idempotent on **200,003 inputs** — 200k pseudo-random strings over
+`" aA0'’-_/.()#é\t\n%"`, plus every catalogue name and alias, plus every
+disambiguation rule token. `NORM non-idempotent count: 0`. The reviewer is
+right: the renormalized rule was already the superset and the verbatim half
+could not differ for any input. Removed `occupiedAliasTokens`, inlined the
+renormalized comparison, deleted the vacuous test (fixture `"back squat"`
+renormalizes to itself, so it asserted nothing).
+
+**Coherence with Item 1, stated plainly.** The operative rule is unchanged:
+`resolveName` *re-normalizes the stored token* (`identity.ts:285`); it does not
+run `prepareImportName` over stored rows. Item 1 changes what a NEW write puts
+*in* that token, not how the token is read. So the two sides of
+`rememberedAliasConflicts` are compared by deliberately different rules, and the
+docblock now says so: a stored row is re-normalized; an input holds raw text and
+goes through `storedAliasToken`.
+
+The catalogue lane independently measured `prepareImportName(...).normalizedName`
+to be a fixed point over 36,040 probes, which is the other half of the same
+question and is recorded in the code comments.
+
+## Item 3 — NEW-2, write order
+
+Override first, alias delete second, with **conditional** suppression:
+
+```ts
+const clearsAlias = governingAliases.length > 0;
+if (clearsAlias) {
+  await normalizationOverrideRepo.save(input, { dispatch: false });
+  await aliasRepo.removeMany(governingAliases.map((alias) => alias.id));
+} else {
+  await normalizationOverrideRepo.save(input);
+}
+```
+
+A rejected override write now leaves the mapping intact and the failure visible.
+On the write-rejection question the review asked about: neither call can hit a
+`ConstraintError` — `removeMany` only deletes, and `normalizationOverrideRepo`
+`put`s on a non-indexed primary key.
+
+## Item 4 — NEW-3, and Item 5 — NEW-4 / NEW-5
+
+NEW-3 closed by R13 above. NEW-4: the clearing test now counts events, and
+**M-J** kills it. NEW-5: the standalone success line names what it discarded —
+`Saved — returned to standalone; the mapping to High Bar Back Squat was
+removed.` I chose *announce* over *confirm*: a second confirmation on the only
+control that undoes a mapping would be friction on the recovery path, whereas
+the asymmetry the review objected to is really that the destructive action was
+*silent*. Naming it removes the asymmetry without adding a gate. Minor copy
+taken too — the assign refusal now names `Map to an existing exercise`.
+
+## The controller's mid-round hazard — the empty token
+
+**1. Confirmed, by probe rather than by reading, that no row can be written and
+no `ConstraintError` can occur.**
+
+```
+{"n":"Competition","plain":"competition","prepared":"","alt":false}
+{"n":"Pain Free","plain":"pain free","prepared":"","alt":false}
+{"n":"or","plain":"or","prepared":"","alt":true}
+{"n":"!!!","plain":"","prepared":"","alt":false}
+{"n":"To A Pain Free Depth","plain":"to a pain free depth","prepared":"","alt":false}
+override validate: Error: Normalization override target cannot be empty | key: "normalized-name:"
+alias saveMany: Error: Alias cannot be empty | rows: 0
+```
+
+Both guards fire **before** their transaction opens (`validateOverrideTarget:83`
+runs inside `save` after read-only work; `assertRememberedInput` runs at
+`saveMany`'s first statement, before `db.transaction`). Two empty-token names in
+one `saveMany` batch left **0 rows**. Every write in `src/` is a `put`, so even a
+shared key upserts rather than rejecting. Note also that a punctuation-only name
+already normalized to `""` before this round, so the class is pre-existing and my
+change widens it from "punctuation only" to "six phrase tokens as well".
+
+**2. Made it an honest refusal.** The user saw `Normalization override target
+cannot be empty`, which reads as a broken app. Now:
+
+> “Competition” leaves no exercise name once its annotations are set aside, so
+> there is nothing here to correct. Change the name in the program or log to the
+> exercise you did.
+
+**3. Tested.** `refuses to correct a name that is nothing but an annotation`
+drives both actions and asserts zero rows in *both* stores. RED evidence:
+
+```
+Expected element to have text content: no exercise name
+Received: Normalization override target cannot be empty
+```
+
+## Mutation evidence — every count beside its exact mutation
+
+All applied to the shipped file, run, restored from a pre-mutation copy,
+`shasum`-verified. Final restored hashes: `ExerciseCorrectionSheet.tsx`
+`0956ded5…`, `LibraryClient.tsx` `8d93be41…`, `aliasRepo.ts` `ca1c9497…`,
+`resolution.ts` `f157c3ef…`. Scope for the sheet/alias rows is
+`src/components/catalog` + `aliasRepo.test.ts` (52 tests) unless noted; the
+`aliasRepo`/`resolution` rows add `src/lib/import` (250 tests).
+
+| # | Exact mutation | Result |
+|---|---|---|
+| M-A | `rememberedAliasConflicts` stored key `normalizeExerciseName(row.normalizedAlias)` → `row.normalizedAlias` | 2 failed / 248 — `compares normalized tokens, not display text`, `treats a stored token that only matches after normalizing as occupied` |
+| M-B | `assertRememberedInput` token `rememberedAliasToken(input.alias)` → plain normalize | **5 failed / 245** — `keys a mapped annotated name…`, `refuses to assign a movement while an alias governs another spelling…`, `upserts by normalizedAlias…`, `stores a new alias under the token the resolver looks it up by`, `collapses two duration variants…` |
+| M-C | `dedupeAliasResolutions` key `storedAliasToken` → plain normalize | 2 failed / 248 — `collapses two duration variants of one name and refuses to pick a winner`, `remembers one duration variant as the whole name, once` |
+| M-D | `rememberedAliasConflicts` input key `storedAliasToken` → plain normalize | 1 failed / 249 — `sees a stored row occupying an annotated name's resolver token` |
+| M-E | `overrideTargetFor` `targetValue: lookupToken` → `target.value` | 4 failed / 48 — `assigns and clears name-only targets`, `returns an alias-governed name to standalone…`, `keys an assigned annotated name…`, `leaves an alias stored on a token the resolver never reads alone` |
+| M-F | `governingAliases` compared on `normalizeExerciseName(target.value)` | 2 failed / 50 — `refuses to assign a movement while an alias governs another spelling…` (false success), `leaves an alias stored on a token the resolver never reads alone` (false refusal) |
+| M-G2 | `unaddressable`'s `hasAlternative` branch condition → `false` | 1 failed / 51 — `refuses to correct a name that offers a choice of exercises` |
+| M-G3 | `unaddressable`'s empty-token branch condition → `false` | 1 failed / 51 — `refuses to correct a name that is nothing but an annotation` |
+| M-H | alias delete moved back BEFORE the override write (the NEW-2 defect, ex-`R7b`) | **2 failed / 50** — `returns an alias-governed name to standalone…`, `keeps the remembered mapping when the standalone override write is rejected` (was 25/25 SURVIVING) |
+| M-J | `save(input, { dispatch: false })` → `save(input)` on the clearing path (ex-`R8`) | **1 failed / 51** — `returns an alias-governed name to standalone…` (was 25/25 SURVIVING) |
+| M-M | suppression applied unconditionally (the naive form the review measured as `R7`) | 5 failed / 47 — three assign tests, `keys an assigned annotated name…`, and `regroups live after a correction, without reloading logs` |
+| M-K | standalone success line stops naming the discarded mapping | 1 failed / 51 — `returns an alias-governed name to standalone…` |
+| M-N | assign refusal copy stops naming `Map to an existing exercise` | 1 failed / 51 — `refuses to assign a movement while an alias governs the name` |
+| M-Q | `aliasRepo.find` token → plain normalize | 2 failed / 248 — `leaves an alias stored on a token the resolver never reads alone`, `upserts by normalizedAlias…` |
+| M-R | `if (!normalizedAlias) throw new Error("Alias cannot be empty")` → `if (false)` | 1 failed / 249 — `saveMany rejects an alias that normalizes to nothing before opening a write transaction` (pre-existing test; the empty-token guard was already pinned) |
+| R13 | `resolutionCacheKey` drops `canonicalExerciseId` | **1 failed / 249** — `does not collapse two entries that share a name but not a canonical id` (was 25/25 SURVIVING) |
+
+### Survived, published as a gap rather than claimed as coverage
+
+- **M-I** — post-write check `aliasRepo.find(lookupToken)` → `find(target.value)`:
+  **33 passed / 33, survives.** Unfalsifiable **by construction**: `find` derives
+  the token itself, so both arguments produce the same index key. Per the
+  standing rule I removed the redundancy rather than keeping it — the call now
+  reads `find(target.value)`, and the rule it depends on is pinned by M-Q.
+- **M-O** — sheet stops supplying `normalizedAlias`: killed 2, but *only*
+  spy-argument assertions, since `aliasRepo` derives the same token. Treated as
+  redundant rather than as coverage, and the field was deleted (`1671076`).
+
+## Gates — real output at `a62c8e4`
+
+```
+$ bun run test -- --runInBand
+Test Suites: 103 passed, 103 total
+Tests:       1493 passed, 1493 total
+Time:        29.563 s
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json   (no output)
+
+$ bun run lint
+$ eslint .   (no output)
+
+$ bun run build
+✓ built in 1.97s        (only Vite's known large-chunk advisory)
+
+$ git diff --check      (no output)
+
+$ bun run test:e2e
+93 passed (1.6m)
+```
+
+Baseline was 102 suites / 1,429 tests; the count moved because three lanes were
+writing concurrently. **Foreign failures were attributed by filename, never
+assumed.** Mid-round I saw 22 failures in `src/lib/workout/historyUtils.test.ts`
+and `historyProjection.test.ts`; `git status` showed both files modified by the
+Task 12 re-review agent, they failed in isolation with only their own files
+dirty, and that agent has since landed `e07d8fa`/`acc61c2`/`d956791` and they are
+green. The catalogue agent's edits to
+`src/lib/catalog/importDisambiguations.generated.json` land inside my fixtures'
+blast radius, which is exactly why `expectAnnotationIsStripped` exists.
+
+**Flake checks.** All eight write-path tests run in isolation via `-t`:
+`1 passed / 22 skipped` each. Four runs of the three affected lanes at
+`--maxWorkers=24`: `250 passed` every time. No timeout was changed anywhere, and
+I did not reproduce the previously disclosed `renderSheet` GC-pause flake.
+
+## Self-review findings (fixed in `a62c8e4`)
+
+- The `prepared` memo keyed on the `target` object, so a parent building the
+  target inline would rebuild ten regexes on every keystroke in the version
+  filter. Re-keyed on the name string.
+- A stray double blank line where `occupiedAliasTokens` was removed.
+
+## Deferred, with reasoning
+
+- **`Remember this interpretation` on an alternatives (`or`) name still stores a
+  row that can never be read.** Same lie class as NEW-1, on Task 9's surface.
+  `dedupeAliasResolutions` could skip it in one line, but that trades a silent
+  dead row for a silently-absent mapping; the honest fix needs a line of copy in
+  `ImportClient.tsx` telling the user why the tick did not stick, and
+  `src/components/import/**` is explicitly not my lane. Handing it to the held
+  Task 9 round with the `ImportClient.remember.test.tsx` mock finding.
+- **`correctionTargetKey` still keys review rows on the unstripped token**, so
+  `3 second paused X` and `5 second paused X` list as two rows. Left alone
+  deliberately: it is self-consistent, because correcting either one clears both
+  from the queue on the next derivation, and merging them would need a
+  disambiguation map that the pure key function does not have.
+- **An annotation-only name still produces a `Needs review` row** the user can
+  only resolve by renaming. That is honest rather than hidden, and the refusal
+  says what to do; hiding such rows is the option the review's NEW-1 (c)
+  described and the ruling rejected.
+
+## Status
+
+**DONE**
+
+Commits `eb74798`, `dc154cf`, `1701427`, `0ca5499`, `1671076`, `a62c8e4`.
+Gates: 103 suites / 1,493 tests / 0 failures; typecheck, lint, build,
+`git diff --check` clean; e2e 93 passed.
+
+What a reviewer should scrutinise most:
+
+1. **The decision to derive the token inside `aliasRepo` rather than at the call
+   site**, which is a deviation from the shape the ruling sketched. It makes the
+   repository catalogue-aware, and it silently changes the key for any future
+   caller of `save`/`saveMany`/`replaceRemembered`.
+2. **The three lines taken in `resolution.ts` beyond the one permitted**, and
+   whether the whole-batch-rejection argument for them holds.
+3. **M-I and M-O**, the two redundancies I removed on the strength of a surviving
+   mutation — check I removed the right one each time.
+4. **The empty-token refusal's reachability claim**: I assert both stores refuse
+   before any transaction opens. That is the write-rejection question, and it is
+   the class that bricked this database once.
