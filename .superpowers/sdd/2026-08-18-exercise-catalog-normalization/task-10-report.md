@@ -383,6 +383,7 @@ Commits, in order:
 | `0ca5499` | Controller's hazard — refuse an annotation-only name in plain words |
 | `1671076` | Simplification found while mutation-testing — derive the token in one place |
 | `a62c8e4` | Self-review tidy — memo key, stray blank line |
+| `435d2fb` | Item 4 — the NEW-3 cache-key test (see the self-review note below) |
 
 ## Critical assessment of the six inherited tests
 
@@ -696,6 +697,14 @@ I did not reproduce the previously disclosed `renderSheet` GC-pause flake.
   target inline would rebuild ten regexes on every keystroke in the version
   filter. Re-keyed on the name string.
 - A stray double blank line where `occupiedAliasTokens` was removed.
+- **`LibraryClient.test.tsx` was still uncommitted** after the report went in —
+  the NEW-3 test, the one inherited test that was never RED, so no gate run ever
+  reminded me of it. Landed as `435d2fb`. Worth recording: atomic commits caught
+  everything except the file whose tests were green from the start.
+- One e2e run reported `31 passed, 35 did not run` with
+  `net::ERR_CONNECTION_REFUSED at http://localhost:5173`. Infrastructure, not
+  code: I had backgrounded it while other lanes were also driving Playwright on
+  the shared dev-server port. Re-run serially at the final tree: **93 passed**.
 
 ## Deferred, with reasoning
 
@@ -720,7 +729,8 @@ I did not reproduce the previously disclosed `renderSheet` GC-pause flake.
 
 **DONE**
 
-Commits `eb74798`, `dc154cf`, `1701427`, `0ca5499`, `1671076`, `a62c8e4`.
+Commits `eb74798`, `dc154cf`, `1701427`, `0ca5499`, `1671076`, `a62c8e4`,
+`435d2fb`.
 Gates: 103 suites / 1,493 tests / 0 failures; typecheck, lint, build,
 `git diff --check` clean; e2e 93 passed.
 
