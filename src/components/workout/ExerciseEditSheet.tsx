@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
+import {
+  ExerciseCorrectionSheet,
+  type CorrectionTarget,
+} from "@/components/catalog/ExerciseCorrectionSheet";
 import type { ProgramExercise } from "@/lib/programs/types";
 
 type Props = {
@@ -9,7 +14,38 @@ type Props = {
   error?: string | null;
 };
 
+/**
+ * The identity half of editing an exercise, kept behind a click.
+ *
+ * Two reasons it is its own component rather than part of the form. It is the
+ * shared correction sheet, not a second set of identity controls wedged between
+ * sets and reps — the spec is explicit that the editor links rather than
+ * duplicates. And it is the only part of this sheet that needs the
+ * normalization context, so mounting it on demand keeps the plain editor
+ * renderable without a provider.
+ */
+function IdentityCorrection({ exercise, onClose }: { exercise: ProgramExercise; onClose: () => void }) {
+  const { resolve, context } = useExerciseNormalization();
+  // Same rule the library's `Needs review` uses: correct the concrete exercise
+  // when the resolver found one, and the text otherwise. A slot id is not a
+  // name and is never offered as a correction target.
+  const concreteId = resolve({
+    kind: "stored-exercise",
+    canonicalExerciseId: exercise.canonicalExerciseId,
+    slotId: exercise.id,
+    performedName: exercise.name,
+  }).concreteExerciseId;
+  const isUserExercise = concreteId !== undefined
+    && context.userExercises.some((candidate) => candidate.id === concreteId);
+  const target: CorrectionTarget = concreteId
+    ? { kind: isUserExercise ? "user-exercise" : "catalog-exercise", exerciseId: concreteId, name: exercise.name }
+    : { kind: "normalized-name", value: exercise.name };
+
+  return <ExerciseCorrectionSheet target={target} onClose={onClose} />;
+}
+
 export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
+  const [correcting, setCorrecting] = useState(false);
   const [sets, setSets] = useState<string>(exercise.sets?.toString() ?? "");
   const [reps, setReps] = useState<string>(exercise.reps ?? "");
   const [load, setLoad] = useState<string>(exercise.load ?? "");
@@ -84,6 +120,15 @@ export function ExerciseEditSheet({ exercise, onSave, onClose, error }: Props) {
         <button type="button" className="button w-full mt-3" onClick={submit}>
           Save
         </button>
+        <div className="mt-3">
+          {correcting ? (
+            <IdentityCorrection exercise={exercise} onClose={() => setCorrecting(false)} />
+          ) : (
+            <button type="button" className="btn ghost" onClick={() => setCorrecting(true)}>
+              Change movement or modifiers
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
