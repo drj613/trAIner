@@ -9,7 +9,7 @@ import {
   setVolume,
   setWeightInLb,
 } from "./historyUtils";
-import type { WorkoutLogDocument } from "@/lib/programs/types";
+import type { WorkoutLogDocument, WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
 
 const logs: WorkoutLogDocument[] = [
   {
@@ -296,5 +296,68 @@ describe("formatSetLabel", () => {
 
   it("ignores a blank rawCell and falls through to numeric formatting", () => {
     expect(formatSetLabel({ setNumber: 1, weight: 60, reps: 10, rawCell: "" })).toBe("60x10");
+  });
+});
+
+// ─── Unreadable values inside one set record ─────────────────────────────────
+
+describe("unreadable set fields", () => {
+  // `src/lib/storage/appDb.ts:186-195` never inspects the fields of a set
+  // record, so whatever a hand-edited or foreign backup put there is preserved
+  // verbatim and reaches this module. The absent-vs-unreadable line is the
+  // settled one (`unreadableValue`,
+  // `src/lib/storage/migrations/v10Identity.ts:158`): absent means nothing was
+  // recorded, anything else that is not the type we expected is unreadable and
+  // must never remove readable data from view.
+  const shapes: [string, unknown][] = [["a number", 7], ["an object", {}], ["an array", [1]]];
+
+  it.each(shapes)("counts a set whose rawCell is %s as recorded work", (_label, rawCell) => {
+    expect(setHasData({ setNumber: 1, rawCell } as unknown as WorkoutSetLog)).toBe(true);
+  });
+
+  it.each(shapes)("counts a set whose notes is %s as recorded work", (_label, notes) => {
+    expect(setHasData({ setNumber: 1, notes } as unknown as WorkoutSetLog)).toBe(true);
+  });
+
+  it.each(shapes)("gives an unreadable rawCell (%s) no verbatim label", (_label, rawCell) => {
+    expect(formatSetLabel({ setNumber: 1, rawCell } as unknown as WorkoutSetLog)).toBe("");
+  });
+
+  it.each(shapes)(
+    "still labels the readable weight and reps beside an unreadable rawCell (%s)",
+    (_label, rawCell) => {
+      expect(
+        formatSetLabel({ setNumber: 1, rawCell, weight: 200, reps: 5 } as unknown as WorkoutSetLog),
+      ).toBe("200x5");
+    },
+  );
+
+  // Absent is not unreadable: a set with nothing in it stays not-recorded.
+  it("leaves an absent rawCell or notes as nothing recorded", () => {
+    expect(setHasData({ setNumber: 1, rawCell: undefined, notes: undefined })).toBe(false);
+    expect(setHasData({ setNumber: 1, rawCell: null, notes: null } as unknown as WorkoutSetLog))
+      .toBe(false);
+  });
+
+  it("keeps an unreadable weight or reps from turning a readable volume into NaN", () => {
+    expect(setWeightInLb({ setNumber: 1, weight: {} } as unknown as WorkoutSetLog)).toBe(0);
+    expect(setVolume({ setNumber: 1, weight: {}, reps: 5 } as unknown as WorkoutSetLog)).toBe(0);
+    expect(setVolume({ setNumber: 1, weight: 100, reps: {} } as unknown as WorkoutSetLog)).toBe(0);
+    // The readable set's volume must survive the corrupt one beside it.
+    expect(entryVolumeLb({
+      exerciseId: "a",
+      sets: [
+        { setNumber: 1, weight: {}, reps: 5 },
+        { setNumber: 2, weight: 100, reps: 5 },
+      ],
+    } as unknown as WorkoutLogEntry)).toBe(500);
+  });
+
+  // A numeric string is what a coercing writer leaves behind and `weight * 1`
+  // has always read it as a number; the guard must not silently zero it.
+  it("still reads a numeric string weight the way multiplication always did", () => {
+    expect(setWeightInLb({ setNumber: 1, weight: "60" } as unknown as WorkoutSetLog)).toBe(60);
+    expect(setVolume({ setNumber: 1, weight: "60", reps: "10" } as unknown as WorkoutSetLog))
+      .toBe(600);
   });
 });

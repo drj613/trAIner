@@ -74,3 +74,76 @@ describe("shared projection boundary", () => {
     });
   });
 });
+
+// ─── Unreadable stored shapes ────────────────────────────────────────────────
+
+describe("aggregateLogs on logs it cannot fully read", () => {
+  // The shipped all-time History page renders straight from this function, so a
+  // throw here means the user sees no history at all — the worst outcome in a
+  // local-first app, where IndexedDB holds their only copy.
+  // `src/lib/storage/appDb.ts:186-195` preserves every shape below on purpose.
+  const goodLog: WorkoutLogDocument = {
+    id: "l-good", programId: "p1", dayId: "d1",
+    performedAt: "2026-06-01T14:00:00.000Z", performedDate: "2026-06-01",
+    entries: [{
+      exerciseId: "bench", exerciseName: "Bench", sets: [{ setNumber: 1, weight: 135, reps: 5 }],
+    }],
+  };
+  const badLog = (over: Record<string, unknown>): WorkoutLogDocument => ({
+    id: "l-bad", programId: "p1", dayId: "d1",
+    performedAt: "2026-06-02T14:00:00.000Z", performedDate: "2026-06-02", ...over,
+  } as unknown as WorkoutLogDocument);
+
+  it.each([
+    ["entries is undefined", badLog({})],
+    ["entries is null", badLog({ entries: null })],
+    ["entries is a string", badLog({ entries: "corrupt" })],
+    ["entries holds null", badLog({ entries: [null] })],
+    ["an entry's sets is a string", badLog({ entries: [{ exerciseId: "a", sets: "corrupt" }] })],
+    ["an entry's sets is undefined", badLog({ entries: [{ exerciseId: "a" }] })],
+    ["an entry's sets holds null", badLog({ entries: [{ exerciseId: "a", sets: [null] }] })],
+    ["performedDate is a number", badLog({
+      performedDate: 7,
+      entries: [{ exerciseId: "a", sets: [{ setNumber: 1, weight: 1, reps: 1 }] }],
+    })],
+  ])("still lists the readable workout when %s", (_label, bad) => {
+    const summaries = aggregateLogs([bad, goodLog]);
+    const bench = summaries.find((s) => s.exerciseId === "bench");
+    expect(bench).toMatchObject({
+      name: "Bench", sessions: 1, lastDate: "06/01", best: "135×5", volumes: [675],
+    });
+    // No phantom row invented from a log we cannot read. Without this, iterating
+    // a string `entries` walks its characters and yields a summary with no id.
+    expect(summaries.map((s) => s.exerciseId as string | undefined)).not.toContain(undefined);
+  });
+
+  it("shows a placeholder rather than a blank cell when the date is unreadable", () => {
+    // A blank date reads as a rendering bug and invites the user to delete real
+    // data; "—" says plainly that we have nothing to show there.
+    const summaries = aggregateLogs([badLog({
+      performedDate: 7,
+      entries: [{ exerciseId: "a", exerciseName: "Mystery", sets: [{ setNumber: 1, reps: 5 }] }],
+    })]);
+    expect(summaries[0].lastDate).toBe("—");
+  });
+
+  it("keeps the readable sets of an entry that also holds an unreadable one", () => {
+    const summaries = aggregateLogs([badLog({
+      entries: [{
+        exerciseId: "a", exerciseName: "Mystery",
+        sets: [{ setNumber: 1, weight: 100, reps: 5 }, null],
+      }],
+    })]);
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]).toMatchObject({ lastSets: ["100×5"], best: "100×5", volumes: [500] });
+  });
+
+  it("names a row from an unreadable exercise name as text rather than throwing it away", () => {
+    const summaries = aggregateLogs([badLog({
+      entries: [{ exerciseId: "slot-7", exerciseName: 7, sets: [{ setNumber: 1, reps: 5 }] }],
+    })]);
+    expect(summaries).toHaveLength(1);
+    expect(typeof summaries[0].name).toBe("string");
+    expect(summaries[0].name).toBe("slot-7");
+  });
+});

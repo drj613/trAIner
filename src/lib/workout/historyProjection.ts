@@ -30,6 +30,7 @@ import {
   entryVolumeLb,
   formatSetLabel,
   readableSets,
+  setReps,
   textOf,
   readableEntries,
   setVolume,
@@ -220,11 +221,18 @@ function compareRowsChronologically(left: ExerciseHistoryRow, right: ExerciseHis
  * `BWx5` as better than `BWx8`. Load is compared in pounds so a kg set is not
  * read as lighter than its raw number suggests. Falling through to the earliest
  * set keeps the result deterministic for genuinely identical sets.
+ *
+ * Every clause reads through `historyUtils`' numeric guard, so an unreadable
+ * stored weight or reps cannot make a clause `NaN`. It mattered: `a || b || c`
+ * returns `c` when the earlier clauses are `NaN` (falsy), so an unreadable reps
+ * made the whole comparison `NaN`, `NaN <= 0` false, and every candidate beat the
+ * incumbent — "best set" became the last set rather than the strongest readable
+ * one.
  */
 function compareSetsByStrength(left: WorkoutSetLog, right: WorkoutSetLog): number {
   return setVolume(right) - setVolume(left)
     || setWeightInLb(right) - setWeightInLb(left)
-    || (right.reps ?? 0) - (left.reps ?? 0);
+    || setReps(right) - setReps(left);
 }
 
 /**

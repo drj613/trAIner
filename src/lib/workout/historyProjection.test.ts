@@ -767,3 +767,130 @@ describe("summary labels with nothing to name them", () => {
       .toBe(projection.rows[0].performedName);
   });
 });
+
+describe("unreadable set fields", () => {
+  // One level deeper than the entry-level guards above, and the same class:
+  // `src/lib/storage/appDb.ts:186-195` never inspects the fields of a set
+  // record, so a hand-edited or foreign backup can put anything in `rawCell` or
+  // a set-level `notes` and storage preserves it verbatim. A value we cannot
+  // read must not remove readable history from view, on the settled
+  // absent-vs-unreadable line (`unreadableValue`,
+  // `src/lib/storage/migrations/v10Identity.ts:158`).
+  const goodLog: WorkoutLogDocument = {
+    id: "l-fine", programId: "p1", dayId: "d1",
+    performedAt: "2027-02-01T14:00:00.000Z", performedDate: "2027-02-01",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      sets: [{ setNumber: 1, weight: 500, reps: 1 }],
+    }],
+  };
+  // The corrupt set sits *beside* a readable one in the same entry, so the
+  // assertions can tell "nothing threw" apart from "the readable set survived".
+  const logWithSet = (set: unknown): WorkoutLogDocument => ({
+    id: "l-set", programId: "p1", dayId: "d1",
+    performedAt: "2027-02-02T14:00:00.000Z", performedDate: "2027-02-02",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      // Corrupt set FIRST: `readableSets(entry).some(setHasData)` short-circuits,
+      // so a corrupt field on a *later* set is never even read and a test with
+      // that order would pass without the guard.
+      sets: [set, { setNumber: 2, weight: 200, reps: 5 }],
+    }],
+  } as unknown as WorkoutLogDocument);
+
+  const corruptShapes: [string, unknown][] = [
+    ["rawCell is a number", { setNumber: 1, rawCell: 7 }],
+    ["rawCell is an object", { setNumber: 1, rawCell: {} }],
+    ["a set-level notes is a number", { setNumber: 1, notes: 7 }],
+    ["a set-level notes is an object", { setNumber: 1, notes: {} }],
+  ];
+
+  it.each(corruptShapes)("keeps every workout's history when %s", (_label, set) => {
+    const projection = projectExerciseHistory([logWithSet(set), goodLog], context);
+    expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`).sort())
+      .toEqual(["l-fine#0", "l-set#0"]);
+    // Oldest first: `l-fine` is 2027-02-01, `l-set` is 2027-02-02.
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      sessionCount: 2, sessionVolumesLb: [500, 1000], bestSetLabel: "200x5",
+    });
+    expect(projection.rows.find((r) => r.logId === "l-set")).toMatchObject({
+      sets: ["200x5"], volumeLb: 1000,
+    });
+  });
+
+  // The drawer path reads labels, the entry note and the volume — never
+  // `setHasData` — so `rawCell` is the only set-level field it dereferences. The
+  // `notes` shapes are deliberately not asserted here: they would pass without
+  // the guard and prove nothing.
+  it.each(corruptShapes.filter(([label]) => label.startsWith("rawCell")))(
+    "keeps the drawer path readable too when %s",
+    (_label, set) => {
+      expect(aggregateExerciseHistory([logWithSet(set)], "slot", highBar.id)).toEqual([
+        { date: "2027-02-02", sets: ["200x5"], note: undefined, volume: 1000 },
+      ]);
+    },
+  );
+
+  it("rows a set whose only content is an unreadable rawCell, with no label", () => {
+    const projection = projectExerciseHistory([{
+      id: "l-only", programId: "p1", dayId: "d1",
+      performedAt: "2027-02-04T14:00:00.000Z", performedDate: "2027-02-04",
+      entries: [{
+        exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+        sets: [{ setNumber: 1, rawCell: 7 }],
+      }],
+    } as unknown as WorkoutLogDocument], context);
+    // Unreadable content is recorded work, so the entry earns a dated row; there
+    // is nothing readable to label the set with, so no label is fabricated.
+    expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`)).toEqual(["l-only#0"]);
+    expect(projection.rows[0]).toMatchObject({ sets: [], volumeLb: 0 });
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      sessionCount: 1, entryCount: 1, bestSetLabel: undefined,
+    });
+  });
+
+  // N5. Measured at HEAD, and the mechanism is narrower than the review stated:
+  // `a || b || c` returns `c` when `a` and `b` are `NaN` (both falsy), so an
+  // unreadable *weight* leaves the reps clause deciding and "best" stays the
+  // earliest set. What an unreadable weight does destroy is the volume — the
+  // whole readable session reads `NaN`. An unreadable *reps* is the shape that
+  // makes every clause `NaN`, so `NaN <= 0` is false and "best" becomes the last
+  // set. Both are pinned here.
+  const mixedLog = (corruptSet: unknown): WorkoutLogDocument => ({
+    id: "l-mix", programId: "p1", dayId: "d1",
+    performedAt: "2027-02-03T14:00:00.000Z", performedDate: "2027-02-03",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      sets: [{ setNumber: 1, weight: 300, reps: 5 }, corruptSet],
+    }],
+  } as unknown as WorkoutLogDocument);
+
+  it("keeps an unreadable weight from turning a readable session's volume into NaN", () => {
+    const projection = projectExerciseHistory(
+      [mixedLog({ setNumber: 2, weight: {}, reps: 5 })],
+      context,
+    );
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      sessionVolumesLb: [1500], bestSetLabel: "300x5",
+    });
+    expect(projection.rows[0].volumeLb).toBe(1500);
+  });
+
+  // The reps clause is only *reached* when volume and load both tie, which for an
+  // unreadable reps means two no-load sets — bodyweight work. Written this way
+  // deliberately: with any load, the volume clause decides first and a test there
+  // would pass with the reps guard removed.
+  it("keeps an unreadable reps from stealing the best set from a readable bodyweight one", () => {
+    const projection = projectExerciseHistory([{
+      id: "l-bw", programId: "p1", dayId: "d1",
+      performedAt: "2027-02-05T14:00:00.000Z", performedDate: "2027-02-05",
+      entries: [{
+        exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+        sets: [{ setNumber: 1, reps: 5 }, { setNumber: 2, reps: {} }],
+      }],
+    } as unknown as WorkoutLogDocument], context);
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      bestSetLabel: "BWx5", sessionVolumesLb: [0],
+    });
+  });
+});

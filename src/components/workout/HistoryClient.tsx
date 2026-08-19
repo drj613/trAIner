@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
-import { formatSetLabel, setVolume } from "@/lib/workout/historyUtils";
+import {
+  entryPerformedName,
+  formatSetLabel,
+  readableEntries,
+  readableSets,
+  setVolume,
+  textOf,
+} from "@/lib/workout/historyUtils";
 import { logLocalDate } from "@/lib/workout/localDate";
 import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
 
@@ -39,17 +46,35 @@ function deriveTrend(volumes: number[]): "up" | "flat" | "down" {
   return "flat";
 }
 
+/**
+ * Reads stored logs through `historyUtils`' guards rather than dereferencing them
+ * directly. This function renders the whole all-time History page, and
+ * `src/lib/storage/appDb.ts:186-195` deliberately preserves a log whose `entries`
+ * is not an array, whose entries are not records, or whose `sets` is not an array,
+ * because an unreadable value "may be standing in for real sets we have no way to
+ * recover". Measured before the guards: eight such shapes threw out of this
+ * function, so one corrupt field showed the user no history at all. A value we
+ * cannot read must never remove readable history from view.
+ *
+ * Grouping, counting and the first-wins best-set tie are untouched — Task 13 owns
+ * replacing them with `VersionHistorySummary`.
+ */
 export function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
-  const byExercise = new Map<string, { name: string; sessions: { date: string; sets: WorkoutSetLog[] }[] }>();
+  const byExercise = new Map<string, { name: string; sessions: { date: string; sets: readonly WorkoutSetLog[] }[] }>();
 
   for (const log of logs) {
-    const date = logLocalDate(log);
-    for (const entry of log.entries) {
+    // `textOf` because a corrupt `performedDate` flows through `logLocalDate`
+    // verbatim, and this date is both sorted and sliced as a string.
+    const date = textOf(logLocalDate(log));
+    for (const { entry } of readableEntries(log)) {
       const key = entry.canonicalExerciseId ?? entry.exerciseId;
       if (!byExercise.has(key)) {
-        byExercise.set(key, { name: entry.exerciseName ?? entry.exerciseId, sessions: [] });
+        byExercise.set(key, {
+          name: entryPerformedName(entry) ?? textOf(entry.exerciseId),
+          sessions: [],
+        });
       }
-      byExercise.get(key)!.sessions.push({ date, sets: entry.sets });
+      byExercise.get(key)!.sessions.push({ date, sets: readableSets(entry) });
     }
   }
 
@@ -59,7 +84,7 @@ export function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
     const last = sorted[sorted.length - 1];
     const lastSets = last?.sets.map(formatSet).filter(Boolean) ?? [];
     const volumes = sorted.map((s) => s.sets.reduce((sum, st) => sum + setVolume(st), 0));
-    const allSets = sorted.flatMap((s) => s.sets);
+    const allSets = sorted.flatMap((s) => [...s.sets]);
     const bestVol = Math.max(...allSets.map(setVolume), 0);
     const bestSet = allSets.find((s) => setVolume(s) === bestVol);
     const best = bestSet ? formatSet(bestSet) : "—";
@@ -68,7 +93,7 @@ export function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
       exerciseId: id,
       name: data.name,
       sessions: sorted.length,
-      lastDate: last?.date.slice(5).replace("-", "/") ?? "—",
+      lastDate: last?.date.slice(5).replace("-", "/") || "—",
       lastSets,
       best,
       trend: deriveTrend(volumes),

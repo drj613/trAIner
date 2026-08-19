@@ -13,9 +13,14 @@ export type ExerciseSessionRow = {
  * was unparseable free text (e.g. "2.5kg x10", "40s hold", "skip"); otherwise
  * formats the numeric weight/reps with `sep` between them ("x" in the drawer,
  * "×" on the analysis page).
+ *
+ * `rawCell` is read through `readableText` because a stored value that is not a
+ * string is unreadable, not a label: dereferencing it threw out of both history
+ * surfaces. Any readable weight and reps beside it still get their label.
  */
 export function formatSetLabel(s: WorkoutSetLog, sep: string = "x"): string {
-  if (s.rawCell && s.rawCell.trim()) return s.rawCell;
+  const rawCell = readableText(s.rawCell);
+  if (rawCell && rawCell.trim()) return rawCell;
   if (!s.weight) return s.reps ? `BW${sep}${s.reps}` : "";
   const w = s.unit === "kg" ? `${s.weight}kg` : `${s.weight}`;
   return s.reps ? `${w}${sep}${s.reps}` : w;
@@ -23,14 +28,26 @@ export function formatSetLabel(s: WorkoutSetLog, sep: string = "x"): string {
 
 const KG_TO_LB = 2.2046226218;
 
-/** Logged weight normalized to lb, so kg and lb sets aggregate coherently. */
+/**
+ * Logged weight normalized to lb, so kg and lb sets aggregate coherently.
+ *
+ * `setNumberField` rather than raw arithmetic: a stored weight we cannot read as
+ * a number used to make this `NaN`, which then poisoned the whole entry's volume,
+ * the version's session volumes and the trend derived from them — an unreadable
+ * value removing a readable session's numbers from view.
+ */
 export function setWeightInLb(s: WorkoutSetLog): number {
-  return (s.weight ?? 0) * (s.unit === "kg" ? KG_TO_LB : 1);
+  return setNumberField(s.weight) * (s.unit === "kg" ? KG_TO_LB : 1);
+}
+
+/** A set's reps as a number, `0` when absent or unreadable. */
+export function setReps(s: WorkoutSetLog): number {
+  return setNumberField(s.reps);
 }
 
 /** Tonnage of a set in lb (kg sets converted). */
 export function setVolume(s: WorkoutSetLog): number {
-  return setWeightInLb(s) * (s.reps ?? 0);
+  return setWeightInLb(s) * setReps(s);
 }
 
 /**
@@ -39,11 +56,52 @@ export function setVolume(s: WorkoutSetLog): number {
  * read but do not display is still recorded work, and history must not drop it.
  */
 export function setHasData(s: WorkoutSetLog): boolean {
-  return Boolean(s.rawCell?.trim())
+  return Boolean(readableText(s.rawCell)?.trim())
+    || textUnreadable(s.rawCell)
     || s.weight != null
     || s.reps != null
     || s.rpe != null
-    || Boolean(s.notes?.trim());
+    || Boolean(readableText(s.notes)?.trim())
+    || textUnreadable(s.notes);
+}
+
+/**
+ * A stored value we can read as text, or `undefined`.
+ *
+ * `src/lib/storage/appDb.ts:186-195` never inspects the fields of a set record,
+ * so whatever a hand-edited or foreign backup put in `rawCell` or a set-level
+ * `notes` is preserved verbatim and reaches this module. Dereferencing it as a
+ * string threw out of the whole projection *and* out of the drawer, so one
+ * corrupt character removed every exercise's history from view.
+ */
+function readableText(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * Whether a stored text field is present but not text. Absent
+ * (`undefined`/`null`) is the legitimate shape of a field nobody filled in, so it
+ * is not unreadable — the settled line (`unreadableValue`,
+ * `src/lib/storage/migrations/v10Identity.ts:158`, and the ledger's "the line is
+ * between absent and unreadable"). Unreadable content is recorded work we cannot
+ * render: it makes the set data-bearing without producing a label.
+ */
+function textUnreadable(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  return typeof value !== "string";
+}
+
+/**
+ * A stored numeric field as a finite number, `0` when absent or unreadable.
+ *
+ * `Number(...)` rather than a `typeof` check, because `weight * 1` has always
+ * read a numeric string as its number and narrowing that would zero real logged
+ * weight. The only behaviour that changes is the `NaN` case.
+ */
+function setNumberField(value: unknown): number {
+  if (value === undefined || value === null) return 0;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 /**
@@ -85,7 +143,7 @@ function setsUnreadable(entry: WorkoutLogEntry): boolean {
 
 /** The entry's note, when what is stored there is text we can read. */
 export function entryNote(entry: WorkoutLogEntry): string | undefined {
-  return typeof entry.notes === "string" ? entry.notes : undefined;
+  return readableText(entry.notes);
 }
 
 /**
@@ -102,7 +160,7 @@ export function textOf(value: unknown): string {
  * `normalizeExerciseName` in the resolver otherwise, which throws.
  */
 export function entryPerformedName(entry: WorkoutLogEntry): string | undefined {
-  return typeof entry.exerciseName === "string" ? entry.exerciseName : undefined;
+  return readableText(entry.exerciseName);
 }
 
 /**
