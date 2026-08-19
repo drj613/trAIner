@@ -269,11 +269,15 @@ function compareSetsByStrength(left: WorkoutSetLog, right: WorkoutSetLog): numbe
  * an empty label — `textOf` alone returns `""`, which is not nullish.
  *
  * Measured: replacing this with plain `textOf` kills 0 tests, and by
- * construction it cannot be killed. For a stored exercise `displayLabel` is
- * absent only when the performed name, canonical id and slot id are all absent,
- * and then `row.performedName` is `""` as well, so the two branches agree. The
- * nullish check is here so the fall-through survives a change to either
- * fallback, not because a current input distinguishes them.
+ * construction it cannot be killed. The premise is external —
+ * `standaloneResult` in `src/lib/catalog/identity.ts:170` derives `displayLabel`
+ * as `input.performedName ?? input.canonicalExerciseId ?? input.slotId`, so for a
+ * stored exercise it is absent only when all three are absent, and then
+ * `row.performedName` is `""` as well and the two branches agree. Because that
+ * `??` chain lives in another module, a change to it could make the branches
+ * differ without a single test in this lane noticing; the nullish check is kept
+ * so the fall-through survives that, not because a current input distinguishes
+ * them. Re-check the premise at that line before deleting this.
  */
 function labelOf(value: unknown): string | undefined {
   return value == null ? undefined : textOf(value);

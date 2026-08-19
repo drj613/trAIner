@@ -575,7 +575,47 @@ describe("deterministic ordering with unreadable timestamps", () => {
       .toEqual(["new", "mid", "bad"]);
   });
 
+  it("orders every pair the same way the whole list is ordered", () => {
+    // This is the assertion that actually pins transitivity. Measured: the
+    // permutation test below is green under the pre-round intransitive
+    // comparator at n=3, 4, 5 and 6 exhaustively and at n=40 over 400 shuffles —
+    // V8 never exposes the inconsistency, so `new Set(orders).size === 1` cannot
+    // fail for that reason at any size reachable here. A pairwise-versus-global
+    // check does not depend on the sort algorithm noticing.
+    // "May 1 2026" is the shape that makes the pre-round comparator intransitive:
+    // it parses, so against another parseable stamp it is compared by instant,
+    // but against an unparseable one it is compared as text — and its text order
+    // disagrees with its chronological order. With "Foo" sitting lexicographically
+    // between it and an ISO stamp, the three form a cycle.
+    const mixed: WorkoutLogDocument[] = [
+      "2026-06-01T14:00:00.000Z", "May 1 2026", "Foo", "not a date", "zzz",
+      "2026-07-01T14:00:00.000Z", "42", "",
+    ].map((performedAt, i) => ({
+      id: `l-${i}`, programId: "p1", dayId: "d1",
+      performedAt, performedDate: "2026-06-01", entries: [entry(`n${i}`)],
+    } as unknown as WorkoutLogDocument));
+
+    const globalOrder = projectExerciseHistory(mixed, context).rows.map((r) => r.performedName);
+    const rankOf = new Map(globalOrder.map((name, index) => [name, index]));
+    const inconsistent: string[] = [];
+    for (let i = 0; i < mixed.length; i += 1) {
+      for (let j = i + 1; j < mixed.length; j += 1) {
+        const pair = projectExerciseHistory([mixed[i], mixed[j]], context)
+          .rows.map((r) => r.performedName);
+        const globallyFirst = rankOf.get(`n${i}`)! < rankOf.get(`n${j}`)! ? `n${i}` : `n${j}`;
+        if (pair[0] !== globallyFirst) inconsistent.push(`${i},${j}`);
+      }
+    }
+    // Sanity: the probe really did compare all 28 pairs of 8 distinct rows.
+    expect(globalOrder).toHaveLength(8);
+    expect(inconsistent).toEqual([]);
+  });
+
   it("returns the same order for every input permutation", () => {
+    // Pins output stability, NOT transitivity: measured green under the
+    // pre-round intransitive comparator at every size reachable in V8. The
+    // literal-order assertion below is what carries this test; the pairwise
+    // check above is the transitivity pin.
     const permutations = [
       [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0],
     ].map((order) => order.map((i) => logs[i]));
