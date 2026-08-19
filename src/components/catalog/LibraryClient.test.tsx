@@ -368,3 +368,79 @@ describe("deriveNeedsReview", () => {
     ]);
   });
 });
+
+// `appDb.ts:181-191` deliberately KEEPS a log whose `entries` is not an array,
+// or whose element is not a record, because the unreadable value "may be
+// standing in for real sets we have no way to recover" — and `logRepo.list()`
+// hands it straight to `deriveNeedsReview`. `logCandidates` guarded only with
+// `?? []`, which does not fire for a string, so `(log.entries ?? []).map` was
+// `undefined`. `deriveNeedsReview` runs inside a `useMemo` DURING RENDER and
+// the app has no error boundary, so the throw unmounted the whole tree: a blank
+// `/library` page, not a missing section.
+describe("LibraryClient — logs the database keeps but cannot read", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await programRepo.save(program);
+    await logRepo.save(log);
+    await (await getDb()).put("userExercises", customExercise);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    resetDbConnection();
+  });
+
+  it.each([
+    ["a non-array entries", "corrupt"],
+    ["an entries array whose element is null", [null]],
+  ])("still renders the library when one log has %s", async (_label, entries) => {
+    await logRepo.save({
+      ...log,
+      id: "log-unreadable",
+      dayId: "day-2",
+      performedAt: "2026-08-11T12:00:00.000Z",
+      performedDate: "2026-08-11",
+      entries,
+    } as unknown as WorkoutLogDocument);
+
+    const user = userEvent.setup();
+    renderLibrary();
+
+    const section = await openNeedsReview(user);
+    // The readable log's targets still review, so the unreadable one neither
+    // threw nor removed another workout's names from the list.
+    expect(await within(section).findByRole("button", { name: /Wobble Board Thing/ })).toHaveTextContent("2");
+    // Canary: the program and custom sources are unaffected too, so this is the
+    // whole page rendering rather than one lucky query.
+    expect(within(section).getByRole("button", { name: /Hatfield Squat/ })).toBeInTheDocument();
+    expect(within(section).getByRole("button", { name: /My squat/ })).toBeInTheDocument();
+  });
+});
+
+// `deriveNeedsReview` is exported, so the same property is pinned without the
+// render cost — and this is the level M-L1 (below) is measured at.
+describe("deriveNeedsReview — unreadable log entries", () => {
+  it.each([
+    ["a non-array entries", "corrupt"],
+    ["an entries array whose element is null", [null]],
+  ])("skips the unreadable entries and keeps every other candidate when %s", (_label, entries) => {
+    const context = createMigrationContext([], [], []);
+    const badLog = { ...log, id: "log-unreadable", entries } as unknown as WorkoutLogDocument;
+
+    const items = deriveNeedsReview(
+      context,
+      (input: ExerciseIdentityInput) => resolveExerciseIdentity(input, context),
+      [program],
+      [log, badLog],
+    );
+
+    expect(items.map((item) => item.label)).toEqual(
+      expect.arrayContaining(["Hatfield Squat", "Wobble Board Thing"]),
+    );
+    // The unreadable log contributed no candidates, so the readable log's count
+    // is unchanged — not inflated by seven characters of `"corrupt"`.
+    expect(items.find((item) => item.label === "Wobble Board Thing")?.occurrences).toBe(2);
+  });
+});

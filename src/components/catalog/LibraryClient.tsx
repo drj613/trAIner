@@ -14,6 +14,7 @@ import type {
 import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
 import type { ProgramDay, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
+import { readableEntries } from "@/lib/workout/historyUtils";
 import {
   ExerciseCorrectionSheet,
   correctionTargetKey,
@@ -74,8 +75,13 @@ function programCandidates(programs: readonly ProgramDocument[]): Candidate[] {
 }
 
 function logCandidates(logs: readonly WorkoutLogDocument[]): Candidate[] {
+  // Task 12's shared guard, not a fourth variant. `?? []` was not enough: it
+  // does not fire for a non-nullish unreadable value, so `entries: "corrupt"`
+  // reached `.map` and threw. `deriveNeedsReview` runs in a `useMemo` during
+  // render and there is no error boundary in the app, so that throw blanked the
+  // whole page rather than dropping one row.
   return logs.flatMap((log) =>
-    (log.entries ?? []).map((entry) => ({
+    readableEntries(log).map(({ entry }) => ({
       origin: "log" as const,
       rawName: entry.exerciseName ?? "",
       input: {
