@@ -16,6 +16,10 @@ Every implementer on this plan follows these. Your task brief adds task-specific
 
 **Mutation-verify every new test.** Break the behaviour the test covers, confirm that specific test fails, restore the file byte-for-byte, and report the numbers in your report.
 
+**Never snapshot to a shared `/tmp` path.** Agents share this worktree and `/tmp`, and generic snapshot names collide. One agent kept its pre-mutation copy at `/tmp/IC.orig`, a sibling used the same path, and restoring from it wrote **417 foreign lines into `ImportClient.tsx`** — caught only by `shasum` discipline. Put snapshots in the session scratchpad under a name unique to your task, and after restoring confirm the file matches HEAD (`git diff --quiet -- <path>`), not merely that it matches your snapshot: a shasum match against a clobbered snapshot proves nothing.
+
+**Better: mutate with no worktree footprint at all.** An out-of-tree Jest config whose `moduleNameMapper` swaps in a mutated copy of the module runs the real tests against mutated code while every tracked file stays untouched. There is then nothing to restore and nothing to clobber. This is the preferred technique whenever more than one agent is active.
+
 This is not ceremony. On this plan, tests that looked like they verified something and did not have been found **five separate times**:
 
 1. A "second migration pass is a no-op" test that never re-ran the migration.
