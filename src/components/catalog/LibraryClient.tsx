@@ -1,9 +1,234 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
+import type {
+  ExerciseIdentityContext,
+  ExerciseIdentityInput,
+  ExerciseIdentityResolver,
+  ExerciseIdentityResult,
+} from "@/lib/catalog/identity";
 import { toTitleCase } from "@/lib/catalog/normalize";
+import type { ProgramDay, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import { logRepo } from "@/lib/storage/logRepo";
+import {
+  ExerciseCorrectionSheet,
+  correctionTargetKey,
+  correctionTargetLabel,
+  type CorrectionTarget,
+} from "./ExerciseCorrectionSheet";
+
+// ─── Needs review ─────────────────────────────────────────────────────────────
+
+/**
+ * Derived, never stored. The spec is explicit that `Needs review` is not a
+ * persisted queue: it is recomputed from what the user actually references, so
+ * correcting a target removes it from the list with no bookkeeping to keep in
+ * sync and nothing to migrate.
+ */
+export type NeedsReviewOrigin = "routine" | "log" | "custom";
+
+export type NeedsReviewItem = {
+  key: string;
+  target: CorrectionTarget;
+  label: string;
+  occurrences: number;
+  origins: NeedsReviewOrigin[];
+};
+
+type Candidate = { input: ExerciseIdentityInput; rawName: string; origin: NeedsReviewOrigin };
+
+function daysOf(program: ProgramDocument): ProgramDay[] {
+  const replacements = program.overrides.flatMap((override) =>
+    Array.isArray(override.replacement) ? override.replacement : [override.replacement],
+  );
+  return [...program.days, ...replacements];
+}
+
+function programCandidates(programs: readonly ProgramDocument[]): Candidate[] {
+  const candidates: Candidate[] = [];
+  for (const program of programs) {
+    for (const day of daysOf(program)) {
+      for (const section of day.sections ?? []) {
+        for (const group of section.groups ?? []) {
+          for (const exercise of group.exercises ?? []) {
+            candidates.push({
+              origin: "routine",
+              rawName: exercise.name ?? "",
+              input: {
+                kind: "stored-exercise",
+                canonicalExerciseId: exercise.canonicalExerciseId,
+                slotId: exercise.id,
+                performedName: exercise.name,
+              },
+            });
+          }
+        }
+      }
+    }
+  }
+  return candidates;
+}
+
+function logCandidates(logs: readonly WorkoutLogDocument[]): Candidate[] {
+  return logs.flatMap((log) =>
+    (log.entries ?? []).map((entry) => ({
+      origin: "log" as const,
+      rawName: entry.exerciseName ?? "",
+      input: {
+        kind: "stored-exercise" as const,
+        canonicalExerciseId: entry.canonicalExerciseId,
+        slotId: entry.exerciseId,
+        performedName: entry.exerciseName,
+      },
+    })),
+  );
+}
+
+function customCandidates(userExercises: readonly UserExerciseDocument[]): Candidate[] {
+  return userExercises.map((exercise) => ({
+    origin: "custom" as const,
+    rawName: exercise.name,
+    input: { kind: "custom-exercise" as const, exerciseId: exercise.id, name: exercise.name },
+  }));
+}
+
+function targetFor(
+  identity: ExerciseIdentityResult,
+  candidate: Candidate,
+  context: ExerciseIdentityContext,
+): CorrectionTarget | undefined {
+  const concreteId = identity.concreteExerciseId;
+  if (concreteId) {
+    const catalogItem = context.catalogById.get(concreteId);
+    if (catalogItem) return { kind: "catalog-exercise", exerciseId: concreteId, name: catalogItem.name };
+    const custom = context.userExercises.find((exercise) => exercise.id === concreteId);
+    return custom ? { kind: "user-exercise", exerciseId: concreteId, name: custom.name } : undefined;
+  }
+  // With no concrete id there is nothing but the text to correct, and a slot id
+  // is not a name — an entry that never carried one is skipped rather than
+  // listed as something the user could recognise.
+  const name = candidate.rawName.trim();
+  return name ? { kind: "normalized-name", value: name } : undefined;
+}
+
+export function deriveNeedsReview(
+  context: ExerciseIdentityContext,
+  resolve: ExerciseIdentityResolver,
+  programs: readonly ProgramDocument[],
+  logs: readonly WorkoutLogDocument[],
+): NeedsReviewItem[] {
+  const items = new Map<string, NeedsReviewItem>();
+  const candidates = [
+    ...programCandidates(programs),
+    ...logCandidates(logs),
+    ...customCandidates(context.userExercises),
+  ];
+
+  for (const candidate of candidates) {
+    const identity = resolve(candidate.input);
+    // Two exclusions, for two different reasons: a target that already nests
+    // under a movement has nothing left to decide, and one whose classification
+    // came from an override has already been decided by the user — including a
+    // deliberate `movementId: null`, which must not be nagged about forever.
+    if (identity.movementId || identity.source === "user-override") continue;
+
+    const target = targetFor(identity, candidate, context);
+    if (!target) continue;
+
+    const key = correctionTargetKey(target);
+    const existing = items.get(key);
+    if (existing) {
+      existing.occurrences += 1;
+      if (!existing.origins.includes(candidate.origin)) existing.origins.push(candidate.origin);
+      continue;
+    }
+    items.set(key, {
+      key,
+      target,
+      label: correctionTargetLabel(target),
+      occurrences: 1,
+      origins: [candidate.origin],
+    });
+  }
+
+  return [...items.values()].sort(
+    (left, right) => right.occurrences - left.occurrences || left.label.localeCompare(right.label),
+  );
+}
+
+function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
+  if (items.length === 0) return null;
+
+  return (
+    <section
+      aria-label="Needs review"
+      style={{
+        marginBottom: 10,
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r)",
+        background: "var(--bg-2)",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }}>
+        <span className="tx-up" style={{ flex: 1 }}>needs review</span>
+        <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>{items.length}</span>
+      </div>
+      {items.map((item) => (
+        <div key={item.key} style={{ borderTop: "1px solid var(--line)" }}>
+          <button
+            type="button"
+            className="tap-target"
+            onClick={() => setOpenKey((current) => (current === item.key ? null : item.key))}
+            style={{
+              width: "100%",
+              display: "grid",
+              gridTemplateColumns: "1fr auto auto",
+              gap: 8,
+              padding: "7px 12px",
+              border: "none",
+              background: openKey === item.key ? "var(--bg-3)" : "transparent",
+              color: "var(--fg)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              textAlign: "left",
+              alignItems: "center",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {item.label}
+            </span>
+            <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>
+              {item.origins.join(" · ")}
+            </span>
+            <span className="tx-mono" style={{ fontSize: 10.5, color: "var(--fg-3)" }}>
+              {item.occurrences}
+            </span>
+          </button>
+          {openKey === item.key && (
+            <div style={{ padding: "0 12px 10px" }}>
+              <ExerciseCorrectionSheet target={item.target} onClose={() => setOpenKey(null)} />
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
+}
 
 // ─── Grouping ─────────────────────────────────────────────────────────────────
 
@@ -41,6 +266,7 @@ const equipGlyph: Record<string, string> = {
 
 function ExerciseRow({ item }: { item: ExerciseCatalogItem }) {
   const [open, setOpen] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
   const glyph = equipGlyph[item.equipment[0] ?? ""] ?? "·";
 
   return (
@@ -183,6 +409,19 @@ function ExerciseRow({ item }: { item: ExerciseCatalogItem }) {
               </div>
             ))}
           </div>
+
+          <div style={{ marginTop: 8 }}>
+            {correcting ? (
+              <ExerciseCorrectionSheet
+                target={{ kind: "catalog-exercise", exerciseId: item.id, name: item.name }}
+                onClose={() => setCorrecting(false)}
+              />
+            ) : (
+              <button type="button" className="btn" onClick={() => setCorrecting(true)}>
+                Change movement
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -270,6 +509,33 @@ const EQUIPMENT_OPTIONS = [
 export function LibraryClient() {
   const [q, setQ] = useState("");
   const [equipment, setEquipment] = useState<string | null>(null);
+  const { programs } = useLocalData();
+  const { context, resolve } = useExerciseNormalization();
+  const [logs, setLogs] = useState<WorkoutLogDocument[]>([]);
+
+  // Logs are read once. A correction changes how they CLASSIFY, never what
+  // they contain, so re-reading them on every identity change would be work
+  // that cannot change its own answer.
+  useEffect(() => {
+    let live = true;
+    void logRepo.list().then((stored) => {
+      if (live) setLogs(stored);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  // Regrouping is driven by the provider republishing a new context, which is
+  // what a committed correction causes — no reload, no remount, no page.
+  const needsReview = useMemo(
+    () => deriveNeedsReview(context, resolve, programs, logs),
+    [context, resolve, programs, logs],
+  );
+  const shownNeedsReview = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return query ? needsReview.filter((item) => item.label.toLowerCase().includes(query)) : needsReview;
+  }, [needsReview, q]);
 
   const grouped = useMemo(() => {
     let items = exerciseCatalog;
@@ -400,31 +666,35 @@ export function LibraryClient() {
         ))}
       </div>
 
+      <NeedsReviewSection items={shownNeedsReview} />
+
       {/* Groups */}
-      {grouped.size === 0 ? (
-        <div
-          style={{
-            padding: 20,
-            textAlign: "center",
-            fontSize: 12,
-            color: "var(--fg-3)",
-            background: "var(--bg-2)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r)",
-          }}
-        >
-          no matches
-        </div>
-      ) : (
-        [...grouped.entries()].map(([muscle, items]) => (
-          <CategorySection
-            key={muscle}
-            muscle={muscle}
-            items={items}
-            defaultOpen={isFiltered}
-          />
-        ))
-      )}
+      <section aria-label="Catalogue">
+        {grouped.size === 0 ? (
+          <div
+            style={{
+              padding: 20,
+              textAlign: "center",
+              fontSize: 12,
+              color: "var(--fg-3)",
+              background: "var(--bg-2)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r)",
+            }}
+          >
+            no matches
+          </div>
+        ) : (
+          [...grouped.entries()].map(([muscle, items]) => (
+            <CategorySection
+              key={muscle}
+              muscle={muscle}
+              items={items}
+              defaultOpen={isFiltered}
+            />
+          ))
+        )}
+      </section>
 
       {/* Footer */}
       <div
