@@ -1568,20 +1568,20 @@ describe("restoreBackup — version-1 compatibility on a current database", () =
     });
   });
 
-  it("makes a restored alias findable even when the file's own token was stale", async () => {
-    // The silent case: one stale token needs no collision to break anything.
-    // Written verbatim, the row restores without error and is then unreachable
-    // by aliasRepo.find() forever, because find() looks up the recomputed one.
+  // Was "makes a restored alias findable even when the file's own token was
+  // stale". Restore no longer re-derives a readable token — see
+  // `aliasLookupToken` — so an unclassified legacy row is judged by the outcome
+  // gate on the token the file gave it, and one that names no exercise is
+  // purged rather than repaired onto the display text's token. Only a
+  // hand-edited version-1 file can hold such a row, and it was already
+  // unreachable in the database that exported it.
+  it("purges a legacy alias whose stale token names no exercise", async () => {
     await restoreBackup(makeBackupV1({
       aliases: [{ ...legacyAlias("RDL", "romanian-deadlift"), normalizedAlias: "WRONG-TOKEN" }] as never,
     }));
 
-    await expect(aliasRepo.find("RDL")).resolves.toMatchObject({
-      alias: "RDL",
-      normalizedAlias: "rdl",
-      canonicalExerciseId: "romanian-deadlift",
-      provenance: "legacy-auto",
-    });
+    await expect(aliasRepo.find("RDL")).resolves.toBeUndefined();
+    await expect(aliasRepo.list()).resolves.toEqual([]);
   });
 
   it("rewrites legacy canonical ids in restored programs and logs", async () => {
@@ -1712,10 +1712,12 @@ describe("restoreBackup — version-2 documents", () => {
     });
   });
 
-  // Recompute-and-dedupe is integrity, not classification, so it stays
+  // Normalize-and-dedupe is integrity, not classification, so it stays
   // unconditional: a version-2 file is hand-editable JSON and
-  // `by-normalized-alias` is the only unique index.
-  it("still recomputes a stale token on an already-classified alias", async () => {
+  // `by-normalized-alias` is the only unique index. What is *not* unconditional
+  // any more is replacing the token outright — the row keeps the key its writer
+  // chose, casing and spacing repaired.
+  it("keeps an already-classified alias on the token the file gave it", async () => {
     await restoreBackup({
       version: 2,
       exportedAt: "2026-08-19T00:00:00.000Z",
@@ -1732,10 +1734,11 @@ describe("restoreBackup — version-2 documents", () => {
       normalizationOverrides: [],
     } as never);
 
-    await expect(aliasRepo.find("Back Squat")).resolves.toMatchObject({
-      normalizedAlias: "back squat",
+    await expect(aliasRepo.list()).resolves.toMatchObject([{
+      id: "alias-back-squat",
+      normalizedAlias: "wrong token",
       provenance: "legacy-auto",
-    });
+    }]);
   });
 
   // Pins the corrected claim as behaviour, because the September 30

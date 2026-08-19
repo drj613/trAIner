@@ -261,23 +261,43 @@ describe("aliasRepo.save", () => {
     await expect(aliasRepo.list()).resolves.toEqual([]);
   });
 
-  it("putRaw recomputes normalizedAlias instead of trusting the stored token", async () => {
-    // A backup file (validated only for string ids) can carry a token that
-    // disagrees with its alias text. Trusting it plants a duplicate on the
-    // unique by-normalized-alias index that later rejects a write — including
-    // the migration's re-put, which would then fail on every single load.
+  it("putRaw keeps the token the row was written under, normalized", async () => {
+    // `putRaw` is the imperative twin of restore, so it answers the same way:
+    // the stored token is the key its writer chose, and a writer that keys an
+    // annotated name on the phrase-stripped token the resolver reads is doing
+    // the right thing, not carrying a stale one. Replacing it here is what made
+    // a correction stop working after a backup restore. The normalize pass
+    // stays, so case and spacing are still repaired.
     await aliasRepo.putRaw({
       id: "legacy-alias-id",
       alias: "90/90 Hamstring",
-      normalizedAlias: "totally-wrong-token",
+      normalizedAlias: "  90 90   HAMSTRING ",
       canonicalExerciseId: "90-90-hamstring",
       createdAt: "2026-08-18T00:00:00.000Z",
     });
 
     const [stored] = await aliasRepo.list();
     expect(stored.normalizedAlias).toBe("90 90 hamstring");
-    // Reachable by the same lookup the app uses, which the bad token broke.
+    // Reachable by the same lookup the app uses.
     await expect(aliasRepo.find("90/90 Hamstring")).resolves.toMatchObject({ id: "legacy-alias-id" });
+  });
+
+  it("putRaw keeps a phrase-stripped token rather than re-deriving it from the display text", async () => {
+    // The annotated name is load-bearing: a plain name cannot tell the
+    // phrase-stripped rule from the plain-normalize rule.
+    await aliasRepo.putRaw({
+      id: "remembered-alias-id",
+      alias: "3 second paused Hatfield Squat",
+      normalizedAlias: "paused hatfield squat",
+      canonicalExerciseId: "goblet-squat",
+      provenance: "remembered",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    });
+
+    const [stored] = await aliasRepo.list();
+    expect(stored.normalizedAlias).toBe("paused hatfield squat");
+    await expect(aliasRepo.find("3 second paused Hatfield Squat"))
+      .resolves.toMatchObject({ id: "remembered-alias-id" });
   });
 
   it("replaceRemembered is the explicit one-transaction correction path", async () => {

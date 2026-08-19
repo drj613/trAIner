@@ -694,27 +694,54 @@ describe("restoreBackup — version 2 overrides", () => {
   });
 });
 
-describe("restoreBackup — alias tokens are recomputed, never trusted", () => {
-  // The file's own token is untrustworthy in every version: hand-edited files
-  // exist, and `by-normalized-alias` is the schema's only unique index. A stale
-  // token restores with no error at all and the alias is simply dead —
-  // aliasRepo.find() looks it up by the *recomputed* token and gets nothing.
-  it("recomputes normalizedAlias from the alias text", async () => {
+describe("restoreBackup — alias tokens are kept, then deduped", () => {
+  // A restore reproduces the key set the exporting database held; it does not
+  // re-derive it. `aliasLookupToken` explains why: writers disagree about how a
+  // display name becomes a key — deliberately, since a remembered correction is
+  // keyed on the phrase-stripped token the resolver reads — so recomputing here
+  // silently unmakes whichever generation of row it does not match.
+  //
+  // What restore still owes: the tokens it writes must be a legal write set,
+  // because `by-normalized-alias` is the schema's only unique index and a
+  // hand-edited file can hold two rows claiming one token. That is the dedupe
+  // below, and it is unconditional.
+  //
+  // The cost of keeping a stale token, stated rather than hidden: an
+  // unclassified legacy row is still judged on it by the outcome gate, so a
+  // hand-edited one that names no exercise is purged instead of repaired. No
+  // writer in `src/` can produce such a row, and it was already unreachable in
+  // the database that exported it.
+  it("keeps the token the file gave an already-classified alias", async () => {
     mockPut.mockClear();
-    await restoreBackup(makeBackupV1({
-      aliases: [{ ...legacyAlias("Romanian Deadlift", "romanian-deadlift"), normalizedAlias: "WRONG-TOKEN" }],
+    await restoreBackup(makeBackupV2({
+      aliases: [{
+        id: "alias-remembered",
+        alias: "Romanian Deadlift",
+        normalizedAlias: "WRONG-TOKEN",
+        canonicalExerciseId: "romanian-deadlift",
+        provenance: "remembered",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }],
     }));
     expect(putsToStore(isAlias)).toEqual([{
-      id: "legacy:Romanian Deadlift",
+      id: "alias-remembered",
       alias: "Romanian Deadlift",
-      normalizedAlias: "romanian deadlift",
+      normalizedAlias: "wrong token",
       canonicalExerciseId: "romanian-deadlift",
-      provenance: "legacy-auto",
+      provenance: "remembered",
       createdAt: "2026-08-18T00:00:00.000Z",
     }]);
   });
 
-  it("keeps one row when two aliases recompute to the same token", async () => {
+  it("purges an unclassified legacy alias whose stale token names no exercise", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV1({
+      aliases: [{ ...legacyAlias("Romanian Deadlift", "romanian-deadlift"), normalizedAlias: "WRONG-TOKEN" }],
+    }));
+    expect(putsToStore(isAlias)).toEqual([]);
+  });
+
+  it("keeps one row when two aliases normalize to the same token", async () => {
     mockPut.mockClear();
     await restoreBackup(makeBackupV2({
       aliases: [

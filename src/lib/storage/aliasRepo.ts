@@ -22,9 +22,15 @@ export type RememberedAliasInput = {
  * takes effect. Deriving it here rather than at each call site means a writer
  * cannot forget — two surfaces keying differently is the defect this replaces.
  *
- * Restored and migrated rows deliberately do NOT come through here: `putRaw`
- * keeps `aliasLookupToken`'s rule so an existing row resolves after a restore
- * exactly as it did before it.
+ * Restored and migrated rows deliberately do NOT come through here, and the
+ * reason is the mirror image: `aliasLookupToken` keeps whatever token the row
+ * already carries, so a row keyed by this rule survives a restore keyed by this
+ * rule, and a row keyed by the older plain-`normalizeExerciseName` rule survives
+ * keyed by that one. Neither generation is re-keyed into the other. That
+ * property held for legacy rows from the start but was measurably false for
+ * rows written under this rule until `aliasLookupToken` stopped preferring the
+ * display text — a correction on an annotated name resolved before a backup
+ * restore and not after it.
  */
 export function rememberedAliasToken(
   alias: string,

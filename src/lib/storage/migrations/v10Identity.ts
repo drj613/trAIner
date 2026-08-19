@@ -309,30 +309,71 @@ function concreteOutcomesForToken(
 export type AliasClassificationScope = "all" | "unclassified";
 
 /**
- * The token an alias row is reachable by, and which field it came from.
+ * The token an alias row is reachable by.
  *
- * The display text is not what makes an alias work: `aliasRepo.find` queries the
- * `by-normalized-alias` index and the resolver reads
- * `candidate.normalizedAlias || candidate.alias`. So recompute from the display
- * text when there is one, fall back to the stored token when there is not (or
- * when the text normalizes to nothing), and report nothing usable only when
- * neither leaves anything to match on. Never trust the stored token as written:
- * it keys the schema's only unique index, so a stale one plants a row that
- * `find()` can never reach and that a later write can collide with.
+ * The display text is not what makes an alias work, and it is not the authority
+ * on the key either: `aliasRepo.find` queries the `by-normalized-alias` index
+ * and the resolver reads `candidate.normalizedAlias || candidate.alias`. So
+ * prefer the token the row already carries, and derive one from the display
+ * text only when there is no readable token to keep.
+ *
+ * Preferring the stored token is the whole point. Writers do not agree on how a
+ * display name becomes a key, and they are not supposed to: a remembered
+ * correction is keyed on `prepareImportName(...).normalizedName`
+ * (`aliasRepo.rememberedAliasToken`), because that is the token `resolveName`
+ * looks one up by, while every row written before that ruling is keyed on plain
+ * `normalizeExerciseName`. Re-deriving here by either rule silently re-keys the
+ * rows written by the other. Measured, before this preference was flipped: a
+ * correction stored as `{alias: "3 second paused Hatfield Squat",
+ * normalizedAlias: "paused hatfield squat"}` came back from a restore keyed
+ * "3 second paused hatfield squat" and simply stopped resolving, and a legacy
+ * row and a new row for one display name collapsed onto a single key, silently
+ * discarding one remembered mapping. That is the standing rule — a record we can
+ * read is not ours to re-key — applied to the one path that rewrites key sets.
+ *
+ * The `normalizeExerciseName` pass over the stored token stays. For a token any
+ * writer produced it is a no-op (both rules emit normalized output), so it costs
+ * nothing; for a hand-edited file it repairs case and spacing, which is what
+ * keeps two rows differing only in whitespace from restoring as two rows
+ * fighting over one unique-index key.
+ *
+ * What this deliberately no longer does is *replace* a readable stored token
+ * that disagrees with the display text. Such a token is indistinguishable from a
+ * deliberate one, it was already the key the row lived under in the database
+ * that exported it, and restoring it unchanged is fidelity rather than damage —
+ * an alias is a resolution shortcut, so the worst case is a shortcut that was
+ * already dead staying dead. The write set stays legal because `classifyAliases`
+ * dedupes on the final token before anything is written.
  *
  * Shared by the migration/restore classifier and by `aliasRepo.putRaw`, so the
  * two cannot disagree about which rows are usable.
  */
 export function aliasLookupToken(
   alias: { alias?: unknown; normalizedAlias?: unknown },
-): { normalizedAlias: string; fromDisplayText: boolean } | undefined {
-  const fromDisplay = isReadableText(alias.alias) ? normalizeExerciseName(alias.alias) : "";
-  if (fromDisplay) return { normalizedAlias: fromDisplay, fromDisplayText: true };
+): { normalizedAlias: string } | undefined {
   const fromStored = isReadableText(alias.normalizedAlias)
     ? normalizeExerciseName(alias.normalizedAlias)
     : "";
-  if (fromStored) return { normalizedAlias: fromStored, fromDisplayText: false };
+  if (fromStored) return { normalizedAlias: fromStored };
+  const fromDisplay = isReadableText(alias.alias) ? normalizeExerciseName(alias.alias) : "";
+  if (fromDisplay) return { normalizedAlias: fromDisplay };
   return undefined;
+}
+
+/**
+ * The text the disambiguation rules are read from — a separate decision from
+ * the key above, and kept separate on purpose.
+ *
+ * The rules must see the raw name a human wrote. A token has already had its
+ * non-identity phrases stripped, so running the rules over one makes
+ * `hasAlternative` blind: "Hatfield Squat or Lunge" prepares to
+ * "hatfield squat lunge", which offers no choice at all, and the classifier
+ * would retain a row it is specified to purge. These two decisions used to
+ * share one flag, which is exactly how the restore re-keying defect got in.
+ */
+function aliasRuleText(alias: { alias?: unknown }, token: string): string {
+  if (isReadableText(alias.alias) && normalizeExerciseName(alias.alias)) return alias.alias;
+  return token;
 }
 
 export function classifyAliases(
@@ -378,10 +419,10 @@ export function classifyAliases(
       continue;
     }
 
-    // Read the disambiguation rules from whichever text produced the token, so a
-    // row that only has a token is still checked for "or"-style alternatives and
-    // underspecified names rather than skipping the rules by accident.
-    const textForRules = token.fromDisplayText ? (alias.alias as string) : normalizedAlias;
+    // Prefer the display text, so a row that only has a token is still checked
+    // for "or"-style alternatives and underspecified names rather than skipping
+    // the rules by accident. Independent of which field the *key* came from.
+    const textForRules = aliasRuleText(alias, normalizedAlias);
     const prepared = prepareImportName(textForRules, disambiguationsByNormalizedName);
     const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
     if (prepared.hasAlternative || disambiguation?.kind === "underspecified-name") {

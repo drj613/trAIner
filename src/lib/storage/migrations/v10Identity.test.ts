@@ -1,3 +1,4 @@
+import { resolveExerciseIdentity } from "@/lib/catalog/identity";
 import type { AliasDocument, ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import {
   classifyAliases,
@@ -207,9 +208,31 @@ describe("classifyAliases — how much malformation is still recoverable", () =>
     expect(classifyAliases([row(overrides)], [], "all")).toEqual([]);
   });
 
-  it("prefers the display text over a stale stored token", () => {
-    const classified = classifyAliases([row({ normalizedAlias: "WRONG-TOKEN" })], [], "all");
-    expect(classified[0].normalizedAlias).toBe("romanian deadlift");
+  // Was "prefers the display text over a stale stored token", and the
+  // preference is now the other way round: a readable stored token is the key
+  // its writer chose and is kept. See `aliasLookupToken` for why — re-deriving
+  // it from the display text is what killed a corrected annotated name on
+  // restore. Two consequences, pinned separately because they are different
+  // rows:
+  //
+  //  - a row whose writer classified it keeps its token, whatever the display
+  //    text would have produced;
+  //  - an unclassified legacy row is still judged by the outcome gate on that
+  //    token, so a hand-edited one that names nothing is purged rather than
+  //    repaired. Only a hand-edited file can produce such a row: every writer
+  //    in `src/` derives the token from the display text, and the row was
+  //    already unreachable in the database that exported it.
+  it("keeps a readable stored token that disagrees with the display text", () => {
+    const classified = classifyAliases(
+      [row({ normalizedAlias: "WRONG-TOKEN", provenance: "remembered" })],
+      [],
+      "unclassified",
+    );
+    expect(classified.map((alias) => alias.normalizedAlias)).toEqual(["wrong token"]);
+  });
+
+  it("purges an unclassified legacy row whose stored token names no exercise", () => {
+    expect(classifyAliases([row({ normalizedAlias: "WRONG-TOKEN" })], [], "all")).toEqual([]);
   });
 });
 
@@ -252,4 +275,91 @@ describe("classifyAliases — classification scope", () => {
       expect(classifyAliases([remembered], [], scope)).toEqual([remembered]);
     },
   );
+});
+
+// A restore is the one path on which the app deliberately rewrites the user's
+// key set, so it is the one path that can silently unmake a correction the user
+// watched take effect. Two decisions live in `classifyAliases` and they are
+// independent:
+//
+//  - the KEY a row lands on, which is its writer's deliberate choice and not
+//    ours to re-derive while we can read it;
+//  - the TEXT the disambiguation rules run over, which must stay the raw
+//    display name so an "or" name is still seen as offering a choice.
+//
+// Collapsing the two is what made a corrected annotated name die on restore.
+describe("classifyAliases — a restore keeps the key its writer chose", () => {
+  // The name must carry a non-identity phrase. A plain name cannot tell the
+  // phrase-stripped rule from the plain-normalize rule, so it would pass under
+  // either and verify nothing.
+  const annotated = "3 second paused Hatfield Squat";
+  const strippedToken = "paused hatfield squat";
+  const unstrippedToken = "3 second paused hatfield squat";
+
+  const rememberedRow = (overrides: Partial<AliasDocument> = {}): AliasDocument => ({
+    id: "alias-new",
+    alias: annotated,
+    normalizedAlias: strippedToken,
+    canonicalExerciseId: "goblet-squat",
+    provenance: "remembered",
+    createdAt: "2026-08-18T00:00:00.000Z",
+    ...overrides,
+  });
+
+  const resolves = (aliases: readonly AliasDocument[], name: string) =>
+    resolveExerciseIdentity(
+      { kind: "import-name", name },
+      createMigrationContext(aliases, [], []),
+    ).concreteExerciseId;
+
+  it("keeps a remembered correction on the phrase-stripped token the resolver reads", () => {
+    const row = rememberedRow();
+    expect(resolves([row], annotated)).toBe("goblet-squat");
+
+    const classified = classifyAliases([row], [], "unclassified");
+
+    expect(classified.map((alias) => alias.normalizedAlias)).toEqual([strippedToken]);
+    expect(resolves(classified, annotated)).toBe("goblet-squat");
+  });
+
+  it("keeps both generations of key when one display name carries a legacy row and a new one", () => {
+    const legacy = rememberedRow({
+      id: "alias-legacy",
+      normalizedAlias: unstrippedToken,
+      canonicalExerciseId: "barbell-high-bar-squat",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const classified = classifyAliases([legacy, rememberedRow()], [], "unclassified");
+
+    expect(classified.map((alias) => [alias.id, alias.normalizedAlias])).toEqual([
+      ["alias-legacy", unstrippedToken],
+      ["alias-new", strippedToken],
+    ]);
+    expect(resolves(classified, annotated)).toBe("goblet-squat");
+  });
+
+  // The decoupling guard. If the key preference is inverted without splitting
+  // the rule text off it, the rules see the already-stripped token, an "or"
+  // name stops reading as an alternative, and the migration silently starts
+  // RETAINING rows it is specified to purge.
+  it("runs the disambiguation rules over the display text even when the token is already stripped", () => {
+    const alternative: AliasDocument = {
+      id: "alias-or",
+      alias: "Hatfield Squat or Lunge",
+      // What `prepareImportName` makes of that name: no "or" left in it.
+      normalizedAlias: "hatfield squat lunge",
+      canonicalExerciseId: "goblet-squat",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    } as AliasDocument;
+
+    expect(classifyAliases([alternative], [], "all")).toEqual([]);
+  });
+
+  it("normalizes a stored token that was never normalized", () => {
+    const messy = rememberedRow({ alias: undefined, normalizedAlias: "  Paused   HATFIELD Squat  " } as Partial<AliasDocument>);
+
+    expect(classifyAliases([messy], [], "unclassified").map((alias) => alias.normalizedAlias))
+      .toEqual([strippedToken]);
+  });
 });
