@@ -144,6 +144,12 @@ function isRecord<T>(value: T): value is T & object {
   return value !== null && typeof value === "object";
 }
 
+// "Present, but not the array we expected." Absent stays absent — only a value
+// that is actually there and unreadable counts.
+function unreadableValue(value: unknown): boolean {
+  return value !== undefined && value !== null && !Array.isArray(value);
+}
+
 function migrateProgramExercise(
   exercise: ProgramExercise,
   context: ExerciseIdentityContext,
@@ -403,20 +409,21 @@ export function getDb() {
             let cursor = await store.openCursor();
             while (cursor) {
               const log = cursor.value as WorkoutLogDocument;
-              // `?? []` guards undefined but not a corrupt non-array, and the
-              // callback below dereferences each element. Absent entries still
-              // mean "no information" (unchanged), but a truthy non-array is
-              // unreadable — something is there we cannot parse — so the log
-              // counts as having data and is kept rather than deleted.
-              const entries: unknown = log.entries;
-              const unreadableEntries =
-                entries !== undefined && entries !== null && !Array.isArray(entries);
+              // One rule, applied at every level: unreadable content is never
+              // grounds for deletion. `?? []` guards undefined but not a
+              // corrupt non-array, and the callback below dereferences each
+              // element. Absent entries still mean "no information" (unchanged,
+              // and what the phantom rule exists for), but anything present
+              // that we cannot read — a non-array `entries`, a non-record
+              // entry, a non-array `sets` — may be standing in for real sets we
+              // have no way to recover, so the log counts as having data and is
+              // kept. Retaining an empty log costs the user one deletion;
+              // deleting a real one destroys their only copy.
               const hasData =
                 !!log.completedAt || !!log.skippedAt || !!log.dayNote || !!log.notes ||
-                unreadableEntries ||
-                (log.entries ?? []).some(
-                  (e) => isRecord(e) && ((e.sets?.length ?? 0) > 0 || !!e.notes),
-                );
+                unreadableValue(log.entries) ||
+                (log.entries ?? []).some((e) => !isRecord(e) ||
+                  unreadableValue(e.sets) || (e.sets?.length ?? 0) > 0 || !!e.notes);
               if (!hasData) {
                 await cursor.delete();
               } else if (!log.performedDate) {

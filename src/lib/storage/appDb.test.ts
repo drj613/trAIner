@@ -1129,15 +1129,33 @@ describe("DB v7/v8 — malformed legacy logs", () => {
       .toEqual({ ...unreadable, performedDate: "2026-05-10" });
   });
 
-  it("still treats a log whose only content is unreadable as a phantom", async () => {
-    // v7 semantics, unchanged: no sets, no notes, no completion or skip
-    // marker means zero information. A null entry carries no information
-    // either, so such a log is still deleted rather than kept.
-    const phantom = { id: "phantom", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: [null] };
-    await seedLegacyLogs(6, [phantom, healthyLog]);
+  it("keeps a log whose only entry is unreadable rather than deleting it as a phantom", async () => {
+    // Deliberate ruling, not an oversight: one rule governs both malformed
+    // shapes — unreadable content is never grounds for deletion. A null entry
+    // is not proven-empty content; it is content we cannot read, and the
+    // entry it replaced may well have held sets. Retaining a genuinely empty
+    // log leaves a cosmetic phantom the user can delete in seconds; deleting
+    // wrongly destroys their only copy of a workout. Those losses are not
+    // comparable. The v7 phantom rule still applies in full to logs whose
+    // entries are *readable* and empty (see sessionPersistence.test.ts).
+    const unreadableEntry = { id: "unreadable-entry", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: [null] };
+    await seedLegacyLogs(6, [unreadableEntry, healthyLog]);
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
-    expect(await readRawRecord("logs", "phantom")).toBeUndefined();
+    expect(await readRawRecord("logs", "unreadable-entry"))
+      .toEqual({ ...unreadableEntry, performedDate: "2026-05-10" });
     expect(await readRawRecord("logs", "healthy")).toBeDefined();
+  });
+
+  it("keeps a log whose only entry has unreadable sets", async () => {
+    // Same rule one level down: `(e.sets?.length ?? 0) > 0` reads a length
+    // off whatever is there, so an unreadable non-array `sets` with no length
+    // would otherwise look like "no data" and be deleted.
+    const unreadableSets = { id: "unreadable-sets", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: [{ exerciseId: "slot-1", sets: { corrupt: true } }] };
+    await seedLegacyLogs(6, [unreadableSets, healthyLog]);
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("logs", "unreadable-sets"))
+      .toEqual({ ...unreadableSets, performedDate: "2026-05-10" });
   });
 });

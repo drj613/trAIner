@@ -504,3 +504,44 @@ None with the ruling. The one thing I want on the record as a decision rather th
 ### Untouched, per the coordinator's scoping
 
 `ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2, and the `migrations/v10Identity.ts` extraction (Task 7).
+
+## Fix round 5 — unreadable content is never grounds for deletion
+
+Inverted as ruled, and the cost-asymmetry argument is the right one: retaining a genuinely empty log costs the user one deletion, deleting a real one destroys their only copy. I had weighed "readable" against "unreadable" and missed that a null entry is not proven-empty — it is unrecoverable.
+
+The v7 phantom check now treats three things as content, under one rule instead of two competing ones:
+
+| Shape | Before round 5 | Now |
+| --- | --- | --- |
+| `entries` present but not an array | kept | kept (unchanged) |
+| an entry element that is not a record (e.g. `null`) | **deleted** | **kept** |
+| `sets` present but not an array | deleted when it had no readable `length` | **kept** |
+
+That third row is the "same logic elsewhere" you asked me to look for, and it is the only other place it appears. `(e.sets?.length ?? 0) > 0` happily reads a `length` off whatever is there, so `sets: "corrupt"` already looked like data by accident (length 7), while `sets: { corrupt: true }` looked like *no* data and would have been deleted. Both now go through the same `unreadableValue` predicate, so the accident becomes a rule. The v8 block needs no equivalent — it never deletes.
+
+Implementation: one small predicate beside the other guard helpers, `unreadableValue(value)` = "present, but not the array we expected", used at both levels. Absent stays absent, so a log with no `entries` at all is still a phantom — that is what the rule exists for.
+
+RED first: both new expectations failed with `Received: undefined` (the logs had been deleted). All three retain rules are individually load-bearing — reverting them one at a time fails exactly one test each.
+
+Existing v7 semantics are untouched, and the proof is not just my reading: `sessionPersistence.test.ts:100` ("deletes dataless phantom logs") seeds `entries: [{ exerciseId: "e1", sets: [] }]` — readable record, readable empty array — and stayed green through every mutation above without being edited. `git diff 22ba71f --numstat` still reports **1 deletion** in `appDb.test.ts` (the original `aliasRepo.save` provenance line) and **no change at all** to `sessionPersistence.test.ts`.
+
+The flipped test is named "keeps a log whose only entry is unreadable rather than deleting it as a phantom" and carries the full reasoning in a comment, including the pointer to where the real phantom rule is still tested, so the next reader sees a decision rather than an oversight.
+
+### Gates after fix round 5
+
+```text
+bun run test -- --runInBand
+Test Suites: 93 passed, 93 total
+Tests:       1146 passed, 1146 total   (was 1145; +1)
+
+bun run test -- --runInBand src/lib/storage
+Tests:       133 passed, 133 total
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+```
