@@ -302,8 +302,65 @@ function decodeVariantRules(artifact: VersionedArtifact<unknown>): VariantRule[]
   });
 }
 
-function validateUnmodeledManifestRecords(artifact: VersionedArtifact<unknown>, kind: string): void {
-  manifestRecords(artifact, kind);
+export type DisambiguationRecord =
+  | {
+      id: string;
+      kind: "underspecified-name";
+      normalizedName: string;
+      movementId: string;
+      candidateExerciseIds: string[];
+      matchedModifierIds: string[];
+    }
+  | {
+      id: string;
+      kind: "non-identity-phrase";
+      normalizedPhrase: string;
+      annotation: string;
+      behavior: "strip" | "paused-duration" | "reject-alternative";
+    };
+
+function decodeDisambiguations(artifact: VersionedArtifact<unknown>): DisambiguationRecord[] {
+  const seenIds = new Set<string>();
+  const seenTokens = new Set<string>();
+  return manifestRecords(artifact, "disambiguation").map((record) => {
+    const id = nonEmptyString(record.id, "disambiguation");
+    if (seenIds.has(id)) invalidManifestRecord("disambiguation");
+    seenIds.add(id);
+    if (record.kind === "underspecified-name") {
+      assertOnlyKeys(record, [
+        "id", "kind", "normalizedName", "movementId", "candidateExerciseIds", "matchedModifierIds",
+      ], "disambiguation");
+      const normalizedName = nonEmptyString(record.normalizedName, "disambiguation");
+      if (seenTokens.has(normalizedName)) invalidManifestRecord("disambiguation");
+      seenTokens.add(normalizedName);
+      return {
+        id,
+        kind: "underspecified-name" as const,
+        normalizedName,
+        movementId: nonEmptyString(record.movementId, "disambiguation"),
+        candidateExerciseIds: nonEmptyStringArray(record.candidateExerciseIds, "disambiguation"),
+        matchedModifierIds: stringArray(record.matchedModifierIds, "disambiguation"),
+      };
+    }
+    if (record.kind === "non-identity-phrase") {
+      assertOnlyKeys(record, ["id", "kind", "normalizedPhrase", "annotation", "behavior"], "disambiguation");
+      const normalizedPhrase = nonEmptyString(record.normalizedPhrase, "disambiguation");
+      if (seenTokens.has(normalizedPhrase)) invalidManifestRecord("disambiguation");
+      seenTokens.add(normalizedPhrase);
+      const behavior = record.behavior;
+      if (behavior !== "strip" && behavior !== "paused-duration" && behavior !== "reject-alternative") {
+        invalidManifestRecord("disambiguation");
+      }
+      return {
+        id,
+        kind: "non-identity-phrase" as const,
+        normalizedPhrase,
+        annotation: nonEmptyString(record.annotation, "disambiguation"),
+        behavior,
+      };
+    }
+    return invalidManifestRecord("disambiguation");
+  });
 }
 
 export async function assertSnapshotDigest(snapshotPath: string, digestPath: string): Promise<string> {
@@ -329,7 +386,7 @@ type CurationArtifacts = {
   variantRules: VariantRule[];
   candidates: VariantCandidate[];
   reviews: VariantReviewArtifact;
-  disambiguations: unknown[];
+  disambiguations: DisambiguationRecord[];
 };
 
 async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts> {
@@ -356,10 +413,6 @@ async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts
   const reviews = await loadVariantReviews(
     join(rootDir, "scripts/catalog-normalization/reviews/variant-adversarial-review.json"),
   );
-  validateUnmodeledManifestRecords(
-    artifacts.get("scripts/catalog-normalization/disambiguations.json")!,
-    "disambiguation",
-  );
   return {
     hashes: stableRecord(hashes) as Record<string, string>,
     schemaVersions: stableRecord(schemaVersions) as Record<string, number>,
@@ -371,7 +424,9 @@ async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts
     variantRules: decodeVariantRules(variantRules),
     candidates: candidates.records,
     reviews,
-    disambiguations: [...artifacts.get("scripts/catalog-normalization/disambiguations.json")!.records],
+    disambiguations: decodeDisambiguations(
+      artifacts.get("scripts/catalog-normalization/disambiguations.json")!,
+    ),
   };
 }
 
@@ -682,6 +737,27 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     ? (records as CatalogExercise[])
     : reviewed.exercises;
   const hasReviewedCandidates = manifests.candidates.length > 0;
+  // A disambiguation rule pointing at a nonexistent target is worse than no
+  // rule, so real complete builds refuse to ship dangling references.
+  if (isComplete && hasReviewedCandidates) {
+    const finalExerciseIds = new Set(completeExercises.map((exercise) => exercise.id));
+    for (const rule of manifests.disambiguations) {
+      if (rule.kind !== "underspecified-name") continue;
+      if (!normalized.registries.movementsById.has(rule.movementId)) {
+        throw new Error(`disambiguation rule ${rule.id} references unknown movement: ${rule.movementId}`);
+      }
+      for (const modifierId of rule.matchedModifierIds) {
+        if (!normalized.registries.modifiersById.has(modifierId)) {
+          throw new Error(`disambiguation rule ${rule.id} references unknown modifier: ${modifierId}`);
+        }
+      }
+      for (const exerciseId of rule.candidateExerciseIds) {
+        if (!finalExerciseIds.has(exerciseId)) {
+          throw new Error(`disambiguation rule ${rule.id} references unknown exercise: ${exerciseId}`);
+        }
+      }
+    }
+  }
   const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = isComplete && hasReviewedCandidates
     ? {
       "exercises.generated.json": `${JSON.stringify(completeExercises, null, 2)}\n`,

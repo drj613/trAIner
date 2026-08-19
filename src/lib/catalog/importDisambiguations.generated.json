@@ -1,4 +1,159 @@
 {
   "schemaVersion": 1,
-  "records": []
+  "records": [
+    {
+      "id": "back-squat-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "back squat",
+      "movementId": "squat",
+      "candidateExerciseIds": [
+        "barbell-squat",
+        "barbell-high-bar-squat",
+        "barbell-low-bar-squat"
+      ],
+      "matchedModifierIds": [
+        "barbell",
+        "back-rack"
+      ]
+    },
+    {
+      "id": "squat-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "squat",
+      "movementId": "squat",
+      "candidateExerciseIds": [
+        "barbell-squat",
+        "squat--barbell--front-rack",
+        "bodyweight-squat",
+        "dumbbell-squat"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "row-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "row",
+      "movementId": "row",
+      "candidateExerciseIds": [
+        "row",
+        "bent-over-barbell-row",
+        "row--cable",
+        "row--dumbbell",
+        "row--machine"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "lateral-raise-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "lateral raise",
+      "movementId": "raise-fly",
+      "candidateExerciseIds": [
+        "lateral-raise-dumbbell",
+        "cable-lateral-raise",
+        "lateral-raise-machine",
+        "lateral-raise-with-bands"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "shoulder-press-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "shoulder press",
+      "movementId": "overhead-landmine-press",
+      "candidateExerciseIds": [
+        "overhead-press",
+        "dumbbell-shoulder-press",
+        "cable-shoulder-press",
+        "shoulder-press-with-bands"
+      ],
+      "matchedModifierIds": [
+        "overhead"
+      ]
+    },
+    {
+      "id": "split-squat-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "split squat",
+      "movementId": "lunge-split-squat",
+      "candidateExerciseIds": [
+        "bulgarian-split-squat",
+        "dumbbell-split-squat",
+        "lunge-split-squat--bodyweight"
+      ],
+      "matchedModifierIds": [
+        "split-stance"
+      ]
+    },
+    {
+      "id": "phrase-competition",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "competition",
+      "annotation": "competition standard",
+      "behavior": "strip"
+    },
+    {
+      "id": "phrase-pain-free",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "pain free",
+      "annotation": "pain-free",
+      "behavior": "strip"
+    },
+    {
+      "id": "phrase-pain-free-depth",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "pain free depth",
+      "annotation": "pain-free depth",
+      "behavior": "strip"
+    },
+    {
+      "id": "phrase-pain-free-depth-to",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "to pain free depth",
+      "annotation": "pain-free depth",
+      "behavior": "strip"
+    },
+    {
+      "id": "phrase-pain-free-depth-to-a",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "to a pain free depth",
+      "annotation": "pain-free depth",
+      "behavior": "strip"
+    },
+    {
+      "id": "phrase-paused-1-second",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "1 second paused",
+      "annotation": "1-second pause",
+      "behavior": "paused-duration"
+    },
+    {
+      "id": "phrase-paused-2-second",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "2 second paused",
+      "annotation": "2-second pause",
+      "behavior": "paused-duration"
+    },
+    {
+      "id": "phrase-paused-3-second",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "3 second paused",
+      "annotation": "3-second pause",
+      "behavior": "paused-duration"
+    },
+    {
+      "id": "phrase-paused-5-second",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "5 second paused",
+      "annotation": "5-second pause",
+      "behavior": "paused-duration"
+    },
+    {
+      "id": "phrase-or-alternative",
+      "kind": "non-identity-phrase",
+      "normalizedPhrase": "or",
+      "annotation": "alternative prescription",
+      "behavior": "reject-alternative"
+    }
+  ]
 }

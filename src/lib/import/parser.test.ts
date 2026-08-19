@@ -7,10 +7,13 @@ import { getRenderableDays } from "@/lib/programs/overrides";
 import { matchExercise } from "@/lib/catalog/match";
 import { highBarBackSquat, makeImportMatchContext } from "./resolution.testFixtures";
 
+// "Barbell Squat" is an exact concrete catalogue name; the bare "Squat" now
+// carries a reviewed underspecified-name rule, and these fixtures need a name
+// that resolves without a warning.
 const minimalDay = (day: number, title: string) => ({
   day,
   title,
-  sections: [{ type: "strength", groups: [{ exercises: [{ name: "Squat" }] }] }],
+  sections: [{ type: "strength", groups: [{ exercises: [{ name: "Barbell Squat" }] }] }],
 });
 
 describe("import parser", () => {
