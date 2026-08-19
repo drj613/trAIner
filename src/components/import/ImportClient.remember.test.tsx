@@ -100,6 +100,28 @@ const fourWeekJson = JSON.stringify({
   ],
 });
 
+// A name the resolver can never look an alias up for: `or` is a
+// `reject-alternative` phrase, so `resolveName` returns a standalone result
+// before it ever consults the alias table.
+const alternativeNameJson = JSON.stringify({
+  program_name: "Alternatives",
+  days: [
+    {
+      day: 1,
+      title: "Lower",
+      sections: [
+        {
+          name: "Main",
+          type: "strength",
+          groups: [
+            { type: "single", exercises: [{ name: "Back Squat or Lunge", sets: 3, reps: "5" }] },
+          ],
+        },
+      ],
+    },
+  ],
+});
+
 async function pasteAndValidate(
   user: ReturnType<typeof userEvent.setup>,
   json = JSON.stringify(fixture),
@@ -350,5 +372,33 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
     expect(screen.getByText(/4 exercises imported as custom/i)).toBeInTheDocument();
     expect(screen.queryByText(/1 exercise imported as custom/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/mapped to catalog/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("ImportClient: a Remember tick that could never take effect", () => {
+  it("refuses it in words, and stores nothing, for a name that offers a choice", async () => {
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: alternativeNameJson },
+    });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+
+    // Answer it for this import, which is the only thing that makes the tick
+    // reachable at all.
+    await user.click(await screen.findByRole("button", { name: /Barbell Back Squat/i }));
+
+    const remember = screen.getByRole("checkbox", { name: /^Remember "Back Squat or Lunge"/ });
+    expect(remember).toBeDisabled();
+    expect(screen.getByText(/names more than one exercise/i)).toBeInTheDocument();
+
+    await reviewAndSave(user);
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+    // The import itself still carries the answer...
+    expect(
+      collectNamed(savedProgram(), "Back Squat or Lunge").map((e) => e.canonicalExerciseId),
+    ).toEqual(["barbell-back-squat"]);
+    // ...and no unreadable row was written for it.
+    expect(await storedAliases()).toEqual([]);
   });
 });

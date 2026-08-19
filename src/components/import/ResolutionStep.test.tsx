@@ -44,6 +44,59 @@ function uniform(id: string): Record<string, string> {
   return Object.fromEntries(expectedEightPaths.map((path) => [path, id]));
 }
 
+/**
+ * A group for a name the resolver can never look an alias up for, in the shape
+ * the parser really produces for one: `unmatched`, fuzzy suggestions only.
+ */
+function makeUnmatchedGroup(rawName: string): ResolutionGroup {
+  const path = `days.9.sections.0.groups.0.exercises.0`;
+  return {
+    groupKey: `unmatched:${rawName.toLowerCase()}`,
+    normalizedRawName: rawName.toLowerCase(),
+    kind: "unmatched",
+    occurrences: [{ path, rawName, kind: "unmatched", candidates: [] }],
+    occurrenceCount: 1,
+    remember: false,
+  };
+}
+
+describe("ResolutionStep: a Remember tick that could never take effect", () => {
+  function renderName(rawName: string) {
+    const group = makeUnmatchedGroup(rawName);
+    const path = group.occurrences[0].path;
+    return renderStep({
+      groups: [group],
+      resolutions: { [path]: "barbell-low-bar-squat" },
+      storedCounts: { [group.groupKey]: 1 },
+    });
+  }
+
+  it("refuses the tick, in words, for a name that offers a choice of exercises", () => {
+    renderName("Back Squat or Lunge");
+    expect(
+      screen.getByRole("checkbox", { name: /^Remember "Back Squat or Lunge"/ }),
+    ).toBeDisabled();
+    expect(screen.getByText(/names more than one exercise/i)).toBeInTheDocument();
+    expect(screen.getByText(/this import only/i)).toBeInTheDocument();
+  });
+
+  it("refuses the tick, in words, for a name that is nothing but annotations", () => {
+    renderName("Competition");
+    expect(screen.getByRole("checkbox", { name: /^Remember "Competition"/ })).toBeDisabled();
+    expect(screen.getByText(/no exercise name/i)).toBeInTheDocument();
+  });
+
+  it("still offers the tick for an ordinary name in the same shape", () => {
+    // The control: without it, a card that failed to render its checkbox at all
+    // would satisfy both tests above.
+    renderName("Jefferson Curl");
+    expect(
+      screen.getByRole("checkbox", { name: /^Remember "Jefferson Curl"/ }),
+    ).toBeEnabled();
+    expect(screen.queryByText(/this import only/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("ResolutionStep grouped choices", () => {
   it("shows one choice for eight repeated occurrences", () => {
     renderStep();

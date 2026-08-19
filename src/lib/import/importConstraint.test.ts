@@ -16,6 +16,7 @@ import {
   buildInitialResolutions,
   applyResolutions,
   dedupeAliasResolutions,
+  unrememberableReason,
   CUSTOM_ID,
   type ResolutionItem,
 } from "./resolution";
@@ -91,8 +92,18 @@ describe("import -> save with a deload override that reuses base-day exercise na
     // ImportClient.handleSave.
     const aliasesToSave = dedupeAliasResolutions(resolvedItems, resolutions);
     // One alias write per unique normalized name — the duplicate rawName
-    // pairs collapse to a single save each.
-    expect(aliasesToSave.length).toBe(rawNameCounts.size);
+    // pairs collapse to a single save each — MINUS the names no stored alias
+    // could ever be read back for. This fixture carries exactly one: an
+    // `X or Y` name, for which `resolveName` returns a standalone result
+    // before it consults the alias table, so the row would have been written
+    // and then ignored forever. Named rather than subtracted blindly, so a
+    // fixture edit cannot quietly change what this count means.
+    const unrememberable = [...rawNameCounts.keys()].filter(
+      (rawName) => unrememberableReason(rawName) !== undefined,
+    );
+    expect(unrememberable).toEqual(["Assisted or bodyweight neutral-grip pull-up"]);
+    expect(aliasesToSave.length).toBe(rawNameCounts.size - unrememberable.length);
+    expect(aliasesToSave.map((entry) => entry.alias)).not.toContain(unrememberable[0]);
 
     await Promise.all(aliasesToSave.map((entry) => aliasRepo.save(entry)));
 

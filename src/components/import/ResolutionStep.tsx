@@ -7,6 +7,7 @@ import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
 import {
   CUSTOM_ID,
   rememberableTarget,
+  unrememberableReason,
   type ResolutionGroup,
   type ResolutionItem,
 } from "@/lib/import/resolution";
@@ -260,6 +261,10 @@ function GroupCard({
   // and keep the search/create affordances.
   const isVersionChoice = group.kind === "underspecified" && candidates.length > 0;
   const target = rememberableTarget(group, resolutions);
+  // A tick that could never take effect is not offered. Deliberately NOT folded
+  // into `rememberableTarget`: that value also drives the version selector, and
+  // blanking it there would break the choice itself rather than the shortcut.
+  const unrememberable = unrememberableReason(displayName);
   const chosen = new Set(
     group.occurrences.map((o) => resolutions[o.path]).filter((id) => Boolean(id)),
   );
@@ -349,8 +354,8 @@ function GroupCard({
             <label className="flex items-center gap-1.5 text-xs">
               <input
                 type="checkbox"
-                checked={remembered && target !== undefined}
-                disabled={target === undefined}
+                checked={remembered && target !== undefined && unrememberable === undefined}
+                disabled={target === undefined || unrememberable !== undefined}
                 onChange={(e) => onRememberChange(group.groupKey, e.target.checked)}
               />
               {/* The name is in the label, not just the row heading: two
@@ -380,7 +385,12 @@ function GroupCard({
               )}
             </div>
           </div>
-          {isSplit && (
+          {unrememberable !== undefined && (
+            <p className="text-[10px]" style={{ color: "var(--warn, #e6b664)" }}>
+              {unrememberable}
+            </p>
+          )}
+          {isSplit && unrememberable === undefined && (
             <p className="text-[10px] muted">
               Different versions chosen — can't be remembered.
             </p>

@@ -9,6 +9,7 @@ import {
   storedOccurrenceCounts,
   applyResolutionsWithStats,
   dedupeAliasResolutions,
+  unrememberableReason,
   CUSTOM_ID,
 } from "./resolution";
 import type { ResolutionGroup } from "./resolution";
@@ -1586,5 +1587,57 @@ describe("rememberedAliasConflicts token rules", () => {
         { normalizedAlias: "front  SQUAT ", canonicalExerciseId: "barbell-front-squat" },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe("names whose remembered mapping could never be read back", () => {
+  const item = (path: string, rawName: string) => ({ path, rawName });
+
+  it("names the problem for a name that offers a choice of exercises", () => {
+    // `resolveName` returns a standalone result for a `reject-alternative`
+    // name BEFORE it consults the alias table (identity.ts:281), so no stored
+    // alias can ever govern one. Writing the row would report success and do
+    // nothing.
+    const reason = unrememberableReason("Back Squat or Lunge");
+    expect(reason).toContain("Back Squat or Lunge");
+    expect(reason).toMatch(/more than one exercise/i);
+  });
+
+  it("names the problem for a name that is nothing but annotations", () => {
+    // "Competition" prepares to the empty string. Both stores refuse an empty
+    // token before opening a transaction, so the tick can only ever produce a
+    // thrown error the user cannot act on.
+    const reason = unrememberableReason("Competition");
+    expect(reason).toContain("Competition");
+    expect(reason).toMatch(/no exercise name/i);
+  });
+
+  it("has no objection to an ordinary name", () => {
+    expect(unrememberableReason("Back Squat")).toBeUndefined();
+    // An annotated name still resolves — it is keyed on the stripped token —
+    // so it stays rememberable.
+    expect(unrememberableReason("3 second paused Hatfield Squat")).toBeUndefined();
+  });
+
+  it("refuses to build an alias input for either of them", () => {
+    const out = dedupeAliasResolutions(
+      [
+        item("a", "Back Squat or Lunge"),
+        item("b", "Competition"),
+        item("c", "Back Squat"),
+      ],
+      { a: "barbell-low-bar-squat", b: "barbell-low-bar-squat", c: "barbell-low-bar-squat" },
+    );
+    // Completion canary: the ordinary name in the same batch still produces a
+    // mapping, so the two omissions are not an unrelated bail-out.
+    expect(out).toEqual([
+      { alias: "Back Squat", canonicalExerciseId: "barbell-low-bar-squat", provenance: "remembered" },
+    ]);
+  });
+
+  it("refuses a marked group for such a name", () => {
+    const group = makeGroup(["Back Squat or Lunge"], { kind: "unmatched", remember: true });
+    const resolutions = resolveAll(group, ["barbell-low-bar-squat"]);
+    expect(rememberedAliasInputs([group], resolutions)).toEqual([]);
   });
 });

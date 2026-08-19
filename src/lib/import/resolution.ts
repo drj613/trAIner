@@ -29,6 +29,34 @@ function storedAliasToken(rawName: string): string {
   return prepareImportName(rawName, disambiguationsByNormalizedName).normalizedName;
 }
 
+/**
+ * Why a remembered alias for this raw name could never take effect, or
+ * `undefined` when there is no objection.
+ *
+ * Two names in the catalogue's rule set produce a row nothing can ever read:
+ *
+ *  - a `reject-alternative` name ("X or Y"). `resolveName` returns a standalone
+ *    result for it BEFORE it consults the alias table (`identity.ts:281`), so no
+ *    stored alias can govern it, whatever token it is filed under.
+ *  - a name that is nothing but annotations ("Competition", "pain free"), which
+ *    prepares to the empty string. Both stores refuse an empty token before
+ *    opening a transaction, so the tick can only ever produce a thrown error.
+ *
+ * Either way the tick would report success and change nothing, which is the
+ * failure mode this whole effort exists to remove. The refusal is a sentence
+ * rather than a boolean because the user has to be told, and told what to do.
+ */
+export function unrememberableReason(rawName: string): string | undefined {
+  const prepared = prepareImportName(rawName, disambiguationsByNormalizedName);
+  if (prepared.hasAlternative) {
+    return `“${rawName}” names more than one exercise, so nothing could look a mapping for it up again. Used for this import only — change the name in the JSON to the one exercise you did.`;
+  }
+  if (!prepared.normalizedName) {
+    return `“${rawName}” leaves no exercise name once its annotations are set aside, so there is nothing to remember. Used for this import only — change the name in the JSON to the exercise you did.`;
+  }
+  return undefined;
+}
+
 const AUTO_CUSTOM_SECTION_TYPES = new Set(["warmup", "cooldown"]);
 
 export type ResolutionItem = {
@@ -212,6 +240,10 @@ export function dedupeAliasResolutions(
     // these; the skip lives here so the contract this function advertises
     // ("resolved items") is enforced where it is relied on.
     if (!canonicalExerciseId || canonicalExerciseId === CUSTOM_ID) continue;
+    // A name no stored alias could ever govern. The UI refuses the tick in
+    // words, and this is the second half of the same refusal: nothing reaches
+    // the store that the store could only ignore or reject.
+    if (unrememberableReason(item.rawName) !== undefined) continue;
     // Keyed on the token the alias will be STORED under, which is the token the
     // resolver reads (`storedAliasToken`). Two duration variants of one name
     // share it, so they are one mapping: keying them apart would hand
