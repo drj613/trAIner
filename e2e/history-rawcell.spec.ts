@@ -33,6 +33,9 @@ test.describe("History drawer — kg and raw-cell sets", () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("2.5kgx10")).toBeVisible({ timeout: 3000 });
     await expect(dialog.getByText("40s hold")).toBeVisible({ timeout: 3000 });
+    // Both cells produced a label, so the unreadable-sets marker must not show.
+    // It is reserved for an entry whose stored `sets` could not be read at all.
+    await expect(dialog.getByText("sets could not be read")).toHaveCount(0);
 
     await ctx.close();
   });
