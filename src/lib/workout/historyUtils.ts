@@ -1,12 +1,4 @@
 import type { WorkoutLogDocument, WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
-import { logLocalDate } from "./localDate";
-
-export type ExerciseSessionRow = {
-  date: string;
-  sets: string[];
-  note?: string;
-  volume: number;
-};
 
 /**
  * Label a logged set for display. Returns the raw cell verbatim when the value
@@ -237,36 +229,4 @@ export function deriveVolumeTrend(volumes: readonly number[]): "up" | "flat" | "
   if (recentAverage > priorAverage * 1.03) return "up";
   if (recentAverage < priorAverage * 0.97) return "down";
   return "flat";
-}
-
-export function aggregateExerciseHistory(
-  logs: WorkoutLogDocument[],
-  exerciseId: string,
-  canonicalExerciseId?: string,
-  limit = 8,
-): ExerciseSessionRow[] {
-  const rows: ExerciseSessionRow[] = [];
-
-  for (const log of logs) {
-    // Every matching entry, never `find`: one workout can log the same
-    // exercise twice (a top set plus a back-off block), and dropping the
-    // second entry would silently lose recorded work.
-    for (const { entry } of readableEntries(log)) {
-      const matches = canonicalExerciseId && entry.canonicalExerciseId
-        // Prefer canonical-id match when both sides supply one.
-        ? entry.canonicalExerciseId === canonicalExerciseId
-        // Legacy / pre-canonical fallback: slot-id match.
-        : entry.exerciseId === exerciseId;
-      if (!matches) continue;
-
-      rows.push({
-        date: logLocalDate(log),
-        sets: entrySetLabels(entry),
-        note: entryNote(entry),
-        volume: entryVolumeLb(entry),
-      });
-    }
-  }
-
-  return rows.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);
 }

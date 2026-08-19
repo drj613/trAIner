@@ -2,111 +2,44 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
+import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
+import { ExerciseCorrectionSheet, type CorrectionTarget } from "@/components/catalog/ExerciseCorrectionSheet";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import {
-  entryPerformedName,
-  formatSetLabel,
-  readableEntries,
-  readableSets,
-  setVolume,
-  textOf,
-} from "@/lib/workout/historyUtils";
-import { logLocalDate } from "@/lib/workout/localDate";
-import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type ExerciseSummary = {
-  exerciseId: string;
-  name: string;
-  sessions: number;
-  lastDate: string;
-  lastSets: string[];
-  best: string;
-  trend: "up" | "flat" | "down";
-  volumes: number[];
-};
-
-// ─── Format ──────────────────────────────────────────────────────────────────
-
-function formatSet(s: WorkoutSetLog): string {
-  return formatSetLabel(s, "×");
-}
-
-function deriveTrend(volumes: number[]): "up" | "flat" | "down" {
-  if (volumes.length < 3) return "flat";
-  const recent = volumes.slice(-3);
-  const avg = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const prior = volumes.slice(-6, -3);
-  if (prior.length === 0) return "flat";
-  const priorAvg = prior.reduce((a, b) => a + b, 0) / prior.length;
-  if (avg > priorAvg * 1.03) return "up";
-  if (avg < priorAvg * 0.97) return "down";
-  return "flat";
-}
+  projectExerciseHistory,
+  type FamilyHistorySummary,
+  type VersionHistorySummary,
+} from "@/lib/workout/historyProjection";
+import { textOf } from "@/lib/workout/historyUtils";
+import type { WorkoutLogDocument } from "@/lib/programs/types";
+import { HistoryWorkoutList, countEntries, formatSessionDate, groupByWorkout } from "./HistoryRows";
 
 /**
- * Reads stored logs through `historyUtils`' guards rather than dereferencing them
- * directly. This function renders the whole all-time History page, and
- * `src/lib/storage/appDb.ts:186-195` deliberately preserves a log whose `entries`
- * is not an array, whose entries are not records, or whose `sets` is not an array,
- * because an unreadable value "may be standing in for real sets we have no way to
- * recover". Measured before the guards: eight such shapes threw out of this
- * function, so one corrupt field showed the user no history at all. A value we
- * cannot read must never remove readable history from view.
+ * All-time history, read entirely through the shared projection.
  *
- * Grouping, counting and the first-wins best-set tie are untouched — Task 13 owns
- * replacing them with `VersionHistorySummary`.
+ * The page used to aggregate logs itself (`aggregateLogs`), which meant a second
+ * grouping rule, a second best-set rule and a second trend derivation living
+ * beside the ones the Today drawer used. They are gone: `projectExerciseHistory`
+ * decides identity, grouping and metrics once, and this file only decides what
+ * to draw.
+ *
+ * Two spec rules shape the layout:
+ *
+ * 1. **A family index row shows only family-level facts** — distinct workouts
+ *    and the most recent performed date. No PR, no best set, no volume trend,
+ *    because those are not comparable across mechanically different versions of
+ *    one movement.
+ * 2. **Performance summaries stay per concrete version**, so the detail view is
+ *    a stack of version panels above one combined chronological table.
  */
-export function aggregateLogs(logs: WorkoutLogDocument[]): ExerciseSummary[] {
-  const byExercise = new Map<string, { name: string; sessions: { date: string; sets: readonly WorkoutSetLog[] }[] }>();
 
-  for (const log of logs) {
-    // `textOf` because a corrupt `performedDate` flows through `logLocalDate`
-    // verbatim, and this date is both sorted and sliced as a string.
-    const date = textOf(logLocalDate(log));
-    for (const { entry } of readableEntries(log)) {
-      const key = entry.canonicalExerciseId ?? entry.exerciseId;
-      if (!byExercise.has(key)) {
-        byExercise.set(key, {
-          name: entryPerformedName(entry) ?? textOf(entry.exerciseId),
-          sessions: [],
-        });
-      }
-      byExercise.get(key)!.sessions.push({ date, sets: readableSets(entry) });
-    }
-  }
-
-  const summaries: ExerciseSummary[] = [];
-  for (const [id, data] of byExercise.entries()) {
-    const sorted = [...data.sessions].sort((a, b) => a.date.localeCompare(b.date));
-    const last = sorted[sorted.length - 1];
-    const lastSets = last?.sets.map(formatSet).filter(Boolean) ?? [];
-    const volumes = sorted.map((s) => s.sets.reduce((sum, st) => sum + setVolume(st), 0));
-    const allSets = sorted.flatMap((s) => [...s.sets]);
-    const bestVol = Math.max(...allSets.map(setVolume), 0);
-    const bestSet = allSets.find((s) => setVolume(s) === bestVol);
-    const best = bestSet ? formatSet(bestSet) : "—";
-
-    summaries.push({
-      exerciseId: id,
-      name: data.name,
-      sessions: sorted.length,
-      lastDate: last?.date.slice(5).replace("-", "/") || "—",
-      lastSets,
-      best,
-      trend: deriveTrend(volumes),
-      volumes,
-    });
-  }
-
-  return summaries.sort((a, b) => b.sessions - a.sessions);
-}
+/** Families last performed within this many days count as `recent`. */
+const RECENT_WINDOW_DAYS = 45;
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
-function MiniSpark({ nums, stale = false }: { nums: number[]; stale?: boolean }) {
+function MiniSpark({ nums }: { nums: readonly number[] }) {
   if (nums.length < 2) return null;
   const w = 56;
   const h = 14;
@@ -120,13 +53,12 @@ function MiniSpark({ nums, stale = false }: { nums: number[]; stale?: boolean })
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-  const stroke = stale ? "var(--fg-4)" : "var(--fg-3)";
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block", flexShrink: 0 }}>
       <polyline
         points={pts}
         fill="none"
-        stroke={stroke}
+        stroke="var(--fg-3)"
         strokeWidth="1.1"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -143,166 +75,128 @@ function TrendArrow({ dir }: { dir: "up" | "flat" | "down" }) {
   };
   const m = map[dir];
   return (
-    <span style={{ color: m.color, fontFamily: "var(--font-mono)", fontSize: 11 }}>{m.char}</span>
+    <span
+      data-testid="trend"
+      style={{ color: m.color, fontFamily: "var(--font-mono)", fontSize: 11 }}
+    >
+      {m.char}
+    </span>
   );
 }
 
-// ─── Exercise detail ──────────────────────────────────────────────────────────
+// ─── Version panel ───────────────────────────────────────────────────────────
 
-function ExerciseDetail({
-  ex,
-  onBack,
-}: {
-  ex: ExerciseSummary;
-  onBack: () => void;
-}) {
-  const months = ex.volumes.slice(-6).map((_, i, arr) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - (arr.length - 1 - i));
-    return d.toLocaleString("default", { month: "short" });
-  });
-  const maxV = Math.max(...ex.volumes, 1);
-
+/**
+ * One concrete version's own numbers.
+ *
+ * `sessionCount` and `entryCount` are both shown. They are different questions —
+ * "how many workouts" and "how many times it was logged" — and the page that
+ * printed only the entry count and called it sessions was simply wrong about a
+ * user who logs a top set and a back-off block in one workout.
+ */
+function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
   return (
-    <div>
-      <button
-        className="btn ghost"
-        onClick={onBack}
-        style={{ marginBottom: 10, padding: "4px 8px" }}
-      >
+    <div
+      data-testid="version-summary"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        gap: 8,
+        alignItems: "center",
+        padding: "8px 12px",
+        borderBottom: "1px solid var(--line)",
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{
+          display: "flex", alignItems: "baseline", gap: 6, fontSize: 13, fontWeight: 500,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          <span>{summary.label}</span>
+          <TrendArrow dir={summary.trend} />
+        </div>
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-3)",
+          display: "flex", gap: 8, marginTop: 2,
+        }}>
+          <span>
+            {summary.sessionCount} session{summary.sessionCount === 1 ? "" : "s"}
+            {" · "}
+            {summary.entryCount} {summary.entryCount === 1 ? "entry" : "entries"}
+          </span>
+          <span style={{ color: "var(--fg-4)" }}>last {formatSessionDate(summary.lastDate)}</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+        <MiniSpark nums={summary.sessionVolumesLb} />
+        {summary.bestSetLabel && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--accent)" }}>
+            {summary.bestSetLabel}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Family detail ───────────────────────────────────────────────────────────
+
+function FamilyDetail({
+  family,
+  versions,
+  groups,
+  onBack,
+  onCorrect,
+}: {
+  family: FamilyHistorySummary;
+  versions: VersionHistorySummary[];
+  groups: ReturnType<typeof groupByWorkout>;
+  onBack: () => void;
+  onCorrect: (target: CorrectionTarget) => void;
+}) {
+  const entryCount = countEntries(groups);
+  return (
+    <div data-testid="family-detail">
+      <button className="btn ghost" onClick={onBack} style={{ marginBottom: 10, padding: "4px 8px" }}>
         <ChevronLeft size={12} /> History index
       </button>
 
-      <div style={{ marginBottom: 14 }}>
-        <h2
-          style={{ margin: 0, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--fg)" }}
-        >
-          {toTitleCase(ex.name)}
+      <div style={{ marginBottom: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--fg)" }}>
+          {toTitleCase(family.label)}
         </h2>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--fg-3)",
-            marginTop: 2,
-            display: "flex",
-            gap: 6,
-          }}
-        >
-          <span>{ex.sessions} sessions</span>
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)",
+          marginTop: 2, display: "flex", gap: 6,
+        }}>
+          <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
           <span style={{ color: "var(--line-2)" }}>·</span>
-          <span>last {ex.lastDate}</span>
+          <span>{entryCount} {entryCount === 1 ? "entry" : "entries"}</span>
+          <span style={{ color: "var(--line-2)" }}>·</span>
+          <span>last {formatSessionDate(family.latestDate)}</span>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div
-        style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 14 }}
-      >
-        {[
-          { lbl: "best", v: ex.best, accent: true },
-          { lbl: "last", v: ex.lastSets[0] ?? "—" },
-          { lbl: "trend", v: ex.trend },
-        ].map((s) => (
-          <div
-            key={s.lbl}
-            style={{
-              padding: "8px 10px",
-              background: "var(--bg-2)",
-              border: "1px solid var(--line)",
-              borderRadius: "var(--r)",
-            }}
-          >
-            <div className="tx-up">{s.lbl}</div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 13,
-                color: s.accent ? "var(--accent)" : "var(--fg)",
-                fontWeight: 500,
-                marginTop: 2,
-              }}
-            >
-              {s.v}
-            </div>
-          </div>
+      {/* Metrics, per concrete version. Deliberately no family row here: a PR
+          across mechanically different versions of one movement is a number
+          nobody performed. */}
+      <div style={{
+        border: "1px solid var(--line)", borderRadius: "var(--r)",
+        background: "var(--bg-2)", overflow: "hidden", marginBottom: 12,
+      }}>
+        {versions.map((version) => (
+          <VersionPanel key={version.versionKey} summary={version} />
         ))}
       </div>
 
-      {/* Volume bars */}
-      {ex.volumes.length >= 2 && (
-        <div
-          style={{
-            background: "var(--bg-2)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r)",
-            padding: 12,
-            marginBottom: 12,
-          }}
-        >
-          <span className="tx-up" style={{ marginBottom: 8, display: "block" }}>
-            session volume
-          </span>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${months.length}, 1fr)`,
-              gap: 6,
-              alignItems: "end",
-              height: 80,
-            }}
-          >
-            {ex.volumes.slice(-6).map((v, i, arr) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "100%",
-                    height: `${(v / maxV) * 70}px`,
-                    background:
-                      i === arr.length - 1 ? "var(--accent)" : "var(--line-2)",
-                    borderRadius: 1,
-                    opacity: i === arr.length - 1 ? 1 : 0.7,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    color: "var(--fg-3)",
-                  }}
-                >
-                  {months[i]}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div
-        style={{
-          padding: 12,
-          background: "var(--bg-2)",
-          border: "1px dashed var(--line-2)",
-          borderRadius: "var(--r)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--fg-3)",
-          lineHeight: 1.6,
-        }}
-      >
-        <span className="tx-up" style={{ display: "block", marginBottom: 4 }}>
-          placeholder
-        </span>
-        Full session log table, set-by-set breakdown, PR timeline, and RPE annotations coming soon.
+      <span className="tx-up" style={{ display: "block", marginBottom: 4 }}>
+        every session
+      </span>
+      <div style={{
+        border: "1px solid var(--line)", borderRadius: "var(--r)",
+        background: "var(--bg-2)", overflow: "hidden",
+      }}>
+        <HistoryWorkoutList groups={groups} onCorrect={onCorrect} />
       </div>
     </div>
   );
@@ -314,21 +208,23 @@ const FILTERS = ["all", "recent", "stale"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const SORTS = [
-  { id: "sessions", label: "#" },
+  { id: "workouts", label: "#" },
   { id: "name", label: "a-z" },
-  { id: "trend", label: "trend" },
+  { id: "recent", label: "last" },
 ] as const;
 type Sort = (typeof SORTS)[number]["id"];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function HistoryClient() {
+  const { context } = useExerciseNormalization();
   const [logs, setLogs] = useState<WorkoutLogDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [sort, setSort] = useState<Sort>("sessions");
-  const [detail, setDetail] = useState<ExerciseSummary | null>(null);
+  const [sort, setSort] = useState<Sort>("workouts");
+  const [openFamilyKey, setOpenFamilyKey] = useState<string | null>(null);
+  const [correctionTarget, setCorrectionTarget] = useState<CorrectionTarget | null>(null);
 
   useEffect(() => {
     logRepo
@@ -338,25 +234,69 @@ export function HistoryClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  const exercises = useMemo(() => aggregateLogs(logs), [logs]);
+  // `context` is a dependency, so a correction saved from a history row
+  // regroups the page from the logs already in memory — no second read, and
+  // nothing about what was logged changes.
+  const projection = useMemo(() => projectExerciseHistory(logs, context), [logs, context]);
+
+  const families = useMemo(() => [...projection.familySummaries.values()], [projection]);
+
+  const staleBefore = useMemo(
+    () => new Date(Date.now() - RECENT_WINDOW_DAYS * 86_400_000).toISOString(),
+    [],
+  );
 
   const filtered = useMemo(() => {
-    let rows = exercises;
-    if (filter === "recent") rows = rows.filter((e) => e.sessions > 3);
-    if (filter === "stale") rows = rows.filter((e) => e.sessions <= 3);
+    let rows = families;
+    // `recent` and `stale` are about WHEN, which is what the words say. They
+    // used to split on a session count that itself counted entries — a
+    // frequency test wearing the words of a time test, wrong twice over.
+    // `latestPerformedAt` is compared as text against an ISO instant, so an
+    // unreadable timestamp sorts as older and reads as stale rather than
+    // claiming a workout happened recently.
+    if (filter === "recent") rows = rows.filter((f) => textOf(f.latestPerformedAt) >= staleBefore);
+    if (filter === "stale") rows = rows.filter((f) => textOf(f.latestPerformedAt) < staleBefore);
     if (q.trim()) {
-      const qq = q.trim().toLowerCase();
-      rows = rows.filter((e) => e.name.toLowerCase().includes(qq));
+      const needle = q.trim().toLowerCase();
+      rows = rows.filter((f) => f.label.toLowerCase().includes(needle));
     }
     return [...rows].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "trend") return (b.trend === "up" ? 1 : 0) - (a.trend === "up" ? 1 : 0);
-      return b.sessions - a.sessions;
+      if (sort === "name") return a.label.localeCompare(b.label);
+      if (sort === "recent") return textOf(b.latestPerformedAt).localeCompare(textOf(a.latestPerformedAt));
+      return b.workoutCount - a.workoutCount;
     });
-  }, [exercises, filter, sort, q]);
+  }, [families, filter, sort, q, staleBefore]);
+
+  const openFamily = openFamilyKey ? projection.familySummaries.get(openFamilyKey) : undefined;
+
+  const detail = useMemo(() => {
+    if (!openFamily) return null;
+    return {
+      family: openFamily,
+      versions: openFamily.versionKeys
+        .map((key) => projection.versionSummaries.get(key))
+        .filter((summary): summary is VersionHistorySummary => summary !== undefined),
+      groups: groupByWorkout(projection.rowsByFamilyKey.get(openFamily.familyKey) ?? []),
+    };
+  }, [openFamily, projection]);
+
+  const sheet = correctionTarget && (
+    <ExerciseCorrectionSheet target={correctionTarget} onClose={() => setCorrectionTarget(null)} />
+  );
 
   if (detail) {
-    return <ExerciseDetail ex={detail} onBack={() => setDetail(null)} />;
+    return (
+      <>
+        <FamilyDetail
+          family={detail.family}
+          versions={detail.versions}
+          groups={detail.groups}
+          onBack={() => setOpenFamilyKey(null)}
+          onCorrect={setCorrectionTarget}
+        />
+        {sheet}
+      </>
+    );
   }
 
   if (loading) {
@@ -367,7 +307,7 @@ export function HistoryClient() {
     );
   }
 
-  if (exercises.length === 0) {
+  if (families.length === 0) {
     return (
       <div
         style={{
@@ -392,15 +332,12 @@ export function HistoryClient() {
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--fg)" }}>
           History
         </h1>
-        <span
-          className="tx-mono"
-          style={{ fontSize: 11, color: "var(--fg-3)" }}
-        >
-          {exercises.length} exercises · {logs.length} sessions
+        <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-3)" }}>
+          {families.length} movements · {logs.length} workouts
         </span>
       </div>
       <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
-        Tap an exercise to see all sessions.
+        Tap a movement to see every version and session.
       </p>
 
       {/* Search */}
@@ -420,7 +357,7 @@ export function HistoryClient() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="filter exercises…"
+          placeholder="filter movements…"
           style={{
             flex: 1,
             background: "transparent",
@@ -496,7 +433,7 @@ export function HistoryClient() {
         ))}
       </div>
 
-      {/* List */}
+      {/* Index */}
       <div
         style={{
           border: "1px solid var(--line)",
@@ -510,19 +447,16 @@ export function HistoryClient() {
             no matches
           </div>
         ) : (
-          filtered.map((ex, i) => (
+          filtered.map((family, i) => (
             <button
-              key={ex.exerciseId}
-              onClick={() => setDetail(ex)}
+              key={family.familyKey}
+              onClick={() => setOpenFamilyKey(family.familyKey)}
               style={{
                 width: "100%",
                 textAlign: "left",
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                gap: 6,
-                padding: "10px 12px",
-                borderBottom:
-                  i < filtered.length - 1 ? "1px solid var(--line)" : "none",
+                display: "block",
+                padding: "9px 12px",
+                borderBottom: i < filtered.length - 1 ? "1px solid var(--line)" : "none",
                 background: "transparent",
                 color: "var(--fg)",
                 cursor: "pointer",
@@ -532,76 +466,32 @@ export function HistoryClient() {
                 borderRight: "none",
                 transition: "background .1s",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "var(--bg-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 6,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    marginBottom: 3,
-                  }}
-                >
-                  <span>{toTitleCase(ex.name)}</span>
-                  <TrendArrow dir={ex.trend} />
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10.5,
-                    color: "var(--fg-3)",
-                    display: "flex",
-                    gap: 8,
-                  }}
-                >
-                  <span>{ex.sessions} sessions</span>
-                  <span style={{ color: "var(--fg-4)" }}>last {ex.lastDate}</span>
-                  <span
-                    style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {ex.lastSets.slice(0, 3).join(" ")}
-                  </span>
-                </div>
+              <div style={{
+                fontSize: 13, fontWeight: 500, whiteSpace: "nowrap",
+                overflow: "hidden", textOverflow: "ellipsis", marginBottom: 2,
+              }}>
+                {toTitleCase(family.label)}
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                  gap: 4,
-                  flexShrink: 0,
-                }}
-              >
-                <MiniSpark nums={ex.volumes} />
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "var(--accent)",
-                  }}
-                >
-                  {ex.best}
+              {/* Family-level facts only. Anything comparable — best, PR, trend
+                  — belongs to a concrete version and lives one level in. */}
+              <div style={{
+                fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-3)",
+                display: "flex", gap: 8,
+              }}>
+                <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
+                <span style={{ color: "var(--fg-4)" }}>
+                  {family.versionKeys.length} version{family.versionKeys.length === 1 ? "" : "s"}
                 </span>
+                <span style={{ color: "var(--fg-4)" }}>last {formatSessionDate(family.latestDate)}</span>
               </div>
             </button>
           ))
         )}
       </div>
+      {sheet}
     </div>
   );
 }

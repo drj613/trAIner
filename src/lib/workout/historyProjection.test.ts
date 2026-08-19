@@ -21,7 +21,6 @@ import {
   squat,
 } from "@/lib/catalog/identity.testFixtures";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
-import { aggregateExerciseHistory } from "./historyUtils";
 
 const {
   context,
@@ -444,15 +443,6 @@ describe("unreadable sets", () => {
       expect(projection.versionSummaries.get(bench.id)).toBeUndefined();
     },
   );
-
-  it("still reports an unreadable-sets entry as data-bearing to the drawer path", () => {
-    const rows = aggregateExerciseHistory(
-      [logWith("corrupt")],
-      "slot-b",
-      bench.id,
-    );
-    expect(rows).toEqual([{ date: "2026-09-01", sets: [], note: undefined, volume: 0 }]);
-  });
 });
 
 // ─── Two exercises in one slot ───────────────────────────────────────────────
@@ -755,15 +745,6 @@ describe("unreadable entries", () => {
     const projection = projectExerciseHistory([mixed], context);
     expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`)).toEqual(["l-bad#1"]);
   });
-
-  it("keeps the drawer path readable too", () => {
-    const rows = aggregateExerciseHistory(
-      [withEntries("corrupt"), goodLog] as WorkoutLogDocument[],
-      "slot",
-      highBar.id,
-    );
-    expect(rows).toEqual([{ date: "2026-11-01", sets: ["405x1"], note: undefined, volume: 405 }]);
-  });
 });
 
 // ─── Unreadable fields inside an entry ───────────────────────────────────────
@@ -915,19 +896,6 @@ describe("unreadable set fields", () => {
       sets: ["200x5"], volumeLb: 1000,
     });
   });
-
-  // The drawer path reads labels, the entry note and the volume — never
-  // `setHasData` — so `rawCell` is the only set-level field it dereferences. The
-  // `notes` shapes are deliberately not asserted here: they would pass without
-  // the guard and prove nothing.
-  it.each(corruptShapes.filter(([label]) => label.startsWith("rawCell")))(
-    "keeps the drawer path readable too when %s",
-    (_label, set) => {
-      expect(aggregateExerciseHistory([logWithSet(set)], "slot", highBar.id)).toEqual([
-        { date: "2027-02-02", sets: ["200x5"], note: undefined, volume: 1000 },
-      ]);
-    },
-  );
 
   it("rows a set whose only content is an unreadable rawCell, with no label", () => {
     const projection = projectExerciseHistory([{

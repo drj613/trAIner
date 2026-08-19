@@ -27,10 +27,10 @@ export function localDateOf(iso: string): string {
  * `src/lib/storage/appDb.ts:186-195` deliberately preserves a log whose fields
  * it cannot read, so a hand-edited or foreign backup reaches this function with
  * a `performedDate` or `performedAt` that is not a string. That value used to
- * pass straight through: `aggregateExerciseHistory` then sorted the rows with
- * `b.date.localeCompare(a.date)` and threw, which made the Today history drawer
- * an inert tap for *every* exercise, and `HistoryDrawer` threw again on
- * `localYmd.split` at render with no error boundary above it.
+ * pass straight through: the Today drawer's aggregator sorted the rows with
+ * `b.date.localeCompare(a.date)` and threw, which made the drawer an inert tap
+ * for *every* exercise, and `HistoryDrawer` threw again on `localYmd.split` at
+ * render with no error boundary above it.
  *
  * The guard lives here rather than at each caller because every reader of a
  * log's local date goes through this one function — the history drawer, the
