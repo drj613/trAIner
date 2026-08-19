@@ -261,13 +261,16 @@ describe("aliasRepo.save", () => {
     await expect(aliasRepo.list()).resolves.toEqual([]);
   });
 
-  it("putRaw keeps the token the row was written under, normalized", async () => {
-    // `putRaw` is the imperative twin of restore, so it answers the same way:
-    // the stored token is the key its writer chose, and a writer that keys an
-    // annotated name on the phrase-stripped token the resolver reads is doing
-    // the right thing, not carrying a stale one. Replacing it here is what made
-    // a correction stop working after a backup restore. The normalize pass
-    // stays, so case and spacing are still repaired.
+  it("putRaw repairs case and spacing in the stored token", async () => {
+    // Scope note, because the previous title overclaimed and this is the exact
+    // trap this plan keeps hitting: `"90/90 Hamstring"` is a PLAIN name, so
+    // `normalizeExerciseName` of the display text and of the stored token are
+    // both `"90 90 hamstring"`. This fixture therefore CANNOT distinguish "keep
+    // the stored token" from "re-derive it from the display text" — restoring
+    // the pre-fix key preference leaves it green. What it does pin is the
+    // normalize pass: drop it and the row lands on `"  90 90   HAMSTRING "`, a
+    // key no lookup can reach. The keep-the-stored-token property is the
+    // sibling below, whose annotated name can express the difference.
     await aliasRepo.putRaw({
       id: "legacy-alias-id",
       alias: "90/90 Hamstring",

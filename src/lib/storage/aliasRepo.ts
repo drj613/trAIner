@@ -128,11 +128,15 @@ export const aliasRepo: AliasRepository = {
   async putRaw(input, options) {
     if (!input.id) throw new Error("Cannot restore alias without id");
     // One shared rule with the migration/restore classifier, rather than a second
-    // opinion: recomputed from the display text, falling back to the stored
-    // token, and rejected outright when neither is usable. The old
-    // `normalizeExerciseName(input.alias)` threw on exactly the row
-    // classifyAliases now recovers, and accepted a row whose token normalized to
-    // "" — a key a second such row then collides with on the unique index.
+    // opinion: the row's OWN `normalizedAlias` is kept (put through the
+    // normalize pass, so whitespace and case cannot mint a key nothing looks
+    // up), and the display text is used only as a fallback when the stored token
+    // is unreadable or normalizes to "". Neither usable means the write is
+    // rejected outright. The old `normalizeExerciseName(input.alias)` re-keyed
+    // every row off its display text — silently moving a deliberately-stripped
+    // token — threw on exactly the row `classifyAliases` now recovers, and
+    // accepted a row whose token normalized to "": a key a second such row then
+    // collides with on the unique index.
     const token = aliasLookupToken(input);
     if (!token) throw new Error("Cannot restore alias without a usable alias or token");
     const document: AliasDocument = {

@@ -308,13 +308,18 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   // classifyAliases does two separable jobs here, and only one of them is
   // version-dependent:
   //
-  //  - Integrity, for every version: the token is recomputed from the alias text
-  //    and rows are deduped on the result. The file's own `normalizedAlias` is
-  //    never written. It is what `by-normalized-alias` (the schema's only unique
-  //    index) is keyed on, so a stale one restores without error and leaves the
-  //    alias permanently unreachable by aliasRepo.find(), and two stale ones can
-  //    collide and get the write rejected outright. A version-2 file is
-  //    hand-editable JSON, so this cannot be narrowed to version 1.
+  //  - Integrity, for every version: `normalizedAlias` is what
+  //    `by-normalized-alias` (the schema's only unique index) is keyed on, so
+  //    two rows landing on one token get the second write rejected outright. The
+  //    file's own `normalizedAlias` IS what gets written — put through the
+  //    normalize pass, and deduped on the result. Re-deriving it from the
+  //    display text instead was the NEW-A defect: it silently moved a row off
+  //    the key its writer chose, and an exported file's tokens are distinct by
+  //    construction (they came out of a database with that unique index), so
+  //    keeping them cannot introduce a collision the source did not have,
+  //    whereas recomputing can collapse two live keys onto one. A version-2 file
+  //    is hand-editable JSON, so the normalize-and-dedupe pass cannot be
+  //    narrowed to version 1.
   //  - Classification, scoped by the file's *version*, not by the individual
   //    row. A version-1 file predates the provenance field, so every one of its
   //    rows goes through the same retain-as-"legacy-auto"-or-purge rules as the

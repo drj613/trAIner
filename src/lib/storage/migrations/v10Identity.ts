@@ -346,9 +346,22 @@ export type AliasClassificationScope = "all" | "unclassified";
  * deliberate one, it was already the key the row lived under in the database
  * that exported it, and restoring it unchanged is fidelity rather than damage —
  * an alias is a resolution shortcut, so the worst case is a shortcut that was
- * already dead staying dead. One consequence, stated because it is a real cost:
- * an unclassified legacy row is still judged by the outcome gate below on that
- * token, so a hand-edited one naming no exercise is purged rather than repaired.
+ * already dead staying dead. Two consequences, stated because both are real
+ * costs:
+ *
+ *  1. An unclassified legacy row is still judged by the outcome gate below on
+ *     that token, so a hand-edited one naming no exercise is purged rather than
+ *     repaired.
+ *  2. A BOUNDED LOSS PATH, and named as loss rather than only as a
+ *     write-rejection question: two rows with *different* display texts that
+ *     share one stored token now collapse to one, where re-deriving from the
+ *     display text gave them two distinct keys and kept both. It is unreachable
+ *     from a legally exported file — `by-normalized-alias` is unique, so two
+ *     such rows cannot have coexisted in the database that exported them — it is
+ *     absorbed by `winsCollision` (a user's own correction, else the newer row)
+ *     rather than by arbitrary key order, and dropping an alias is the standing
+ *     exception to "unreadable content is never grounds for deletion", an alias
+ *     being only a resolution shortcut. Accepted, not overlooked.
  *
  * Shared by the migration/restore classifier and by `aliasRepo.putRaw`, so the
  * two cannot disagree about which rows are usable. Only the classifier dedupes,
