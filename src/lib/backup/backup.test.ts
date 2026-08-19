@@ -5,7 +5,9 @@ import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import { resetDbConnection } from "@/lib/storage/appDb";
 
 const mockClear = jest.fn().mockResolvedValue(undefined);
-const mockPut = jest.fn();
+// Resolves, because the real thing does: idb turns each request into a promise,
+// and restoreBackup marks every issued write's rejection handled as it goes.
+const mockPut = jest.fn().mockResolvedValue(undefined);
 
 // Per-store seed data for transaction reads. Tests set e.g.
 // storeData.programs = [myProgram] instead of mocking programRepo.list.

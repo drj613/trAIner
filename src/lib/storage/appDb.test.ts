@@ -1562,6 +1562,63 @@ describe("restoreBackup — version-2 documents", () => {
     }
   });
 
+  // The one backed-up field restore never validated. The `profile` store has
+  // keyPath "id", so put() on a primitive or on an object without a string id
+  // throws DataError *synchronously inside the already-open readwrite
+  // transaction*, after all eight clear() calls have been issued. An uncaught JS
+  // exception does not abort an IndexedDB transaction, so the clears commit, the
+  // puts never run, and the caller is told the restore failed: every store gone.
+  it.each([
+    { name: "a primitive profile", profile: "i-am-not-an-object" },
+    { name: "a profile with no id", profile: { name: "no id here" } },
+    { name: "a profile whose id is not a string", profile: { id: 7 } },
+  ])("rejects $name without destroying the workspace", async ({ profile }) => {
+    await programRepo.save(demoProgram);
+    const before = await programRepo.list();
+    const exported = await exportBackup();
+
+    await expect(restoreBackup({ ...exported, profile })).rejects.toThrow(/profile/);
+
+    await expect(programRepo.list()).resolves.toEqual(before);
+    await expect(logRepo.list()).resolves.toEqual([]);
+  });
+
+  it("accepts an absent or null profile", async () => {
+    await programRepo.save(demoProgram);
+    const exported = await exportBackup();
+    const { profile: _dropped, ...withoutProfile } = exported;
+
+    await expect(restoreBackup(withoutProfile)).resolves.toBeUndefined();
+    await expect(restoreBackup({ ...exported, profile: null })).resolves.toBeUndefined();
+    await expect(programRepo.list()).resolves.toHaveLength(1);
+  });
+
+  // The structural net, independent of any one field's validation: every write
+  // inside the transaction is wrapped, so a throw between the clears and the
+  // commit aborts instead of leaving an emptied workspace behind. Without it,
+  // the next unguarded line added inside that block has the blast radius above.
+  it("aborts the transaction when a write throws after the stores are cleared", async () => {
+    await programRepo.save(demoProgram);
+    const before = await programRepo.list();
+    const exported = await exportBackup();
+
+    const originalPut = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function patchedPut(
+      this: IDBObjectStore,
+      ...args: Parameters<IDBObjectStore["put"]>
+    ) {
+      if (this.name === "programs") throw new DOMException("injected write failure", "DataError");
+      return originalPut.apply(this, args);
+    };
+    try {
+      await expect(restoreBackup(exported)).rejects.toThrow("injected write failure");
+    } finally {
+      IDBObjectStore.prototype.put = originalPut;
+    }
+
+    await expect(programRepo.list()).resolves.toEqual(before);
+  });
+
   it("leaves the existing workspace intact when the document is rejected", async () => {
     await programRepo.save(demoProgram);
     const before = await programRepo.list();

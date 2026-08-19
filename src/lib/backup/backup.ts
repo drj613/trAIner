@@ -249,6 +249,23 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   ]);
   requireOverrideReplacements(doc["programs"]);
 
+  // The `profile` store has keyPath "id", so put() on a primitive — or on an
+  // object with no string `id` — throws DataError *inside* the write
+  // transaction, after every clear() has been issued. An uncaught JS exception
+  // does not abort an IndexedDB transaction, so those clears would commit while
+  // the puts never ran: the whole workspace gone, and the caller told the
+  // restore failed. Absent or null is legal (a workspace with no profile yet).
+  const profile = doc["profile"];
+  if (profile !== undefined && profile !== null) {
+    if (
+      typeof profile !== "object" ||
+      Array.isArray(profile) ||
+      typeof (profile as Record<string, unknown>)["id"] !== "string"
+    ) {
+      throw new Error("Invalid backup: 'profile' must be an object with a string id.");
+    }
+  }
+
   // Version 2 carries normalization overrides. Absent is only legal in a
   // version-1 file, where it means "none"; a version-2 file that lost the field
   // is a truncated file, not an empty override set.
@@ -307,22 +324,55 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     b.version === 2 ? b.normalizationOverrides : []
   ).map((override) => canonicalNormalizationOverride(override));
 
+  // Every transform runs to completion out here, before a single store is
+  // cleared. A throw from one of them (an unguarded read the guards do not cover
+  // yet, say) then rejects with nothing touched, rather than mid-transaction
+  // with the clears already issued.
+  const programs = b.programs.map((program) => migrateProgram(program, context));
+  const logs = b.logs.map((log) => migrateLog(log, context));
+
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
   const tx = db.transaction(BACKED_UP_STORES, "readwrite");
 
-  for (const store of BACKED_UP_STORES) tx.objectStore(store).clear();
+  // idb turns every request into a promise. The individual writes are
+  // deliberately not awaited — `tx.done` is the authoritative outcome, and a
+  // failed request aborts its own transaction — so each rejection is marked
+  // handled as it is issued. Without this, aborting below turns every in-flight
+  // request into a separate unhandled AbortError.
+  const issue = (request: Promise<unknown>): void => {
+    void request.catch(() => {});
+  };
 
-  if (b.profile) tx.objectStore("profile").put(b.profile);
-  for (const p of b.programs) tx.objectStore("programs").put(migrateProgram(p, context));
-  for (const l of b.logs) tx.objectStore("logs").put(migrateLog(l, context));
-  for (const a of aliases) tx.objectStore("aliases").put(a);
-  for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
-  for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);
-  for (const p of b.promptPresets ?? []) tx.objectStore("promptPresets").put(p);
-  for (const o of normalizationOverrides) tx.objectStore("normalizationOverrides").put(o);
+  try {
+    for (const store of BACKED_UP_STORES) issue(tx.objectStore(store).clear());
 
-  await tx.done;
+    if (b.profile) issue(tx.objectStore("profile").put(b.profile));
+    for (const p of programs) issue(tx.objectStore("programs").put(p));
+    for (const l of logs) issue(tx.objectStore("logs").put(l));
+    for (const a of aliases) issue(tx.objectStore("aliases").put(a));
+    for (const ue of b.userExercises ?? []) issue(tx.objectStore("userExercises").put(ue));
+    for (const e of b.bodyweight ?? []) issue(tx.objectStore("bodyweight").put(e));
+    for (const p of b.promptPresets ?? []) issue(tx.objectStore("promptPresets").put(p));
+    for (const o of normalizationOverrides) issue(tx.objectStore("normalizationOverrides").put(o));
+
+    await tx.done;
+  } catch (error) {
+    // An uncaught JS exception does not abort an IndexedDB transaction: it would
+    // simply auto-commit whatever was already issued, and the clears are always
+    // issued first. Aborting is what makes "the restore failed" true. The
+    // rejection of `done` is marked handled before aborting, because the abort
+    // rejects it with an AbortError nobody is listening for; the original cause
+    // is what the caller sees.
+    void tx.done.catch(() => {});
+    try {
+      tx.abort();
+    } catch {
+      // Already finished — a failed request aborts its own transaction, and
+      // abort() on a finished transaction throws.
+    }
+    throw error;
+  }
   // After the commit, never before: a listener that re-reads identity must not
   // see a half-cleared workspace. One event for the whole restore.
   dispatchExerciseIdentityChanged();
