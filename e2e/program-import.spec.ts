@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { chooseImportVersions, clearDb, IMPORT_PROGRAM_JSON } from "./helpers";
+import { clearDb, IMPORT_PROGRAM_JSON } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Program import suite — serial mode so tests chain: import → verify → map
@@ -50,20 +50,39 @@ test.describe("Program import", () => {
   });
 
   // 4. valid JSON parses and shows confirm step
-  test("valid JSON parses and shows confirm step", async () => {
+  test("an underspecified name demands a version before the import may proceed", async () => {
     const textarea = sharedPage.locator("textarea");
     await textarea.fill(IMPORT_PROGRAM_JSON);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
-    // An exercise-resolution step may appear before the confirm step. Plain
-    // `Squat` is an underspecified name, so it presents a version choice that
-    // must be answered before the step will let go.
-    await chooseImportVersions(sharedPage);
-    const reviewBtn = sharedPage.getByRole("button", { name: /review import/i });
-    if (await reviewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await reviewBtn.click();
-    }
+
+    // Asserted, not tolerated: plain `Squat` is covered by the reviewed
+    // disambiguation table, so the choice MUST appear. Every other spec answers
+    // this step through a permissive helper, which would stay green if the whole
+    // underspecified flow disappeared — this is the test that would not.
+    const select = sharedPage.getByLabel("Choose version for Squat");
+    await expect(select).toBeVisible();
+    await expect(sharedPage.getByRole("button", { name: /review import/i })).toBeDisabled();
+    await expect(
+      sharedPage.getByRole("checkbox", { name: /^Remember "Squat"/ }),
+    ).toBeDisabled();
+
+    await select.selectOption("barbell-squat");
+
+    // Answering it unlocks the step, and only then may the choice be remembered.
+    await expect(
+      sharedPage.getByRole("checkbox", { name: 'Remember "Squat" as Barbell Squat' }),
+    ).toBeEnabled();
+    await expect(
+      sharedPage.getByRole("checkbox", { name: 'Remember "Squat" as Barbell Squat' }),
+    ).not.toBeChecked();
+    await expect(sharedPage.getByRole("button", { name: /review import/i })).toBeEnabled();
+  });
+
+  test("valid JSON parses and shows confirm step", async () => {
+    await sharedPage.getByRole("button", { name: /review import/i }).click();
     // Confirm step shows the day and exercise summary
     await expect(sharedPage.getByText(/1 day · 1 exercise/i)).toBeVisible();
+    await expect(sharedPage.getByText(/1 exercise mapped to catalog/i)).toBeVisible();
   });
 
   // 5. save program persists to IndexedDB
