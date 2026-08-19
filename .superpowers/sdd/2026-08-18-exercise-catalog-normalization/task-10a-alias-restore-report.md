@@ -11,7 +11,7 @@ Commits:
 | `6ece7ee` | the fix: `aliasLookupToken` keeps the key its writer chose; rule text split off the key; five inherited tests re-pinned |
 | `37e661e` | NEW-B: the fixed-point property pinned against the real shipped artifact |
 | `ce885bd` | the two-generation case proved over a real database; two self-review comment corrections |
-| `1f4d45f` | report + the two false-claim corrections in `task-10-report.md` and one comment in `ExerciseCorrectionSheet.test.tsx` |
+| (this commit) | report + the two false-claim corrections in `task-10-report.md` and one comment in `ExerciseCorrectionSheet.test.tsx` |
 
 **e2e not run — controller instruction.** No Playwright was started at any point
 in this session. Nothing in my diff touches a component, a route, or a user
@@ -458,7 +458,7 @@ raised no timeout anywhere. Not cleared — disclosed.
 
 **DONE_WITH_CONCERNS**
 
-Commits: `6ece7ee`, `37e661e`, `ce885bd`, `1f4d45f`.
+Commits: `6ece7ee`, `37e661e`, `ce885bd`, plus this report's commit.
 Gates: test 103/1,552 green · typecheck clean · lint clean · build clean ·
 `git diff --check` clean · **e2e not run — controller instruction**.
 

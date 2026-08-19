@@ -633,7 +633,7 @@ Commit `acc61c2`. Both halves of the option, because the pairwise check is cheap
 1. The permutation test's comment now states the measured negative result — green under the pre-round intransitive comparator at n=3, 4, 5, 6 exhaustively and at n=40 over 400 shuffles, so it pins output stability, not transitivity, and the literal-order assertion carries it.
 2. A new `orders every pair the same way the whole list is ordered` compares all 28 pairs of 8 rows against the whole list's order. It does not depend on the sort algorithm noticing.
 
-**The obvious fixture for that test cannot fail, and I found that by mutation, not by reasoning.** With ISO stamps and unparseable garbage the pre-round comparator is *transitive*: a brute force over all ordered triples of an 11-value pool found **0 cycles**, and MO1 left the new test green. The reason is that ISO strings sort lexicographically in the same order they sort chronologically, so the two rules never disagree. Exposing the intransitivity needs a stamp that **parses but is not ISO**: `"May 1 2026"` is compared by instant against another parseable stamp and as text against an unparseable one, and its text order contradicts its chronological order. With `"Foo"` sitting lexicographically between it and an ISO stamp, the three form a cycle — the same pool with those two values added contains **72**. With that fixture:
+**The obvious fixture for that test cannot fail, and I found that by mutation, not by reasoning.** With ISO stamps and unparseable garbage the pre-round comparator is *transitive*: a brute force over all ordered triples of an 11-value pool found **0 cycles**, and MO1 left the new test green. The reason is that ISO strings sort lexicographically in the same order they sort chronologically, so the two rules never disagree. Exposing the intransitivity needs a stamp that **parses but is not ISO**: `"May 1 2026"` is compared by instant against another parseable stamp and as text against an unparseable one, and its text order contradicts its chronological order. With `"Foo"` sitting lexicographically between it and an ISO stamp, the three form a cycle — the same pool with those two values added contains ~~**72**~~ **24**. **CORRECTED in fix round 3 — the figure 72 was wrong.** Re-measured with the pre-round comparator transcribed verbatim from `258e177:historyProjection.ts:151-156`, counting *ordered* triples `(a,b,c)` of distinct values with `a<b<c<a`: 4 ISO stamps + 7 garbage values = **0**; the same pool with `"May 1 2026"` added (12 values) = **24**, which is 8 distinct three-element sets × 3 rotations; the shipped fixture's own 8 values (`historyProjection.test.ts:590-592`) = **9**, which is 3 sets × 3 rotations; those 8 with `"May 1 2026"` and `"Foo"` removed = **0**. Sample cycle: `("2026-06-01T14:00:00.000Z", "May 1 2026", "Foo")`. The reviewer measured 24 and 9 independently and both now agree. The qualitative claim — 0 cycles without those two values, cycles with them — is unaffected, and the pin is real (MO1 kills the pairwise test); only the number was wrong. With that fixture:
 
 | Mutation | Killed | Named failure |
 | --- | --- | --- |
@@ -730,6 +730,265 @@ That pins it on the sibling lane's commit. It is green again at my final gate ru
 
 1. **The `aggregateLogs` hardening** — the widest thing I did that the review did not literally ask for. It is the same class and it fixes eight measured crashes of the shipped all-time page, but it touches a function Task 13 is going to delete, and I had to be careful not to characterize its `sessions` count or its first-wins best-set tie while guarding it. Check that nothing about its healthy-data output moved.
 2. **The N5 correction.** I contradict the review's stated mechanism with a measurement: an unreadable *weight* does not make "best" the last set, because `NaN` is falsy and the `||` chain returns its last clause. The real harm was a `NaN` volume, and the last-set shape needs an unreadable **reps** on a no-load set. If that reading is wrong, MN1f's fixture is wrong with it.
-3. **The pairwise transitivity fixture.** The whole test hinges on `"May 1 2026"` and `"Foo"`; with ISO stamps and garbage alone the pre-round comparator is transitive and the test cannot fail. Verify the 0-cycles-versus-72-cycles claim before trusting the pin.
+3. **The pairwise transitivity fixture.** The whole test hinges on `"May 1 2026"` and `"Foo"`; with ISO stamps and garbage alone the pre-round comparator is transitive and the test cannot fail. Verify the ~~0-cycles-versus-72-cycles~~ **0-cycles-versus-24-cycles** claim before trusting the pin. **CORRECTED in fix round 3** — see the correction above; the pool and counting rule are now stated beside every number.
 4. **The two incidental-pass tests I rewrote**, and whether any of my other new tests has the same shape. The `.some` short-circuit and `localeCompare`'s one-sided coercion both hid a guard; there may be a third.
 5. **`setNumberField`'s use of `Number(...)` rather than `typeof value === "number"`.** It is deliberately permissive so a numeric string keeps reading as it always did (MN1e), but it means a stored `"60"` still contributes volume. If the plan would rather treat a non-number as unreadable, that is a one-line change and two test expectations.
+
+---
+
+# Fix round 3 — answering `task-12-review-3.md`
+
+Commits `5bd8e09`, `03eafa5`, `ea82170` (report `pending`). Lane baseline reproduced before starting: **34 suites / 420 tests green** (two full-suite lane runs; the first showed 5 suites failing under concurrent load from the sibling lanes, the second only `RoutinesIndexClient.test.tsx` at 30.5s, which passes 5/5 in isolation in 0.757s — a load timeout, not a defect).
+
+**e2e not run — controller instruction** (standing order mid-round: no Playwright in any form, several dozen Chrome instances were throttling the owner's machine). Nothing in this round touches routing, seeding or `e2e/helpers.ts`; the surfaces I changed are covered by the rendered RTL tests below, which run in jsdom. If the controller wants one serial confirmation run, the specs worth watching are the day-page and history ones.
+
+**Zero tracked-file mutation.** Every mutation below copied the target module to a uniquely-named sibling (`__mut_task12r3_<stem>.<ext>`), mutated the **copy**, and pointed an out-of-tree Jest config's `moduleNameMapper` at it. No tracked file was ever written, so there was nothing to restore and nothing for a sibling lane to clobber. `git stash` was never run; every stage was `git commit --only -- <explicit paths>`. Driver: `scratchpad/mut/run.sh`; it deletes the copy and asserts `git diff --quiet -- <target>` after every run.
+
+---
+
+## The meta-finding: I swept the value, not the line
+
+The brief's central instruction was that the previous two rounds fixed the value **where the reviewer pointed** instead of at every call site. So the C-1 fix is deliberately **not** the one the review asked for.
+
+The review asked for `date: textOf(logLocalDate(log))` at `historyUtils.ts:263`. That closes one call site. I put the guard in `logLocalDate` itself (`src/lib/workout/localDate.ts:26`), because **every** reader of a log's local date goes through that one function. One edit, seven call sites, and no way for the next caller to be added unguarded.
+
+### Call-site enumeration — `logLocalDate(log)` / the log's local date
+
+| # | Call site | What it does with the value | Status after this round |
+| --- | --- | --- | --- |
+| 1 | `historyUtils.ts:263` → sorted at `:271` by `b.date.localeCompare` | **C-1: threw.** Today drawer inert for every exercise | **Closed at the source.** M1 kills 14 |
+| 2 | `HistoryDrawer.tsx:23` `localYmd.split` (render, no error boundary) | **C-1's second throw** | **Closed twice** — string guaranteed upstream, plus a local guard. M3 kills 1 |
+| 3 | `historyProjection.ts:317` → `ExerciseHistoryRow.performedDate`, and `latestDate` (`:378`), `sessions[].performedDate` (`:404`), `lastDate` (`:431`) | Never threw; the row type promised a string it could not deliver (review item 17) | **Closed at the source.** The contract now holds |
+| 4 | `HistoryClient.tsx:68` `textOf(logLocalDate(log))` → sliced at `:96` | Guarded in round 2 | **Left as-is.** Now belt *and* braces; see "MN1i is now redundant" below |
+| 5 | `WorkoutDayClient.tsx:667` `logLocalDate(l) === today` | Comparison only — never threw, but a non-string could never match | **Closed at the source.** An unreadable `performedDate` now recovers the real day from `performedAt` and matches correctly |
+| 6 | `WorkoutDayClient.tsx:692` `setViewedDate(logLocalDate(target))` | Rendered in the read-only banner; a non-string would render as nothing | **Closed**, plus `\|\| "an earlier date"` so the banner is never blank. M18 kills 1 |
+| 7 | `WorkoutDayClient.tsx:757` `performedDate: logLocalDate(existing)` | **Wrote the corruption back** — `localDateOf(7)` produced `"1969-12-31"`, `localDateOf({})` produced `"NaN-NaN-NaN"` | **Closed**, plus `\|\| today` so an empty date can never break `getForDay` and mint a duplicate. M17 kills 1 |
+| 8 | `logRepo.ts:33` `logLocalDate(l) === date` (**not my lane**) | Comparison only | **Closed at the source** by the same one-line change — I did not edit that file |
+
+### Call-site enumeration — the log's `performedAt` used as a sort key
+
+| # | Call site | Status |
+| --- | --- | --- |
+| 1 | `WorkoutDayClient.tsx:666` `b.performedAt.localeCompare(a.performedAt)` | **C-2's throw. Closed** via `sessionStamp`. M4 kills 1 |
+| 2 | `historyProjection.ts` `performedAtOrder` | Already `String(...)`-guarded in round 2 (MO1) |
+| 3 | `HistoryClient.tsx` | Does not sort by `performedAt` |
+| 4 | `ProgramDetailClient.tsx:143` `(b.completedAt ?? b.performedAt).localeCompare(...)` | **Still open — M-1.** Reproduced (below), **not fixed**: see "Out of scope" |
+| 5 | `SessionSummary.tsx`, `TodayClient.tsx`, `dayResolver.ts` | Swept — no `localeCompare`/`.slice`/`.split` on a stored date. `dayResolver` was already clean per the review |
+
+### Call-site enumeration — the log's `entries` / an entry's `sets`
+
+| # | Call site | Status |
+| --- | --- | --- |
+| 1 | `WorkoutDayClient.tsx:678` `for (const entry of target.entries)` | **C-2. Closed** — `entryIsFullyHydratable` + preserve-by-index. M6 kills 3 |
+| 2 | `sessionState.hydrateFromLog:63-83` | **C-2. Closed** — `readableSets` + `readableSetNumber`. M10 kills 5, M11 kills 1 **and aborts the runner**, M12 aborts the runner |
+| 3 | `historyUtils.aggregateExerciseHistory`, `historyProjection`, `HistoryClient.aggregateLogs` | Closed in rounds 1-2, confirmed by the reviewer |
+
+---
+
+## C-2 (Critical) — silent loss of work being created now
+
+Fixed first, as instructed.
+
+### RED — end to end, rendered, real `fake-indexeddb`
+
+Four scenarios driven through `WorkoutDayClient` in `WorkoutDayClient.integration.test.tsx` (no `logRepo` mock — the real repository on `fake-indexeddb`, the harness that file already uses). Actual output at `03eafa5^`:
+
+```
+[logRepo] session hydration failed TypeError: b.performedAt.localeCompare is not a function
+    at src/components/workout/WorkoutDayClient.tsx:700:31
+[logRepo] session hydration failed TypeError: Cannot read properties of null (reading 'exerciseId')
+    at src/components/workout/WorkoutDayClient.tsx:700:31
+[logRepo] session hydration failed Error: IndexedDB unavailable
+    at src/components/workout/WorkoutDayClient.tsx:700:31
+
+✕ records the set being typed when another log's performedAt is not a string
+✕ records the set being typed when today's log holds a null entry
+✕ writes no phantom entry when today's log has a non-array entries
+      Expected: not "undefined"
+✕ tells the user and refuses input when the day's sessions cannot be loaded at all
+```
+
+The first two fail on **`Received element is disabled`** for "Finish workout" — the grid is alive, the day never leaves `"loading"`, and the typed set is nowhere in `logRepo.list()`. The third reproduces the phantom write **exactly** as the reviewer measured it: an entry with `exerciseId: "undefined"` in the user's log.
+
+A fifth RED, from `sessionState.test.ts`, was worse than anything reported:
+
+```
+FATAL ERROR: invalid table size Allocation failed - JavaScript heap out of memory
+ 10: v8::internal::Builtin_ArrayPrototypeFill(...)
+```
+
+A stored `setNumber: 1e9` — a shape `appDb.ts:186-195` preserves like any other — made `Array<string>(count).fill("")` allocate a billion cells and **abort the process**. On device that is the tab dying, not a caught error. This was not in the review; mutation-driven fixture design found it.
+
+### The fix — six parts
+
+1. **`sessionStamp`** (`WorkoutDayClient.tsx:43`) coerces the sort key. Unreadable maps to `""`, which is **last** in the descending order used here, so a log we cannot place in time never becomes the session this visit resumes and rewrites. Sorting it *first* is a distinct, pinned choice: M5 kills 1.
+2. **`hydrateFromLog`** reads sets through `readableSets` and positions through `readableSetNumber` (integer, 1..500). The 500 cap is named `MAX_HYDRATED_SETS` with the OOM in its comment.
+3. **`entryIsFullyHydratable`** draws the line between an entry the grid owns and one it must leave alone. Every shape it rejects is one that previously **threw**, so nothing that used to round-trip stops round-tripping.
+4. **Preserve-by-index.** The grid rebuilds `entries` wholesale on every autosave, so an entry it cannot show is one a rewrite would **delete**. Guarding alone would have converted C-2 from "loses new work" into "loses old work" — the settled rule is *a record we cannot read is a record we must not rewrite*. Unreadable elements are held in a ref keyed by stored index and spliced back in `saveCells`. M7 kills 2.
+5. **The dead-grid obligation.** `.catch` now sets `sessionMode: "blocked"`; the grid is `readOnly`, and a `role="alert"` says the day's saved sessions could not be loaded, that logging is off until it reads, and that stored workouts are untouched. M8 kills 1, M9 kills 1.
+6. **Two more silent-loss paths found while sweeping**, neither in the review: an unreadable `dayNote` pulled into state made `dn.trim()` throw inside `saveCells`, so finishing an empty day was impossible (M16 kills 1); and writing `performedDate: ""` back would stop `getForDay` ever matching the session again and mint a duplicate on the next visit (M17 kills 1).
+
+### Why "told **and** read-only", not "told and still editable"
+
+`PRODUCT.md`'s "no friction between intent and logging" argues for keeping the grid live. It loses to two things. First, if hydration failed we do not know what is in that log, and `saveCells` rewrites `entries` wholesale — an editable grid would overwrite a record we could not read, which is the one thing this plan has ruled out repeatedly. Second, "the data is the interface": a surface that accepts input and stores none of it is the interface lying, which is the exact defect class classified Critical three times here. The banner follows the density preference — a single list row, no card, no icon, matching the existing "Viewing completed session" banner rather than inventing a second visual language.
+
+### What I did **not** do
+
+`entries: "corrupt"` (the whole array unreadable) hydrates as no entries, and if the user then logs a set the rewrite replaces that value with a proper array. I considered blocking the day instead and rejected it: it would lock a user out of logging a live workout, and the escape hatch ("Start new session") resolves to the same deterministic id and would overwrite the record anyway. The value is one from which nothing is recoverable, and the named requirement — **no phantom `exerciseId: "undefined"` write** — is met and pinned. Flagging it as the one accepted loss in this round rather than burying it.
+
+---
+
+## C-1 (Critical) — the drawer never opens
+
+### RED, right reason, three logs
+
+```
+● an unreadable performedDate must not take the Today drawer down › orders the rows newest first
+    TypeError: b.date.localeCompare is not a function
+    > 271 |   return rows.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);
+      at aggregateExerciseHistory (src/lib/workout/historyUtils.ts:271:15)
+Tests: 12 failed, 45 passed, 57 total
+```
+
+The fixture is **three** logs, and there is an explicit all-six-permutations case, because a two-log fixture passes without the fix — with two elements V8 calls the comparator once and `localeCompare` coerces its *argument*. The comment in the test says so. Five unreadable shapes: number, object, boolean, `[]`, `[null]`.
+
+Driven end to end as well, through `WorkoutDayClient` on real `fake-indexeddb` — tap "History for Bench Press", expect all three workouts in the drawer. RED: `[history] failed to load exercise history TypeError: b.date.localeCompare is not a function`, drawer never opens.
+
+And at render: `HistoryDrawer` with `date: 7 / {} / null` → `TypeError: localYmd.split is not a function`. Both the upstream guarantee and a local guard, because that component has no error boundary above it.
+
+### A semantics change I must flag
+
+Guarding at the source means an unreadable `performedDate` now **falls back to `performedAt`** rather than rendering a placeholder. The v7 migration backfilled `performedDate` *from* `performedAt`, so `performedAt` is authoritative and recovering the real day beats showing "—".
+
+That broke one existing round-2 test, `HistoryClient.aggregateLogs.test.ts` — `shows a placeholder rather than a blank cell when the date is unreadable`, which expected `"—"` for `performedDate: 7`. **I did not weaken it.** Its fixture set only `performedDate: 7` and left `performedAt` readable, so the date was not in fact unreadable — the test was passing for an incomplete reason, the shape the standards list warns about. I strengthened the fixture to `performedAt: 7, performedDate: 7` so the condition its name describes actually holds; **the assertion is byte-identical**. And I added the missing case, `recovers the day from performedAt when performedDate is unreadable`, expecting `"06/02"`.
+
+That strengthening earned its keep immediately: **M2** (drop only the `performedAt` half of the guard) kills exactly that test, and would have killed nothing under the old fixture.
+
+This is the only existing test touched this round. Reporting it rather than quietly landing it, per the standard — if the controller would rather have the placeholder than the recovered date, the change is one line in `localDate.ts` and two test expectations.
+
+**MN1i is now redundant, not deleted.** `textOf(logLocalDate(log))` at `HistoryClient.tsx:68` no longer has anything to coerce. I left it — removing it would take the second brace off a Critical for tidiness — but the next reviewer should expect MN1i's kill count to have moved, and should not read that as a regression. It is now covered by M1.
+
+---
+
+## Mutation evidence
+
+Full lane run for every mutation (34 suites / 458 tests at the end of the round). **Control run with the harness in place and no mutation: 34 suites / 454 tests, all green.**
+
+| Mutation | Exact change | Killed | Named failures |
+| --- | --- | --- | --- |
+| **M1** | `logLocalDate` body → `return log.performedDate ?? localDateOf(log.performedAt);` (the pre-round line) | **14** | 10 × `an unreadable performedDate must not take the Today drawer down › …` (5 shapes × 2 assertions), `orders the rows newest first`, `survives every ordering of the same three logs`, `opens the history drawer when one stored log's performedDate is not a string`, `recovers the day from performedAt when performedDate is unreadable` |
+| **M2** | drop only the `performedAt` half: `return localDateOf(log.performedAt);` | **1** | `shows a placeholder rather than a blank cell when the date is unreadable` (the strengthened fixture) |
+| **M3** | delete `if (typeof localYmd !== "string") return "";` (`HistoryDrawer.tsx:23`) | **1** | `renders a row rather than throwing when a date is not a string` |
+| **M4** | `sessionStamp` body → `return log.performedAt;` | **1** | `records the set being typed when another log's performedAt is not a string` |
+| **M5** | `sessionStamp` unreadable → `"￿"` (sorts **first** instead of last) | **1** | same |
+| **M6** | restore `for (const raw of target.entries) { … raw.notes … }` | **3** | `records the set being typed when today's log holds a null entry`, `writes no phantom entry when today's log has a non-array entries`, `keeps an entry whose sets carry an unplaceable setNumber through a rewrite` |
+| **M7** | `preservedEntriesRef.current = null` unconditionally | **2** | `records the set being typed when today's log holds a null entry`, `keeps an entry whose sets carry an unplaceable setNumber through a rewrite` |
+| **M8** | delete `if (!cancelled) setSessionMode("blocked");` from the `.catch` | **1** | `tells the user and refuses input when the day's sessions cannot be loaded at all` |
+| **M9** | `readOnly={sessionMode === "viewing"}` (drop `\|\| … "blocked"`) | **1** | same |
+| **M10** | `readableSets(entry)` → `(entry.sets ?? []) as WorkoutSetLog[]` | **5** | `returns a grid of empty cells when sets is a number / an object / a string / a boolean / an array holding null` |
+| **M11** | `readableSetNumber` body → `return value as number;` | **1 + runner abort** | `keeps an entry whose sets carry an unplaceable setNumber through a rewrite` (`RangeError: Invalid array length`), then `FATAL ERROR: … heap out of memory` aborts the run |
+| **M12** | drop only the upper bound: `if (value < 1) return undefined;` | **runner abort** | `FATAL ERROR: invalid table size Allocation failed - JavaScript heap out of memory` |
+| **M13** | `out[setNumber - 1] = s.rawCell;` (drop `textOf`) | **1** | `renders an unreadable rawCell as text rather than handing the grid a non-string` |
+| **M14** | `entryIsFullyHydratable` body → `return isRecordLike(value);` | **1** | `keeps an entry whose sets carry an unplaceable setNumber through a rewrite` |
+| **M16** | `if (target.dayNote) setDayNote(target.dayNote);` (drop the `typeof` check) | **1** | `finishes a day whose stored day note is unreadable` |
+| **M17** | `performedDate: existing ? logLocalDate(existing) : today` (`?:` for `&&`/`\|\|`) | **1** | `dates the rewrite by today when the resumed log's own date is unreadable` |
+| **M18** | `setViewedDate(logLocalDate(target));` (drop `\|\| "an earlier date"`) | **1** | `names the session in the read-only banner even when its date is unreadable` |
+
+**Seventeen mutations, seventeen non-zero kills.** M11 and M12 are the strongest results in the round: they do not fail a test, they kill the process.
+
+### The four survivors, and what I did about them
+
+The first pass had **four mutations that killed nothing** (M15, M16, M17, M18). Publishing that rather than only the final table, because the gap is the finding:
+
+- **M16, M17, M18 were reachable and genuinely unpinned.** Three tests added in `ea82170`; all three now kill. M16 took two attempts — the obvious fixture passed because `entries.every(…)` short-circuits before `dn.trim()` whenever any entry has sets, so the shape that reaches the throw is *finishing a day with nothing logged*. That is another "passes for an incidental reason" fixture, caught by mutation rather than by reading.
+- **M15 was dead code.** `entryNote(raw)` sat behind `entryIsFullyHydratable`, which already rejects any entry whose `notes` is not text, so the guard could never fire — "a stronger earlier guard already rejects the input", verbatim from the standards list. Per the rule on unkillable code, that is *unfalsifiable by construction*, so it is **deleted**, with the negative result recorded in the comment beside it and the `entryNote` import dropped.
+
+---
+
+## Target 3 — recorded, per the brief
+
+The reviewer reproduced the N5 correction from `0395f26` and conceded it: an unreadable **weight** leaves best as the *earliest* set, because the reps clause reads `reps`, so `a || b || c` returns a real number. Review 2's mechanism is refuted. The real harm is a `NaN` volume; the last-set shape needs unreadable **reps** on tied loads. MN1d kills 4, MN1f kills 1. **No action taken, nothing changed.** Recorded here so it stops being contested.
+
+I did not take the optional MN1f fixture suggestion (`[{reps:{}}, {reps:8}, {reps:3}] → "BWx8"`); the reviewer confirmed it is covered in aggregate by `:527` and my brief did not ask for it. Flagging the omission rather than leaving it silent.
+
+## Target 4 — the "72 cycles" figure, corrected in place
+
+Corrected at `task-12-report.md:636` and `:733` with strike-through, not supplemented. Re-measured with the pre-round comparator transcribed verbatim from `258e177:historyProjection.ts:151-156`:
+
+| Pool | Ordered triples `a<b<c<a` | Distinct 3-element sets |
+| --- | --- | --- |
+| 4 ISO stamps + 7 garbage values, no `"May 1 2026"` (11) | **0** | 0 |
+| the same 11 plus `"May 1 2026"` (12) | **24** | 8 |
+| the same 11 with `"May 1 2026"` swapped in for `"qqq"` (11) | **24** | 8 |
+| the **shipped fixture's own 8 values** (`historyProjection.test.ts:590-592`) | **9** | 3 |
+| those 8 with `"May 1 2026"` and `"Foo"` removed (6) | **0** | 0 |
+
+Sample cycle: `("2026-06-01T14:00:00.000Z", "May 1 2026", "Foo")`. **My measurement matches the reviewer's exactly (24 and 9).** The counting rule is now stated: *ordered* triples of distinct values; 24 = 8 sets × 3 rotations, 9 = 3 sets × 3 rotations. 72 is 3× the ordered count and I cannot reconstruct a defensible convention that yields it — treating it as an error, not a different rule. The qualitative claim and the pin (MO1 kills the pairwise test) are unaffected.
+
+Script: `scratchpad/cycles.js`, run with `node`.
+
+---
+
+## Self-review of the full diff, fresh eyes
+
+Six things found and fixed before the final commit:
+
+1. **My first `hydrateFromLog` guard put `textOf` on `weight` and `reps` as well as `rawCell`.** That changed a healthy-ish case for no reason — `${null}` had rendered `"null"` and `textOf(null)` renders `""`. Template literals coerce anything storage can hold without throwing, so only `rawCell` — the value written to the cell verbatim — actually needed a guard. Reverted, with the reasoning in the comment.
+2. **Guarding hydration would have converted C-2 into a slower version of itself.** Everything the grid skips gets deleted by the next wholesale rewrite. Found this by asking what the *fix* destroys, not what the bug destroys. Hence preserve-by-index.
+3. **`entries` non-array is the one case preserve-by-index cannot cover** — there is no index to merge into. Documented as an accepted loss above rather than left for the reviewer to find.
+4. **`setViewedDate(logLocalDate(target))` can now be `""`**, which would render a read-only grid with no banner and no explanation at all — a worse outcome than the throw. Added the fallback.
+5. **`performedDate: ""` written back** would break `getForDay` and mint a duplicate session on the very next visit. Found by tracing what `logLocalDate` returning `""` does downstream, which is the sweep discipline applied to my own change.
+6. **`role="status"` collides.** My banner test found `role="status"` and asserted on an unrelated empty element — a test passing (well, failing) for the wrong reason. Switched to `findByText`.
+
+Also checked and deliberately unchanged: `sessions: sorted.length` (`HistoryClient.tsx:95`), the grouping key at `:70`, and the first-wins best-set tie at `:89` — all Task 13's. `git diff 0395f26..HEAD -- src/components/workout/HistoryClient.tsx` shows only the fixture strengthening in the test file.
+
+**Design-hook findings**, for the record: the `impeccable` PostToolUse hook flagged `side-tab` at `WorkoutDayClient.tsx:279/306` and `design-system-color`/`design-system-radius` in `HistoryDrawer.tsx:49/59`. All four are on pre-existing lines this round does not touch (the line numbers only moved because I added code above them). Classified as out of scope, not suppressed.
+
+## Gates
+
+```
+$ bun run test -- --runInBand
+Test Suites: 103 passed, 103 total
+Tests:       1556 passed, 1556 total
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+$ bun run lint
+$ eslint .
+(clean)
+
+$ bun run build
+✓ built in 3.75s
+(Vite large-chunk advisory only — known-acceptable)
+
+$ git diff --check
+exit=0
+
+$ bun run test:e2e
+e2e not run — controller instruction (no Playwright, machine contention)
+```
+
+Whole-repo total is 1,556 against the 1,493 baseline; the delta includes the sibling lanes' new tests as well as my 38. My lane alone: **34 suites / 458 tests**, from 420.
+
+**Foreign failures:** none at the final gate. Earlier in the round two lane runs showed load-induced RTL timeouts (`RoutinesIndexClient.test.tsx`, `RestTimer.test.tsx` and three others), all green in isolation and none in a file this round touches. No timeout was raised anywhere. `--maxWorkers=24` was not run: three lanes hold uncommitted work in this worktree, so a load run would produce exactly the cross-lane misattribution the brief warns about.
+
+## Out of scope — stated, not silently skipped
+
+- **M-1, `ProgramDetailClient.tsx:143`.** Same class, same value, and it is in my lane by path. I reproduced the throw standalone with three logs where one has a non-string `completedAt`. I did **not** fix it: the `.localeCompare` there is on `completedAt`/`performedAt` inside a *week-badge* computation with its own semantics, the review scoped it Minor and out of every current lane, and my brief named exactly two Criticals. It needs a ticket. It is the last unguarded stored-date `localeCompare` I can find in `src/`.
+- **Task 13 items 1-17** in the review are untouched.
+
+## What a reviewer should scrutinise most
+
+1. **The semantics change at `localDate.ts` and the one existing test whose fixture I strengthened.** This is the only place I moved behaviour rather than adding a guard, and the only existing test I touched. The assertion is byte-identical and M2 proves the strengthening is load-bearing, but the controller should confirm that recovering the day from `performedAt` beats showing "—".
+2. **Preserve-by-index.** It is the largest new mechanism and it changes what `saveCells` writes. Check `mergePreservedEntries` against a log with more preserved entries than built ones, and check that the healthy path (`preserved.size === 0`) is byte-identical — `preservedEntriesRef.current` stays `null` and `mergedEntries === entries`.
+3. **The `entries: "corrupt"` accepted loss.** I chose normalising-on-write over locking the user out of a live workout. That is a product judgement, not a technical one, and it is the one place this round accepts a loss.
+4. **`MAX_HYDRATED_SETS = 500`.** An arbitrary number defended by "no workout has 500 sets of one exercise". If that is wrong the cap silently hides sets — though the entry is then preserved rather than rewritten, so nothing is destroyed.
+5. **Whether M15's deletion was right.** I removed a guard because no mutation could kill it. The standards say that is correct when something upstream already guarantees the condition, and `entryIsFullyHydratable` does — but it is a guard removed from a hardening round, which deserves a second pair of eyes.
+
+## Status
+
+**DONE**
+
+Commits: `5bd8e09` (C-1), `03eafa5` (C-2), `ea82170` (the four surviving mutations), plus this report.
