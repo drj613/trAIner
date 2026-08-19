@@ -315,14 +315,22 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   //    alias permanently unreachable by aliasRepo.find(), and two stale ones can
   //    collide and get the write rejected outright. A version-2 file is
   //    hand-editable JSON, so this cannot be narrowed to version 1.
-  //  - Classification, only for rows that arrive without a provenance — a
-  //    version-1 file, since version 1 predates the field. Those pass through
-  //    the same retain-as-"legacy-auto"-or-purge rules as the v10 database
-  //    migration (spec line 373). A version-2 row already carries its
-  //    classification and keeps it: nothing re-classifies on read either, so
+  //  - Classification, scoped by the file's *version*, not by the individual
+  //    row. A version-1 file predates the provenance field, so every one of its
+  //    rows goes through the same retain-as-"legacy-auto"-or-purge rules as the
+  //    v10 database migration (spec line 373) — otherwise a hand-added
+  //    provenance smuggles an ambiguous alias past the purge on exactly the
+  //    format that is only accepted during the compatibility window. In a
+  //    version-2 file a provenance is real, written by a build that classified
+  //    the row, so those rows keep it: nothing re-classifies on read either, so
   //    re-running the rules against a grown catalogue would make restore delete
-  //    aliases the live database it copied keeps using.
-  const aliases = classifyAliases(b.aliases as AliasDocument[], userExercises);
+  //    aliases the live database it copied keeps using. `remembered` survives
+  //    either way (spec line 560).
+  const aliases = classifyAliases(
+    b.aliases as AliasDocument[],
+    userExercises,
+    b.version === 1 ? "all" : "unclassified",
+  );
   const context = createMigrationContext(
     aliases,
     userExercises,

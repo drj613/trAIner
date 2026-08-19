@@ -288,11 +288,33 @@ function concreteOutcomesForToken(
   return outcomes;
 }
 
+/**
+ * Which rows the classification rules run over. Recomputing tokens and deduping
+ * on the result happens either way — that is index integrity, not
+ * classification.
+ *
+ * - `"all"`: a pre-v10 database, or a version-1 backup file. Both predate the
+ *   provenance field, so any provenance found in one was added by hand and is
+ *   not evidence that the row was ever classified. Spec line 373 scopes the
+ *   purge to version-1 files, so this is the scope that honours it.
+ * - `"unclassified"`: a version-2 file, whose rows carry a real provenance
+ *   written by a build that classified them. Re-running the rules over those
+ *   would delete aliases a live database of the same data keeps working with
+ *   indefinitely, since nothing re-classifies on read.
+ *
+ * `remembered` is retained under both scopes: spec line 560 preserves it, and it
+ * is the one provenance a version-1 file can hold meaningfully (the pre-Task-7
+ * restore wrote alias rows verbatim).
+ */
+export type AliasClassificationScope = "all" | "unclassified";
+
 export function classifyAliases(
   aliases: readonly AliasDocument[],
   userExercises: readonly UserExerciseDocument[],
+  scope: AliasClassificationScope,
 ): AliasDocument[] {
   const context = createMigrationContext([], userExercises, []);
+
   // Keyed by recomputed token, not by row: `by-normalized-alias` is
   // `{ unique: true }`, and recomputing tokens can collapse two rows that v9
   // stored happily onto one key. A colliding re-put is *rejected* by the
@@ -323,16 +345,10 @@ export function classifyAliases(
     const normalizedAlias = fromDisplay || fromStored;
     if (!normalizedAlias) continue;
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
-    // Classification — and therefore the purge — is only for rows that arrive
-    // *without* a provenance: a pre-v10 database row, or a version-1 backup.
-    // A row that already carries one was classified by whoever wrote it, and
-    // re-running the rules against a catalogue that has since grown would
-    // delete aliases a live database of the same data keeps working with
-    // indefinitely (nothing re-classifies on read). Spec line 373 scopes the
-    // purge to version-1 backups; line 560 says to preserve remembered
-    // provenance. Recomputing the token and deduping still applies to every
-    // row — that is index integrity, not classification.
-    if (alias.provenance === "remembered" || alias.provenance === "legacy-auto") {
+    // A user's own correction is never re-litigated, whatever the scope.
+    const alreadyClassified = alias.provenance === "remembered"
+      || (scope === "unclassified" && alias.provenance === "legacy-auto");
+    if (alreadyClassified) {
       claim(normalizedAlias, {
         ...alias,
         normalizedAlias,

@@ -268,7 +268,10 @@ export function getDb() {
               aliasesStore.getAll(),
               userExercisesStore.getAll(),
             ]);
-            const classifiedAliases = classifyAliases(aliases, userExercises);
+            // "all": every row here predates the provenance field, so a
+            // provenance found in one was hand-planted (the pre-Task-7 restore
+            // wrote alias rows verbatim) and is not evidence of classification.
+            const classifiedAliases = classifyAliases(aliases, userExercises, "all");
             const context = createMigrationContext(
               classifiedAliases,
               userExercises,

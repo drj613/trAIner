@@ -1165,6 +1165,26 @@ describe("DB v10 — malformed legacy documents", () => {
       .toBe(false);
   });
 
+  it("re-classifies a pre-v10 alias that carries a hand-planted provenance", async () => {
+    // The database's own rows predate the field too, so a provenance found in
+    // one was hand-planted — the pre-Task-7 restore wrote alias rows verbatim
+    // behind a string-id check. It is not evidence that anything classified it,
+    // so the migration must not treat it as such.
+    await seedVersion9Records({
+      aliases: [{
+        id: "a-smuggled",
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "barbell-back-squat",
+        provenance: "legacy-auto",
+        createdAt: NOW,
+      }],
+    });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawStore("aliases")).toEqual([]);
+  });
+
   it("retains a legacy alias whose display text is unreadable but whose token is not", async () => {
     // The other side of that line, on a real database with the real unique
     // index. The unreadable `alias` field is passed through exactly as stored —
@@ -1274,7 +1294,7 @@ describe("v10 migration idempotency (pure helpers)", () => {
     for (const log of logs) {
       expect(migrateLog(log, context)).toEqual(log);
     }
-    expect(classifyAliases(aliases, userExercises)).toEqual(aliases);
+    expect(classifyAliases(aliases, userExercises, "all")).toEqual(aliases);
   });
 
   it("is a fixed point from the pre-migration fixture too: f(f(x)) equals f(x)", async () => {
@@ -1288,8 +1308,8 @@ describe("v10 migration idempotency (pure helpers)", () => {
     db.close();
     resetDbConnection();
 
-    const onceAliases = classifyAliases(rawAliases, []);
-    expect(classifyAliases(onceAliases, [])).toEqual(onceAliases);
+    const onceAliases = classifyAliases(rawAliases, [], "all");
+    expect(classifyAliases(onceAliases, [], "all")).toEqual(onceAliases);
     const context = createMigrationContext(onceAliases, [], []);
     for (const program of rawPrograms) {
       const once = migrateProgram(program, context);
@@ -1511,6 +1531,41 @@ describe("restoreBackup — version-1 compatibility on a current database", () =
     await expect(aliasRepo.find("RDL")).resolves.toMatchObject({ provenance: "legacy-auto" });
     await expect(aliasRepo.find("Back Squat")).resolves.toBeUndefined();
     await expect(aliasRepo.find("3x8 @ RPE 7")).resolves.toBeUndefined();
+  });
+
+  // Spec line 373 scopes the purge to version-1 *files*, not to
+  // provenance-less rows. A row-level rule alone lets a hand-added provenance
+  // smuggle an ambiguous alias past the purge on exactly the file format that is
+  // only accepted during the compatibility window — and version 1 predates the
+  // field, so any provenance in such a file was added by hand.
+  it.each([
+    { name: "legacy-auto", provenance: "legacy-auto" },
+    { name: "an unrecognized value", provenance: "definitely-not-a-provenance" },
+  ])("purges an ambiguous v1 alias carrying a hand-added $name provenance", async ({ provenance }) => {
+    await restoreBackup(makeBackupV1({
+      aliases: [{
+        ...legacyAlias("Back Squat", "barbell-back-squat"),
+        provenance,
+      }] as never,
+    }));
+
+    await expect(aliasRepo.find("Back Squat")).resolves.toBeUndefined();
+  });
+
+  // The one provenance a version-1 file may carry meaningfully: the pre-Task-7
+  // restore wrote alias rows verbatim, so a v1 file really can hold a
+  // "remembered" row, and spec line 560 says to preserve it.
+  it("keeps a remembered v1 alias even when its token is now ambiguous", async () => {
+    await restoreBackup(makeBackupV1({
+      aliases: [{
+        ...legacyAlias("Back Squat", "barbell-back-squat"),
+        provenance: "remembered",
+      }] as never,
+    }));
+
+    await expect(aliasRepo.find("Back Squat")).resolves.toMatchObject({
+      provenance: "remembered",
+    });
   });
 
   it("makes a restored alias findable even when the file's own token was stale", async () => {

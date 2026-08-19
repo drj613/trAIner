@@ -107,7 +107,7 @@ describe("classifyAliases — colliding remembered aliases", () => {
     { name: "newer row first", aliases: [newer, older] },
     { name: "older row first", aliases: [older, newer] },
   ])("keeps the newer remembered row on a token collision ($name)", ({ aliases }) => {
-    expect(classifyAliases(aliases, [])).toEqual([{
+    expect(classifyAliases(aliases, [], "all")).toEqual([{
       ...newer,
       normalizedAlias: "90 90 hamstring",
     }]);
@@ -125,7 +125,7 @@ describe("classifyAliases — colliding remembered aliases", () => {
       { ...older, provenance: "legacy-auto" as const },
       { ...newer, provenance: "legacy-auto" as const },
     ];
-    expect(classifyAliases(order.map((index) => rows[index]), [])).toEqual([{
+    expect(classifyAliases(order.map((index) => rows[index]), [], "unclassified")).toEqual([{
       ...newer,
       provenance: "legacy-auto",
       normalizedAlias: "90 90 hamstring",
@@ -155,7 +155,7 @@ describe("classifyAliases — how much malformation is still recoverable", () =>
       overrides: { alias: "!!!" },
     },
   ])("retains an alias with $name but a usable token and target", ({ overrides }) => {
-    expect(classifyAliases([row(overrides)], [])).toEqual([{
+    expect(classifyAliases([row(overrides)], [], "all")).toEqual([{
       ...row(overrides),
       normalizedAlias: "romanian deadlift",
       canonicalExerciseId: "romanian-deadlift",
@@ -174,11 +174,42 @@ describe("classifyAliases — how much malformation is still recoverable", () =>
       overrides: { alias: null, normalizedAlias: 3 },
     },
   ])("drops an alias when $name", ({ overrides }) => {
-    expect(classifyAliases([row(overrides)], [])).toEqual([]);
+    expect(classifyAliases([row(overrides)], [], "all")).toEqual([]);
   });
 
   it("prefers the display text over a stale stored token", () => {
-    const classified = classifyAliases([row({ normalizedAlias: "WRONG-TOKEN" })], []);
+    const classified = classifyAliases([row({ normalizedAlias: "WRONG-TOKEN" })], [], "all");
     expect(classified[0].normalizedAlias).toBe("romanian deadlift");
   });
+});
+
+// The scope is the whole of the difference between "a pre-v10 database or a
+// version-1 file" and "a version-2 file". No mocked registry needed: a token
+// with zero concrete outcomes is purged by the outcome gate whenever the rules
+// run at all.
+describe("classifyAliases — classification scope", () => {
+  const legacyAutoRow: AliasDocument = {
+    id: "alias-noise",
+    alias: "3x8 @ RPE 7",
+    normalizedAlias: "3x8 rpe 7",
+    canonicalExerciseId: "romanian-deadlift",
+    provenance: "legacy-auto",
+    createdAt: "2026-08-18T00:00:00.000Z",
+  };
+
+  it("re-runs the rules over a legacy-auto row under scope all", () => {
+    expect(classifyAliases([legacyAutoRow], [], "all")).toEqual([]);
+  });
+
+  it("keeps an already-classified legacy-auto row under scope unclassified", () => {
+    expect(classifyAliases([legacyAutoRow], [], "unclassified")).toEqual([legacyAutoRow]);
+  });
+
+  it.each(["all", "unclassified"] as const)(
+    "keeps a remembered row under scope %s",
+    (scope) => {
+      const remembered: AliasDocument = { ...legacyAutoRow, provenance: "remembered" };
+      expect(classifyAliases([remembered], [], scope)).toEqual([remembered]);
+    },
+  );
 });
