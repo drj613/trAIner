@@ -132,3 +132,53 @@ describe("classifyAliases — colliding remembered aliases", () => {
     }]);
   });
 });
+
+// `aliasRepo.find` queries the by-normalized-alias index, and the resolver reads
+// `candidate.normalizedAlias || candidate.alias` — so an alias missing only its
+// *display* text is still fully usable, and dropping it destroys a working
+// mapping for no gain. Drop only when nothing is left to match on.
+describe("classifyAliases — how much malformation is still recoverable", () => {
+  const row = (overrides: Record<string, unknown>) => ({
+    id: "alias-1",
+    alias: "Romanian Deadlift",
+    normalizedAlias: "romanian deadlift",
+    canonicalExerciseId: "romanian-deadlift",
+    createdAt: "2026-08-18T00:00:00.000Z",
+    ...overrides,
+  }) as unknown as AliasDocument;
+
+  it.each([
+    { name: "an absent display text", overrides: { alias: undefined } },
+    { name: "a non-string display text", overrides: { alias: 42 } },
+    {
+      name: "a display text that normalizes to nothing",
+      overrides: { alias: "!!!" },
+    },
+  ])("retains an alias with $name but a usable token and target", ({ overrides }) => {
+    expect(classifyAliases([row(overrides)], [])).toEqual([{
+      ...row(overrides),
+      normalizedAlias: "romanian deadlift",
+      canonicalExerciseId: "romanian-deadlift",
+      provenance: "legacy-auto",
+    }]);
+  });
+
+  it.each([
+    { name: "the target is not a string", overrides: { canonicalExerciseId: 7 } },
+    {
+      name: "neither the display text nor the token yields anything",
+      overrides: { alias: undefined, normalizedAlias: "   " },
+    },
+    {
+      name: "both the display text and the token are unreadable",
+      overrides: { alias: null, normalizedAlias: 3 },
+    },
+  ])("drops an alias when $name", ({ overrides }) => {
+    expect(classifyAliases([row(overrides)], [])).toEqual([]);
+  });
+
+  it("prefers the display text over a stale stored token", () => {
+    const classified = classifyAliases([row({ normalizedAlias: "WRONG-TOKEN" })], []);
+    expect(classified[0].normalizedAlias).toBe("romanian deadlift");
+  });
+});

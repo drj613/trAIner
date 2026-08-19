@@ -88,6 +88,17 @@ export function getDb() {
     // newer connection that resetDbConnection() has since installed.
     const attempt: Promise<IDBPDatabase<TrainerDb>> = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
       async upgrade(db, oldVersion, _newVersion, tx) {
+        // Installed before anything is issued, not inside the catch below: a
+        // commit-time failure (QuotaExceededError, UnknownError) arrives *after*
+        // the last awaited request, so the try/catch cannot see it. Without a
+        // handler already attached it becomes an unhandled rejection and skips
+        // the `upgradeError` routing that makes getDb() reject with the real
+        // cause instead of a bare AbortError. `??=` keeps whichever cause came
+        // first, so the AbortError from the deliberate abort below can never
+        // overwrite the failure that triggered it.
+        void tx.done.catch((error: unknown) => {
+          upgradeError ??= error;
+        });
         // idb does not await this callback, so an unhandled throw after the
         // first `await` does NOT abort anything: the versionchange transaction
         // commits whatever was already issued and the new version is stamped,
@@ -279,11 +290,10 @@ export function getDb() {
             shouldDispatchIdentityChange = oldVersion > 0;
           }
         } catch (error) {
-          upgradeError = error;
-          // Mark the transaction's own rejection as handled before aborting;
-          // otherwise idb's cached `done` promise rejects with nobody
-          // listening and the AbortError surfaces as an unhandled rejection.
-          void tx.done.catch(() => {});
+          upgradeError ??= error;
+          // The `done` rejection is already handled — see the unconditional
+          // catch at the top of this callback — so aborting cannot surface an
+          // unhandled AbortError.
           try {
             tx.abort();
           } catch {
@@ -332,6 +342,19 @@ export function getDb() {
         dbPromise = undefined;
       },
     }).then((db) => {
+      if (dbPromise !== attempt) {
+        // resetDbConnection() (or a terminated connection) installed a newer
+        // open while this one was still in flight, so nothing will ever read
+        // this connection — and resetDbConnection cannot close a connection
+        // that did not exist yet when it ran. Left open it blocks the next
+        // upgrade and the next deleteDatabase, which is exactly what
+        // resetWorkspace needs to succeed. The identity event still fires
+        // below if the migration committed: the data really did change, and
+        // listeners re-read through whichever connection is installed now.
+        db.close();
+        if (shouldDispatchIdentityChange) dispatchExerciseIdentityChanged();
+        return db;
+      }
       dbInstance = db;
       // Whatever open request was previously stuck behind another
       // connection (if any) has now resolved on its own — clear any

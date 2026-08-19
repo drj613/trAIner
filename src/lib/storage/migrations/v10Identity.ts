@@ -307,12 +307,22 @@ export function classifyAliases(
     byToken.set(token, document);
   };
   for (const alias of aliases) {
-    // An alias we cannot read cannot be classified, and an unclassifiable
-    // alias left in the store would keep short-circuiting the new
-    // disambiguation flow forever. Drop it rather than retain it.
-    if (!isReadableText(alias.alias) || !isReadableText(alias.canonicalExerciseId)) continue;
+    // No usable target means nothing to redirect to, whatever else survives.
+    if (!isReadableText(alias.canonicalExerciseId)) continue;
+    // The display text is not what makes an alias work: `aliasRepo.find` queries
+    // the by-normalized-alias index and the resolver reads
+    // `candidate.normalizedAlias || candidate.alias`. So recompute from the
+    // display text when there is one, fall back to the stored token when there
+    // is not (or when the text normalizes to nothing), and drop only when
+    // neither leaves anything to match on. The unreadable `alias` field itself is
+    // passed through untouched, per rule 2 — it is not ours to invent.
+    const fromDisplay = isReadableText(alias.alias) ? normalizeExerciseName(alias.alias) : "";
+    const fromStored = isReadableText(alias.normalizedAlias)
+      ? normalizeExerciseName(alias.normalizedAlias)
+      : "";
+    const normalizedAlias = fromDisplay || fromStored;
+    if (!normalizedAlias) continue;
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
-    const normalizedAlias = normalizeExerciseName(alias.alias);
     // Classification — and therefore the purge — is only for rows that arrive
     // *without* a provenance: a pre-v10 database row, or a version-1 backup.
     // A row that already carries one was classified by whoever wrote it, and
@@ -332,13 +342,13 @@ export function classifyAliases(
       continue;
     }
 
-    const prepared = prepareImportName(alias.alias, disambiguationsByNormalizedName);
+    // Read the disambiguation rules from whichever text produced the token, so a
+    // row that only has a token is still checked for "or"-style alternatives and
+    // underspecified names rather than skipping the rules by accident.
+    const textForRules = fromDisplay ? (alias.alias as string) : normalizedAlias;
+    const prepared = prepareImportName(textForRules, disambiguationsByNormalizedName);
     const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
-    if (
-      !normalizedAlias ||
-      prepared.hasAlternative ||
-      disambiguation?.kind === "underspecified-name"
-    ) {
+    if (prepared.hasAlternative || disambiguation?.kind === "underspecified-name") {
       continue;
     }
 

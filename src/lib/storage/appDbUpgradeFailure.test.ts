@@ -132,6 +132,61 @@ describe("DB upgrade failure safety — every block", () => {
     resetDbConnection();
   });
 
+  // Every other injection in this file is a *synchronous* throw from a module
+  // the upgrade calls. The class that actually bricked a database in the field
+  // is different: an IDBRequest that is accepted and then fails asynchronously
+  // (a ConstraintError from the unique index, a commit-time
+  // QuotaExceededError). Nothing covered that, and the gap is measurable —
+  // changing `await aliasesStore.clear()` to `void aliasesStore.clear()` used
+  // to leave the suite green.
+  //
+  // A genuine failing request, not a hand-rolled fake: an `add` of a key that
+  // already exists is rejected asynchronously by the store, exactly as a quota
+  // failure would be, and idb surfaces it as a rejected promise on the request.
+  const failAliasClearAsynchronously = () => {
+    const originalClear = IDBObjectStore.prototype.clear;
+    const originalAdd = IDBObjectStore.prototype.add;
+    IDBObjectStore.prototype.clear = function patchedClear(this: IDBObjectStore) {
+      if (this.name !== "aliases") return originalClear.apply(this);
+      // An add() request, standing in for a clear() request: same interface to
+      // the caller, and it is the *request* failing that is under test.
+      return originalAdd.call(this, {
+        id: "alias-1",
+        alias: "duplicate primary key",
+        normalizedAlias: "duplicate primary key",
+        canonicalExerciseId: "pull-up",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }) as unknown as IDBRequest<undefined>;
+    };
+    return () => {
+      IDBObjectStore.prototype.clear = originalClear;
+    };
+  };
+
+  it("aborts when a request is rejected asynchronously rather than throwing", async () => {
+    await seedVersion9Database(v9Fixture);
+    const restoreClear = failAliasClearAsynchronously();
+    try {
+      // The real cause, by name: DOMException messages are long prose.
+      await expect(getDb()).rejects.toMatchObject({ name: "ConstraintError" });
+    } finally {
+      restoreClear();
+    }
+    resetDbConnection();
+
+    const after = await openDB(DB_NAME, 9);
+    expect(after.version).toBe(9);
+    expect(await after.getAll("aliases")).toHaveLength(v9Fixture.aliases.length);
+    expect(after.objectStoreNames.contains("metrics")).toBe(true);
+    after.close();
+    resetDbConnection();
+
+    // Transient, like every other failure here: the next open migrates.
+    const migrated = await getDb();
+    expect(migrated.version).toBe(10);
+    expect(await migrated.getAll("aliases")).not.toHaveLength(0);
+  });
+
   it("aborts a v7-era failure, leaving version 6 and its logs intact", async () => {
     const log = {
       id: "legacy-1",

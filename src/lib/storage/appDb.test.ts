@@ -18,7 +18,7 @@ import { normalizationOverrideRepo } from "./normalizationOverrideRepo";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import type { BackupDocumentV1 } from "@/lib/programs/types";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
-import type { WorkoutLogDocument } from "@/lib/programs/types";
+import type { ProgramDay, WorkoutLogDocument } from "@/lib/programs/types";
 import {
   openCurrentDatabase,
   readCanonicalIdForName,
@@ -520,7 +520,33 @@ describe("DB v10 — exercise identity normalization", () => {
 
   it("rewrites canonical references, preserves routine/log fields, and deletes metrics", async () => {
     const before = await seedVersion9Database(v9Fixture);
+    // Read the pre-migration records so the preservation claim can be asserted
+    // as full-document equality rather than as whichever fields someone
+    // remembered to list. Every other field of the fixture — `progression`,
+    // `import.rawJson`, notes, tags — is then covered by construction.
+    const v9 = await openDB(DB_NAME, 9);
+    const rawProgram = await v9.get("programs", "p1");
+    const rawLog = await v9.get("logs", "l1");
+    v9.close();
+    resetDbConnection();
+
     await openCurrentDatabase();
+
+    const expectedProgram = structuredClone(rawProgram) as typeof rawProgram;
+    const baseExercises = expectedProgram!.days[0].sections[0].groups[0].exercises;
+    baseExercises[0].canonicalExerciseId = "surviving-squat-id";
+    baseExercises[1].canonicalExerciseId = "barbell-high-bar-squat";
+    expectedProgram!.days[1].sections[0].groups[0].exercises[0]
+      .canonicalExerciseId = "surviving-squat-id";
+    (expectedProgram!.overrides[0].replacement as ProgramDay[])[0]
+      .sections[0].groups[0].exercises[0].canonicalExerciseId = "surviving-squat-id";
+    expectedProgram!.import!.warnings[0].suggestions![0].exerciseId = "surviving-squat-id";
+    expect(await readRawRecord("programs", "p1")).toStrictEqual(expectedProgram);
+
+    const expectedLog = structuredClone(rawLog) as typeof rawLog;
+    expectedLog!.entries[0].canonicalExerciseId = "surviving-squat-id";
+    expectedLog!.entries[1].canonicalExerciseId = "barbell-high-bar-squat";
+    expect(await readRawRecord("logs", "l1")).toStrictEqual(expectedLog);
 
     const program = (await programRepo.get("p1"))!;
     const base = program.days[0].sections[0].groups[0].exercises[0];
@@ -703,19 +729,41 @@ describe("DB v10 — exercise identity normalization", () => {
   });
 
   it("dispatches one identity event after the v10 migration commits", async () => {
+    // A listener's own read proves nothing about ordering: it is serialised
+    // behind the versionchange transaction either way. Observe the transaction
+    // lifecycle directly, as the aliasRepo test does — but the migration's
+    // transaction comes from the open *request*, not from
+    // IDBDatabase.transaction, so the hook goes on the factory. The `complete`
+    // listener is attached during upgradeneeded, so it always runs before
+    // anything that waits on the open request settling.
     await seedVersion9Database(v9Fixture);
-    const committedReads: Array<Promise<boolean>> = [];
+    const factory = indexedDB as IDBFactory;
+    const nativeOpen = factory.open;
+    let upgradeCommitted = false;
+    let committedAtDispatch: boolean | undefined;
+    (factory as { open: IDBFactory["open"] }).open = function patchedOpen(
+      ...args: Parameters<IDBFactory["open"]>
+    ) {
+      const request = nativeOpen.apply(factory, args);
+      request.addEventListener("upgradeneeded", () => {
+        request.transaction?.addEventListener("complete", () => {
+          upgradeCommitted = true;
+        });
+      });
+      return request;
+    };
     const listener = jest.fn(() => {
-      committedReads.push(getDb().then((db) => db.objectStoreNames.contains("normalizationOverrides")));
+      committedAtDispatch = upgradeCommitted;
     });
     window.addEventListener("trainer-exercise-identity-changed", listener);
 
     try {
       await openCurrentDatabase();
       expect(listener).toHaveBeenCalledTimes(1);
-      await expect(Promise.all(committedReads)).resolves.toEqual([true]);
+      expect(committedAtDispatch).toBe(true);
     } finally {
       window.removeEventListener("trainer-exercise-identity-changed", listener);
+      (factory as { open: IDBFactory["open"] }).open = nativeOpen;
     }
   });
 
@@ -1471,6 +1519,24 @@ describe("restoreBackup — version-1 compatibility on a current database", () =
     // records. Anything else means backup and migration have drifted apart.
     await seedVersion9Database(v9Fixture);
     const v9 = await openDB(DB_NAME, 9);
+    // One extra alias, so the comparison also covers the resolution context the
+    // aliases feed: this token is the only thing that can give the fixture's
+    // otherwise-unknown "Mystery lift" slot a canonical id, so restoring with an
+    // empty alias context leaves that slot unresolved and diverges.
+    //
+    // It has to be a *remembered* row. A legacy one is only retained when its
+    // token already has exactly one concrete catalogue outcome — in which case
+    // the name would resolve without the alias, and the alias could never be the
+    // load-bearing input. So after v10 no legacy-auto alias can be the sole
+    // reason a name resolves; remembered ones can.
+    await v9.put("aliases", {
+      id: "alias-mystery",
+      alias: "Mystery lift",
+      normalizedAlias: "mystery lift",
+      canonicalExerciseId: "romanian-deadlift",
+      provenance: "remembered",
+      createdAt: "2026-08-18T12:34:56.000Z",
+    });
     const [rawPrograms, rawLogs, rawAliases] = await Promise.all([
       v9.getAll("programs"), v9.getAll("logs"), v9.getAll("aliases"),
     ]);
@@ -1479,6 +1545,10 @@ describe("restoreBackup — version-1 compatibility on a current database", () =
 
     await openCurrentDatabase();
     const migratedInPlace = await snapshotNormalizedStores();
+    // Anti-vacuity for the alias context: if the alias were purged, or never
+    // reached the resolver, this slot would have no canonical id in either path
+    // and the snapshots would match for the wrong reason.
+    await expect(readCanonicalIdForName("Mystery lift")).resolves.toBe("romanian-deadlift");
     // Guards the comparison itself: if the pre-migration records already equalled
     // the migrated ones, the assertion below would hold for a restore that did
     // nothing at all.
@@ -1677,6 +1747,41 @@ describe("restoreBackup — version-2 documents", () => {
     }
 
     await expect(programRepo.list()).resolves.toEqual(before);
+  });
+
+  // Override validation takes the file's own custom exercises, not the
+  // database's — the database is about to be replaced by this very file. If that
+  // wiring broke, the data would still be safe (validation throws before the
+  // transaction) but the user's own backup would become permanently
+  // unrestorable, with an error blaming their file.
+  it("validates an override against a custom exercise from the same file", async () => {
+    const customExercise = {
+      id: "user-custom-1",
+      name: "Djs Special Squat",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    };
+
+    await restoreBackup({
+      version: 2,
+      exportedAt: "2026-08-19T00:00:00.000Z",
+      programs: [],
+      logs: [],
+      aliases: [],
+      userExercises: [customExercise],
+      normalizationOverrides: [{
+        id: "exercise-id:user-custom-1",
+        targetKind: "exercise-id",
+        targetValue: "user-custom-1",
+        movementId: "squat",
+        movementModifierIds: ["barbell"],
+        updatedAt: "2026-08-18T00:00:00.000Z",
+      }],
+    } as never);
+
+    await expect(normalizationOverrideRepo.list()).resolves.toMatchObject([
+      { id: "exercise-id:user-custom-1", targetValue: "user-custom-1" },
+    ]);
+    await expect(userExerciseRepo.list()).resolves.toEqual([customExercise]);
   });
 
   it("leaves the existing workspace intact when the document is rejected", async () => {
