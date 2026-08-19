@@ -72,9 +72,9 @@ test("candidate artifact covers Tier-1 and respects the cap", async () => {
   );
 });
 
-test("alias collision validation rejects a synthesized former-unique outcome", () => {
+test("alias collision validation accepts an explicit unique target", () => {
   const finalAliases = new Map([["barbell curl", ["barbell-curl", "curl--barbell"]]]);
-  const synthesizedFormerUnique = new Map([
+  const explicitUnique = new Map([
     ["barbell curl", {
       normalizedToken: "barbell curl",
       outcome: "unique" as const,
@@ -82,8 +82,21 @@ test("alias collision validation rejects a synthesized former-unique outcome", (
     }],
   ]);
 
-  expect(() => validateAliasOutcomes(finalAliases, synthesizedFormerUnique)).toThrow(
-    "Alias classification cannot mark a collision unique: barbell curl",
+  expect(() => validateAliasOutcomes(finalAliases, explicitUnique)).not.toThrow();
+});
+
+test("alias collision validation rejects a unique target outside the candidates", () => {
+  const finalAliases = new Map([["barbell curl", ["barbell-curl", "curl--barbell"]]]);
+  const explicitUnique = new Map([
+    ["barbell curl", {
+      normalizedToken: "barbell curl",
+      outcome: "unique" as const,
+      exerciseId: "unrelated-exercise",
+    }],
+  ]);
+
+  expect(() => validateAliasOutcomes(finalAliases, explicitUnique)).toThrow(
+    "Alias classification target missing: barbell curl",
   );
 });
 
@@ -342,7 +355,7 @@ test("flattens redirects", () => {
   });
 });
 
-test("rejects unclassified alias collisions", () => {
+test("final alias collision validation rejects an unclassified collision", () => {
   expect(() =>
     validateAliasOutcomes(new Map([["row", ["barbell-row", "cable-row"]]]), new Map()),
   ).toThrow("Unclassified alias collision: row");
