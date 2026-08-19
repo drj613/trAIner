@@ -85,7 +85,7 @@ test("candidate validation rejects empty required metadata from a full snapshot"
   );
 });
 
-test("candidate bases preserve implement and load-position identity", async () => {
+test("candidate bases preserve support, laterality, and position identity", async () => {
   const artifact = await loadVariantCandidates();
   const candidate = (id: string) => artifact.records.find((record) => record.id === id);
 
@@ -94,6 +94,32 @@ test("candidate bases preserve implement and load-position identity", async () =
   expect(candidate("loaded-carry--barbell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
   expect(candidate("loaded-carry--kettlebell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
   expect(candidate("loaded-carry--dumbbell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
+  expect(candidate("row--dumbbell--bench-supported")?.metadataFromExerciseId).toBe("bent-over-dumbbell-rows");
+  expect(candidate("row--dumbbell--bench-supported")?.metadataOverrides?.muscles?.secondary).toEqual([
+    "biceps",
+    "forearms",
+  ]);
+  expect(candidate("row--dumbbell--single-arm")?.metadataFromExerciseId).toBe("one-arm-dumbbell-row");
+  expect(candidate("triceps-extension-pushdown--band--overhead")?.metadataFromExerciseId).toBe(
+    "speed-band-overhead-triceps",
+  );
+  expect(candidate("triceps-extension-pushdown--band--overhead")?.metadataOverrides?.muscles?.secondary).toEqual([
+    "shoulders",
+  ]);
+  expect(candidate("raise-fly--band--fly")?.metadataFromExerciseId).toBe("back-flyes-with-bands");
+});
+
+test("Romanian deadlift canonicalization includes its hinge identity", () => {
+  const registries = buildRegistries(
+    movementsArtifact.records as MovementDefinition[],
+    modifiersArtifact.records as MovementModifierDefinition[],
+  );
+
+  expect(canonicalizeModifiers("deadlift-hinge", ["barbell", "romanian"], registries)).toEqual([
+    "barbell",
+    "hinge",
+    "romanian",
+  ]);
 });
 
 test("combined families include canonical hinge and fly identities", async () => {

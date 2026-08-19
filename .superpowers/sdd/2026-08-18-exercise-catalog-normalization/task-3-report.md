@@ -186,3 +186,56 @@ base rather than waiter/suitcase positions. The exact dumbbell squat record is
 used, and all candidate metadata is checked against full snapshot records for
 required fields and implement compatibility. `variant-rules.json` remains
 unchanged.
+
+## Review fix round 2 — RED / GREEN evidence
+
+The scoped re-review found four metadata bases that erased support,
+laterality, or position identity, plus an unmodeled redundancy between the
+`hinge` and `romanian` modifiers. Tests were added first and failed on the
+round-1 artifact and registry:
+
+```text
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t 'candidate bases preserve support|Romanian deadlift canonicalization'
+$ jest --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t "candidate bases preserve support|Romanian deadlift canonicalization"
+FAIL scripts/catalog-normalization/compiler/normalize.test.ts
+  ✕ candidate bases preserve support, laterality, and position identity
+  ✕ Romanian deadlift canonicalization includes its hinge identity
+Expected: "bent-over-dumbbell-rows"; Received: "chest-supported-dumbbell-row"
+Expected canonical IDs: ["barbell", "hinge", "romanian"]
+Received canonical IDs: ["barbell", "romanian"]
+Tests: 2 failed, 17 skipped, 19 total
+```
+
+The fix uses a bench-equipped bent-over row base with an explicit populated
+muscle override, the exact one-arm dumbbell row, the exact overhead band
+source with a populated muscle override, and a populated generic band fly
+source. `romanian` now implies `hinge`, so canonical signatures contain the
+complete hinge relationship and Romanian aliases retain the implied hinge
+marker.
+
+```text
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t 'candidate bases preserve support|Romanian deadlift canonicalization|candidate artifact|combined families'
+PASS — 4 tests
+
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler
+PASS — 2 suites, 29 tests
+
+$ bun run typecheck
+exit 0
+
+$ bun run lint
+exit 0
+
+$ bun run catalog:check
+exit 0
+
+$ bun scripts/catalog-normalization/compiler/compile.ts --stage existing --check-only
+exit 0
+
+$ git diff --check
+exit 0
+```
+
+The artifact remains at 161 records (deadlift-hinge 17, raise-fly 15), below
+the 300-record cap. The deferred EZ-bar/V-bar mismatch was intentionally not
+changed in this round.

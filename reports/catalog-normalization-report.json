@@ -24,7 +24,7 @@
     "scripts/catalog-normalization/catalog-v1.snapshot.json": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
     "scripts/catalog-normalization/disambiguations.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
-    "scripts/catalog-normalization/modifiers.json": "d4956e370cabed811e8d1d687a50ece71d4e110113e13a1146fb563d71603984",
+    "scripts/catalog-normalization/modifiers.json": "d83d88069012ebf7f4d858430aed5327efe57997b46fd35b4495f66870b34cb2",
     "scripts/catalog-normalization/movements.json": "fa928dadeb0490a27505ff4531fc4aeb1734943993641019f271ec2889f73293",
     "scripts/catalog-normalization/variant-rules.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98"
   },

@@ -38,7 +38,7 @@
     { "id": "ez-bar", "name": "EZ Bar", "aliases": ["curl bar"], "category": "attachment", "identity": true, "sortOrder": 35 },
     { "id": "strict", "name": "Strict", "aliases": [], "category": "execution", "identity": true, "sortOrder": 36 },
     { "id": "hinge", "name": "Hinge", "aliases": ["hip hinge"], "category": "execution", "identity": true, "sortOrder": 37 },
-    { "id": "romanian", "name": "Romanian", "aliases": ["romanian deadlift", "rdl"], "category": "execution", "identity": true, "sortOrder": 38 },
+    { "id": "romanian", "name": "Romanian", "aliases": ["romanian deadlift", "rdl"], "category": "execution", "identity": true, "sortOrder": 38, "implies": ["hinge"] },
     { "id": "fly", "name": "Fly", "aliases": ["flye", "flyes"], "category": "execution", "identity": true, "sortOrder": 39 }
   ]
 }
