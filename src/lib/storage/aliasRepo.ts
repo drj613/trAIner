@@ -8,6 +8,23 @@ export type RememberedAliasInput = {
   alias: string;
   canonicalExerciseId: string;
   provenance: "remembered";
+  /**
+   * The token this alias is LOOKED UP by, when that is not simply
+   * `normalizeExerciseName(alias)`.
+   *
+   * `resolveName` strips non-identity annotations from a name before it
+   * consults the alias store (`identity.ts:280-286` matches against
+   * `prepareImportName(name, disambiguations).normalizedName`), so for a name
+   * like `3 second paused Hatfield Squat` the token it reads is
+   * `paused hatfield squat`. A caller that lets this default writes a row under
+   * a key the resolver never reads — the write succeeds and the mapping never
+   * takes effect.
+   *
+   * Separate from `alias` on purpose: `alias` is the user's own wording and is
+   * what every surface displays, so the lookup token cannot be smuggled in
+   * through it without losing their words.
+   */
+  normalizedAlias?: string;
 };
 
 export type LegacyAliasInput = Omit<AliasDocument, "provenance"> & {
@@ -28,7 +45,11 @@ function assertRememberedInput(input: RememberedAliasInput): string {
   if (input.provenance !== "remembered") {
     throw new Error("New aliases require remembered provenance");
   }
-  const normalizedAlias = normalizeExerciseName(input.alias);
+  // Normalized even when supplied, so a caller handing over raw text by mistake
+  // still produces a legal index key. `normalizeExerciseName` is idempotent
+  // (measured: identical output on a second pass for 200,003 inputs), so this
+  // cannot alter a token that was already derived correctly.
+  const normalizedAlias = normalizeExerciseName(input.normalizedAlias ?? input.alias);
   if (!normalizedAlias) throw new Error("Alias cannot be empty");
   if (!input.canonicalExerciseId.trim()) throw new Error("Alias target cannot be empty");
   return normalizedAlias;

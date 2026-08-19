@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
-import type { ExerciseIdentityInput } from "@/lib/catalog/identity";
+import { prepareImportName, type ExerciseIdentityInput } from "@/lib/catalog/identity";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import type { MovementModifierDefinition } from "@/lib/catalog/registries";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
@@ -55,11 +55,17 @@ function identityInputFor(target: CorrectionTarget): ExerciseIdentityInput {
   }
 }
 
+/**
+ * `lookupToken` is the token `resolveName` reads, not the text the user typed.
+ * See the `prepared` memo in the component for why the difference is
+ * load-bearing.
+ */
 function overrideTargetFor(
   target: CorrectionTarget,
+  lookupToken: string,
 ): Pick<NormalizationOverrideSaveInput, "targetKind" | "targetValue"> {
   return target.kind === "normalized-name"
-    ? { targetKind: "normalized-name", targetValue: target.value }
+    ? { targetKind: "normalized-name", targetValue: lookupToken }
     : { targetKind: "exercise-id", targetValue: target.exerciseId };
 }
 
@@ -197,6 +203,38 @@ export function ExerciseCorrectionSheet({
   }, [context.catalogById, versionQuery]);
   const versionOptions = versionMatches.slice(0, VERSION_OPTION_LIMIT);
 
+  /**
+   * Why every stored correction for a name is keyed on
+   * `prepareImportName(...).normalizedName` and not on
+   * `normalizeExerciseName(...)`.
+   *
+   * `resolveName` strips non-identity annotations from a name BEFORE it
+   * consults either store (`identity.ts:280`, then `:283-286` for aliases and
+   * `:300-304` for overrides). For `3 second paused Hatfield Squat` it looks up
+   * `paused hatfield squat`. A correction keyed on the unstripped token is
+   * keyed under something nothing ever reads: the write succeeds, this sheet
+   * reports success, and the name goes on resolving exactly as before — the row
+   * never leaves `Needs review` however many times the user saves.
+   *
+   * One consequence is intended: the annotation is not part of identity, so one
+   * correction now covers every duration variant of the same name.
+   *
+   * `hasAlternative` is the case no key can rescue. `identity.ts:281` answers
+   * such a name as standalone before either store is read, so nothing this
+   * sheet could write would ever be consulted — it has to say so instead.
+   */
+  const prepared = useMemo(
+    () => (target.kind === "normalized-name"
+      ? prepareImportName(target.value, context.disambiguations)
+      : undefined),
+    [target, context.disambiguations],
+  );
+  const lookupToken = prepared?.normalizedName ?? "";
+  const alternativeError = prepared?.hasAlternative
+    ? `“${correctionTargetLabel(target)}” names more than one exercise, so there is no single`
+      + " identity to correct. Change the name in the program or log to the one exercise you did."
+    : null;
+
   const stored = resolve(identityInputFor(target));
   const current: Draft = draft ?? {
     movementId: stored.movementId ?? null,
@@ -213,7 +251,7 @@ export function ExerciseCorrectionSheet({
   );
 
   const overrideInput: NormalizationOverrideSaveInput = {
-    ...overrideTargetFor(target),
+    ...overrideTargetFor(target, lookupToken),
     movementId: current.movementId,
     movementModifierIds: canonicalOrder(current.modifierIds, context.modifiersById),
   };
@@ -229,12 +267,20 @@ export function ExerciseCorrectionSheet({
 
   const draftError = validationErrorFor(overrideInput);
 
-  // Every stored alias holding this name's normalized token. The unique index
-  // allows only one, but a list costs nothing and means a duplicate arriving
-  // from a hand-edited backup cannot survive a deliberate correction.
-  const governingAliases = target.kind === "normalized-name"
+  // Every stored alias that actually GOVERNS this name — byte-for-byte the
+  // comparison `identity.ts:283-286` makes, so this list agrees with the
+  // resolver. Comparing on the unstripped token instead got it wrong in both
+  // directions: it missed an alias that really governs the name (so a
+  // correction that cannot work reported success) and reported one keyed on the
+  // raw text that governs nothing (so a valid correction was refused).
+  //
+  // The unique index allows only one, but a list costs nothing and means a
+  // duplicate arriving from a hand-edited backup cannot survive a deliberate
+  // correction. A name offering alternatives has no governing alias by
+  // construction: `identity.ts:281` returns before the alias branch.
+  const governingAliases = target.kind === "normalized-name" && !prepared?.hasAlternative
     ? context.aliases.filter((alias) =>
-      normalizeExerciseName(alias.normalizedAlias || alias.alias) === normalizeExerciseName(target.value))
+      normalizeExerciseName(alias.normalizedAlias || alias.alias) === lookupToken)
     : [];
   const existingAlias = governingAliases[0];
   const occupiedAlias = existingAlias && existingAlias.canonicalExerciseId !== mappedExerciseId
@@ -247,15 +293,26 @@ export function ExerciseCorrectionSheet({
   }
   const occupiedByLabel = occupiedAlias ? aliasTargetLabel(occupiedAlias.canonicalExerciseId) : undefined;
 
-  const alert = mode === "map"
-    ? writeError
-      ?? (occupiedAlias
-        ? `“${correctionTargetLabel(target)}” already maps to ${occupiedByLabel}. Confirm below to replace it.`
-        : null)
-    : writeError ?? draftError;
+  // First, because it is the only one that says nothing can be saved at all.
+  const alert = alternativeError
+    ?? (mode === "map"
+      ? writeError
+        ?? (occupiedAlias
+          ? `“${correctionTargetLabel(target)}” already maps to ${occupiedByLabel}. Confirm below to replace it.`
+          : null)
+      : writeError ?? draftError);
 
   function describe(input: NormalizationOverrideSaveInput): string {
-    if (!input.movementId) return "Saved — returned to standalone.";
+    if (!input.movementId) {
+      // Names what was discarded. A remembered mapping is the user's own work,
+      // and the one click that destroys it must not be the quietest thing on
+      // screen — replacing a mapping already needs a deliberate tick, so
+      // destroying one cannot be the silent action of the two.
+      const discarded = governingAliases.map((alias) => aliasTargetLabel(alias.canonicalExerciseId));
+      return discarded.length > 0
+        ? `Saved — returned to standalone; the mapping to ${discarded.join(", ")} was removed.`
+        : "Saved — returned to standalone.";
+    }
     const movementName = context.movementsById.get(input.movementId)?.name ?? input.movementId;
     const modifierNames = input.movementModifierIds.map(
       (modifierId) => context.modifiersById.get(modifierId)?.name ?? modifierId,
@@ -265,6 +322,11 @@ export function ExerciseCorrectionSheet({
 
   async function writeOverride(input: NormalizationOverrideSaveInput) {
     setSaved(null);
+    // Nothing to write, so nothing is written. See `alternativeError`.
+    if (alternativeError) {
+      setWriteError(alternativeError);
+      return;
+    }
     // Validation first, always. A rejected draft must not reach a repository
     // call at all — the repository validates as well, but a surface that
     // writes first and asks later is how a half-applied correction happens.
@@ -286,22 +348,40 @@ export function ExerciseCorrectionSheet({
     if (governingAliases.length > 0 && input.movementId !== null) {
       setWriteError(
         `“${correctionTargetLabel(target)}” is mapped to ${aliasTargetLabel(governingAliases[0].canonicalExerciseId)}.`
-        + " Return it to standalone, or replace the mapping, before assigning a movement.",
+        + " Return it to standalone, or use “Map to an existing exercise” to replace the mapping,"
+        + " before assigning a movement.",
       );
       return;
     }
 
     try {
-      if (governingAliases.length > 0) {
-        await aliasRepo.removeMany(governingAliases.map((alias) => alias.id), { dispatch: false });
+      // Order matters, and it is this way round for data safety. The alias is
+      // the user's only copy of that mapping; the override is something we can
+      // write again. Deleting first meant a rejected override write (a quota
+      // rejection, the tab closing between two awaits) left them with NEITHER
+      // the mapping nor the standalone row — and with no event fired, so the UI
+      // kept showing a mapping storage no longer had. This way a failed write
+      // leaves the mapping intact and the failure visible.
+      //
+      // Suppression is conditional so exactly one event fires on both paths:
+      // when there is an alias to drop, `removeMany` announces the pair;
+      // otherwise `save` announces itself. Suppressing `save` unconditionally
+      // silences the ordinary no-alias correction entirely.
+      const clearsAlias = governingAliases.length > 0;
+      if (clearsAlias) {
+        await normalizationOverrideRepo.save(input, { dispatch: false });
+        await aliasRepo.removeMany(governingAliases.map((alias) => alias.id));
+      } else {
+        await normalizationOverrideRepo.save(input);
       }
-      await normalizationOverrideRepo.save(input);
 
       // Verified against storage, not against this sheet's snapshot — the
       // provider reload has not landed yet, and a concurrent writer could have
       // re-occupied the token. Success is only claimed when the name is
-      // genuinely no longer governed by an alias.
-      if (target.kind === "normalized-name" && (await aliasRepo.find(target.value))) {
+      // genuinely no longer governed by an alias. Queried on the resolver's
+      // token: on the raw text this check could not see the alias it exists to
+      // find.
+      if (target.kind === "normalized-name" && (await aliasRepo.find(lookupToken))) {
         setWriteError(
           `“${target.value}” is still mapped to another exercise, so the correction did not take effect.`,
         );
@@ -321,12 +401,21 @@ export function ExerciseCorrectionSheet({
 
   async function writeAliasMapping() {
     setSaved(null);
+    if (alternativeError) {
+      setWriteError(alternativeError);
+      return;
+    }
     if (!mappedExerciseId) {
       setWriteError("Choose a concrete version first.");
       return;
     }
     const input = {
+      // `alias` stays the user's own wording — it is the display text every
+      // surface shows — while `normalizedAlias` carries the token the resolver
+      // looks the row up by. Two fields, so re-keying the row costs the user
+      // nothing.
       alias: correctionTargetLabel(target),
+      normalizedAlias: lookupToken,
       canonicalExerciseId: mappedExerciseId,
       provenance: "remembered" as const,
     };
@@ -344,7 +433,7 @@ export function ExerciseCorrectionSheet({
       // permanently, so leaving one stored would keep shipping unreachable
       // identity in every backup export. Ordered after the alias write, so a
       // rejected mapping deletes nothing. A missing key is a no-op delete.
-      await normalizationOverrideRepo.remove(normalizationOverrideKey("normalized-name", input.alias));
+      await normalizationOverrideRepo.remove(normalizationOverrideKey("normalized-name", lookupToken));
       setWriteError(null);
       setReplaceConfirmed(false);
       setSaved(`Saved — “${input.alias}” now means ${context.catalogById.get(mappedExerciseId)?.name ?? mappedExerciseId}.`);
@@ -543,7 +632,11 @@ export function ExerciseCorrectionSheet({
               type="button"
               className="btn"
               onClick={() => {
-                void writeOverride({ ...overrideTargetFor(target), movementId: null, movementModifierIds: [] });
+                void writeOverride({
+                  ...overrideTargetFor(target, lookupToken),
+                  movementId: null,
+                  movementModifierIds: [],
+                });
               }}
             >
               Return to standalone
