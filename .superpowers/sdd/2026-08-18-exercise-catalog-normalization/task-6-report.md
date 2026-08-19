@@ -120,3 +120,113 @@ Console noise observed: React Router future-flag warnings, one intentional persi
 1. **Import save path regression window (cross-task).** `src/components/import/ImportClient.tsx` still calls `aliasRepo.save(entry)` once per alias inside `Promise.all`, so it dispatches N identity events and, more importantly, now *throws* when an incoming raw name already has a stored alias pointing at a different exercise (previously it silently overwrote). Because that call sits before `saveProgram`, the whole import would surface an error instead of saving. The plan assigns ImportClient's move to `aliasRepo.saveMany` to Task 9, so I did not touch it — but Task 9 must also decide what the UI does when `saveMany` rejects on a conflicting remembered alias. This is the one user-visible rough edge open on the branch after this commit.
 2. **Backup restore does not yet dispatch an identity event**, and does not yet apply the legacy alias purge rules. Both are explicitly Task 7 per the plan; my restore change is deliberately limited to the store list and provenance defaulting.
 3. `appDb.test.ts` module-scope mocks of `@/lib/catalog/exercises` and `@/lib/catalog/registries` (adding `surviving-squat-id`, a `removed-squat-id` redirect, and a `back squat` underspecified rule) apply to every describe in that file, including the older v1–v9 migration tests. Harmless additive data, but worth knowing when reading those tests.
+
+## Fix round 1 — hardening the v10 migration
+
+All three must-fix items and both cheap items are done. I agree with every finding; the severe one is real and I reproduced each failure mode before fixing it.
+
+### Must-fix 1 (severe) — malformed legacy documents no longer abort the upgrade
+
+The traversal now tolerates every missing array and null element instead of throwing, and passes the unreadable record through untouched — a record we cannot read is a record we must not rewrite. Added `mapArray` (returns the value unchanged when it is not an array) and an `isRecord` guard, applied across the *whole* v10 traversal, not only the three named sites:
+
+- `program.days`, `program.overrides`
+- `override.replacement` when null, and when it is an array containing null (`migrateProgramReplacement`)
+- `day.sections`, `section.groups`, `group.exercises`, and a null exercise element
+- `program.import.warnings`, `warning.suggestions`, and a null suggestion element
+- `log.entries` and a null entry element
+
+RED evidence — 15 new tests failed first, for exactly the reported reasons:
+
+```text
+bun run test -- --runInBand src/lib/storage/appDb.test.ts
+Tests: 15 failed, 24 passed, 39 total
+
+   8  TypeError: Cannot read properties of undefined (reading 'map')
+   2  TypeError: Cannot read properties of null (reading 'sections')
+   2  TypeError: Cannot read properties of null (reading 'canonicalExerciseId')
+   1  TypeError: (0 , appDb_2.createMigrationContext) is not a function
+   1  TypeError: (0 , appDb_2.classifyAliases) is not a function
+```
+
+New coverage: `describe("DB v10 — malformed legacy documents")` seeds each shape as a raw v9 record (typed repositories cannot express "a log that predates the `entries` field"), asserts `openCurrentDatabase()` resolves, and asserts the stored record round-trips deep-equal. One case pairs a malformed program with a healthy one and proves the healthy record is still normalized. New fixture helpers: `seedVersion9Records`, `readRawRecord`, plus an extracted `openEmptyVersion9Database`.
+
+### Must-fix 2 — real idempotency coverage
+
+Agreed the old test was vacuous. `migrateProgram`, `migrateLog`, `classifyAliases`, and `createMigrationContext` (formerly the private `identityContext`) are now exported, and a new `describe("v10 migration idempotency (pure helpers)")` asserts fixed-point behaviour two ways: over the post-migration store contents, and over the raw pre-migration fixture as `f(f(x)) === f(x)` for programs, logs, and aliases.
+
+Mutation evidence (`concreteExerciseId ?? \`${canonicalExerciseId}-x\``, i.e. a suffix appended on every pass):
+
+```text
+✕ rewrites canonical references, preserves routine/log fields, and deletes metrics
+✕ is a fixed point: migrating already-migrated records changes nothing
+✕ is a fixed point from the pre-migration fixture too: f(f(x)) equals f(x)
+Tests: 3 failed, 36 passed, 39 total
+```
+
+Note what stayed green under that mutation: the old second-open test. That is the reviewer's point demonstrated directly. Reverted byte-for-byte afterwards. The second-open test is kept but renamed to "leaves the stores untouched when the database is reopened", with a comment saying explicitly that it does not carry the idempotency claim.
+
+### Must-fix 3 — `noisyLegacyAlias` deleted
+
+Agreed and removed, no narrowed form kept. Spec line 357 lists exactly three purge reasons — "an underspecified choice, an alias collision, or removed noise" — and all three are already decided by the existing checks: the disambiguation lookup covers underspecified choices, `outcomes.size > 1` covers collisions, and `outcomes.size === 0` covers removed noise (that is what purges `"3x8 @ RPE 7"`, whose normalized token `3x8 rpe 7` has no concrete outcome). The regex added a fourth rule the spec does not authorize, against line 357's "retains and redirects only legacy aliases whose token still has one unique concrete outcome". 70 shipped catalogue names contain a digit or degree sign, so a digit can never be noise on its own.
+
+Both sides are now pinned. Purge side (existing test, comment added): `Back Squat` purged as an underspecified choice, `3x8 @ RPE 7` purged for zero outcomes. Retain side (new test): the fixture gained a `90/90 Hamstring` alias stored against `legacy-90-90-id`, and a mocked redirect to the real shipped `90-90-hamstring`, proving the digit-bearing token is both retained as `legacy-auto` and redirected.
+
+Teeth check on the remaining rule — replacing `if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;` with `if (false) continue;`:
+
+```text
+✕ classifies legacy aliases without deleting remembered aliases
+Tests: 1 failed, 38 passed, 39 total
+```
+
+### Cheap item — after-commit dispatch is now order-sensitive
+
+`aliasRepo.test.ts` gains "dispatches only after the write transaction has actually committed". It patches `IDBDatabase.prototype.transaction` to attach a native `complete` listener to the readwrite transaction and records whether that had fired at dispatch time. The listener is registered at transaction creation, before idb attaches the handler backing `tx.done`, so it always runs first. Restored in `finally`.
+
+Mutation evidence (moving `dispatchAfterWrite(options)` above `await tx.done` in `saveMany`, the reviewer's exact mutation):
+
+```text
+✕ dispatches only after the write transaction has actually committed
+    Expected: true
+    Received: false
+Tests: 1 failed, 10 passed, 11 total
+```
+
+Per the coordinator's scoping ("at least the `aliasRepo` case"), the user-exercise, override, and migration dispatch tests still assert only "once"; the `aliasRepo` case is the ordering guard.
+
+### Cheap item — override upsert (spec line 563)
+
+`normalizationOverrideRepo.test.ts` gains "upserts a repeated save on the same target to one record with a bumped `updatedAt`". It saves twice on the same target with different modifier sets, faking only `Date` (`doNotFake` covers every timer API, otherwise fake-indexeddb's request callbacks stall), and asserts the id is stable, `updatedAt` advanced, and `list()` holds exactly the second document. Teeth check — appending a random suffix to the deterministic id fails 5 tests including this one.
+
+### Gates after fix round 1
+
+```text
+bun run test -- --runInBand src/lib/storage src/lib/backup/backup.test.ts
+Test Suites: 11 passed, 11 total
+Tests:       142 passed, 142 total
+
+bun run test -- --runInBand
+Test Suites: 92 passed, 92 total
+Tests:       1122 passed, 1122 total   (was 1103; +19 new tests)
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.36s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```
+
+### Disagreements
+
+None. Every finding held up against the code.
+
+### Untouched, per the coordinator's scoping
+
+`src/components/import/ImportClient.tsx` (Task 9), fresh-install `metrics` creation, the three copies of provenance defaulting (Task 7), the exclusive-group-without-overlapping-excludes case, and all backup v2 work.

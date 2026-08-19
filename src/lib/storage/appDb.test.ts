@@ -7,6 +7,7 @@ import { programRepo } from "./programRepo";
 import { userExerciseRepo } from "./userExerciseRepo";
 import { bodyweightRepo } from "./bodyweightRepo";
 import { promptPresetRepo } from "./promptPresetRepo";
+import { classifyAliases, createMigrationContext, migrateLog, migrateProgram } from "./appDb";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
@@ -15,7 +16,9 @@ import {
   readCanonicalIdForName,
   readCanonicalReferences,
   readLogCanonicalIdForName,
+  readRawRecord,
   seedVersion9Database,
+  seedVersion9Records,
   snapshotNormalizedStores,
   v9Fixture,
 } from "./appDb.testFixtures";
@@ -63,6 +66,7 @@ jest.mock("@/lib/catalog/registries", () => {
     legacyExerciseIdRedirects: new Map([
       ...actual.legacyExerciseIdRedirects,
       ["removed-squat-id", "surviving-squat-id"],
+      ["legacy-90-90-id", "90-90-hamstring"],
     ]),
   };
 });
@@ -552,9 +556,25 @@ describe("DB v10 — exercise identity normalization", () => {
     await openCurrentDatabase();
 
     await expect(aliasRepo.find("RDL")).resolves.toMatchObject({ provenance: "legacy-auto" });
+    // Purged: "back squat" is now a reviewed underspecified choice, and
+    // "3x8 rpe 7" has no concrete outcome at all.
     await expect(aliasRepo.find("Back Squat")).resolves.toBeUndefined();
     await expect(aliasRepo.find("3x8 @ RPE 7")).resolves.toBeUndefined();
     await expect(aliasRepo.find("My high bar")).resolves.toMatchObject({ provenance: "remembered" });
+  });
+
+  it("retains and redirects a digit-bearing legacy alias with one unique concrete outcome", async () => {
+    // Spec: "It retains and redirects only legacy aliases whose token still
+    // has one unique concrete outcome." 70 shipped catalogue names contain a
+    // digit or degree sign ("90/90 Hamstring", "45° Side Bend", ...), so a
+    // digit must never be treated as noise on its own.
+    await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+
+    await expect(aliasRepo.find("90/90 Hamstring")).resolves.toMatchObject({
+      provenance: "legacy-auto",
+      canonicalExerciseId: "90-90-hamstring",
+    });
   });
 
   it("dispatches one identity event after the v10 migration commits", async () => {
@@ -574,7 +594,11 @@ describe("DB v10 — exercise identity normalization", () => {
     }
   });
 
-  it("makes a second open a byte-for-byte no-op", async () => {
+  // This proves a second *open* rewrites nothing. It cannot prove the
+  // migration is idempotent — the stored version is already 10, so the
+  // `oldVersion < 10` branch never re-enters. The fixed-point tests in
+  // "v10 migration idempotency (pure helpers)" carry that claim.
+  it("leaves the stores untouched when the database is reopened", async () => {
     await seedVersion9Database(v9Fixture);
     await openCurrentDatabase();
     const once = await snapshotNormalizedStores();
@@ -601,6 +625,249 @@ describe("DB v10 — exercise identity normalization", () => {
       expect(listener).not.toHaveBeenCalled();
     } finally {
       window.removeEventListener("trainer-exercise-identity-changed", listener);
+    }
+  });
+});
+
+describe("DB v10 — malformed legacy documents", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  const NOW = "2026-08-18T12:34:56.000Z";
+  const exercise = (id: string, canonicalExerciseId?: string) => ({
+    id,
+    name: "Former squat",
+    ...(canonicalExerciseId ? { canonicalExerciseId } : {}),
+    sets: 3,
+  });
+  const goodDay = (id: string) => ({
+    id,
+    dayNumber: 1,
+    weekNumber: 1,
+    title: "Day",
+    sections: [{
+      id: `section-${id}`,
+      type: "strength",
+      name: "Main",
+      groups: [{ id: `group-${id}`, type: "single", exercises: [exercise("slot-1", "removed-squat-id")] }],
+    }],
+  });
+  const migratedDay = (id: string) => {
+    const day = goodDay(id) as unknown as Record<string, never>;
+    return JSON.parse(
+      JSON.stringify(day).replace("removed-squat-id", "surviving-squat-id"),
+    ) as unknown;
+  };
+  const program = (id: string, extra: Record<string, unknown>) => ({
+    id,
+    title: "Malformed",
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...extra,
+  });
+
+  // Every case below is a real shape this codebase already knows about: the
+  // v7/v8 upgrade blocks in appDb.ts read `(log.entries ?? [])`, and
+  // backup.ts validates null override replacements. An unguarded `.map` in
+  // the v10 traversal turns any one of them into a permanently unopenable
+  // database, because getDb() clears dbPromise and every retry rethrows.
+  const programCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
+    {
+      name: "program with no days array",
+      seeded: program("p-no-days", { overrides: [] }),
+    },
+    {
+      name: "program with no overrides array",
+      seeded: program("p-no-overrides", { days: [goodDay("d1")] }),
+      expected: program("p-no-overrides", { days: [migratedDay("d1")] }),
+    },
+    {
+      name: "override with a null replacement",
+      seeded: program("p-null-replacement", {
+        days: [goodDay("d1")],
+        overrides: [{ id: "o1", programId: "p-null-replacement", scope: "week", weekNumber: 2, replacement: null, createdAt: NOW }],
+      }),
+      expected: program("p-null-replacement", {
+        days: [migratedDay("d1")],
+        overrides: [{ id: "o1", programId: "p-null-replacement", scope: "week", weekNumber: 2, replacement: null, createdAt: NOW }],
+      }),
+    },
+    {
+      name: "override replacement array containing null",
+      seeded: program("p-null-replacement-element", {
+        days: [],
+        overrides: [{ id: "o1", programId: "p-null-replacement-element", scope: "week", weekNumber: 2, replacement: [null], createdAt: NOW }],
+      }),
+    },
+    {
+      name: "day with no sections array",
+      seeded: program("p-no-sections", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day" }], overrides: [] }),
+    },
+    {
+      name: "section with no groups array",
+      seeded: program("p-no-groups", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main" }] }],
+        overrides: [],
+      }),
+    },
+    {
+      name: "group with no exercises array",
+      seeded: program("p-no-exercises", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single" }] }] }],
+        overrides: [],
+      }),
+    },
+    {
+      name: "group holding a null exercise",
+      seeded: program("p-null-exercise", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single", exercises: [null] }] }] }],
+        overrides: [],
+      }),
+    },
+    {
+      name: "import warnings without a suggestions array",
+      seeded: program("p-no-suggestions", {
+        days: [],
+        overrides: [],
+        import: { rawJson: {}, warnings: [{ path: "days.0", rawName: "x", message: "m" }] },
+      }),
+    },
+    {
+      name: "import metadata without a warnings array",
+      seeded: program("p-no-warnings", { days: [], overrides: [], import: { rawJson: {} } }),
+    },
+  ];
+
+  it.each(programCases)("passes through a $name unchanged", async ({ seeded, expected }) => {
+    await seedVersion9Records({ programs: [seeded] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    const id = (seeded as { id: string }).id;
+    expect(await readRawRecord("programs", id)).toEqual(expected ?? seeded);
+  });
+
+  const logCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
+    {
+      name: "v7-surviving log with no entries array",
+      seeded: {
+        id: "l-no-entries",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        performedDate: "2026-08-17",
+        completedAt: "2026-08-18T00:45:00.000Z",
+        dayNote: "Kept",
+      },
+    },
+    {
+      name: "log holding a null entry",
+      seeded: {
+        id: "l-null-entry",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        entries: [null],
+      },
+    },
+    {
+      name: "log entry with no canonical id and no name",
+      seeded: {
+        id: "l-nameless",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        entries: [{ exerciseId: "slot-1", sets: [] }],
+      },
+    },
+  ];
+
+  it.each(logCases)("passes through a $name unchanged", async ({ seeded, expected }) => {
+    await seedVersion9Records({ logs: [seeded] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    const id = (seeded as { id: string }).id;
+    expect(await readRawRecord("logs", id)).toEqual(expected ?? seeded);
+  });
+
+  it("still normalizes healthy records stored alongside a malformed one", async () => {
+    await seedVersion9Records({
+      programs: [
+        program("p-broken", { overrides: [] }),
+        program("p-healthy", { days: [goodDay("d1")], overrides: [] }),
+      ],
+    });
+
+    await openCurrentDatabase();
+
+    expect(await readRawRecord("programs", "p-broken")).toEqual(program("p-broken", { overrides: [] }));
+    expect(await readRawRecord("programs", "p-healthy"))
+      .toEqual(program("p-healthy", { days: [migratedDay("d1")], overrides: [] }));
+  });
+});
+
+describe("v10 migration idempotency (pure helpers)", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  // Reopening the database cannot re-enter the `oldVersion < 10` branch, so
+  // the only honest way to prove idempotency is to run the migration
+  // functions over their own output.
+  it("is a fixed point: migrating already-migrated records changes nothing", async () => {
+    await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+    const db = await getDb();
+    const [programs, logs, aliases, userExercises] = await Promise.all([
+      db.getAll("programs"),
+      db.getAll("logs"),
+      db.getAll("aliases"),
+      db.getAll("userExercises"),
+    ]);
+    const context = createMigrationContext(aliases, userExercises);
+
+    for (const program of programs) {
+      expect(migrateProgram(program, context)).toEqual(program);
+    }
+    for (const log of logs) {
+      expect(migrateLog(log, context)).toEqual(log);
+    }
+    expect(classifyAliases(aliases, userExercises)).toEqual(aliases);
+  });
+
+  it("is a fixed point from the pre-migration fixture too: f(f(x)) equals f(x)", async () => {
+    await seedVersion9Database(v9Fixture);
+    const db = await openDB(DB_NAME, 9);
+    const [rawPrograms, rawLogs, rawAliases] = await Promise.all([
+      db.getAll("programs"),
+      db.getAll("logs"),
+      db.getAll("aliases"),
+    ]);
+    db.close();
+    resetDbConnection();
+
+    const onceAliases = classifyAliases(rawAliases, []);
+    expect(classifyAliases(onceAliases, [])).toEqual(onceAliases);
+    const context = createMigrationContext(onceAliases, []);
+    for (const program of rawPrograms) {
+      const once = migrateProgram(program, context);
+      expect(migrateProgram(once, context)).toEqual(once);
+    }
+    for (const log of rawLogs) {
+      const once = migrateLog(log, context);
+      expect(migrateLog(once, context)).toEqual(once);
     }
   });
 });

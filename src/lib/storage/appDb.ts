@@ -82,7 +82,7 @@ interface LegacyMetricsDb extends DBSchema {
 
 const catalogById = new Map(exerciseCatalog.map((exercise) => [exercise.id, exercise]));
 
-function identityContext(
+export function createMigrationContext(
   aliases: readonly AliasDocument[],
   userExercises: readonly UserExerciseDocument[],
 ): ExerciseIdentityContext {
@@ -108,10 +108,27 @@ function canonicalizeExplicitExerciseId(
   ).concreteExerciseId ?? canonicalExerciseId;
 }
 
+// Legacy documents are not guaranteed to have every array this traversal
+// walks: the v7/v8 blocks above already read `(log.entries ?? [])` because
+// pre-entries logs exist, and backup.ts validates null override replacements
+// because those exist too. An unguarded `.map` here would reject the whole
+// upgrade transaction, and since getDb() clears dbPromise on failure, every
+// later retry would fail identically — the database would become permanently
+// unopenable. Tolerate the malformed shape and pass the record through
+// untouched instead; a record we cannot read is a record we must not rewrite.
+function mapArray<T>(value: T[], mapper: (item: T) => T): T[] {
+  return Array.isArray(value) ? value.map(mapper) : value;
+}
+
+function isRecord(value: unknown): boolean {
+  return value !== null && typeof value === "object";
+}
+
 function migrateProgramExercise(
   exercise: ProgramExercise,
   context: ExerciseIdentityContext,
 ): ProgramExercise {
+  if (!isRecord(exercise)) return exercise;
   if (exercise.canonicalExerciseId) {
     return {
       ...exercise,
@@ -129,43 +146,52 @@ function migrateProgramExercise(
 }
 
 function migrateProgramDay(day: ProgramDay, context: ExerciseIdentityContext): ProgramDay {
+  if (!isRecord(day)) return day;
   return {
     ...day,
-    sections: day.sections.map((section) => ({
+    sections: mapArray(day.sections, (section) => (isRecord(section) ? {
       ...section,
-      groups: section.groups.map((group) => ({
+      groups: mapArray(section.groups, (group) => (isRecord(group) ? {
         ...group,
-        exercises: group.exercises.map((exercise) => migrateProgramExercise(exercise, context)),
-      })),
-    })),
+        exercises: mapArray(group.exercises, (exercise) => migrateProgramExercise(exercise, context)),
+      } : group)),
+    } : section)),
   };
 }
 
-function migrateProgram(
+function migrateProgramReplacement(
+  replacement: ProgramDocument["overrides"][number]["replacement"],
+  context: ExerciseIdentityContext,
+): ProgramDocument["overrides"][number]["replacement"] {
+  if (Array.isArray(replacement)) {
+    return replacement.map((day) => migrateProgramDay(day, context));
+  }
+  return migrateProgramDay(replacement, context);
+}
+
+export function migrateProgram(
   program: ProgramDocument,
   context: ExerciseIdentityContext,
 ): ProgramDocument {
   return {
     ...program,
-    days: program.days.map((day) => migrateProgramDay(day, context)),
-    overrides: program.overrides.map((override) => ({
+    days: mapArray(program.days, (day) => migrateProgramDay(day, context)),
+    overrides: mapArray(program.overrides, (override) => (isRecord(override) ? {
       ...override,
-      replacement: Array.isArray(override.replacement)
-        ? override.replacement.map((day) => migrateProgramDay(day, context))
-        : migrateProgramDay(override.replacement, context),
-    })),
+      replacement: migrateProgramReplacement(override.replacement, context),
+    } : override)),
     ...(program.import ? {
       import: {
         ...program.import,
-        warnings: program.import.warnings.map((warning) => ({
+        warnings: mapArray(program.import.warnings, (warning) => (isRecord(warning) ? {
           ...warning,
           ...(warning.suggestions ? {
-            suggestions: warning.suggestions.map((suggestion) => ({
+            suggestions: mapArray(warning.suggestions, (suggestion) => (isRecord(suggestion) ? {
               ...suggestion,
               exerciseId: canonicalizeExplicitExerciseId(suggestion.exerciseId, context),
-            })),
+            } : suggestion)),
           } : {}),
-        })),
+        } : warning)),
       },
     } : {}),
   };
@@ -175,6 +201,7 @@ function migrateLogEntry(
   entry: WorkoutLogEntry,
   context: ExerciseIdentityContext,
 ): WorkoutLogEntry {
+  if (!isRecord(entry)) return entry;
   if (entry.canonicalExerciseId) {
     return {
       ...entry,
@@ -192,18 +219,14 @@ function migrateLogEntry(
     : entry;
 }
 
-function migrateLog(
+export function migrateLog(
   log: WorkoutLogDocument,
   context: ExerciseIdentityContext,
 ): WorkoutLogDocument {
   return {
     ...log,
-    entries: log.entries.map((entry) => migrateLogEntry(entry, context)),
+    entries: mapArray(log.entries, (entry) => migrateLogEntry(entry, context)),
   };
-}
-
-function noisyLegacyAlias(alias: string): boolean {
-  return /\d|@|\b(?:amrap|rpe|rir|reps?|sets?)\b/i.test(alias);
 }
 
 function concreteOutcomesForToken(
@@ -225,11 +248,11 @@ function concreteOutcomesForToken(
   return outcomes;
 }
 
-function classifyAliases(
+export function classifyAliases(
   aliases: readonly AliasDocument[],
   userExercises: readonly UserExerciseDocument[],
 ): AliasDocument[] {
-  const context = identityContext([], userExercises);
+  const context = createMigrationContext([], userExercises);
   const classified: AliasDocument[] = [];
   for (const alias of aliases) {
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
@@ -243,13 +266,18 @@ function classifyAliases(
     const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
     if (
       !normalizedAlias ||
-      noisyLegacyAlias(alias.alias) ||
       prepared.hasAlternative ||
       disambiguation?.kind === "underspecified-name"
     ) {
       continue;
     }
 
+    // Spec: retain and redirect only legacy aliases whose token still has one
+    // unique concrete outcome. That single check is what deletes collisions
+    // and removed noise (a prescription like "3x8 @ RPE 7" has zero
+    // outcomes); no separate noise heuristic is needed, and any digit-based
+    // one would wrongly delete the 70 shipped catalogue names that contain a
+    // digit or degree sign ("90/90 Hamstring", "45° Side Bend", ...).
     const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
     if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
     classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });
@@ -405,7 +433,7 @@ export function getDb() {
             userExercisesStore.getAll(),
           ]);
           const classifiedAliases = classifyAliases(aliases, userExercises);
-          const context = identityContext(classifiedAliases, userExercises);
+          const context = createMigrationContext(classifiedAliases, userExercises);
 
           await aliasesStore.clear();
           await Promise.all([

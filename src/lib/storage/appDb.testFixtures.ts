@@ -71,6 +71,7 @@ export const v9Fixture: V9Fixture = makeV9Fixture({
     { alias: "RDL", canonicalExerciseId: "romanian-deadlift" },
     { alias: "Back Squat", canonicalExerciseId: "barbell-back-squat" },
     { alias: "3x8 @ RPE 7", canonicalExerciseId: "barbell-back-squat" },
+    { alias: "90/90 Hamstring", canonicalExerciseId: "legacy-90-90-id" },
     {
       alias: "My high bar",
       canonicalExerciseId: "barbell-high-bar-squat",
@@ -207,10 +208,10 @@ function makeLog(fixture: V9Fixture, sets: WorkoutSetLog[]): WorkoutLogDocument 
   };
 }
 
-export async function seedVersion9Database(fixture: V9Fixture): Promise<SeededV9> {
+async function openEmptyVersion9Database() {
   resetDbConnection();
   await deleteDB(DB_NAME);
-  const v9 = await openDB<Version9Db>(DB_NAME, 9, {
+  return openDB<Version9Db>(DB_NAME, 9, {
     upgrade(db) {
       db.createObjectStore("profile", { keyPath: "id" });
       db.createObjectStore("programs", { keyPath: "id" });
@@ -227,6 +228,39 @@ export async function seedVersion9Database(fixture: V9Fixture): Promise<SeededV9
       db.createObjectStore("promptPresets", { keyPath: "id" });
     },
   });
+}
+
+/**
+ * Seeds arbitrary (deliberately malformed) v9 records. Typed repositories
+ * cannot express "a log that predates the entries field", so these go in as
+ * raw objects — which is exactly the shape real v7-surviving documents have.
+ */
+export async function seedVersion9Records(records: {
+  programs?: unknown[];
+  logs?: unknown[];
+}): Promise<void> {
+  const v9 = await openEmptyVersion9Database();
+  const tx = v9.transaction(["programs", "logs"], "readwrite");
+  for (const program of records.programs ?? []) {
+    tx.objectStore("programs").put(program as ProgramDocument);
+  }
+  for (const log of records.logs ?? []) {
+    tx.objectStore("logs").put(log as WorkoutLogDocument);
+  }
+  await tx.done;
+  v9.close();
+  resetDbConnection();
+}
+
+export async function readRawRecord(
+  storeName: "programs" | "logs",
+  id: string,
+): Promise<unknown> {
+  return (await getDb()).get(storeName, id);
+}
+
+export async function seedVersion9Database(fixture: V9Fixture): Promise<SeededV9> {
+  const v9 = await openEmptyVersion9Database();
 
   const sets: WorkoutSetLog[] = [
     { setNumber: 1, weight: 225, unit: "lb", reps: 6, rpe: 8, notes: "clean" },

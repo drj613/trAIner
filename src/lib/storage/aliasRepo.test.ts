@@ -98,6 +98,47 @@ describe("aliasRepo.save", () => {
     }
   });
 
+  it("dispatches only after the write transaction has actually committed", async () => {
+    // "Dispatch once" is not the same claim as "dispatch after commit": a
+    // listener's own read is serialised behind the open transaction either
+    // way, so reading committed data proves nothing about ordering. Observe
+    // the transaction lifecycle directly instead — the native `complete`
+    // event is what idb's `tx.done` resolves on, and this listener is
+    // registered before idb attaches its own, so it always runs first.
+    const nativeTransaction = IDBDatabase.prototype.transaction;
+    let writeTransactionCommitted = false;
+    let committedAtDispatch: boolean | undefined;
+    IDBDatabase.prototype.transaction = function patched(
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase["transaction"]>
+    ) {
+      const tx = nativeTransaction.apply(this, args);
+      if (tx.mode === "readwrite") {
+        tx.addEventListener("complete", () => {
+          writeTransactionCommitted = true;
+        });
+      }
+      return tx;
+    };
+    const listener = jest.fn(() => {
+      committedAtDispatch = writeTransactionCommitted;
+    });
+    window.addEventListener("trainer-exercise-identity-changed", listener);
+
+    try {
+      await aliasRepo.saveMany([
+        { alias: "RDL", canonicalExerciseId: "romanian-deadlift", provenance: "remembered" },
+        { alias: "Strict Pullup", canonicalExerciseId: "pull-up", provenance: "remembered" },
+      ]);
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(committedAtDispatch).toBe(true);
+    } finally {
+      window.removeEventListener("trainer-exercise-identity-changed", listener);
+      IDBDatabase.prototype.transaction = nativeTransaction;
+    }
+  });
+
   it("putRaw preserves ids and defaults old aliases to legacy-auto", async () => {
     await aliasRepo.putRaw({
       id: "legacy-alias-id",
