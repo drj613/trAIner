@@ -65,7 +65,9 @@ describe("shared projection boundary", () => {
 
     const projection = projectExerciseHistory(logs, context);
     expect(projection.rows.map((row) => row.entryIndex)).toEqual([0, 1]);
-    expect(projection.versionSummaries.get("slot:bench")).toMatchObject({
+    // `slot:bench#bench` — the slot id qualified by the normalized performed
+    // name, so two different exercises swapped into one slot stay apart.
+    expect(projection.versionSummaries.get("slot:bench#bench")).toMatchObject({
       sessionCount: 1,
       entryCount: 2,
       sessionVolumesLb: [135 * 5 + 115 * 10],

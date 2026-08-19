@@ -19,6 +19,7 @@ import {
   type ExerciseIdentityContext,
   type ExerciseIdentityResult,
 } from "@/lib/catalog/identity";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import type { WorkoutLogDocument, WorkoutLogEntry } from "@/lib/programs/types";
 import {
   deriveVolumeTrend,
@@ -86,14 +87,36 @@ export type ExerciseHistoryProjection = {
   versionSummaries: ReadonlyMap<string, VersionHistorySummary>;
 };
 
+/**
+ * Key for an identity the resolver could not tie to a concrete catalogue
+ * version. `groupKey` on its own is not enough: for a stored exercise it is
+ * `slot:<slotId>` (`src/lib/catalog/identity.ts:177-178`), derived from the slot
+ * alone and ignoring the performed name, so two genuinely different exercises
+ * logged into one slot — a legacy pre-canonical log plus one exercise swap
+ * (`src/lib/workout/exerciseSwap.ts`) — would collapse into a single summary
+ * carrying one exercise's name and the other's best set, and blend their volumes
+ * into a trend that never happened. The resolver already distinguishes them
+ * (`identityCacheKey` below keys on the performed name too); qualifying the key
+ * the same way keeps that distinction instead of throwing it away here.
+ *
+ * Normalizing means casing and punctuation do not split one exercise in two.
+ */
+function unresolvedKey(identity: ExerciseIdentityResult): string {
+  const normalized = identity.performedName ? normalizeExerciseName(identity.performedName) : "";
+  return normalized ? `${identity.groupKey}#${normalized}` : identity.groupKey;
+}
+
 /** The history bucket an identity belongs to: its movement family, else itself. */
 export function familyKeyForIdentity(identity: ExerciseIdentityResult): string {
-  return identity.movementId ?? identity.groupKey;
+  if (identity.movementId) return identity.movementId;
+  // A concrete version identifies itself, so `exercise:<id>` needs no qualifier.
+  if (identity.concreteExerciseId) return identity.groupKey;
+  return unresolvedKey(identity);
 }
 
 /** The metrics bucket an identity belongs to: its concrete version, else itself. */
 export function versionKeyForIdentity(identity: ExerciseIdentityResult): string {
-  return identity.concreteExerciseId ?? identity.groupKey;
+  return identity.concreteExerciseId ?? unresolvedKey(identity);
 }
 
 /** Every row for the identity's whole movement family, newest first. */

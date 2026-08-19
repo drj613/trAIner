@@ -288,14 +288,16 @@ describe("unresolved records", () => {
       },
       context,
     );
-    expect(familyKeyForIdentity(identity)).toBe("slot:slot-mystery");
-    expect(versionKeyForIdentity(identity)).toBe("slot:slot-mystery");
+    // The standalone key is qualified by the normalized performed name, because
+    // the slot id alone cannot tell two swapped exercises apart.
+    expect(familyKeyForIdentity(identity)).toBe("slot:slot-mystery#zercher good morning");
+    expect(versionKeyForIdentity(identity)).toBe("slot:slot-mystery#zercher good morning");
     expect(rowsForIdentity(projection, identity)).toHaveLength(1);
     expect(projection.rows[0]).toMatchObject({
       performedName: "Zercher Good Morning", concreteExerciseId: undefined,
       movementId: undefined, currentVersionLabel: undefined,
     });
-    expect(projection.familySummaries.get("slot:slot-mystery")).toMatchObject({
+    expect(projection.familySummaries.get("slot:slot-mystery#zercher good morning")).toMatchObject({
       label: "Zercher Good Morning", workoutCount: 1,
     });
   });
@@ -431,5 +433,55 @@ describe("unreadable sets", () => {
       bench.id,
     );
     expect(rows).toEqual([{ date: "2026-09-01", sets: [], note: undefined, volume: 0 }]);
+  });
+});
+
+// ─── Two exercises in one slot ───────────────────────────────────────────────
+
+describe("unresolvable exercises sharing a slot id", () => {
+  // Legacy pre-canonical logs carry only `exerciseId`, so the resolver falls
+  // back to a standalone key built from the slot alone (`identity.ts:177-178`).
+  // One exercise swap (`exerciseSwap.ts`) puts two genuinely different exercises
+  // in that slot, and merging them would label one summary with the other's
+  // name and report the other's best set.
+  const logOf = (id: string, at: string, name: string, weight: number, reps: number): WorkoutLogDocument => ({
+    id, programId: "p1", dayId: "d1", performedAt: at, performedDate: at.slice(0, 10),
+    entries: [{ exerciseId: "slot-shared", exerciseName: name, sets: [{ setNumber: 1, weight, reps }] }],
+  });
+  const logs = [
+    logOf("log-zercher", "2026-04-01T14:00:00.000Z", "Zercher Good Morning", 95, 8),
+    logOf("log-nordic", "2026-04-08T14:00:00.000Z", "Nordic Hamstring Curl", 45, 10),
+  ];
+
+  it("keeps them as two versions with their own labels and best sets", () => {
+    const projection = projectExerciseHistory(logs, context);
+    const summaries = [...projection.versionSummaries.values()]
+      .map((s) => ({ label: s.label, best: s.bestSetLabel, volumes: s.sessionVolumesLb }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    expect(summaries).toEqual([
+      { label: "Nordic Hamstring Curl", best: "45x10", volumes: [450] },
+      { label: "Zercher Good Morning", best: "95x8", volumes: [760] },
+    ]);
+  });
+
+  it("keeps them as two families rather than one blended trend", () => {
+    const projection = projectExerciseHistory(logs, context);
+    expect([...projection.familySummaries.values()].map((f) => f.label).sort())
+      .toEqual(["Nordic Hamstring Curl", "Zercher Good Morning"]);
+    for (const family of projection.familySummaries.values()) {
+      expect(family.workoutCount).toBe(1);
+    }
+  });
+
+  it("still groups repeats of the same performed name in one slot together", () => {
+    const repeats = [
+      logOf("log-a", "2026-04-01T14:00:00.000Z", "Zercher Good Morning", 95, 8),
+      logOf("log-b", "2026-04-08T14:00:00.000Z", "Zercher good morning", 105, 8),
+    ];
+    const projection = projectExerciseHistory(repeats, context);
+    expect(projection.versionSummaries.size).toBe(1);
+    expect([...projection.versionSummaries.values()][0]).toMatchObject({
+      sessionCount: 2, sessionVolumesLb: [760, 840],
+    });
   });
 });
