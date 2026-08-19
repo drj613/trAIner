@@ -133,6 +133,41 @@ test("returns an underspecified identity before a generic canonical name", () =>
   });
 });
 
+test("applies a normalized-name override before an underspecified rule can select a generic name", () => {
+  const coexistenceContext = makeIdentityContext({
+    ...context,
+    catalogById: new Map([
+      [highBar.id, highBar],
+      [genericBackSquat.id, genericBackSquat],
+    ]),
+    disambiguations: new Map([["back squat", {
+      id: "back-squat-choice",
+      kind: "underspecified-name" as const,
+      normalizedName: "back squat",
+      movementId: "squat",
+      candidateExerciseIds: [highBar.id],
+      matchedModifierIds: ["barbell", "back-rack"],
+    }]]),
+    normalizationOverrides: [{
+      id: "override-back-squat",
+      targetKind: "normalized-name",
+      targetValue: "Back Squat",
+      movementId: "squat",
+      movementModifierIds: ["barbell"],
+      updatedAt: "2026-08-18T00:00:00.000Z",
+    }],
+  });
+
+  expect(resolveExerciseIdentity({ kind: "import-name", name: "Back Squat" }, coexistenceContext))
+    .toMatchObject({
+      concreteExerciseId: undefined,
+      groupKey: "movement:squat",
+      movementModifierIds: ["barbell"],
+      source: "user-override",
+      specificity: "overridden",
+    });
+});
+
 test("resolves unique canonical names, catalogue aliases, and custom names in precedence order", () => {
   const aliasOnly = { ...highBar, id: "high-bar-variant", name: "High Bar Variant", aliases: ["athletic squat"] };
   const custom = { id: "user-2", name: "Moon Squat", createdAt: "2026-08-18T00:00:00.000Z" };

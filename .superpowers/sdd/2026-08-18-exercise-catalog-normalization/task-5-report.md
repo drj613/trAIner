@@ -99,3 +99,31 @@ PASS
 
 - The generated disambiguation and redirect artifacts are currently empty, so synthetic typed fixtures cover redirect and phrase-rule paths until curation emits live records.
 - The full existing test suite prints React Router future-flag and React `act` warnings, plus an intentional persistence-error log; Vite emits its pre-existing large-chunk advisory. None is a failure or introduced by this task.
+
+## Fix round 1/5 — normalized-name override with an underspecified rule
+
+An important precedence defect allowed an `underspecified-name` rule to return before a global normalized-name correction was considered. The resolver now detects the name-only override after saved aliases but before returning the reviewed underspecified result. It still leaves the normal concrete-name, catalogue-alias, and custom-name precedence unchanged when no underspecified rule exists, so a generic canonical record cannot pre-empt the correction in the coexistence case.
+
+RED evidence:
+
+```text
+bun run test -- --runInBand src/lib/catalog/identity.test.ts -t "normalized-name override before an underspecified"
+FAIL applies a normalized-name override before an underspecified rule can select a generic name
+Expected: source "user-override", specificity "overridden", modifier IDs ["barbell"]
+Received: source "standalone", specificity "underspecified", modifier IDs ["barbell", "back-rack"]
+```
+
+GREEN evidence:
+
+```text
+bun run test -- --runInBand src/lib/catalog/identity.test.ts src/lib/catalog/match.test.ts
+PASS: 2 suites, 26 tests
+
+bun run typecheck
+PASS
+
+bun run lint
+PASS
+```
+
+The coexistence regression uses a real resolver context containing a generic `Back Squat` concrete record, an underspecified `back squat` rule, and a normalized-name correction. It proves the correction returns an overridden family classification with no concrete exercise ID.

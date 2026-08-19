@@ -295,8 +295,16 @@ function resolveName(
     }
   }
 
+  const normalizedNameOverride = context.normalizationOverrides.find(
+    (override) =>
+      override.targetKind === "normalized-name" &&
+      normalizeExerciseName(override.targetValue) === prepared.normalizedName,
+  );
   const disambiguation = context.disambiguations.get(prepared.normalizedName);
   if (disambiguation?.kind === "underspecified-name") {
+    if (normalizedNameOverride) {
+      return resultForNormalizedNameOverride(input, prepared.normalizedName, normalizedNameOverride, context);
+    }
     return resultForUnderspecified(input, disambiguation, context);
   }
 
@@ -325,11 +333,6 @@ function resolveName(
     );
   }
 
-  const normalizedNameOverride = context.normalizationOverrides.find(
-    (override) =>
-      override.targetKind === "normalized-name" &&
-      normalizeExerciseName(override.targetValue) === prepared.normalizedName,
-  );
   if (normalizedNameOverride) {
     return resultForNormalizedNameOverride(input, prepared.normalizedName, normalizedNameOverride, context);
   }
