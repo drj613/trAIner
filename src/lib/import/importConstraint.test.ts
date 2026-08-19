@@ -132,7 +132,11 @@ describe("dedupeAliasResolutions conflict handling", () => {
     };
     const out = dedupeAliasResolutions(items, resolutions);
     expect(out).toHaveLength(1);
-    expect(out[0]).toEqual({ alias: "Bench Press", canonicalExerciseId: "bench-press" });
+    expect(out[0]).toEqual({
+      alias: "Bench Press",
+      canonicalExerciseId: "bench-press",
+      provenance: "remembered",
+    });
   });
 
   it("drops a normalized name that resolved to conflicting canonical ids (no arbitrary global alias)", () => {
@@ -148,6 +152,10 @@ describe("dedupeAliasResolutions conflict handling", () => {
     const items = [item("a", "Press"), item("b", "Press"), item("c", "Squat")];
     const resolutions = { a: "bench-press", b: "overhead-press", c: "back-squat" };
     const out = dedupeAliasResolutions(items, resolutions);
-    expect(out).toEqual([{ alias: "Squat", canonicalExerciseId: "back-squat" }]);
+    expect(out).toEqual([{
+      alias: "Squat",
+      canonicalExerciseId: "back-squat",
+      provenance: "remembered",
+    }]);
   });
 });

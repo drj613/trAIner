@@ -32,7 +32,7 @@ beforeEach(() => {
   for (const k of Object.keys(storeData)) delete storeData[k];
 });
 
-// Shared fixture for restoreBackup validation and metrics tests below.
+// Shared fixture for restoreBackup validation and store-safety tests below.
 const validDoc = {
   version: 1,
   exportedAt: "2026-08-10T00:00:00.000Z",
@@ -492,10 +492,40 @@ describe("exportBackup point-in-time", () => {
   });
 });
 
-describe("restoreBackup metrics", () => {
-  it("clears the metrics store", async () => {
+describe("restoreBackup v10 store safety", () => {
+  it("does not transact against or clear the removed metrics store", async () => {
+    mockTransaction.mockClear();
     mockClear.mockClear();
     await restoreBackup(validDoc);
-    expect(mockClear).toHaveBeenCalledWith("metrics");
+    const [stores, mode] = mockTransaction.mock.calls[0];
+    expect(mode).toBe("readwrite");
+    expect([...stores].sort()).toEqual([
+      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+    ]);
+    expect(mockClear).toHaveBeenCalledTimes(7);
+    expect(mockClear).not.toHaveBeenCalledWith("metrics");
+  });
+
+  it("preserves legacy alias ids and defaults missing provenance before Task 7", async () => {
+    mockPut.mockClear();
+    await restoreBackup({
+      ...validDoc,
+      aliases: [{
+        id: "legacy-alias-id",
+        alias: "RDL",
+        normalizedAlias: "rdl",
+        canonicalExerciseId: "romanian-deadlift",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }],
+    });
+
+    expect(mockPut).toHaveBeenCalledWith({
+      id: "legacy-alias-id",
+      alias: "RDL",
+      normalizedAlias: "rdl",
+      canonicalExerciseId: "romanian-deadlift",
+      provenance: "legacy-auto",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    });
   });
 });

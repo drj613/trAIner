@@ -189,7 +189,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
   const tx = db.transaction(
-    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets", "metrics"],
+    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
     "readwrite",
   );
 
@@ -200,15 +200,20 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   tx.objectStore("userExercises").clear();
   tx.objectStore("bodyweight").clear();
   tx.objectStore("promptPresets").clear();
-  // metrics is a derived-cache store (currently unwritten anywhere). Clear it
-  // on restore so it can never hold values computed from data that no longer
-  // exists once someone starts using it.
-  tx.objectStore("metrics").clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
   for (const p of b.programs) tx.objectStore("programs").put(p);
   for (const l of b.logs) tx.objectStore("logs").put(l);
-  for (const a of b.aliases) tx.objectStore("aliases").put(a);
+  // Task 6 restore safety: v1 backups predate alias provenance. Preserve
+  // every stored field (id, alias, normalizedAlias, canonicalExerciseId,
+  // createdAt) verbatim and only fill in a missing/unrecognized provenance
+  // with "legacy-auto" — the same classification the v10 migration gives
+  // pre-existing aliases. Exporting provenance explicitly is backup v2 (Task 7).
+  for (const a of b.aliases) {
+    const provenance =
+      a.provenance === "remembered" || a.provenance === "legacy-auto" ? a.provenance : "legacy-auto";
+    tx.objectStore("aliases").put(a.provenance === provenance ? a : { ...a, provenance });
+  }
   for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
   for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);
   for (const p of b.promptPresets ?? []) tx.objectStore("promptPresets").put(p);

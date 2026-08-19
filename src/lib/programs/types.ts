@@ -181,6 +181,7 @@ export type AliasDocument = {
   alias: string;
   normalizedAlias: string;
   canonicalExerciseId: ID;
+  provenance: "legacy-auto" | "remembered";
   createdAt: ISODate;
 };
 

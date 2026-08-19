@@ -10,6 +10,62 @@ import { promptPresetRepo } from "./promptPresetRepo";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
+import {
+  openCurrentDatabase,
+  readCanonicalIdForName,
+  readCanonicalReferences,
+  readLogCanonicalIdForName,
+  seedVersion9Database,
+  snapshotNormalizedStores,
+  v9Fixture,
+} from "./appDb.testFixtures";
+
+jest.mock("@/lib/catalog/exercises", () => {
+  const actual = jest.requireActual("@/lib/catalog/exercises") as typeof import("@/lib/catalog/exercises");
+  return {
+    ...actual,
+    exerciseCatalog: [
+      ...actual.exerciseCatalog.map((item) => item.id === "romanian-deadlift"
+        ? { ...item, aliases: [...item.aliases, "RDL"] }
+        : item),
+      {
+        id: "surviving-squat-id",
+        name: "Surviving Squat",
+        aliases: [],
+        equipment: ["barbell"],
+        movementPatterns: ["squat"],
+        muscles: { primary: ["quads"], secondary: ["glutes"] },
+        tags: ["strength"],
+        movementId: "squat",
+        movementModifierIds: ["barbell"],
+      },
+    ],
+  };
+});
+
+jest.mock("@/lib/catalog/registries", () => {
+  const actual = jest.requireActual("@/lib/catalog/registries") as typeof import("@/lib/catalog/registries");
+  const underspecifiedBackSquat = {
+    id: "back-squat-choice",
+    kind: "underspecified-name" as const,
+    normalizedName: "back squat",
+    movementId: "squat",
+    candidateExerciseIds: ["barbell-high-bar-squat", "barbell-low-bar-squat"],
+    matchedModifierIds: ["barbell", "back-rack"],
+  };
+  return {
+    ...actual,
+    disambiguationRules: [...actual.disambiguationRules, underspecifiedBackSquat],
+    disambiguationsByNormalizedName: new Map([
+      ...actual.disambiguationsByNormalizedName,
+      ["back squat", underspecifiedBackSquat],
+    ]),
+    legacyExerciseIdRedirects: new Map([
+      ...actual.legacyExerciseIdRedirects,
+      ["removed-squat-id", "surviving-squat-id"],
+    ]),
+  };
+});
 
 describe("IndexedDB repositories", () => {
   beforeEach(async () => {
@@ -33,7 +89,11 @@ describe("IndexedDB repositories", () => {
   it("exports and restores profile, programs, logs, aliases, and userExercises", async () => {
     await profileRepo.save(defaultProfile);
     await programRepo.save(demoProgram);
-    await aliasRepo.save({ alias: "Strict Pullup", canonicalExerciseId: "pull-up" });
+    await aliasRepo.save({
+      alias: "Strict Pullup",
+      canonicalExerciseId: "pull-up",
+      provenance: "remembered",
+    });
     await logRepo.save({
       id: "log-1",
       programId: demoProgram.id,
@@ -409,5 +469,138 @@ describe("DB v9 — promptPresets store", () => {
     const db = await getDb(); // triggers v8 → v9 upgrade
     expect(db.objectStoreNames.contains("promptPresets")).toBe(true);
     await expect(programRepo.list()).resolves.toHaveLength(1);
+  });
+});
+
+describe("DB v10 — exercise identity normalization", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("rewrites canonical references, preserves routine/log fields, and deletes metrics", async () => {
+    const before = await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+
+    const program = (await programRepo.get("p1"))!;
+    const base = program.days[0].sections[0].groups[0].exercises[0];
+    expect(base).toMatchObject({
+      id: before.slotId,
+      canonicalExerciseId: "surviving-squat-id",
+      sets: 4,
+      reps: "6-8",
+      load: "RPE 8",
+      rest: "3 minutes",
+      tempo: "31X0",
+      notes: "notes:slot-base",
+      countsTowardVolume: true,
+    });
+    expect(base.tags).toEqual({
+      primary: ["quads"],
+      secondary: ["glutes"],
+      incidental: ["core"],
+      modifiers: ["strength"],
+    });
+
+    const log = (await logRepo.get("l1"))!;
+    expect(log).toMatchObject({
+      performedAt: "2026-08-17T23:30:00.000Z",
+      performedDate: "2026-08-17",
+      completedAt: "2026-08-18T00:45:00.000Z",
+      dayNote: "Day note survives",
+      notes: "Log notes survive",
+    });
+    expect(log.entries[0]).toMatchObject({
+      exerciseId: before.slotId,
+      exerciseName: "Former squat performed",
+      canonicalExerciseId: "surviving-squat-id",
+      sets: before.sets,
+      notes: "Entry notes survive",
+    });
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics")).toBe(false);
+    expect(await readCanonicalReferences("p1")).toEqual({
+      base: "surviving-squat-id",
+      weekVariant: "surviving-squat-id",
+      overrideReplacement: "surviving-squat-id",
+      log: "surviving-squat-id",
+      warningSuggestionIds: ["surviving-squat-id", "unknown-catalog-id"],
+      unknown: "unknown-catalog-id",
+    });
+  });
+
+  it("backfills only unique exact concrete name matches in programs and logs", async () => {
+    await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+
+    await expect(readCanonicalIdForName("High Bar Back Squat"))
+      .resolves.toBe("barbell-high-bar-squat");
+    await expect(readCanonicalIdForName("Back Squat")).resolves.toBeUndefined();
+    await expect(readCanonicalIdForName("Mystery lift")).resolves.toBeUndefined();
+    await expect(readLogCanonicalIdForName("High Bar Back Squat"))
+      .resolves.toBe("barbell-high-bar-squat");
+    await expect(readLogCanonicalIdForName("Back Squat")).resolves.toBeUndefined();
+    await expect(readLogCanonicalIdForName("Mystery lift")).resolves.toBeUndefined();
+  });
+
+  it("classifies legacy aliases without deleting remembered aliases", async () => {
+    await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+
+    await expect(aliasRepo.find("RDL")).resolves.toMatchObject({ provenance: "legacy-auto" });
+    await expect(aliasRepo.find("Back Squat")).resolves.toBeUndefined();
+    await expect(aliasRepo.find("3x8 @ RPE 7")).resolves.toBeUndefined();
+    await expect(aliasRepo.find("My high bar")).resolves.toMatchObject({ provenance: "remembered" });
+  });
+
+  it("dispatches one identity event after the v10 migration commits", async () => {
+    await seedVersion9Database(v9Fixture);
+    const committedReads: Array<Promise<boolean>> = [];
+    const listener = jest.fn(() => {
+      committedReads.push(getDb().then((db) => db.objectStoreNames.contains("normalizationOverrides")));
+    });
+    window.addEventListener("trainer-exercise-identity-changed", listener);
+
+    try {
+      await openCurrentDatabase();
+      expect(listener).toHaveBeenCalledTimes(1);
+      await expect(Promise.all(committedReads)).resolves.toEqual([true]);
+    } finally {
+      window.removeEventListener("trainer-exercise-identity-changed", listener);
+    }
+  });
+
+  it("makes a second open a byte-for-byte no-op", async () => {
+    await seedVersion9Database(v9Fixture);
+    await openCurrentDatabase();
+    const once = await snapshotNormalizedStores();
+
+    resetDbConnection();
+    await openCurrentDatabase();
+
+    expect(await snapshotNormalizedStores()).toBe(once);
+  });
+
+  it("creates a fresh v10 database without a metrics store and without an identity event", async () => {
+    const listener = jest.fn();
+    window.addEventListener("trainer-exercise-identity-changed", listener);
+
+    try {
+      // No seeded database: oldVersion is 0, so there is nothing to
+      // normalize and no legacy metrics store to delete. The upgrade must
+      // neither throw on the absent store nor announce an identity change
+      // no consumer could act on.
+      await expect(openCurrentDatabase()).resolves.toBeUndefined();
+      const db = await getDb();
+      expect((db.objectStoreNames as unknown as DOMStringList).contains("metrics")).toBe(false);
+      expect(db.objectStoreNames.contains("normalizationOverrides")).toBe(true);
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("trainer-exercise-identity-changed", listener);
+    }
   });
 });

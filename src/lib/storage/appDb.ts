@@ -1,10 +1,36 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { exerciseCatalog } from "@/lib/catalog/exercises";
+import {
+  prepareImportName,
+  resolveExerciseIdentity,
+  type ExerciseIdentityContext,
+  type NormalizationOverrideDocument,
+} from "@/lib/catalog/identity";
+import { dispatchExerciseIdentityChanged } from "@/lib/catalog/identityEvents";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import {
+  disambiguationsByNormalizedName,
+  legacyExerciseIdRedirects,
+  modifiersById,
+  movementsById,
+} from "@/lib/catalog/registries";
 import { localDateOf } from "@/lib/workout/localDate";
-import type { AliasDocument, BackupDocument, BodyweightEntry, ProfileDocument, ProgramDocument, PromptPresetDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
-import type { ExerciseMetricsDocument } from "./metricsRepo";
+import type {
+  AliasDocument,
+  BackupDocument,
+  BodyweightEntry,
+  ProfileDocument,
+  ProgramDay,
+  ProgramDocument,
+  ProgramExercise,
+  PromptPresetDocument,
+  UserExerciseDocument,
+  WorkoutLogDocument,
+  WorkoutLogEntry,
+} from "@/lib/programs/types";
 
 export const DB_NAME = "trainer-local-first";
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export interface TrainerDb extends DBSchema {
   profile: {
@@ -29,10 +55,6 @@ export interface TrainerDb extends DBSchema {
     key: string;
     value: BackupDocument & { id: string };
   };
-  metrics: {
-    key: string;
-    value: ExerciseMetricsDocument;
-  };
   userExercises: {
     key: string;
     value: UserExerciseDocument;
@@ -45,6 +67,194 @@ export interface TrainerDb extends DBSchema {
     key: string;
     value: PromptPresetDocument;
   };
+  normalizationOverrides: {
+    key: string;
+    value: NormalizationOverrideDocument;
+  };
+}
+
+interface LegacyMetricsDb extends DBSchema {
+  metrics: {
+    key: string;
+    value: { exerciseId: string } & Record<string, unknown>;
+  };
+}
+
+const catalogById = new Map(exerciseCatalog.map((exercise) => [exercise.id, exercise]));
+
+function identityContext(
+  aliases: readonly AliasDocument[],
+  userExercises: readonly UserExerciseDocument[],
+): ExerciseIdentityContext {
+  return {
+    catalogById,
+    movementsById,
+    modifiersById,
+    redirects: legacyExerciseIdRedirects,
+    disambiguations: disambiguationsByNormalizedName,
+    aliases,
+    userExercises,
+    normalizationOverrides: [],
+  };
+}
+
+function canonicalizeExplicitExerciseId(
+  canonicalExerciseId: string,
+  context: ExerciseIdentityContext,
+): string {
+  return resolveExerciseIdentity(
+    { kind: "catalog-reference", canonicalExerciseId },
+    context,
+  ).concreteExerciseId ?? canonicalExerciseId;
+}
+
+function migrateProgramExercise(
+  exercise: ProgramExercise,
+  context: ExerciseIdentityContext,
+): ProgramExercise {
+  if (exercise.canonicalExerciseId) {
+    return {
+      ...exercise,
+      canonicalExerciseId: canonicalizeExplicitExerciseId(exercise.canonicalExerciseId, context),
+    };
+  }
+  const resolved = resolveExerciseIdentity({
+    kind: "stored-exercise",
+    slotId: exercise.id,
+    performedName: exercise.name,
+  }, context);
+  return resolved.specificity === "exact" && resolved.concreteExerciseId
+    ? { ...exercise, canonicalExerciseId: resolved.concreteExerciseId }
+    : exercise;
+}
+
+function migrateProgramDay(day: ProgramDay, context: ExerciseIdentityContext): ProgramDay {
+  return {
+    ...day,
+    sections: day.sections.map((section) => ({
+      ...section,
+      groups: section.groups.map((group) => ({
+        ...group,
+        exercises: group.exercises.map((exercise) => migrateProgramExercise(exercise, context)),
+      })),
+    })),
+  };
+}
+
+function migrateProgram(
+  program: ProgramDocument,
+  context: ExerciseIdentityContext,
+): ProgramDocument {
+  return {
+    ...program,
+    days: program.days.map((day) => migrateProgramDay(day, context)),
+    overrides: program.overrides.map((override) => ({
+      ...override,
+      replacement: Array.isArray(override.replacement)
+        ? override.replacement.map((day) => migrateProgramDay(day, context))
+        : migrateProgramDay(override.replacement, context),
+    })),
+    ...(program.import ? {
+      import: {
+        ...program.import,
+        warnings: program.import.warnings.map((warning) => ({
+          ...warning,
+          ...(warning.suggestions ? {
+            suggestions: warning.suggestions.map((suggestion) => ({
+              ...suggestion,
+              exerciseId: canonicalizeExplicitExerciseId(suggestion.exerciseId, context),
+            })),
+          } : {}),
+        })),
+      },
+    } : {}),
+  };
+}
+
+function migrateLogEntry(
+  entry: WorkoutLogEntry,
+  context: ExerciseIdentityContext,
+): WorkoutLogEntry {
+  if (entry.canonicalExerciseId) {
+    return {
+      ...entry,
+      canonicalExerciseId: canonicalizeExplicitExerciseId(entry.canonicalExerciseId, context),
+    };
+  }
+  if (!entry.exerciseName) return entry;
+  const resolved = resolveExerciseIdentity({
+    kind: "stored-exercise",
+    slotId: entry.exerciseId,
+    performedName: entry.exerciseName,
+  }, context);
+  return resolved.specificity === "exact" && resolved.concreteExerciseId
+    ? { ...entry, canonicalExerciseId: resolved.concreteExerciseId }
+    : entry;
+}
+
+function migrateLog(
+  log: WorkoutLogDocument,
+  context: ExerciseIdentityContext,
+): WorkoutLogDocument {
+  return {
+    ...log,
+    entries: log.entries.map((entry) => migrateLogEntry(entry, context)),
+  };
+}
+
+function noisyLegacyAlias(alias: string): boolean {
+  return /\d|@|\b(?:amrap|rpe|rir|reps?|sets?)\b/i.test(alias);
+}
+
+function concreteOutcomesForToken(
+  normalizedAlias: string,
+  userExercises: readonly UserExerciseDocument[],
+): Set<string> {
+  const outcomes = new Set<string>();
+  for (const exercise of exerciseCatalog) {
+    if (
+      normalizeExerciseName(exercise.name) === normalizedAlias ||
+      exercise.aliases.some((alias) => normalizeExerciseName(alias) === normalizedAlias)
+    ) {
+      outcomes.add(exercise.id);
+    }
+  }
+  for (const exercise of userExercises) {
+    if (normalizeExerciseName(exercise.name) === normalizedAlias) outcomes.add(exercise.id);
+  }
+  return outcomes;
+}
+
+function classifyAliases(
+  aliases: readonly AliasDocument[],
+  userExercises: readonly UserExerciseDocument[],
+): AliasDocument[] {
+  const context = identityContext([], userExercises);
+  const classified: AliasDocument[] = [];
+  for (const alias of aliases) {
+    const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
+    const normalizedAlias = normalizeExerciseName(alias.alias);
+    if (alias.provenance === "remembered") {
+      classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "remembered" });
+      continue;
+    }
+
+    const prepared = prepareImportName(alias.alias, disambiguationsByNormalizedName);
+    const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
+    if (
+      !normalizedAlias ||
+      noisyLegacyAlias(alias.alias) ||
+      prepared.hasAlternative ||
+      disambiguation?.kind === "underspecified-name"
+    ) {
+      continue;
+    }
+
+    const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
+    if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
+    classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });
+  }
+  return classified;
 }
 
 let dbPromise: Promise<IDBPDatabase<TrainerDb>> | undefined;
@@ -52,6 +262,7 @@ let dbInstance: IDBPDatabase<TrainerDb> | undefined;
 
 export function getDb() {
   if (!dbPromise) {
+    let shouldDispatchIdentityChange = false;
     dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
       async upgrade(db, oldVersion, _newVersion, tx) {
         // v0 → v1: create all initial stores
@@ -69,8 +280,9 @@ export function getDb() {
 
         // v1 → v2: add metrics store
         if (oldVersion < 2) {
-          if (!db.objectStoreNames.contains("metrics")) {
-            db.createObjectStore("metrics", { keyPath: "exerciseId" });
+          if (!(db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
+            (db as unknown as IDBPDatabase<LegacyMetricsDb>)
+              .createObjectStore("metrics", { keyPath: "exerciseId" });
           }
         }
 
@@ -173,6 +385,40 @@ export function getDb() {
             db.createObjectStore("promptPresets", { keyPath: "id" });
           }
         }
+
+        // v9 → v10: persist normalization overrides, normalize every stored
+        // catalogue reference in the same upgrade transaction, classify old
+        // automatic aliases, and drop the unused derived metrics cache.
+        if (oldVersion < 10) {
+          if (!db.objectStoreNames.contains("normalizationOverrides")) {
+            db.createObjectStore("normalizationOverrides", { keyPath: "id" });
+          }
+
+          const programsStore = tx.objectStore("programs");
+          const logsStore = tx.objectStore("logs");
+          const aliasesStore = tx.objectStore("aliases");
+          const userExercisesStore = tx.objectStore("userExercises");
+          const [programs, logs, aliases, userExercises] = await Promise.all([
+            programsStore.getAll(),
+            logsStore.getAll(),
+            aliasesStore.getAll(),
+            userExercisesStore.getAll(),
+          ]);
+          const classifiedAliases = classifyAliases(aliases, userExercises);
+          const context = identityContext(classifiedAliases, userExercises);
+
+          await aliasesStore.clear();
+          await Promise.all([
+            ...programs.map((program) => programsStore.put(migrateProgram(program, context))),
+            ...logs.map((log) => logsStore.put(migrateLog(log, context))),
+            ...classifiedAliases.map((alias) => aliasesStore.put(alias)),
+          ]);
+
+          if ((db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
+            (db as unknown as IDBPDatabase<LegacyMetricsDb>).deleteObjectStore("metrics");
+          }
+          shouldDispatchIdentityChange = oldVersion > 0;
+        }
       },
       blocked() {
         // Another tab holds an older connection; this open will hang until
@@ -211,6 +457,7 @@ export function getDb() {
       // "blocked" banner the UI may be showing. No-op if nothing was
       // blocked.
       window.dispatchEvent(new CustomEvent("trainer-db-unblocked"));
+      if (shouldDispatchIdentityChange) dispatchExerciseIdentityChanged();
       return db;
     }).catch((e) => {
       dbPromise = undefined; // let the next getDb() retry instead of re-throwing forever

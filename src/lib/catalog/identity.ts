@@ -36,7 +36,9 @@ export type NormalizationOverrideDocument = {
   updatedAt: string;
 };
 
-export type IdentityAlias = AliasDocument & { provenance?: "legacy-auto" | "remembered" };
+export type IdentityAlias = Omit<AliasDocument, "provenance"> & {
+  provenance?: "legacy-auto" | "remembered";
+};
 
 export type ExerciseIdentityContext = {
   catalogById: ReadonlyMap<string, ExerciseCatalogItem>;

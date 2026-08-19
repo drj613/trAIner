@@ -63,7 +63,11 @@ export function buildInitialResolutions(
   return result;
 }
 
-export type AliasSaveInput = { alias: string; canonicalExerciseId: string };
+export type AliasSaveInput = {
+  alias: string;
+  canonicalExerciseId: string;
+  provenance: "remembered";
+};
 
 /**
  * Collapses resolved items down to one alias-save per normalizedAlias. A
@@ -94,7 +98,7 @@ export function dedupeAliasResolutions(
     const existing = byNormalizedAlias.get(normalized);
     if (!existing) {
       byNormalizedAlias.set(normalized, {
-        input: { alias: item.rawName, canonicalExerciseId },
+        input: { alias: item.rawName, canonicalExerciseId, provenance: "remembered" },
         conflict: false,
       });
     } else if (existing.input.canonicalExerciseId !== canonicalExerciseId) {
