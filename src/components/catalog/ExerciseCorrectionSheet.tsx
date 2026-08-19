@@ -230,10 +230,31 @@ export function ExerciseCorrectionSheet({
     [target, context.disambiguations],
   );
   const lookupToken = prepared?.normalizedName ?? "";
-  const alternativeError = prepared?.hasAlternative
+  /**
+   * The two shapes of name that cannot be corrected at all, said in the user's
+   * language rather than the repository's.
+   *
+   * `hasAlternative`: `identity.ts:281` answers such a name as standalone before
+   * either store is read, so nothing written could ever be consulted.
+   *
+   * An empty token: six shipped phrases ARE the whole name (`competition`, four
+   * `pain free` wordings, `or`), and any punctuation-only name normalizes to
+   * nothing too. Both stores already refuse an empty token before their
+   * transaction opens — `validateOverrideTarget:83` and
+   * `assertRememberedInput`'s "Alias cannot be empty" — so no row is written and
+   * the unique `by-normalized-alias` index is never handed a colliding key.
+   * Refusing here is about honesty, not safety: without it the user sees
+   * "Normalization override target cannot be empty", and every such name would
+   * be asking for the one shared key `normalized-name:`.
+   */
+  const unaddressable = prepared?.hasAlternative
     ? `“${correctionTargetLabel(target)}” names more than one exercise, so there is no single`
       + " identity to correct. Change the name in the program or log to the one exercise you did."
-    : null;
+    : prepared && !lookupToken
+      ? `“${correctionTargetLabel(target)}” leaves no exercise name once its annotations are set`
+        + " aside, so there is nothing here to correct. Change the name in the program or log to"
+        + " the exercise you did."
+      : null;
 
   const stored = resolve(identityInputFor(target));
   const current: Draft = draft ?? {
@@ -276,9 +297,10 @@ export function ExerciseCorrectionSheet({
   //
   // The unique index allows only one, but a list costs nothing and means a
   // duplicate arriving from a hand-edited backup cannot survive a deliberate
-  // correction. A name offering alternatives has no governing alias by
-  // construction: `identity.ts:281` returns before the alias branch.
-  const governingAliases = target.kind === "normalized-name" && !prepared?.hasAlternative
+  // correction. An `unaddressable` name has no governing alias by construction:
+  // for an alternatives name `identity.ts:281` returns before the alias branch,
+  // and an empty token is a key no row can legally hold.
+  const governingAliases = target.kind === "normalized-name" && !unaddressable
     ? context.aliases.filter((alias) =>
       normalizeExerciseName(alias.normalizedAlias || alias.alias) === lookupToken)
     : [];
@@ -294,7 +316,7 @@ export function ExerciseCorrectionSheet({
   const occupiedByLabel = occupiedAlias ? aliasTargetLabel(occupiedAlias.canonicalExerciseId) : undefined;
 
   // First, because it is the only one that says nothing can be saved at all.
-  const alert = alternativeError
+  const alert = unaddressable
     ?? (mode === "map"
       ? writeError
         ?? (occupiedAlias
@@ -322,9 +344,9 @@ export function ExerciseCorrectionSheet({
 
   async function writeOverride(input: NormalizationOverrideSaveInput) {
     setSaved(null);
-    // Nothing to write, so nothing is written. See `alternativeError`.
-    if (alternativeError) {
-      setWriteError(alternativeError);
+    // Nothing to write, so nothing is written. See `unaddressable`.
+    if (unaddressable) {
+      setWriteError(unaddressable);
       return;
     }
     // Validation first, always. A rejected draft must not reach a repository
@@ -401,8 +423,8 @@ export function ExerciseCorrectionSheet({
 
   async function writeAliasMapping() {
     setSaved(null);
-    if (alternativeError) {
-      setWriteError(alternativeError);
+    if (unaddressable) {
+      setWriteError(unaddressable);
       return;
     }
     if (!mappedExerciseId) {

@@ -26,6 +26,10 @@ const annotatedName = "3 second paused Hatfield Squat";
 // A name that offers a choice of exercises, which `resolveName` answers as
 // standalone before it consults any store.
 const alternativeName = "Hatfield Squat or Lunge";
+// A name that is nothing BUT an annotation, so stripping it leaves no token at
+// all. Six shipped phrases have this shape (`competition`, four `pain free`
+// wordings, `or`), and so does any name made only of punctuation.
+const annotationOnlyName = "Competition";
 
 // Guards every annotated-name test below against becoming vacuous if the
 // shipped disambiguation artifact stops stripping the annotation: without the
@@ -316,7 +320,12 @@ describe("ExerciseCorrectionSheet", () => {
     // (identity.ts:283-298 returns before identity.ts:338-340), so writing one
     // and reporting success would be a lie. Awaited so a late write cannot slip
     // past the spy assertion below.
-    expect(await screen.findByRole("alert")).toHaveTextContent("High Bar Back Squat");
+    // Names both the mapping in the way and the control that replaces it —
+    // a refusal that does not say what to do next is just a dead end.
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "“Hatfield Squat” is mapped to High Bar Back Squat. Return it to standalone,"
+      + " or use “Map to an existing exercise” to replace the mapping, before assigning a movement.",
+    );
     expect(overrideSave).not.toHaveBeenCalled();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -492,6 +501,61 @@ describe("ExerciseCorrectionSheet", () => {
     expect(overrideSave).not.toHaveBeenCalled();
     expect(aliasSave).not.toHaveBeenCalled();
     expect(await aliasRepo.list()).toEqual([]);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("refuses to assign a movement while an alias governs another spelling of the name", async () => {
+    // The mapping was made for the 3-second variant; the sheet is opened on the
+    // 5-second one. They share the resolver's token, so the mapping governs both
+    // — which is the point of keying on that token. Comparing on the raw text
+    // would miss it and report a success that changes nothing.
+    await aliasRepo.save({
+      alias: annotatedName,
+      canonicalExerciseId: "barbell-high-bar-squat",
+      provenance: "remembered",
+    });
+    const otherVariant = "5 second paused Hatfield Squat";
+    expect(expectAnnotationIsStripped(otherVariant)).toBe(expectAnnotationIsStripped(annotatedName));
+    // Canary: the stored mapping really does govern the other spelling.
+    expect((await resolveStoredName(otherVariant)).concreteExerciseId).toBe("barbell-high-bar-squat");
+    const user = userEvent.setup();
+    await renderSheet({ kind: "normalized-name", value: otherVariant });
+
+    await user.selectOptions(screen.getByLabelText("Primary movement"), "squat");
+    await user.click(screen.getByRole("button", { name: "Save correction" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("High Bar Back Squat");
+    expect(overrideSave).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("refuses to correct a name that is nothing but an annotation", async () => {
+    // Canary: stripping really does leave nothing, which is what makes this
+    // reachable at all.
+    expect(prepareImportName(annotationOnlyName, disambiguationsByNormalizedName).normalizedName).toBe("");
+    const user = userEvent.setup();
+    await renderSheet({ kind: "normalized-name", value: annotationOnlyName });
+
+    // Said in the user's language. Both stores DO refuse an empty token
+    // (`validateOverrideTarget` and `assertRememberedInput`, each before its
+    // transaction opens, so nothing is written and `by-normalized-alias` cannot
+    // be handed a colliding key) — but they refuse in repository language, and
+    // every such name would otherwise share the one key `normalized-name:`.
+    expect(screen.getByRole("alert")).toHaveTextContent("no exercise name");
+
+    await user.selectOptions(screen.getByLabelText("Primary movement"), "squat");
+    await user.click(screen.getByRole("button", { name: "Save correction" }));
+    await user.click(screen.getByRole("button", { name: "Return to standalone" }));
+
+    await user.click(screen.getByRole("radio", { name: "Map to an existing exercise" }));
+    await user.type(screen.getByLabelText("filter"), "high bar back squat");
+    await user.selectOptions(screen.getByLabelText("Concrete version"), "barbell-high-bar-squat");
+    await user.click(screen.getByRole("button", { name: "Save correction" }));
+
+    expect(overrideSave).not.toHaveBeenCalled();
+    expect(aliasSave).not.toHaveBeenCalled();
+    expect(await aliasRepo.list()).toEqual([]);
+    expect(await normalizationOverrideRepo.list()).toEqual([]);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
