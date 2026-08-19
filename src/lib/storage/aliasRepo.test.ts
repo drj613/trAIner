@@ -107,19 +107,6 @@ describe("aliasRepo.save", () => {
     expect(await aliasRepo.list()).toHaveLength(1);
   });
 
-  it("lets a caller supply the lookup token instead of deriving it", async () => {
-    await aliasRepo.save({
-      alias: "Hatfield Squat",
-      normalizedAlias: "paused hatfield squat",
-      canonicalExerciseId: "barbell-high-bar-squat",
-      provenance: "remembered",
-    });
-
-    const [stored] = await aliasRepo.list();
-    expect(stored.normalizedAlias).toBe("paused hatfield squat");
-    expect(stored.alias).toBe("Hatfield Squat");
-  });
-
   it("still inserts distinct aliases as separate records", async () => {
     await aliasRepo.save({ alias: "Strict Pullup", canonicalExerciseId: "pull-up", provenance: "remembered" });
     await aliasRepo.save({ alias: "Goblet Squat", canonicalExerciseId: "goblet-squat", provenance: "remembered" });

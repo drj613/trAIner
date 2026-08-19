@@ -184,9 +184,6 @@ describe("ExerciseCorrectionSheet", () => {
     expect(aliasSave).toHaveBeenCalledWith(
       {
         alias: "Hatfield Squat",
-        // SEMANTICS MOVED (NEW-1): the lookup token is supplied explicitly so it
-        // is the resolver's, while `alias` keeps the user's own wording.
-        normalizedAlias: "hatfield squat",
         canonicalExerciseId: "barbell-high-bar-squat",
         provenance: "remembered",
       },
@@ -276,9 +273,6 @@ describe("ExerciseCorrectionSheet", () => {
     expect(aliasReplace).toHaveBeenCalledWith(
       {
         alias: "Hatfield Squat",
-        // SEMANTICS MOVED (NEW-1): the lookup token is supplied explicitly so it
-        // is the resolver's, while `alias` keeps the user's own wording.
-        normalizedAlias: "hatfield squat",
         canonicalExerciseId: "barbell-high-bar-squat",
         provenance: "remembered",
       },

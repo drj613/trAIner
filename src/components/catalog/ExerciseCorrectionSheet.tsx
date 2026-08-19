@@ -400,10 +400,12 @@ export function ExerciseCorrectionSheet({
       // Verified against storage, not against this sheet's snapshot — the
       // provider reload has not landed yet, and a concurrent writer could have
       // re-occupied the token. Success is only claimed when the name is
-      // genuinely no longer governed by an alias. Queried on the resolver's
-      // token: on the raw text this check could not see the alias it exists to
-      // find.
-      if (target.kind === "normalized-name" && (await aliasRepo.find(lookupToken))) {
+      // genuinely no longer governed by an alias. `find` derives the resolver's
+      // token itself, so passing the raw name here asks the right question; on
+      // plain normalized text this check could not see the alias it exists to
+      // find, and the mutation proving that lives on `aliasRepo` (its own
+      // `find`), not here.
+      if (target.kind === "normalized-name" && (await aliasRepo.find(target.value))) {
         setWriteError(
           `“${target.value}” is still mapped to another exercise, so the correction did not take effect.`,
         );
@@ -432,12 +434,10 @@ export function ExerciseCorrectionSheet({
       return;
     }
     const input = {
-      // `alias` stays the user's own wording — it is the display text every
-      // surface shows — while `normalizedAlias` carries the token the resolver
-      // looks the row up by. Two fields, so re-keying the row costs the user
-      // nothing.
+      // The user's own wording, unchanged. `aliasRepo` derives the lookup token
+      // from it (`rememberedAliasToken`), so the row is keyed on what the
+      // resolver reads while `alias` stays the display text every surface shows.
       alias: correctionTargetLabel(target),
-      normalizedAlias: lookupToken,
       canonicalExerciseId: mappedExerciseId,
       provenance: "remembered" as const,
     };
