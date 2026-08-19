@@ -209,7 +209,7 @@ describe("exercise identity consumer audit", () => {
         // Word-boundary, not `includes`: `projectExerciseHistoryX` contains
         // `projectExerciseHistory`, so a substring test would accept a renamed
         // — i.e. removed — call.
-        expect(via).toBeDefined();
+        expect(RESOLVER_ENTRY_POINTS).toContain(via);
         expect(new RegExp(`\\b${via!}\\b`).test(source)).toBe(true);
         expect(sites.map((site) => `${file}:${site.line}`)).toEqual([]);
         return;
