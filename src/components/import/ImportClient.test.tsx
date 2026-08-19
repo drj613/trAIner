@@ -1,4 +1,5 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ImportClient } from "./ImportClient";
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
@@ -6,7 +7,7 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
 }));
 
 jest.mock("@/lib/storage/aliasRepo", () => ({
-  aliasRepo: { list: jest.fn().mockResolvedValue([]), save: jest.fn() },
+  aliasRepo: { list: jest.fn().mockResolvedValue([]), saveMany: jest.fn() },
 }));
 
 jest.mock("@/lib/storage/userExerciseRepo", () => ({
@@ -54,27 +55,31 @@ jest.mock("@/lib/import/parser", () => ({
           ],
         },
       ],
+      overrides: [],
     },
     warnings: [],
   })),
 }));
 
-// Mock the resolution module
-jest.mock("@/lib/import/resolution", () => ({
-  extractUnresolvedExercises: jest.fn().mockReturnValue([]),
-  applyResolutions: jest.fn((p) => p),
-  buildInitialResolutions: jest.fn().mockReturnValue({}),
-  CUSTOM_ID: "__custom__",
-}));
+// `@/lib/import/resolution` is deliberately NOT mocked. A partial mock of it
+// went stale the moment ImportClient imported another of its exports, and only
+// stayed green because this test never leaves the paste step — the next person
+// to click Validate here would have got `groupResolutionOccurrences is not a
+// function`. The real module is pure and cheap, so there is nothing to fake.
 
 describe("ImportClient confirm step pluralization", () => {
-  it("does not use (s) suffixes in confirm step", () => {
+  it("does not use (s) suffixes in confirm step", async () => {
+    const user = userEvent.setup();
     render(<ImportClient />);
 
-    // Verify that the component doesn't render the old format with (s)
-    const documentText = document.body.textContent || "";
+    // Reach the step this test is named after. Asserting on the paste step's
+    // text could never have distinguished singular copy from "(s)" copy,
+    // because the strings under test are not on that step at all.
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "{}" } });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+    expect(await screen.findByText(/1 day · 1 exercise/)).toBeInTheDocument();
 
-    // Check that we don't have the old format anywhere in rendered output
+    const documentText = document.body.textContent || "";
     expect(documentText).not.toMatch(/day\(s\)/);
     expect(documentText).not.toMatch(/exercise\(s\)/);
   });
