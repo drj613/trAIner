@@ -992,3 +992,9 @@ Whole-repo total is 1,556 against the 1,493 baseline; the delta includes the sib
 **DONE**
 
 Commits: `5bd8e09` (C-1), `03eafa5` (C-2), `ea82170` (the four surviving mutations), plus this report.
+
+### Cross-lane incident — commit attribution, for the controller
+
+My round-3 report commit `df0c77b` is **unreachable from HEAD**. Its content is intact — HEAD's copy of this file is byte-identical to what I wrote, verified by diff — but the change was swept into a sibling lane's commit `74f05d8 docs: report task 10a and correct the restore claim it disproved`, which is not mine and does not describe it.
+
+That is the signature of a wildcard stage (`git add -A` / `git add .` / `git commit -a`) in another lane, the thing the standards prohibit precisely because three agents share this worktree. Nothing was lost this time and my three code commits (`5bd8e09`, `03eafa5`, `ea82170`) are all reachable and unmodified — verified with `git diff --quiet ea82170 HEAD` on all five source files. Reporting it because the next one may not be so lucky, and because the plan's history now attributes this report to the wrong task.
