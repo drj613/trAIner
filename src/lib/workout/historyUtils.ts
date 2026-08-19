@@ -1,4 +1,4 @@
-import type { WorkoutLogDocument, WorkoutSetLog } from "@/lib/programs/types";
+import type { WorkoutLogDocument, WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
 import { logLocalDate } from "./localDate";
 
 export type ExerciseSessionRow = {
@@ -33,6 +33,57 @@ export function setVolume(s: WorkoutSetLog): number {
   return setWeightInLb(s) * (s.reps ?? 0);
 }
 
+/**
+ * Whether a set carries anything the user actually recorded. `rpe` and set
+ * notes count even though no current writer produces them alone: a set we can
+ * read but do not display is still recorded work, and history must not drop it.
+ */
+export function setHasData(s: WorkoutSetLog): boolean {
+  return Boolean(s.rawCell?.trim())
+    || s.weight != null
+    || s.reps != null
+    || s.rpe != null
+    || Boolean(s.notes?.trim());
+}
+
+/**
+ * Whether a log entry belongs in exercise history: at least one recorded set,
+ * or an exercise note. A note-only entry is history the user wrote by hand, so
+ * it must survive; an entry with no sets and no note (a skipped placeholder)
+ * has nothing to show.
+ */
+export function entryHasHistoryData(entry: WorkoutLogEntry): boolean {
+  return entry.sets.some(setHasData) || Boolean(entry.notes?.trim());
+}
+
+/** Display labels for an entry's sets, dropping labels with nothing in them. */
+export function entrySetLabels(entry: WorkoutLogEntry, sep: string = "x"): string[] {
+  return entry.sets.map((s) => formatSetLabel(s, sep)).filter(Boolean);
+}
+
+/** Tonnage of an entry in lb (kg sets converted). */
+export function entryVolumeLb(entry: WorkoutLogEntry): number {
+  return entry.sets.reduce((sum, s) => sum + setVolume(s), 0);
+}
+
+/**
+ * Volume trend over chronologically ordered session volumes: the mean of the
+ * last three sessions against the three before them, with a 3% dead band so
+ * ordinary noise reads as flat.
+ */
+export function deriveVolumeTrend(volumes: readonly number[]): "up" | "flat" | "down" {
+  if (volumes.length < 3) return "flat";
+  const recent = volumes.slice(-3);
+  const prior = volumes.slice(-6, -3);
+  if (prior.length === 0) return "flat";
+  const average = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
+  const recentAverage = average(recent);
+  const priorAverage = average(prior);
+  if (recentAverage > priorAverage * 1.03) return "up";
+  if (recentAverage < priorAverage * 0.97) return "down";
+  return "flat";
+}
+
 export function aggregateExerciseHistory(
   logs: WorkoutLogDocument[],
   exerciseId: string,
@@ -42,22 +93,24 @@ export function aggregateExerciseHistory(
   const rows: ExerciseSessionRow[] = [];
 
   for (const log of logs) {
-    const entry = log.entries.find((e) => {
-      // Prefer canonical-id match when both sides supply one.
-      if (canonicalExerciseId && e.canonicalExerciseId) {
-        return e.canonicalExerciseId === canonicalExerciseId;
-      }
-      // Legacy / pre-canonical fallback: slot-id match.
-      return e.exerciseId === exerciseId;
-    });
-    if (!entry) continue;
+    // Every matching entry, never `find`: one workout can log the same
+    // exercise twice (a top set plus a back-off block), and dropping the
+    // second entry would silently lose recorded work.
+    for (const entry of log.entries) {
+      const matches = canonicalExerciseId && entry.canonicalExerciseId
+        // Prefer canonical-id match when both sides supply one.
+        ? entry.canonicalExerciseId === canonicalExerciseId
+        // Legacy / pre-canonical fallback: slot-id match.
+        : entry.exerciseId === exerciseId;
+      if (!matches) continue;
 
-    rows.push({
-      date: logLocalDate(log),
-      sets: entry.sets.map((s) => formatSetLabel(s)).filter(Boolean),
-      note: entry.notes,
-      volume: entry.sets.reduce((sum, s) => sum + setVolume(s), 0),
-    });
+      rows.push({
+        date: logLocalDate(log),
+        sets: entrySetLabels(entry),
+        note: entry.notes,
+        volume: entryVolumeLb(entry),
+      });
+    }
   }
 
   return rows.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit);

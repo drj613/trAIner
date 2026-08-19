@@ -1,4 +1,14 @@
-import { aggregateExerciseHistory, formatSetLabel, setVolume, setWeightInLb } from "./historyUtils";
+import {
+  aggregateExerciseHistory,
+  deriveVolumeTrend,
+  entryHasHistoryData,
+  entrySetLabels,
+  entryVolumeLb,
+  formatSetLabel,
+  setHasData,
+  setVolume,
+  setWeightInLb,
+} from "./historyUtils";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 
 const logs: WorkoutLogDocument[] = [
@@ -169,6 +179,34 @@ describe("aggregateExerciseHistory", () => {
     expect(rows[0].date).toBe("2026-05-01");
   });
 
+  it("keeps every matching entry when one workout logs the exercise twice", () => {
+    const twice: WorkoutLogDocument[] = [{
+      id: "log-twice", programId: "p1", dayId: "d1",
+      performedAt: "2026-05-06T09:00:00.000Z", performedDate: "2026-05-06",
+      entries: [
+        { exerciseId: "slot-a", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 100, reps: 3 }] },
+        { exerciseId: "slot-b", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 80, reps: 8 }] },
+      ],
+    }];
+    const rows = aggregateExerciseHistory(twice, "slot-a", "cat-bench");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.sets)).toEqual([["100x3"], ["80x8"]]);
+  });
+
+  it("keeps a bodyweight entry that contributes zero volume", () => {
+    const bodyweight: WorkoutLogDocument[] = [{
+      id: "log-bw", programId: "p1", dayId: "d1",
+      performedAt: "2026-05-07T09:00:00.000Z", performedDate: "2026-05-07",
+      entries: [
+        { exerciseId: "slot-a", canonicalExerciseId: "cat-pullup", sets: [{ setNumber: 1, reps: 10 }] },
+        { exerciseId: "slot-b", canonicalExerciseId: "cat-pullup", sets: [{ setNumber: 1, weight: 25, reps: 5 }] },
+      ],
+    }];
+    const rows = aggregateExerciseHistory(bodyweight, "slot-a", "cat-pullup");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.volume)).toEqual([0, 125]);
+  });
+
   it("prefers explicit performedDate over performedAt for dating", () => {
     const withDate: WorkoutLogDocument[] = [{
       id: "log-pd", programId: "p1", dayId: "d1",
@@ -176,6 +214,58 @@ describe("aggregateExerciseHistory", () => {
       entries: [{ exerciseId: "bench-press", sets: [{ setNumber: 1, weight: 60, reps: 10 }] }],
     }];
     expect(aggregateExerciseHistory(withDate, "bench-press")[0].date).toBe("2026-05-01");
+  });
+});
+
+describe("entry helpers", () => {
+  it("treats a set as recorded when it has a raw cell, a weight, or reps", () => {
+    expect(setHasData({ setNumber: 1, weight: 60 })).toBe(true);
+    expect(setHasData({ setNumber: 1, reps: 10 })).toBe(true);
+    expect(setHasData({ setNumber: 1, rawCell: "40s hold" })).toBe(true);
+    expect(setHasData({ setNumber: 1, rpe: 8 })).toBe(true);
+    expect(setHasData({ setNumber: 1, notes: "belt on" })).toBe(true);
+    expect(setHasData({ setNumber: 1 })).toBe(false);
+    expect(setHasData({ setNumber: 1, rawCell: "   " })).toBe(false);
+  });
+
+  it("keeps an entry whose only readable set data is an rpe", () => {
+    const entry = { exerciseId: "a", sets: [{ setNumber: 1, rpe: 9 }] };
+    expect(entryHasHistoryData(entry)).toBe(true);
+    // No printable label, but the entry survives as a correctable row.
+    expect(entrySetLabels(entry)).toEqual([]);
+  });
+
+  it("counts an entry as history when it has a recorded set or a note", () => {
+    expect(entryHasHistoryData({ exerciseId: "a", sets: [{ setNumber: 1, reps: 5 }] })).toBe(true);
+    expect(entryHasHistoryData({ exerciseId: "a", sets: [], notes: "tweaked knee" })).toBe(true);
+    expect(entryHasHistoryData({ exerciseId: "a", sets: [{ setNumber: 1 }] })).toBe(false);
+    expect(entryHasHistoryData({ exerciseId: "a", sets: [], notes: "  " })).toBe(false);
+    expect(entryHasHistoryData({ exerciseId: "a", sets: [] })).toBe(false);
+  });
+
+  it("labels an entry's sets and drops empty labels", () => {
+    const entry = {
+      exerciseId: "a",
+      sets: [{ setNumber: 1, weight: 60, reps: 10 }, { setNumber: 2 }, { setNumber: 3, reps: 8 }],
+    };
+    expect(entrySetLabels(entry)).toEqual(["60x10", "BWx8"]);
+    expect(entrySetLabels(entry, "\u00d7")).toEqual(["60\u00d710", "BW\u00d78"]);
+  });
+
+  it("sums an entry's volume in pounds across mixed units", () => {
+    expect(entryVolumeLb({
+      exerciseId: "a",
+      sets: [{ setNumber: 1, weight: 100, reps: 5 }, { setNumber: 2, weight: 10, unit: "kg", reps: 10 }],
+    })).toBeCloseTo(500 + 220.46, 2);
+    expect(entryVolumeLb({ exerciseId: "a", sets: [{ setNumber: 1, reps: 10 }] })).toBe(0);
+  });
+
+  it("derives a volume trend only from six-plus sessions of movement", () => {
+    expect(deriveVolumeTrend([100, 200])).toBe("flat");
+    expect(deriveVolumeTrend([100, 200, 300])).toBe("flat"); // no prior window
+    expect(deriveVolumeTrend([100, 100, 100, 200, 200, 200])).toBe("up");
+    expect(deriveVolumeTrend([200, 200, 200, 100, 100, 100])).toBe("down");
+    expect(deriveVolumeTrend([100, 100, 100, 101, 101, 101])).toBe("flat"); // inside the dead band
   });
 });
 
