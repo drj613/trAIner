@@ -105,12 +105,14 @@ export function createMigrationContext(
 
 // Leaf string fields are as untrustworthy as the containers around them.
 // normalizeExerciseName does `value.toLowerCase()`, so a missing or
-// non-string id/name throws and aborts the whole upgrade transaction — the
-// same permanently-unopenable-database failure the container guards below
-// prevent. restoreBackup checks aliases with hasIds only and defers deep
-// validation, so a truncated or hand-edited backup can plant these shapes on
-// a pre-v10 client. Every read that reaches normalizeExerciseName,
-// prepareImportName, or the resolver is typeof-checked first.
+// non-string id/name throws. The v10 block now catches and aborts, so such a
+// throw rolls the upgrade back and the next load retries it — but that leaves
+// the user stuck at version 9 with a broken record they cannot see or fix, so
+// these guards remain the layer that lets the migration actually succeed.
+// restoreBackup checks aliases with hasIds only and defers deep validation,
+// so a truncated or hand-edited backup can plant these shapes on a pre-v10
+// client. Every read that reaches normalizeExerciseName, prepareImportName,
+// or the resolver is typeof-checked first.
 function isReadableText(value: unknown): value is string {
   return typeof value === "string";
 }
@@ -129,16 +131,16 @@ function canonicalizeExplicitExerciseId(
 // Legacy documents are not guaranteed to have every array this traversal
 // walks: the v7/v8 blocks above already read `(log.entries ?? [])` because
 // pre-entries logs exist, and backup.ts validates null override replacements
-// because those exist too. An unguarded `.map` here would reject the whole
-// upgrade transaction, and since getDb() clears dbPromise on failure, every
-// later retry would fail identically — the database would become permanently
-// unopenable. Tolerate the malformed shape and pass the record through
+// because those exist too. An unguarded `.map` on one of those shapes throws,
+// and the v10 block's catch then aborts the upgrade — so the user's data is
+// safe, but their database never reaches version 10 and every load pays a
+// failed migration. Tolerate the malformed shape and pass the record through
 // untouched instead; a record we cannot read is a record we must not rewrite.
 function mapArray<T>(value: T[], mapper: (item: T) => T): T[] {
   return Array.isArray(value) ? value.map(mapper) : value;
 }
 
-function isRecord(value: unknown): boolean {
+function isRecord<T>(value: T): value is T & object {
   return value !== null && typeof value === "object";
 }
 
@@ -199,7 +201,7 @@ export function migrateProgram(
       ...override,
       replacement: migrateProgramReplacement(override.replacement, context),
     } : override)),
-    ...(program.import && isRecord(program.import) ? {
+    ...(isRecord(program.import) ? {
       import: {
         ...program.import,
         warnings: mapArray(program.import.warnings, (warning) => (isRecord(warning) ? {
@@ -319,6 +321,7 @@ let dbInstance: IDBPDatabase<TrainerDb> | undefined;
 export function getDb() {
   if (!dbPromise) {
     let shouldDispatchIdentityChange = false;
+    let upgradeError: unknown;
     dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
       async upgrade(db, oldVersion, _newVersion, tx) {
         // v0 → v1: create all initial stores
@@ -446,34 +449,62 @@ export function getDb() {
         // catalogue reference in the same upgrade transaction, classify old
         // automatic aliases, and drop the unused derived metrics cache.
         if (oldVersion < 10) {
-          if (!db.objectStoreNames.contains("normalizationOverrides")) {
-            db.createObjectStore("normalizationOverrides", { keyPath: "id" });
+          // idb does not await this callback, so an unhandled throw after the
+          // first `await` does NOT abort anything: the versionchange
+          // transaction commits whatever was already issued, the open
+          // resolves at version 10, and `oldVersion < 10` never runs again —
+          // a silent, permanent half-migration (and, past the clear() below,
+          // an emptied alias store). Spec: "Migration and restore failures
+          // abort their transaction rather than committing a partially
+          // normalized database." So catch, abort explicitly, and rethrow:
+          // the open then rejects, the stored version stays at 9, and the
+          // next load retries the whole migration from clean data.
+          try {
+            if (!db.objectStoreNames.contains("normalizationOverrides")) {
+              db.createObjectStore("normalizationOverrides", { keyPath: "id" });
+            }
+
+            const programsStore = tx.objectStore("programs");
+            const logsStore = tx.objectStore("logs");
+            const aliasesStore = tx.objectStore("aliases");
+            const userExercisesStore = tx.objectStore("userExercises");
+            const [programs, logs, aliases, userExercises] = await Promise.all([
+              programsStore.getAll(),
+              logsStore.getAll(),
+              aliasesStore.getAll(),
+              userExercisesStore.getAll(),
+            ]);
+            const classifiedAliases = classifyAliases(aliases, userExercises);
+            const context = createMigrationContext(classifiedAliases, userExercises);
+
+            await aliasesStore.clear();
+            await Promise.all([
+              ...programs.map((program) => programsStore.put(migrateProgram(program, context))),
+              ...logs.map((log) => logsStore.put(migrateLog(log, context))),
+              ...classifiedAliases.map((alias) => aliasesStore.put(alias)),
+            ]);
+
+            if ((db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
+              (db as unknown as IDBPDatabase<LegacyMetricsDb>).deleteObjectStore("metrics");
+            }
+            shouldDispatchIdentityChange = oldVersion > 0;
+          } catch (error) {
+            upgradeError = error;
+            // Mark the transaction's own rejection as handled before aborting;
+            // otherwise idb's cached `done` promise rejects with nobody
+            // listening and the AbortError surfaces as an unhandled rejection.
+            void tx.done.catch(() => {});
+            try {
+              tx.abort();
+            } catch {
+              // Already aborted — a failed IDB request aborts its own
+              // transaction, and abort() on a finished transaction throws.
+            }
+            // Deliberately not rethrown: idb never awaits this callback, so a
+            // throw here would only become another unhandled rejection. The
+            // abort is what fails the open request; the catch below then
+            // reports this real cause instead of the generic AbortError.
           }
-
-          const programsStore = tx.objectStore("programs");
-          const logsStore = tx.objectStore("logs");
-          const aliasesStore = tx.objectStore("aliases");
-          const userExercisesStore = tx.objectStore("userExercises");
-          const [programs, logs, aliases, userExercises] = await Promise.all([
-            programsStore.getAll(),
-            logsStore.getAll(),
-            aliasesStore.getAll(),
-            userExercisesStore.getAll(),
-          ]);
-          const classifiedAliases = classifyAliases(aliases, userExercises);
-          const context = createMigrationContext(classifiedAliases, userExercises);
-
-          await aliasesStore.clear();
-          await Promise.all([
-            ...programs.map((program) => programsStore.put(migrateProgram(program, context))),
-            ...logs.map((log) => logsStore.put(migrateLog(log, context))),
-            ...classifiedAliases.map((alias) => aliasesStore.put(alias)),
-          ]);
-
-          if ((db.objectStoreNames as unknown as DOMStringList).contains("metrics")) {
-            (db as unknown as IDBPDatabase<LegacyMetricsDb>).deleteObjectStore("metrics");
-          }
-          shouldDispatchIdentityChange = oldVersion > 0;
         }
       },
       blocked() {
@@ -517,7 +548,9 @@ export function getDb() {
       return db;
     }).catch((e) => {
       dbPromise = undefined; // let the next getDb() retry instead of re-throwing forever
-      throw e;
+      // A failed migration surfaces its real cause rather than the AbortError
+      // that the deliberate rollback produces.
+      throw upgradeError ?? e;
     });
   }
 

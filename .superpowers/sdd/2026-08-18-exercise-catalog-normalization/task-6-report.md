@@ -278,7 +278,8 @@ Note on test design: my first version of the custom-exercise test used the name 
 An unreadable alias is dropped, not retained unclassified. Reasoning:
 
 - An alias exists only to short-circuit name resolution. One we cannot read cannot be classified, cannot be shown correctly in a correction UI, and cannot be redirected — but it would still sit on its normalized token and keep pre-empting the new disambiguation flow, which is precisely the failure mode spec line 357 exists to end.
-- Nothing user-authored is lost. Every pre-v10 alias is machine-created (`legacy-auto`) — the old importer saved all resolutions automatically — and `remembered` aliases are user intent, which is why the classifier short-circuits and keeps them before any of these checks run. An alias whose `alias` text or target is not a string cannot be a coherent `remembered` record anyway.
+- Retaining one would move the crash into the runtime resolver, not just the migration. `identity.ts:285` reads `normalizeExerciseName(candidate.normalizedAlias || candidate.alias)` over every context alias on every name resolution, so one unreadable alias left in the store would break name resolution app-wide, on every page, forever. (Corrected in fix round 3: this is the strongest argument and it was missing from my original list.)
+- A user-authored alias *can* be dropped by this rule, and I originally got two premises wrong here (corrected in fix round 3). The guard sits at `appDb.ts:278`, *before* the `remembered` short-circuit at `appDb.ts:282`, so that short-circuit is not what protects user intent; and `remembered` is reachable pre-v10, because the old `restoreBackup` put alias records verbatim behind `hasIds` only, so a hand-edited v1 backup can carry one onto a pre-v10 client. The ruling still stands: the only aliases dropped are ones that can never be matched, displayed, or redirected, whatever their provenance claims.
 - It is consistent with the surrounding rule rather than a new one: the spec already deletes legacy aliases with zero or multiple concrete outcomes. "Zero readable outcomes" is the same disposal, and worst case the user re-teaches the interpretation once through `Remember this interpretation`.
 - The routines and logs those aliases might have resolved are untouched; only the shortcut disappears.
 
@@ -322,3 +323,95 @@ None. All four repros were real, and the sweep found three more sites in the sam
 ### Untouched, per the coordinator's scoping
 
 No extraction into `src/lib/storage/migrations/v10Identity.ts` (Task 7). Still untouched: `ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2.
+
+## Fix round 3 — the upgrade now actually aborts
+
+I reproduced the finding independently before touching anything, and it is exactly as described: idb never awaits the `upgrade` callback, so a throw after the first `await` left the versionchange transaction to commit whatever had already been issued.
+
+### Must-fix 1: `try`/`catch`/`abort` around the v10 block
+
+Measured with the same failure injected at the same point (a resolver throw on `removed-squat-id`, which is only reached after `await aliasesStore.clear()`), before and after the fix:
+
+```text
+before:  outcome=resolved                                version=9→10  hasMetrics=true  aliasCount=0
+after:   outcome=rejected(injected migration failure)    version=9     hasMetrics=true  aliasCount=5
+```
+
+The "before" line is the catastrophe in full: the open resolves, the version is stamped 10 so `oldVersion < 10` never runs again, `metrics` survives, programs and logs are half-normalized, and the alias store is permanently empty with no error anywhere. Directly contrary to spec line 528.
+
+The fix wraps the whole `oldVersion < 10` body in `try`/`catch`. Three details worth review:
+
+1. `tx.abort()` is wrapped in its own `try`/`catch`, because a failed IDB *request* aborts its own transaction and `abort()` on a finished transaction throws `InvalidStateError` — which would replace the real cause with a bogus one.
+2. The error is **not** rethrown. Rethrowing works (the abort still fails the open) but adds a second unhandled rejection, since idb ignores the callback's promise — jest reported it as a test failure, and a browser would log `Uncaught (in promise)`. Instead the cause is stored in `upgradeError` and the existing `.catch` on the open rethrows it, so `getDb()` rejects with `injected migration failure` rather than a generic `AbortError`. The new test asserts that specific message, which pins the plumbing.
+3. `void tx.done.catch(() => {})` runs before the abort, because idb's cached `done` promise rejects with `AbortError` and nothing is listening — without it the deliberate rollback produces an unhandled rejection of its own.
+
+New file `src/lib/storage/appDbUpgradeFailure.test.ts`, two tests, failure injected by mocking `resolveExerciseIdentity`:
+
+- rejects with the real cause; version stays 9; `metrics` still present; aliases, programs, and logs byte-equal to the pre-upgrade snapshot; and a later open with the failure removed migrates for real.
+- the worst case specifically: a failure landing *after* `aliasesStore.clear()` leaves all 5 fixture aliases intact.
+
+Both fail without the abort (`Received promise resolved instead of rejected`, and the dumped database shows `version: 10` with `metrics` still in `objectStoreNames`).
+
+### Other upgrade blocks and restore
+
+**The v7 and v8 blocks have the identical exposure; v5 does not; restore does not.**
+
+- `appDb.ts:398` — `(log.entries ?? []).some(...)` throws if `entries` is truthy but not an array; `appDb.ts:402` — `localDateOf(log.performedAt)` does not throw on a bad value (it yields `NaN-NaN-NaN`, wrong but not fatal).
+- `appDb.ts:420-424` — `(log.entries ?? []).map`, `(entry.sets ?? []).map`, and `set.rawCell.trim()` (truthiness-guarded only, so a non-string `rawCell` throws).
+- `appDb.ts:366-389` (v5) reads only `completedAt`/`performedAt` and calls `cursor.update` — no string operations, no exposure.
+- `restoreBackup` is *not* affected by this class at all, because it awaits its own transaction: a failed `put` aborts the transaction and `await tx.done` rejects into the caller. The bug is specific to idb not awaiting the `upgrade` callback.
+
+Consequence if a v7/v8-era failure happens: the version still commits at 10 and the v10 block never runs, so identity normalization is silently skipped forever for that user — same class, slightly different blast radius (no store is cleared there).
+
+**My recommendation:** wrap the entire `upgrade` callback body in one `try`/`catch`/`abort` instead of just the v10 block. It is a smaller change than what I did here, covers every past and future block by construction, and matches spec line 528 as written ("migration failures abort"). I did *not* do it, per your instruction not to widen scope silently — it changes behaviour for upgrade paths Task 6 does not own (a user on v≤6 today), and that deserves your ruling. If you would rather it wait, the v7/v8 exposure is at least now documented in the file's comments.
+
+### Must-fix 2: comments corrected
+
+`appDb.ts` (leaf guards), `appDb.ts` (container guards), and both `appDb.test.ts` block comments no longer claim "aborts the whole upgrade transaction" / "permanently unopenable database". They now describe the post-fix truth: the throw is caught, the upgrade rolls back, the stored version stays at 9, and the next load retries — so the guards are what let the migration *succeed*, not what prevent data loss. You and the reviewer own the original framing; it was wrong and it is now gone from the code.
+
+### Must-fix 3: completion canaries
+
+Every pass-through case now asserts `metrics` is absent — the block's last statement, so its absence proves the migration ran to the end. Applied to all four `it.each` blocks (the 13 container cases as well as the 7 leaf cases, since they had the same hole) plus the four alias-drop cases.
+
+Quantified with the silent-bail mutation (an early `return` right after `aliasesStore.clear()`, which commits at version 10 with no error):
+
+```text
+mutation, canaries removed:  18 of the 20 pass-through cases still PASS
+                             (only the 2 carrying an expected-normalized value caught it)
+mutation, canaries present:  all 20 FAIL
+no mutation, canaries present: 51 passed, 51 total
+```
+
+### Cosmetic item: I was wrong, the generic predicate works
+
+Adopted `function isRecord<T>(value: T): value is T & object`, and the `program.import &&` prefix is gone. My round-2 claim that a predicate would mis-narrow the typed spreads was unfounded — `bun run typecheck` is clean on both `tsconfig.json` and `tsconfig.test.json` with the prefix removed. No compile error to show, because there isn't one.
+
+### Gates after fix round 3
+
+```text
+bun run test -- --runInBand
+Test Suites: 93 passed, 93 total
+Tests:       1136 passed, 1136 total   (was 1134; +2 upgrade-failure tests)
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.58s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```
+
+### Disagreements
+
+None on the three must-fixes or the cosmetic item — all four were right and one of them (the cosmetic) corrected a wrong claim of mine. The only thing I have pushed back on is scope: I believe the whole-callback abort is the right shape and I am asking you to rule rather than doing it unilaterally.
+
+### Untouched, per the coordinator's scoping
+
+`ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2, and the `migrations/v10Identity.ts` extraction (Task 7).

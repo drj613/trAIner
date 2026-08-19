@@ -677,8 +677,11 @@ describe("DB v10 — malformed legacy documents", () => {
   // Every case below is a real shape this codebase already knows about: the
   // v7/v8 upgrade blocks in appDb.ts read `(log.entries ?? [])`, and
   // backup.ts validates null override replacements. An unguarded `.map` in
-  // the v10 traversal turns any one of them into a permanently unopenable
-  // database, because getDb() clears dbPromise and every retry rethrows.
+  // the v10 traversal throws on any of them; the block's catch then aborts,
+  // so the upgrade rolls back and the database never reaches version 10.
+  // Each case therefore asserts a completion canary — the `metrics` store is
+  // deleted by the block's last statement, so its absence proves the whole
+  // migration ran rather than bailing midway.
   const programCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
     {
       name: "program with no days array",
@@ -752,6 +755,11 @@ describe("DB v10 — malformed legacy documents", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     const id = (seeded as { id: string }).id;
     expect(await readRawRecord("programs", id)).toEqual(expected ?? seeded);
+    // Completion canary: deleting `metrics` is the last statement of the
+    // v10 block, so its absence proves the migration ran to the end instead
+    // of bailing midway and leaving the record un-migrated.
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
   });
 
   const logCases: Array<{ name: string; seeded: unknown; expected?: unknown }> = [
@@ -795,14 +803,21 @@ describe("DB v10 — malformed legacy documents", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     const id = (seeded as { id: string }).id;
     expect(await readRawRecord("logs", id)).toEqual(expected ?? seeded);
+    // Completion canary: deleting `metrics` is the last statement of the
+    // v10 block, so its absence proves the migration ran to the end instead
+    // of bailing midway and leaving the record un-migrated.
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
   });
 
   // Fix round 2: leaf *string* fields, not just container shapes. Each of
   // these reaches normalizeExerciseName / prepareImportName and throws on a
-  // non-string, aborting the whole upgrade transaction. restoreBackup only
-  // checks aliases with hasIds (backup.ts) and deliberately defers deep
-  // validation, so a truncated or hand-edited backup can plant any of them
-  // on a pre-v10 client.
+  // non-string, which the v10 block's catch turns into a rolled-back upgrade
+  // that never reaches version 10. restoreBackup only checks aliases with
+  // hasIds (backup.ts) and deliberately defers deep validation, so a
+  // truncated or hand-edited backup can plant any of them on a pre-v10
+  // client. The `metrics` canary below is what distinguishes "migrated and
+  // deliberately left alone" from "bailed out before touching it".
   const leafProgramCases: Array<{ name: string; seeded: unknown }> = [
     {
       name: "suggestion with no exerciseId",
@@ -851,6 +866,11 @@ describe("DB v10 — malformed legacy documents", () => {
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     expect(await readRawRecord("programs", (seeded as { id: string }).id)).toEqual(seeded);
+    // Completion canary: deleting `metrics` is the last statement of the
+    // v10 block, so its absence proves the migration ran to the end instead
+    // of bailing midway and leaving the record un-migrated.
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
   });
 
   const leafLogCases: Array<{ name: string; seeded: unknown }> = [
@@ -881,6 +901,11 @@ describe("DB v10 — malformed legacy documents", () => {
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     expect(await readRawRecord("logs", (seeded as { id: string }).id)).toEqual(seeded);
+    // Completion canary: deleting `metrics` is the last statement of the
+    // v10 block, so its absence proves the migration ran to the end instead
+    // of bailing midway and leaving the record un-migrated.
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
   });
 
   const unreadableAliases = [
@@ -907,6 +932,8 @@ describe("DB v10 — malformed legacy documents", () => {
     expect(await readRawStore("aliases")).toEqual([
       { ...healthy, provenance: "legacy-auto" },
     ]);
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
   });
 
   it("survives a user exercise with a non-string name and still classifies everything else", async () => {
