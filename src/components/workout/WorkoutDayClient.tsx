@@ -6,7 +6,7 @@ import { ArrowLeftRight, CheckCircle, ChevronLeft, ChevronRight, History, Pencil
 import { logRepo } from "@/lib/storage/logRepo";
 import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
-import { serialiseSets, hydrateFromLog, applyEntryNotes } from "@/lib/workout/sessionState";
+import { serialiseSets, hydrateFromLog, applyEntryNotes, entryIsFullyHydratable } from "@/lib/workout/sessionState";
 import { localDateString, logLocalDate, sessionLogId } from "@/lib/workout/localDate";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useLocalData } from "@/components/app/LocalDataProvider";
@@ -14,7 +14,7 @@ import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
-import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
+import { aggregateExerciseHistory, entryNote, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
@@ -29,6 +29,33 @@ import { RestTimer } from "./RestTimer";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 import { BodyweightWidget } from "./BodyweightWidget";
 import { SessionSummary, computeSessionSummary, type SessionSummaryStats } from "./SessionSummary";
+
+/**
+ * A log's timestamp as a sortable string, `""` when it is not text.
+ *
+ * `performedAt` is typed `string` but nothing enforces it on the way in:
+ * `src/lib/storage/appDb.ts:186-195` never inspects it, so a hand-edited or
+ * foreign backup reaches this screen with a number or an object there, and
+ * `b.performedAt.localeCompare(a.performedAt)` threw. Unreadable sorts to `""`,
+ * which is *last* in the descending order used here, so a log we cannot place
+ * in time never becomes the session this visit resumes and rewrites.
+ */
+function sessionStamp(log: { performedAt: string }): string {
+  return typeof log.performedAt === "string" ? log.performedAt : "";
+}
+
+/**
+ * Put entries the grid could not represent back into a rebuilt `entries` array
+ * at their stored positions. `Math.min(index, out.length)` because the grid can
+ * legitimately produce fewer entries than were stored.
+ */
+function mergePreservedEntries<T>(built: T[], preserved: Map<number, unknown>): T[] {
+  const out: T[] = [...built];
+  for (const index of [...preserved.keys()].sort((a, b) => a - b)) {
+    out.splice(Math.min(index, out.length), 0, preserved.get(index) as T);
+  }
+  return out;
+}
 
 function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
@@ -605,10 +632,14 @@ function WorkoutBody({
   // "loading" until hydration resolves; "active" = an editable session
   // (today's, or a resumed in-progress one); "viewing" = read-only display of
   // the most recent completed/skipped session from an earlier date.
-  const [sessionMode, setSessionMode] = useState<"loading" | "active" | "viewing">("loading");
+  // "blocked" = hydration failed, so nothing typed here would be saved.
+  const [sessionMode, setSessionMode] = useState<"loading" | "active" | "viewing" | "blocked">("loading");
   const sessionModeRef = useRef(sessionMode);
   sessionModeRef.current = sessionMode;
   const [viewedDate, setViewedDate] = useState<string | null>(null);
+  // Entries of the hydrated log that the grid cannot represent, kept by their
+  // stored index so the autosave rewrite puts them back exactly where they were.
+  const preservedEntriesRef = useRef<{ logId: string; entries: Map<number, unknown> } | null>(null);
 
   const [historyDrawer, setHistoryDrawer] = useState<{
     exerciseName: string;
@@ -663,7 +694,14 @@ function WorkoutBody({
       );
       if (cancelled) return;
 
-      const sorted = [...logs].sort((a, b) => b.performedAt.localeCompare(a.performedAt));
+      // `sessionStamp`, not `performedAt`: a stored timestamp that is not a
+      // string threw out of this comparator, and the throw was invisible —
+      // `sessionMode` stayed "loading", `saveCells` early-returned for the rest
+      // of the visit, and the grid still rendered editable. A whole session was
+      // typed into a live-looking screen and never written.
+      const sorted = [...logs].sort(
+        (a, b) => sessionStamp(b).localeCompare(sessionStamp(a)),
+      );
       const todayLog = sorted.find((l) => logLocalDate(l) === today);
       const target = todayLog ?? sorted[0];
 
@@ -673,15 +711,33 @@ function WorkoutBody({
         return;
       }
 
+      // The grid rebuilds `entries` wholesale on every autosave, so an entry it
+      // cannot represent is one a rewrite would delete. Those are held aside by
+      // stored index and put back verbatim (see `mergePreservedEntries`).
+      // `src/lib/storage/appDb.ts:186-195` keeps such logs on purpose, and the
+      // plan's v7 ruling keeps `entries: [null]` on purpose.
       const hydrated: CellMap = {};
       const hydratedNotes: Record<string, string> = {};
-      for (const entry of target.entries) {
-        hydrated[entry.exerciseId] = hydrateFromLog(entry, prescribedSetsMap.get(entry.exerciseId));
-        if (entry.notes) hydratedNotes[entry.exerciseId] = entry.notes;
-      }
+      const preserved = new Map<number, unknown>();
+      const storedEntries: unknown[] = Array.isArray(target.entries) ? target.entries : [];
+      storedEntries.forEach((raw, index) => {
+        if (!entryIsFullyHydratable(raw)) {
+          preserved.set(index, raw);
+          return;
+        }
+        hydrated[raw.exerciseId] = hydrateFromLog(raw, prescribedSetsMap.get(raw.exerciseId));
+        const note = entryNote(raw);
+        if (note) hydratedNotes[raw.exerciseId] = note;
+      });
+      preservedEntriesRef.current = preserved.size > 0
+        ? { logId: target.id, entries: preserved }
+        : null;
       setCells((prev) => ({ ...prev, ...hydrated }));
       setNotes((prev) => ({ ...prev, ...hydratedNotes }));
-      if (target.dayNote) setDayNote(target.dayNote);
+      // An unreadable `dayNote` is left in place rather than pulled into state:
+      // `saveCells` falls back to `existing?.dayNote`, so it survives the
+      // rewrite, and `dn.trim()` never sees a value it cannot read.
+      if (typeof target.dayNote === "string" && target.dayNote) setDayNote(target.dayNote);
 
       const targetDone = !!target.completedAt || !!target.skippedAt;
       if (todayLog) {
@@ -689,7 +745,10 @@ function WorkoutBody({
         setAlreadyComplete(targetDone);
         setSessionMode("active");
       } else if (targetDone) {
-        setViewedDate(logLocalDate(target));
+        // `logLocalDate` can no longer throw, but it reports "" for a log whose
+        // date is unreadable. The banner is the only thing that explains a
+        // read-only grid, so it must never render blank.
+        setViewedDate(logLocalDate(target) || "an earlier date");
         setAlreadyComplete(true);
         setSessionMode("viewing");
       } else {
@@ -697,7 +756,14 @@ function WorkoutBody({
         setAlreadyComplete(false);
         setSessionMode("active");
       }
-    })().catch((e) => console.error("[logRepo] session hydration failed", e));
+    })().catch((e) => {
+      console.error("[logRepo] session hydration failed", e);
+      // Never leave the grid editable behind a failed hydration. `saveCells`
+      // refuses to write unless `sessionMode === "active"`, so staying in
+      // "loading" silently discarded everything the user typed. Say so, and
+      // stop taking input we are not going to keep.
+      if (!cancelled) setSessionMode("blocked");
+    });
     return () => { cancelled = true; };
   }, [program.id, day]);
 
@@ -749,17 +815,27 @@ function WorkoutBody({
     // local date) converge on one record instead of minting duplicates.
     logIdRef.current = existing?.id ?? logIdRef.current ?? sessionLogId(program.id, day.id, today);
     const shouldComplete = markCompleted || !!skippedAt;
+    // Anything hydration could not read goes back exactly where it was, so a
+    // rewrite of this log never deletes stored work we merely cannot render.
+    const preserved = preservedEntriesRef.current;
+    const mergedEntries = preserved && preserved.logId === logIdRef.current
+      ? mergePreservedEntries(entries, preserved.entries)
+      : entries;
     await logRepo.save({
       id: logIdRef.current,
       programId: program.id,
       dayId: day.id,
       performedAt: existing?.performedAt ?? new Date().toISOString(),
-      performedDate: existing ? logLocalDate(existing) : today,
+      // `|| today`: `logLocalDate` reports "" for a log whose stored date is
+      // unreadable, and an empty `performedDate` would stop `getForDay` ever
+      // matching this session again and mint a duplicate on the next visit.
+      // `performedAt` above still carries the original value verbatim.
+      performedDate: (existing && logLocalDate(existing)) || today,
       completedAt: shouldComplete ? new Date().toISOString() : existing?.completedAt,
       skippedAt: skippedAt ?? existing?.skippedAt,
       skipReason: skipReason ?? existing?.skipReason,
       dayNote: dn || existing?.dayNote || undefined,
-      entries,
+      entries: mergedEntries,
     });
   }
 
@@ -972,6 +1048,26 @@ function WorkoutBody({
         </div>
       )}
 
+      {/* Hydration failed: nothing typed here would be saved, so say so. */}
+      {sessionMode === "blocked" && (
+        <p
+          role="alert"
+          style={{
+            margin: "0 0 12px",
+            padding: "8px 12px",
+            background: "var(--bg-2)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r)",
+            fontSize: 12,
+            fontFamily: "var(--font-mono)",
+            color: "var(--fg-2)",
+          }}
+        >
+          This day&rsquo;s saved sessions could not be loaded, so logging is off
+          until it reads. Your stored workouts are untouched — reload to retry.
+        </p>
+      )}
+
       {/* Sections */}
       {day.sections.map((section) => (
         <SectionCard
@@ -979,7 +1075,7 @@ function WorkoutBody({
           section={section}
           cells={cells}
           notes={notes}
-          readOnly={sessionMode === "viewing"}
+          readOnly={sessionMode === "viewing" || sessionMode === "blocked"}
           onCellChange={handleCellChange}
           onAddSet={handleAddSet}
           onOpenHistory={openHistoryFor}

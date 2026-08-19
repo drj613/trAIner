@@ -334,3 +334,205 @@ describe("historical sessions", () => {
     expect(logs[1].entries[0].sets).toEqual([{ setNumber: 1, weight: 105, reps: 5 }]);
   });
 });
+
+/**
+ * Reading a stored log must never take a surface down.
+ *
+ * `src/lib/storage/appDb.ts:186-195` deliberately preserves a log whose content
+ * it cannot read, and the plan's v7 ruling deliberately preserves a log whose
+ * only entry is `null`, because the unreadable value "may be standing in for
+ * real sets we have no way to recover". Those logs therefore exist in real
+ * storage, and one of them must never remove another workout from view — nor,
+ * worse, silently discard work the user is entering right now.
+ */
+describe("a log we cannot read must not disable the day screen", () => {
+  it("opens the history drawer when one stored log's performedDate is not a string", async () => {
+    for (const [i, performedDate] of [
+      "2026-06-05", 7, "2026-06-07",
+    ].entries()) {
+      await logRepo.save({
+        id: `h-${i}`,
+        programId: "p1",
+        dayId: "day-1",
+        performedAt: `2026-06-0${5 + i}T22:00:00.000Z`,
+        performedDate,
+        completedAt: `2026-06-0${5 + i}T23:00:00.000Z`,
+        entries: [{
+          exerciseId: "e1",
+          exerciseName: "Bench Press",
+          sets: [{ setNumber: 1, weight: 100 + i, reps: 5 }],
+        }],
+      } as unknown as Parameters<typeof logRepo.save>[0]);
+    }
+
+    const user = userEvent.setup();
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+
+    await user.click(screen.getByRole("button", { name: "History for Bench Press" }));
+
+    const drawer = await screen.findByRole("dialog", { name: "History for Bench Press" });
+    // All three workouts, not just the readable ones.
+    expect(within(drawer).getByText("100x5")).toBeInTheDocument();
+    expect(within(drawer).getByText("101x5")).toBeInTheDocument();
+    expect(within(drawer).getByText("102x5")).toBeInTheDocument();
+  });
+
+  it("records the set being typed when another log's performedAt is not a string", async () => {
+    await logRepo.save({
+      id: "d-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-08T22:00:00.000Z",
+      completedAt: "2026-06-08T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 100, reps: 5 }] }],
+    });
+    await logRepo.save({
+      id: "d-2", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 110, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+    await logRepo.save({
+      id: "d-3", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-09T22:00:00.000Z",
+      completedAt: "2026-06-09T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 120, reps: 5 }] }],
+    });
+
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // The most recent readable session was completed on an earlier date, so the
+    // screen offers a fresh one — the ordinary healthy-data path.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /start new session/i })).toBeInTheDocument()
+    );
+    await user.click(screen.getByRole("button", { name: /start new session/i }));
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    const typed = logs.filter((l) => !["d-1", "d-2", "d-3"].includes(l.id));
+    expect(typed).toHaveLength(1);
+    expect(typed[0].entries[0].sets).toEqual([{ setNumber: 1, weight: 225, reps: 5 }]);
+    // …and the log we could not read is still there, untouched.
+    expect(logs.find((l) => l.id === "d-2")).toMatchObject({ performedAt: 7 });
+  });
+
+  it("records the set being typed when today's log holds a null entry", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "e-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [null],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries.some(
+      (e) => e && e.exerciseId === "e1"
+        && JSON.stringify(e.sets) === JSON.stringify([{ setNumber: 1, weight: 315, reps: 3 }]),
+    )).toBe(true);
+    // …and the entry we could not read is still there, at the index it was
+    // stored at. The grid rebuilds `entries` wholesale, so without this the
+    // rewrite would delete a value the v7 ruling keeps on purpose.
+    expect(logs[0].entries[0]).toBeNull();
+  });
+
+  it("keeps an entry whose sets carry an unplaceable setNumber through a rewrite", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "s-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [
+        { exerciseId: "gone", exerciseName: "Old Lift", sets: [{ setNumber: {}, weight: 95, reps: 5 }] },
+      ],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries[0]).toMatchObject({
+      exerciseId: "gone",
+      sets: [{ setNumber: {}, weight: 95, reps: 5 }],
+    });
+    expect(logs[0].entries.some((e) => e.exerciseId === "e1")).toBe(true);
+  });
+
+  it("writes no phantom entry when today's log has a non-array entries", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "corrupt",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    for (const log of logs) {
+      for (const entry of Array.isArray(log.entries) ? log.entries : []) {
+        expect(entry.exerciseId).not.toBe("undefined");
+      }
+    }
+    // The set the user just typed is recorded.
+    expect(logs.some((l) => JSON.stringify(l.entries).includes('"weight":315'))).toBe(true);
+  });
+
+  it("tells the user and refuses input when the day's sessions cannot be loaded at all", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    const listForDay = jest
+      .spyOn(logRepo, "listForDay")
+      .mockRejectedValue(new Error("IndexedDB unavailable"));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    try {
+      renderDay();
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+
+      // The user is told, rather than shown a live-looking grid.
+      await screen.findByRole("alert");
+      expect(screen.getByRole("alert")).toHaveTextContent(/could not be loaded/i);
+      // …and the grid does not accept input it would silently discard.
+      await waitFor(() => expect(cell("e1", 0)).toHaveAttribute("readonly"));
+
+      // A real user's keystrokes do not land on a read-only input…
+      await user.type(cell("e1", 0), "225x5");
+      await drainSaves();
+      expect(cell("e1", 0)).toHaveValue("");
+      // …so there is no work to be silently discarded.
+      expect(await logRepo.list()).toHaveLength(0);
+    } finally {
+      listForDay.mockRestore();
+    }
+  });
+});

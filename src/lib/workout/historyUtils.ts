@@ -118,7 +118,7 @@ function setNumberField(value: unknown): number {
  * no-storage-import seam (pinned by `historyProjection.test.ts`'s import scan),
  * not an oversight — the two definitions encode one rule.
  */
-function isRecordLike(value: unknown): boolean {
+export function isRecordLike(value: unknown): boolean {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
