@@ -440,9 +440,12 @@ and changed:
    row with `aliasRepo.save`, which is the path I was about to re-key — so after
    the fix the fixture would have stored a *stripped* token and the test would
    have failed on its own canary rather than on the behaviour. Changed to
-   `aliasRepo.putRaw`, which is the restore/migration path and derives the token
-   from display text, so the fixture models a legacy row no matter what `save`
-   keys on. Added an assertion that the planted row really holds the unstripped
+   `aliasRepo.putRaw`, which is the restore/migration path, so the fixture models
+   a legacy row no matter what `save` keys on. (Task 10a note: `putRaw` derived
+   the token from the display text at the time this was written; it now keeps
+   the token it is handed. The fixture already supplied the unstripped token
+   explicitly and asserted it, so it is unaffected — only its comment needed
+   correcting.) Added an assertion that the planted row really holds the unstripped
    token.
 
 3. **The governing-alias comparison was only half covered.** Mutation **M-F**
@@ -478,8 +481,20 @@ of the ruling's constraints hold:
 - **No schema change, no unique-index change, no migration.**
   `by-normalized-alias` is still the only unique index, still no
   `IDBObjectStore.add()` anywhere. `putRaw` is untouched, so restored and
-  migrated rows keep `aliasLookupToken`'s rule and resolve exactly as before —
-  only NEW writes key differently.
+  migrated rows keep `aliasLookupToken`'s rule — only NEW writes key
+  differently.
+
+  **Correction (Task 10a, NEW-A).** The clause that used to follow — *"and
+  resolve exactly as before"* — was false for rows written under this ruling.
+  `aliasLookupToken` re-derived every token from the display text, so a
+  correction stored as `{alias: "3 second paused Hatfield Squat",
+  normalizedAlias: "paused hatfield squat"}` came back from a restore keyed
+  `"3 second paused hatfield squat"` and stopped resolving, and two rows for one
+  display name collapsed onto one key. Fixed in `6ece7ee` by preferring the
+  stored token; the same sentence in `aliasRepo.ts` was corrected with it. The
+  claim is true now, for both generations of row, and is pinned by
+  `keeps both generations of key for one display name, and the correction still
+  resolves` (`appDb.test.ts`).
 - **Display text preserved.** `alias` is stored verbatim; the token never
   passes through it. Pinned by
   `keys a mapped annotated name on the resolver's token but keeps the user's

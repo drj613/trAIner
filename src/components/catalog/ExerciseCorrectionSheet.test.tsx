@@ -556,8 +556,9 @@ describe("ExerciseCorrectionSheet", () => {
   it("leaves an alias stored on a token the resolver never reads alone", async () => {
     // The shape an older build wrote: keyed on the unstripped token. Written
     // through `putRaw` rather than `save` on purpose — `putRaw` is the
-    // restore/migration path and derives the token from the display text, so
-    // this fixture keeps modelling a legacy row no matter what `save` keys on.
+    // restore/migration path and keeps the token it is handed, so this fixture
+    // keeps modelling a legacy row no matter what `save` keys on. The token is
+    // supplied explicitly for that reason, and asserted on the next line.
     await aliasRepo.putRaw({
       id: "alias-legacy-token",
       alias: annotatedName,
