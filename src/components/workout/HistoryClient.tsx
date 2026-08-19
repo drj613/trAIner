@@ -13,7 +13,7 @@ import {
 } from "@/lib/workout/historyProjection";
 import { textOf } from "@/lib/workout/historyUtils";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
-import { HistoryWorkoutList, countEntries, formatSessionDate, groupByWorkout } from "./HistoryRows";
+import { HistoryWorkoutList, countEntries, formatShortDate, groupByWorkout } from "./HistoryRows";
 
 /**
  * All-time history, read entirely through the shared projection.
@@ -124,7 +124,7 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
             {" · "}
             {summary.entryCount} {summary.entryCount === 1 ? "entry" : "entries"}
           </span>
-          <span style={{ color: "var(--fg-4)" }}>last {formatSessionDate(summary.lastDate)}</span>
+          <span style={{ color: "var(--fg-4)" }}>last {formatShortDate(summary.lastDate)}</span>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
@@ -173,7 +173,7 @@ function FamilyDetail({
           <span style={{ color: "var(--line-2)" }}>·</span>
           <span>{entryCount} {entryCount === 1 ? "entry" : "entries"}</span>
           <span style={{ color: "var(--line-2)" }}>·</span>
-          <span>last {formatSessionDate(family.latestDate)}</span>
+          <span>last {formatShortDate(family.latestDate)}</span>
         </div>
       </div>
 
@@ -240,6 +240,11 @@ export function HistoryClient() {
   const projection = useMemo(() => projectExerciseHistory(logs, context), [logs, context]);
 
   const families = useMemo(() => [...projection.familySummaries.values()], [projection]);
+
+  const loggedWorkoutCount = useMemo(
+    () => new Set(projection.rows.map((row) => String(row.logId))).size,
+    [projection],
+  );
 
   const staleBefore = useMemo(
     () => new Date(Date.now() - RECENT_WINDOW_DAYS * 86_400_000).toISOString(),
@@ -333,7 +338,10 @@ export function HistoryClient() {
           History
         </h1>
         <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-3)" }}>
-          {families.length} movements · {logs.length} workouts
+          {/* Workouts that produced exercise history, not stored logs: a
+              skipped day with nothing recorded is a log and not a workout the
+              user would count. */}
+          {families.length} movements · {loggedWorkoutCount} workouts
         </span>
       </div>
       <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
@@ -485,7 +493,7 @@ export function HistoryClient() {
                 <span style={{ color: "var(--fg-4)" }}>
                   {family.versionKeys.length} version{family.versionKeys.length === 1 ? "" : "s"}
                 </span>
-                <span style={{ color: "var(--fg-4)" }}>last {formatSessionDate(family.latestDate)}</span>
+                <span style={{ color: "var(--fg-4)" }}>last {formatShortDate(family.latestDate)}</span>
               </div>
             </button>
           ))

@@ -263,4 +263,30 @@ describe("HistoryClient — all-time family history", () => {
     renderHistory();
     expect(await screen.findByText(/no history yet/i)).toBeInTheDocument();
   });
+  // The header used to print `logs.length`, which counts stored records: a
+  // skipped day with nothing recorded is a log, and calling it a workout
+  // inflates the only number on the page that claims to be a total.
+  it("counts only workouts that produced history in the header", async () => {
+    makeHistoryClientFixture([
+      ...squatLogs,
+      log("l-skipped", daysAgo(5), [{ exerciseId: "e9", exerciseName: "Deadlift", sets: [] }]),
+    ]).install();
+    renderHistory();
+    expect(await screen.findByText("1 movements · 2 workouts")).toBeInTheDocument();
+  });
+
+  it("shows a date it cannot read rather than a wrong one", async () => {
+    makeHistoryClientFixture([
+      {
+        ...squatLogs[0],
+        performedAt: 7,
+        performedDate: 7,
+      } as unknown as WorkoutLogDocument,
+    ]).install();
+    renderHistory();
+    const squat = await screen.findByRole("button", { name: /^Squat\b/ });
+    // `logLocalDate` has no date to report, so the row says so instead of
+    // inventing one from an unreadable timestamp.
+    expect(within(squat).getByText(/last —/)).toBeInTheDocument();
+  });
 });

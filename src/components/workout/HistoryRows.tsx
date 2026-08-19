@@ -39,6 +39,17 @@ export function formatSessionDate(localYmd: unknown): string {
   return `${MONTHS[m - 1]} ${d} (${WEEKDAYS[dt.getDay()]})`;
 }
 
+/**
+ * A compact `MM/DD` for the dense index and summary lines, where the full
+ * "Apr 22 (Wed)" of a session header would crowd the row. `textOf` for the same
+ * reason as `formatSessionDate`, and the whole value falls through when it is
+ * not a date we can slice — showing what is stored beats showing a wrong date.
+ */
+export function formatShortDate(localYmd: unknown): string {
+  const text = textOf(localYmd);
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(5, 10).replace("-", "/") : text || "—";
+}
+
 export type WorkoutGroup = {
   /** The stored log id, compared as-is. Typed `string`; not always one. */
   logId: unknown;
