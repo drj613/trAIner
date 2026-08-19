@@ -93,15 +93,33 @@ export function createMigrationContext(
     redirects: legacyExerciseIdRedirects,
     disambiguations: disambiguationsByNormalizedName,
     aliases,
-    userExercises,
+    // The resolver name-matches custom exercises (the unique-custom-name
+    // fallback in identity.ts), so a record whose name is not a string would
+    // throw there. Such a record cannot be matched by name under any input,
+    // so it is left out of the resolution context. The stored user-exercise
+    // record itself is never read again and never rewritten.
+    userExercises: userExercises.filter((exercise) => isReadableText(exercise.name)),
     normalizationOverrides: [],
   };
+}
+
+// Leaf string fields are as untrustworthy as the containers around them.
+// normalizeExerciseName does `value.toLowerCase()`, so a missing or
+// non-string id/name throws and aborts the whole upgrade transaction — the
+// same permanently-unopenable-database failure the container guards below
+// prevent. restoreBackup checks aliases with hasIds only and defers deep
+// validation, so a truncated or hand-edited backup can plant these shapes on
+// a pre-v10 client. Every read that reaches normalizeExerciseName,
+// prepareImportName, or the resolver is typeof-checked first.
+function isReadableText(value: unknown): value is string {
+  return typeof value === "string";
 }
 
 function canonicalizeExplicitExerciseId(
   canonicalExerciseId: string,
   context: ExerciseIdentityContext,
 ): string {
+  if (!isReadableText(canonicalExerciseId)) return canonicalExerciseId;
   return resolveExerciseIdentity(
     { kind: "catalog-reference", canonicalExerciseId },
     context,
@@ -135,6 +153,7 @@ function migrateProgramExercise(
       canonicalExerciseId: canonicalizeExplicitExerciseId(exercise.canonicalExerciseId, context),
     };
   }
+  if (!isReadableText(exercise.name)) return exercise;
   const resolved = resolveExerciseIdentity({
     kind: "stored-exercise",
     slotId: exercise.id,
@@ -180,7 +199,7 @@ export function migrateProgram(
       ...override,
       replacement: migrateProgramReplacement(override.replacement, context),
     } : override)),
-    ...(program.import ? {
+    ...(program.import && isRecord(program.import) ? {
       import: {
         ...program.import,
         warnings: mapArray(program.import.warnings, (warning) => (isRecord(warning) ? {
@@ -208,7 +227,7 @@ function migrateLogEntry(
       canonicalExerciseId: canonicalizeExplicitExerciseId(entry.canonicalExerciseId, context),
     };
   }
-  if (!entry.exerciseName) return entry;
+  if (!isReadableText(entry.exerciseName)) return entry;
   const resolved = resolveExerciseIdentity({
     kind: "stored-exercise",
     slotId: entry.exerciseId,
@@ -243,6 +262,7 @@ function concreteOutcomesForToken(
     }
   }
   for (const exercise of userExercises) {
+    if (!isReadableText(exercise.name)) continue;
     if (normalizeExerciseName(exercise.name) === normalizedAlias) outcomes.add(exercise.id);
   }
   return outcomes;
@@ -255,6 +275,10 @@ export function classifyAliases(
   const context = createMigrationContext([], userExercises);
   const classified: AliasDocument[] = [];
   for (const alias of aliases) {
+    // An alias we cannot read cannot be classified, and an unclassifiable
+    // alias left in the store would keep short-circuiting the new
+    // disambiguation flow forever. Drop it rather than retain it.
+    if (!isReadableText(alias.alias) || !isReadableText(alias.canonicalExerciseId)) continue;
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
     const normalizedAlias = normalizeExerciseName(alias.alias);
     if (alias.provenance === "remembered") {
@@ -275,9 +299,13 @@ export function classifyAliases(
     // Spec: retain and redirect only legacy aliases whose token still has one
     // unique concrete outcome. That single check is what deletes collisions
     // and removed noise (a prescription like "3x8 @ RPE 7" has zero
-    // outcomes); no separate noise heuristic is needed, and any digit-based
-    // one would wrongly delete the 70 shipped catalogue names that contain a
-    // digit or degree sign ("90/90 Hamstring", "45° Side Bend", ...).
+    // outcomes); no separate noise heuristic is needed. Measured against the
+    // 3,175 shipped catalogue entries, the digit/word predicate that used to
+    // live here matched 71 canonical names — 70 containing a digit or degree
+    // sign ("90/90 Hamstring", "45° Side Bend", ...) plus "front lever reps"
+    // — and 6 further entries through their aliases ("Farmer Carry with
+    // 2-Second March Pauses", ...), so 77 entries in all it would have
+    // wrongly unlinked.
     const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
     if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
     classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });

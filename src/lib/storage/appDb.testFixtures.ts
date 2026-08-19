@@ -238,14 +238,24 @@ async function openEmptyVersion9Database() {
 export async function seedVersion9Records(records: {
   programs?: unknown[];
   logs?: unknown[];
+  aliases?: unknown[];
+  userExercises?: unknown[];
 }): Promise<void> {
   const v9 = await openEmptyVersion9Database();
-  const tx = v9.transaction(["programs", "logs"], "readwrite");
+  const tx = v9.transaction(["programs", "logs", "aliases", "userExercises"], "readwrite");
   for (const program of records.programs ?? []) {
     tx.objectStore("programs").put(program as ProgramDocument);
   }
   for (const log of records.logs ?? []) {
     tx.objectStore("logs").put(log as WorkoutLogDocument);
+  }
+  for (const alias of records.aliases ?? []) {
+    tx.objectStore("aliases").put(alias as V9Alias);
+  }
+  for (const userExercise of records.userExercises ?? []) {
+    tx.objectStore("userExercises").put(
+      userExercise as { id: string; name: string; createdAt: string },
+    );
   }
   await tx.done;
   v9.close();
@@ -253,10 +263,16 @@ export async function seedVersion9Records(records: {
 }
 
 export async function readRawRecord(
-  storeName: "programs" | "logs",
+  storeName: "programs" | "logs" | "aliases" | "userExercises",
   id: string,
 ): Promise<unknown> {
   return (await getDb()).get(storeName, id);
+}
+
+export async function readRawStore(
+  storeName: "programs" | "logs" | "aliases" | "userExercises",
+): Promise<unknown[]> {
+  return (await getDb()).getAll(storeName);
 }
 
 export async function seedVersion9Database(fixture: V9Fixture): Promise<SeededV9> {

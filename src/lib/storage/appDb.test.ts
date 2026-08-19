@@ -17,6 +17,7 @@ import {
   readCanonicalReferences,
   readLogCanonicalIdForName,
   readRawRecord,
+  readRawStore,
   seedVersion9Database,
   seedVersion9Records,
   snapshotNormalizedStores,
@@ -565,9 +566,9 @@ describe("DB v10 — exercise identity normalization", () => {
 
   it("retains and redirects a digit-bearing legacy alias with one unique concrete outcome", async () => {
     // Spec: "It retains and redirects only legacy aliases whose token still
-    // has one unique concrete outcome." 70 shipped catalogue names contain a
-    // digit or degree sign ("90/90 Hamstring", "45° Side Bend", ...), so a
-    // digit must never be treated as noise on its own.
+    // has one unique concrete outcome." 70 of the 3,175 shipped catalogue
+    // names contain a digit or degree sign ("90/90 Hamstring", "45° Side
+    // Bend", ...), so a digit must never be treated as noise on its own.
     await seedVersion9Database(v9Fixture);
     await openCurrentDatabase();
 
@@ -794,6 +795,153 @@ describe("DB v10 — malformed legacy documents", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     const id = (seeded as { id: string }).id;
     expect(await readRawRecord("logs", id)).toEqual(expected ?? seeded);
+  });
+
+  // Fix round 2: leaf *string* fields, not just container shapes. Each of
+  // these reaches normalizeExerciseName / prepareImportName and throws on a
+  // non-string, aborting the whole upgrade transaction. restoreBackup only
+  // checks aliases with hasIds (backup.ts) and deliberately defers deep
+  // validation, so a truncated or hand-edited backup can plant any of them
+  // on a pre-v10 client.
+  const leafProgramCases: Array<{ name: string; seeded: unknown }> = [
+    {
+      name: "suggestion with no exerciseId",
+      seeded: program("p-suggestion-no-id", {
+        days: [],
+        overrides: [],
+        import: {
+          rawJson: {},
+          warnings: [{ path: "days.0", rawName: "x", message: "m", suggestions: [{ name: "S", score: 0.9 }] }],
+        },
+      }),
+    },
+    {
+      name: "suggestion with a non-string exerciseId",
+      seeded: program("p-suggestion-number-id", {
+        days: [],
+        overrides: [],
+        import: {
+          rawJson: {},
+          warnings: [{ path: "days.0", rawName: "x", message: "m", suggestions: [{ exerciseId: 42, name: "S", score: 0.9 }] }],
+        },
+      }),
+    },
+    {
+      name: "exercise with a non-string name",
+      seeded: program("p-number-name", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single", exercises: [{ id: "slot-1", name: 42, sets: 3 }] }] }] }],
+        overrides: [],
+      }),
+    },
+    {
+      name: "exercise with a non-string canonicalExerciseId",
+      seeded: program("p-number-canonical", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single", exercises: [{ id: "slot-1", name: "Squat", canonicalExerciseId: 42, sets: 3 }] }] }] }],
+        overrides: [],
+      }),
+    },
+    {
+      name: "import metadata that is not an object",
+      seeded: program("p-string-import", { days: [], overrides: [], import: "truncated" }),
+    },
+  ];
+
+  it.each(leafProgramCases)("passes through a $name unchanged", async ({ seeded }) => {
+    await seedVersion9Records({ programs: [seeded] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("programs", (seeded as { id: string }).id)).toEqual(seeded);
+  });
+
+  const leafLogCases: Array<{ name: string; seeded: unknown }> = [
+    {
+      name: "log entry with a non-string exerciseName",
+      seeded: {
+        id: "l-number-name",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        entries: [{ exerciseId: "slot-1", exerciseName: 42, sets: [] }],
+      },
+    },
+    {
+      name: "log entry with a non-string canonicalExerciseId",
+      seeded: {
+        id: "l-number-canonical",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        entries: [{ exerciseId: "slot-1", exerciseName: "Squat", canonicalExerciseId: 42, sets: [] }],
+      },
+    },
+  ];
+
+  it.each(leafLogCases)("passes through a $name unchanged", async ({ seeded }) => {
+    await seedVersion9Records({ logs: [seeded] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("logs", (seeded as { id: string }).id)).toEqual(seeded);
+  });
+
+  const unreadableAliases = [
+    { name: "no canonicalExerciseId", alias: { id: "a-no-target", alias: "RDL", normalizedAlias: "rdl", createdAt: NOW } },
+    { name: "no alias text", alias: { id: "a-no-text", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
+    { name: "a non-string alias text", alias: { id: "a-number-text", alias: 42, normalizedAlias: "42", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
+    { name: "a non-string canonicalExerciseId", alias: { id: "a-number-target", alias: "RDL", normalizedAlias: "rdl", canonicalExerciseId: 42, createdAt: NOW } },
+  ];
+
+  it.each(unreadableAliases)("drops an unreadable legacy alias with $name", async ({ alias }) => {
+    const healthy = {
+      id: "a-healthy",
+      alias: "90/90 Hamstring",
+      normalizedAlias: "90 90 hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: NOW,
+    };
+    await seedVersion9Records({ aliases: [alias, healthy] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    // Dropped, not retained: an alias we cannot read cannot be classified,
+    // and an unclassifiable alias left in the store would keep silently
+    // short-circuiting the new disambiguation flow forever.
+    expect(await readRawStore("aliases")).toEqual([
+      { ...healthy, provenance: "legacy-auto" },
+    ]);
+  });
+
+  it("survives a user exercise with a non-string name and still classifies everything else", async () => {
+    // Two distinct paths read a custom exercise's name: the alias
+    // classifier's outcome count, and the resolver's unique-custom-name
+    // fallback (only reached when the catalogue does not match).
+    const healthyAlias = {
+      id: "a-healthy",
+      alias: "90/90 Hamstring",
+      normalizedAlias: "90 90 hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: NOW,
+    };
+    await seedVersion9Records({
+      userExercises: [{ id: "user-broken", name: 42, createdAt: NOW }],
+      aliases: [healthyAlias],
+      programs: [program("p-user-ex", {
+        days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single", exercises: [
+          { id: "slot-unknown", name: "Mystery lift", sets: 3 },
+          { id: "slot-unique", name: "High Bar Back Squat", sets: 3 },
+        ] }] }] }],
+        overrides: [],
+      })],
+    });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("userExercises", "user-broken"))
+      .toEqual({ id: "user-broken", name: 42, createdAt: NOW });
+    expect(await readRawStore("aliases")).toEqual([{ ...healthyAlias, provenance: "legacy-auto" }]);
+    const stored = await readRawRecord("programs", "p-user-ex") as {
+      days: [{ sections: [{ groups: [{ exercises: { canonicalExerciseId?: string }[] }] }] }];
+    };
+    const exercises = stored.days[0].sections[0].groups[0].exercises;
+    expect(exercises[0].canonicalExerciseId).toBeUndefined();
+    expect(exercises[1].canonicalExerciseId).toBe("barbell-high-bar-squat");
   });
 
   it("still normalizes healthy records stored alongside a malformed one", async () => {

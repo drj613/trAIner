@@ -230,3 +230,95 @@ None. Every finding held up against the code.
 ### Untouched, per the coordinator's scoping
 
 `src/components/import/ImportClient.tsx` (Task 9), fresh-install `metrics` creation, the three copies of provenance defaulting (Task 7), the exclusive-group-without-overlapping-excludes case, and all backup v2 work.
+
+## Fix round 2 — guarding unreadable leaf fields
+
+Agreed with the ruling and with every repro. Fix round 1 hardened container shapes; this round applies the same principle to the leaf strings those containers hold. `normalizeExerciseName` does `value.toLowerCase()`, so any missing or non-string id/name reaching it aborts the upgrade transaction, and `getDb()` clearing `dbPromise` makes every retry rethrow — storage becomes permanently unopenable. The reachability argument is right too: `restoreBackup` validates aliases with `hasIds` only (`backup.ts:130-136`) and deliberately defers deep validation (`backup.ts:17-23`), so a truncated or hand-edited backup can plant these shapes on a pre-v10 client.
+
+I did not stop at the four named sites. Sweeping every leaf read that reaches `normalizeExerciseName`, `prepareImportName`, or the resolver produced seven guards, each added behind a `isReadableText(value): value is string` helper:
+
+| Site | Guard | Covers |
+| --- | --- | --- |
+| `canonicalizeExplicitExerciseId` | return the input unchanged unless it is a string | program-exercise and log-entry `canonicalExerciseId`, `warning.suggestions[].exerciseId`, alias targets |
+| `migrateProgramExercise` | take the name path only when `exercise.name` is a string | non-string/absent routine exercise names |
+| `migrateLogEntry` | `!isReadableText(entry.exerciseName)` replaces the old falsy check | a numeric/object `exerciseName` that used to pass the truthy test |
+| `migrateProgram` | spread `program.import` only when it is a record | a non-object `import` (spreading a string would splice char-indexed keys into the record — real corruption, not just a throw) |
+| `concreteOutcomesForToken` | skip custom exercises whose `name` is not a string | alias outcome counting |
+| `classifyAliases` | skip any alias whose `alias` or `canonicalExerciseId` is not a string | both alias repros |
+| `createMigrationContext` | filter non-string-named custom exercises out of the resolution context | the resolver's unique-custom-name fallback (`identity.ts` `customMatch`), reachable only when the catalogue does not match first |
+
+RED evidence — 12 new tests, failing first with the actual TypeError class:
+
+```text
+bun run test -- --runInBand src/lib/storage/appDb.test.ts
+Tests: 12 failed, 39 passed, 51 total
+
+   8  TypeError: value.toLowerCase is not a function
+   3  TypeError: Cannot read properties of undefined (reading 'toLowerCase')
+```
+
+The twelfth failure is the non-object `import` case, which is a silent-corruption diff rather than a throw — I found that one while sweeping; it was not on the reviewer's list.
+
+Every guard is individually load-bearing. Removing them one at a time (reverting to the exact prior expression, restoring the file between runs):
+
+```text
+guard: canonicalize typeof            Tests: 4 failed, 47 passed, 51 total
+guard: exercise.name                  Tests: 1 failed, 50 passed, 51 total
+guard: import isRecord                Tests: 1 failed, 50 passed, 51 total
+guard: entry.exerciseName             Tests: 1 failed, 50 passed, 51 total
+guard: user exercise name in outcomes Tests: 1 failed, 50 passed, 51 total
+guard: classifyAliases skip           Tests: 2 failed, 49 passed, 51 total
+guard: context userExercises filter   Tests: 1 failed, 50 passed, 51 total
+```
+
+Note on test design: my first version of the custom-exercise test used the name `High Bar Back Squat`, and it passed before the guard existed — the catalogue match returns at `identity.ts:316` before the custom-name fallback at `identity.ts:328` is ever reached. I rewrote it around `Mystery lift` (no catalogue match) plus a healthy alias to force both the resolver fallback and the outcome-counting path, and only then was it RED.
+
+### Skip vs pass-through for unreadable aliases: dropped, deliberately
+
+An unreadable alias is dropped, not retained unclassified. Reasoning:
+
+- An alias exists only to short-circuit name resolution. One we cannot read cannot be classified, cannot be shown correctly in a correction UI, and cannot be redirected — but it would still sit on its normalized token and keep pre-empting the new disambiguation flow, which is precisely the failure mode spec line 357 exists to end.
+- Nothing user-authored is lost. Every pre-v10 alias is machine-created (`legacy-auto`) — the old importer saved all resolutions automatically — and `remembered` aliases are user intent, which is why the classifier short-circuits and keeps them before any of these checks run. An alias whose `alias` text or target is not a string cannot be a coherent `remembered` record anyway.
+- It is consistent with the surrounding rule rather than a new one: the spec already deletes legacy aliases with zero or multiple concrete outcomes. "Zero readable outcomes" is the same disposal, and worst case the user re-teaches the interpretation once through `Remember this interpretation`.
+- The routines and logs those aliases might have resolved are untouched; only the shortcut disappears.
+
+Programs, logs, and user exercises take the opposite disposition — passed through byte-identical — because those records *are* the user's data. Dropping a shortcut is recoverable; dropping a workout is not.
+
+### Catalogue count corrected
+
+Both numbers were right about different things, so I measured and wrote down exactly what each one counts. Against the 3,175 shipped catalogue entries: **70** canonical names contain a digit or degree sign; the deleted predicate matched **71** names, the extra one being `front lever reps` (matched by the word list, not a digit); and **6** further entries would have been caught through their aliases (`Farmer Carry with 2-Second March Pauses`, `figure 4 stretch`, ...), for **77** entries in total that the predicate would have wrongly unlinked. The `appDb.ts` comment now states all three figures; the test comment says "70 of the 3,175 shipped catalogue names contain a digit or degree sign".
+
+### Gates after fix round 2
+
+```text
+bun run test -- --runInBand src/lib/storage
+Tests:       121 passed, 121 total
+
+bun run test -- --runInBand
+Test Suites: 92 passed, 92 total
+Tests:       1134 passed, 1134 total   (was 1122; +12 new tests)
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.52s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```
+
+One small note: `...(program.import && isRecord(program.import) ? ...` keeps the seemingly redundant truthiness check because `isRecord` returns `boolean` rather than a type predicate, and TypeScript needs the `&&` to narrow `program.import` away from `undefined` (`error TS18048` without it). Making `isRecord` a predicate would mis-narrow the spread of the typed containers elsewhere.
+
+### Disagreements
+
+None. All four repros were real, and the sweep found three more sites in the same class.
+
+### Untouched, per the coordinator's scoping
+
+No extraction into `src/lib/storage/migrations/v10Identity.ts` (Task 7). Still untouched: `ImportClient.tsx`, fresh-install `metrics` creation, the three provenance-defaulting copies, the exclusive-group override case, backup v2.
