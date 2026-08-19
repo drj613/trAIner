@@ -898,3 +898,460 @@ was red.
    real killer is one test.
 
 **Status: DONE.**
+
+---
+
+# Fix round 2
+
+Answering `task-9-review-2.md` (N2, N3, N4, N5, N6) plus the two items the
+Task 10 lane handed over: the `or`-name Remember path, and
+`ImportClient.remember.test.tsx`'s partial `aliasRepo` mock. N1 is not mine
+this round — the Task 10 lane deleted the dead verbatim token in `eb74798`,
+and the ruling that my m6 push-back was right stands.
+
+Commits, in order:
+
+| SHA | What |
+|---|---|
+| `1b2642b` | Item 3 — drop the partial `aliasRepo` mock; read storage instead |
+| `a927de5` | Item 1 / N2 — pin that a different paste is a new routine, not an overwrite |
+| `2d71797` | N3 — pin the custom tally on the confirm step |
+| `82788c0` | Item 2 — refuse a Remember tick that could never take effect |
+| `da0da5b` | N5 — pin the confirm step's silence when a decision reaches nothing |
+| `1fe3b0d` | N4 + N6 — stale label wording; record the zero-count ruling |
+| `dd9af79` | Self-review tidy — memoize the refusal; wait on the effect |
+
+Lane baseline at my start: `src/lib/import` + `src/components/import` →
+**8 suites / 216 tests / 0 failures** (the review measured 214; the Task 10
+lane's `resolution.ts` work moved it before I began). At the end: **227**.
+
+---
+
+## Item 3 — the partial `aliasRepo` mock (handed over from Task 10)
+
+Applied the controller's standing ruling: **dropped the mock entirely**.
+`@/lib/storage/aliasRepo` now runs for real against fake-indexeddb, which
+jest.config.js already wires in globally. The suite gets a real
+`beforeEach` DB reset (`resetDbConnection` / `deleteDB(DB_NAME)`), matching
+`aliasRepo.test.ts` and `ExerciseCorrectionSheet.test.tsx`.
+
+**Every assertion that changed meaning, listed as required.** All four got
+*stronger*, and none got weaker:
+
+| Was | Now |
+|---|---|
+| `expect(mockAliasSaveMany).not.toHaveBeenCalled()` (×3) | same, plus `expect(await storedAliases()).toEqual([])` — an empty table cannot be satisfied by a write that was attempted and swallowed |
+| `expect(mockAliasSaveMany).toHaveBeenCalledWith([{alias, canonicalExerciseId, provenance}])` | the row that actually landed, **including `normalizedAlias: "back squat"`** — a token the store derived, which no mock could have produced |
+| `mockAliasList.mockResolvedValue([danglingBackSquatAlias])` (×3) | `await aliasRepo.putRaw(danglingBackSquatAlias)` — a real legacy row through the restore path |
+| "already taken" test | additionally asserts the occupied row is still there, byte-identical, after the refusal |
+
+One deliberate spy survives: `jest.spyOn(aliasRepo, "saveMany")`, **calling
+through**. It pins the one thing storage cannot show — that a whole import is
+a *single* bulk write, i.e. one transaction and one identity event. The
+rejected-write test uses `saveManySpy.mockRejectedValue(...)` because a
+genuine check-then-claim race cannot be staged from a single-threaded test.
+
+### Mutation evidence
+
+| Mutation | Result |
+|---|---|
+| **M-ORD** — `handleSave`: move the `rememberedAliasInputs` + `rememberAliases` block above `await saveProgram(...)` | **1 failed / 8 passed** — `writes no alias when the routine itself could not be saved` |
+| **M-ORD + the spy assertion deleted from the test body** | still **fails**, now on `expect(await storedAliases()).toEqual([])` — the storage assertion is independently load-bearing, not shadowed by the spy |
+| **M-CONF** — `rememberAliases`: `const savable = aliasesToSave` (drop the conflict withhold) | **1 failed / 8** — `keeps the import when a remembered name is already taken`, now against the real store's own guard |
+| **M-DEFAULT-REMEMBER** — `remember: remembered[g.groupKey] ?? true` | **2 failed / 7** — `saves the choice into the program and remembers nothing`, `does not remember a stale tick…` |
+
+M-ORD's real error text under the real module:
+
+```
+● ImportClient: … › writes no alias when the routine itself could not be saved
+  expect(jest.fn()).not.toHaveBeenCalled()
+  Received number of calls: 1
+  1: [{"alias": "Back Squat", "canonicalExerciseId": "barbell-low-bar-squat", "provenance": "remembered"}]
+```
+
+and with the spy line removed, proving the real module is genuinely running:
+
+```
+  expect(received).toEqual(expected) // deep equality
+  - Array []
+  + Array [
+  +   Object {
+  +     "alias": "Back Squat",
+  +     "canonicalExerciseId": "barbell-low-bar-squat",
+  +     "normalizedAlias": "back squat",
+  +     "provenance": "remembered",
+  +   },
+  + ]
+```
+
+---
+
+## Item 1 / N2 — the program-overwrite direction
+
+Added `saves a different paste as a new routine instead of overwriting the
+first`. Not RED-first, and I say so plainly: this is a **test gap on correct
+behaviour**, the same shape as Task 10's NEW-3, so it earns its place by
+mutation rather than by RED.
+
+The reviewer's prediction is exact:
+
+| Mutation | Result |
+|---|---|
+| **M-m5c** — `handleValidate` never clears `savedProgramId`/`savedJson` **and** `handleSave` drops `savedJson === json` | **1 failed / 9** — the new test (was 214/214 green) |
+| **M-m5a2** — `handleSave` drops `savedJson === json` only | 10 passed — the other guard still blocks; `re-validating the same paste…` catches this one |
+| **M-m5b2** — `handleValidate` never clears only | 10 passed — same |
+
+M-m5c real error text:
+
+```
+● … › saves a different paste as a new routine instead of overwriting the first
+  expect(received).not.toBe(expected) // Object.is equality
+  Expected: not "program-6f453122-c7f3-4906-9467-563e2a698dc4"
+  > 335 |     expect(second.id).not.toBe(first.id);
+```
+
+The test carries two canaries so "same id" cannot be an artefact of a save
+that never happened: `mockSaveProgram` must have been called **twice**, and
+`first.title !== second.title` with `second.title === "Four weeks, one squat"`.
+
+---
+
+## Item 2 — the `or`-name Remember path (handed over from Task 10)
+
+**This is not hypothetical, and that is the headline of this round.** The
+plan's own regression fixture `knee-conscious-powerbuilding-cut.json` carries
+`Assisted or bodyweight neutral-grip pull-up`, and importing it was writing a
+permanent global alias for that name — a row `resolveName` can never read,
+because `identity.ts:281` returns `standaloneResult` for a `hasAlternative`
+name **before** the alias branch. Ten aliases went in; nine were readable.
+
+Probed rather than reasoned (throwaway test, deleted):
+
+```
+{"n":"Back Squat or Lunge","p":{"normalizedName":"back squat lunge","hasAlternative":true}}
+{"n":"Competition","p":{"normalizedName":"","hasAlternative":false}}
+{"n":"Pain Free","p":{"normalizedName":"","hasAlternative":false}}
+{"n":"or","p":{"normalizedName":"","hasAlternative":true}}
+```
+
+Both classes reach the resolve step as ordinary `unmatched` groups with a
+reachable Remember tick — the `or` name directly (3 fuzzy suggestions), the
+annotation-only name after the user clicks `Map to catalog`.
+
+### What shipped
+
+`unrememberableReason(rawName)` in `resolution.ts` returns a **sentence**, not
+a boolean, because the user has to be told and told what to do. Two branches:
+
+- `hasAlternative` → *“X or Y” names more than one exercise, so nothing could
+  look a mapping for it up again. Used for this import only — change the name
+  in the JSON to the one exercise you did.*
+- empty prepared token → *“Competition” leaves no exercise name once its
+  annotations are set aside, so there is nothing to remember. Used for this
+  import only — change the name in the JSON to the exercise you did.*
+
+Both halves of the refusal, as the brief asked:
+
+- **Do not offer** — `GroupCard` disables the tick and renders the sentence.
+  Deliberately **not** folded into `rememberableTarget`: that value also drives
+  the version `<select>` (`ResolutionStep.tsx:167`), so blanking it there would
+  break the choice itself rather than the shortcut.
+- **Do not honour** — `dedupeAliasResolutions` skips such an item, one line
+  below the existing m1 skip. This also removes a hazard the controller flagged:
+  two annotation-only names would otherwise both key on `""` and collide in the
+  dedup map. Confirmed on my path that nothing can be written — both stores
+  refuse an empty token before a transaction opens — and the refusal is now an
+  honest sentence rather than `Alias cannot be empty`.
+
+### RED evidence
+
+```
+● names whose remembered mapping could never be read back › names the problem for a name that offers a choice of exercises
+  TypeError: (0 , resolution_1.unrememberableReason) is not a function
+
+● … › refuses to build an alias input for either of them
+  expect(received).toEqual(expected) // deep equality
+  - Expected  -  0
+  + Received  + 10
+    Array [
+      Object {
+  +     "alias": "Back Squat or Lunge",
+  +     "canonicalExerciseId": "barbell-low-bar-squat",
+  +     "provenance": "remembered",
+  +   },
+  +   Object {
+  +     "alias": "Competition",
+  ...
+
+● ResolutionStep: a Remember tick that could never take effect › refuses the tick, in words, for a name that offers a choice of exercises
+  expect(element).toBeDisabled()
+  Received element is not disabled:
+    <input type="checkbox" />
+
+● ImportClient: a Remember tick that could never take effect › refuses it in words, and stores nothing, for a name that offers a choice
+  expect(element).toBeDisabled()
+  Received element is not disabled:
+    <input type="checkbox" />
+```
+
+The fourth is the defect itself, printed: both unreadable rows were being built.
+
+### Mutation evidence (scope: `src/lib/import` + `src/components/import`, 227 tests)
+
+| Mutation | Result |
+|---|---|
+| **M-ALT** — `unrememberableReason`: `if (prepared.hasAlternative)` → `if (false)` | **6 failed / 220** — 3 new unit, 1 new ResolutionStep, 1 new ImportClient, **and the pre-existing `saves the knee-conscious-powerbuilding-cut fixture without a ConstraintError`** |
+| **M-EMPTY** — `if (!prepared.normalizedName)` → `if (false)` | **3 failed / 224** — the two annotation-only tests plus the shared dedup test |
+| **M-SKIP** — delete the `continue` in `dedupeAliasResolutions` (UI refusal kept) | **3 failed / 224** — `refuses to build an alias input for either of them`, `refuses a marked group for such a name`, and the fixture test |
+| **M-UI** — drop `\|\| unrememberable !== undefined` from `disabled` | **3 failed / 224** — all three "refuses the tick" tests |
+| **M-COPY** — delete the sentence's `<p>` block | **3 failed / 224** — same three (each asserts both the disabled state and the words) |
+
+M-SKIP and M-UI killing disjoint-but-overlapping sets is the point: the two
+halves of the refusal are pinned independently, so neither can be removed on
+the strength of the other.
+
+### ⚠️ I modified an existing test — reported, not folded in
+
+`importConstraint.test.ts:95` asserted
+`expect(aliasesToSave.length).toBe(rawNameCounts.size)`. That is a *fixture
+shape* claim, not the ConstraintError regression the file exists for, and my
+change legitimately makes it 9-of-10 — because one of the ten names is the
+`or` name that was silently producing an unreadable row. Shipped code failed it:
+
+```
+● … › saves the knee-conscious-powerbuilding-cut fixture without a ConstraintError
+  expect(received).toBe(expected)
+  Expected: 10
+  Received: 9
+```
+
+I made the assertion **stronger rather than weaker** — it now names the
+excluded name and asserts it is the only one, so a fixture edit cannot quietly
+change what the count means:
+
+```ts
+const unrememberable = [...rawNameCounts.keys()].filter(
+  (rawName) => unrememberableReason(rawName) !== undefined,
+);
+expect(unrememberable).toEqual(["Assisted or bodyweight neutral-grip pull-up"]);
+expect(aliasesToSave.length).toBe(rawNameCounts.size - unrememberable.length);
+expect(aliasesToSave.map((entry) => entry.alias)).not.toContain(unrememberable[0]);
+```
+
+The ConstraintError assertions, the duplicate-collapse assertion, and the
+unique-token assertion are all untouched. **If the controller reads this as
+semantics moving, it is the one call in this round to overturn.**
+
+---
+
+## N3 — `customCount`
+
+Extended `counts stored exercises in the confirm summary, not occurrence
+paths`: click `Keep as custom`, then assert `4 exercises imported as custom`,
+that `1 exercise imported as custom` is absent, and that the mapped line is
+gone. Same 4-week fixture, where paths and stored exercises deliberately
+disagree 1-vs-4.
+
+**M-m2b** — `customCount` back to `unresolvedItems.filter(…).length`:
+**1 failed / 9** (was 214/214 green).
+
+```
+TestingLibraryElementError: Unable to find an element with the text:
+/4 exercises imported as custom/i.
+```
+
+---
+
+## N5 — the confirm-step zero case, directly
+
+Added `claims nothing was mapped when the routine's structure is ambiguous`:
+two base days both declared as day 1, so `applyResolutions` refuses to patch
+and `storedExerciseCount` is 0. Asserts the resolve row says `won't apply`,
+then that the confirm step shows `2 days · 2 exercises` (completion canary —
+so the absence below is an absence, not a step that never rendered) and **no**
+`mapped to catalog` line at all.
+
+**Honest gap, published rather than claimed.** No mutation kills this test
+*alone*:
+
+| Mutation | Result |
+|---|---|
+| **M-ZEROGATE** — `{resolvedCount > 0 && (` → `{resolvedCount >= 0 && (` | 2 failed / 225 — this test and the N3-extended confirm test |
+| **M-ZERO1** — `storedExerciseCount` returns `Math.max(1, total)` | 3 failed / 224 — the two above plus `counts zero for a structurally ambiguous day…` |
+
+It is falsifiable, not unfalsifiable-by-construction, but it is composition
+coverage: it is the only test that drives a *structurally ambiguous* import
+end-to-end to the confirm step. That is exactly what the reviewer asked for
+and exactly the strength claimed for it — no more.
+
+---
+
+## N4 — the spec's literal label
+
+The string `Remember this interpretation` survived in six comments after the
+relabel, including one docblock that documented `rememberedAliasInputs` in
+terms of a control that does not exist. Rewritten to "the Remember tick", with
+the spec reference kept where it is traceable (`resolution.ts:89`).
+
+The one place the spec's wording is genuinely load-bearing is *why the shipped
+label differs*, so that now lives on `rememberLabel` itself: it cites design
+~443, states that one screen can carry several ambiguous names whose
+checkboxes the spec's wording would make identical to a screen reader, and
+names the test that pins the shipped string
+(`names the exercise and the chosen version in the Remember label`, which
+M-m4 killed last round). No new test: adding one would duplicate that pin.
+
+---
+
+## N6 — a zero-count group can still be remembered
+
+**I agree with the reviewer explicitly**, and said so in the code rather than
+in this report alone. `rememberableTarget`'s docblock now records it: an alias
+is a statement about what the *name* means, not about what this one routine
+does with it; the row already says the decision won't apply here, and refusing
+to remember it as well would throw away a true statement because of an
+unrelated structural problem in the paste. Marked as raised in review and kept
+on purpose, so the next reader does not "fix" it.
+
+---
+
+## Self-review findings (fixed in `dd9af79`)
+
+1. **`unrememberableReason` was recompiling the whole rule set on every
+   keystroke.** `prepareImportName` builds a sorted rule list and compiles one
+   `RegExp` per phrase rule; `GroupCard` called it unmemoized, and the search
+   box's state lives in the *parent*, so every card re-ran it on every
+   character. Exactly the class the Task 10 lane fixed in `a62c8e4`. Now
+   `useMemo` on the display name.
+2. **The bulk-write assertion polled storage inside `waitFor` with an async
+   callback.** Navigation happens only *after* the alias write resolves, so the
+   test now waits for navigation and reads storage directly. Re-ran M-ORD after
+   the reshuffle: still **1 failed / 11**, same test.
+3. Considered and **kept**: the refusal sentence suppresses the
+   `Different versions chosen — can't be remembered.` line when both apply.
+   Two messages about one disabled control is noise, and the unrememberable
+   reason is the more fundamental of the two; the split state is already
+   visible in the per-occurrence selectors. Flagging it because it is a
+   deliberate behaviour change a reviewer could reasonably question.
+
+---
+
+## Gates — real output at `dd9af79`
+
+```
+$ bun run test -- --runInBand
+Test Suites: 103 passed, 103 total
+Tests:       1511 passed, 1511 total
+Time:        20.409 s
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json   (no output)
+
+$ bun run lint
+$ eslint .   (no output)
+
+$ bun run build
+✓ built in 1.47s        (only Vite's known large-chunk advisory)
+
+$ git diff --check      (no output)
+```
+
+**e2e not run — controller instruction** (standing change received mid-round:
+implementers must not execute Playwright; the controller runs it once
+serially). A run was in flight when the instruction arrived; it was killed at
+spec 21 of 93 and every Playwright process confirmed stopped.
+
+**Do my changes plausibly affect the import e2e specs? No, and I checked
+rather than assumed.** `unrememberableReason` was run over every `name:` field
+in `e2e/helpers.ts`: **zero hits**. `e2e/program-import.spec.ts` drives plain
+`Squat`, for which the function returns `undefined`, so the tick, its label
+and the surrounding copy are byte-identical to what round 1 pinned — including
+the `Review import` disabled-before-an-answer assertion that made the
+0.65 auto-select mutant fail. The only `or` in `e2e/` is a `load` string
+(`"bodyweight or weighted"`), not a name. **I deliberately added no new e2e
+assertion**: covering the refusal would need a new `or`-named fixture inside
+the shared serial context, and the path is already driven end-to-end through
+the real component in `ImportClient.remember.test.tsx`.
+
+### Foreign failures — attributed by filename, never assumed
+
+- Mid-round, 7 failures and 3 lint errors traced to
+  `src/components/catalog/__zzr3e2e.test.tsx` and `__zzr3probe.test.ts`,
+  untracked scratch files belonging to the concurrent reviewer. Gone by the
+  next run.
+- One full-suite run showed `src/components/catalog/ExerciseCorrectionSheet.test.tsx`
+  failing; re-run in isolation: **23 passed**. A live mutation in the
+  reviewer's window.
+- One run showed 5 failures across `appDb.test.ts`, `aliasRepo.test.ts`,
+  `backup.test.ts`, `v10Identity.test.ts`; `git status` showed
+  `src/lib/storage/migrations/v10Identity.ts` **and** its test modified in the
+  working tree by another lane. Not mine, and green at the final gate.
+- **`/tmp/IC.orig`, my pre-mutation snapshot of `ImportClient.tsx`, was
+  clobbered by a sibling agent using the same path**, and a restore from it
+  wrote 417 foreign lines into `ImportClient.tsx`. Caught by the `shasum`
+  discipline immediately (`104461d8` ≠ `798dfda6`), restored with
+  `git checkout --`, and every later snapshot moved to the session scratchpad.
+  **Recommend the standards mandate the scratchpad for snapshots** — `/tmp`
+  is shared across every agent in this worktree and the collision was silent.
+
+### Flake checks
+
+- `src/lib/import` + `src/components/import` at `--maxWorkers=24`: **227 passed,
+  seven separate runs**, no failures.
+- `--maxWorkers=24` over the **whole repo** fails 31-74 tests across every lane
+  — including `scripts/catalog-normalization/compiler/compile.test.ts` and
+  `src/lib/storage/appDbUpgradeFailure.test.ts`, which are pure-node suites my
+  change cannot reach, with per-suite times of 70-108 s against ~2 s serial.
+  That is machine saturation from three agents at 24 workers, not a lane flake.
+  Reported so nobody mistakes it for a regression.
+- `asyncUtilTimeout: 1` on `ImportClient.remember.test.tsx`: 3 of 12 fail.
+  Measured the pre-round file the same way: **9 of 9 pass**. The difference is
+  real and expected — the mocked repo resolved synchronously, the real one
+  performs actual IndexedDB round-trips, so `waitFor` legitimately needs more
+  than one macrotask. It is not a masked missing `await`: no timeout was
+  raised anywhere, and the lane is green seven times over at 24 workers.
+  Published as a measured property of dropping the mock, not hidden.
+
+---
+
+## Deferred, with reasoning
+
+- **Wiring the conflict notice to `ExerciseCorrectionSheet`** — Task 11, per
+  the review's own ruling. Untouched.
+- **No e2e assertion for the new refusal** — reasoning above; needs a new
+  fixture in a shared serial context for no additional discrimination.
+- **`correctionTargetKey` still keys review rows on the unstripped token** —
+  Task 10's deferral, not my lane.
+- **An `or` name still produces a `Needs review` row** the user can only
+  resolve by renaming or by keeping it custom. Consistent with the ruling on
+  the annotation-only case: honest beats hidden, and the row now says exactly
+  what to do.
+
+## Status
+
+**DONE**
+
+Commits `1b2642b`, `a927de5`, `2d71797`, `82788c0`, `da0da5b`, `1fe3b0d`,
+`dd9af79`.
+Gates: 103 suites / 1511 tests / 0 failures; typecheck, lint, build,
+`git diff --check` clean. e2e not run — controller instruction.
+
+### What a reviewer should scrutinise most
+
+1. **The edit to `importConstraint.test.ts:95`.** It is the only existing test
+   I changed. I believe the old assertion was a fixture-shape claim and the new
+   one is strictly stronger, but this is the call to overturn if any.
+2. **That the `or` name was a live defect, not a theoretical one.** Confirm
+   independently that `knee-conscious-powerbuilding-cut.json` was writing an
+   unreadable alias before `82788c0` — `dedupeAliasResolutions` on that fixture
+   returned 10 entries, now 9.
+3. **Suppressing `Different versions chosen` under an unrememberable name.** A
+   deliberate behaviour change, argued above, not measured.
+4. **The `asyncUtilTimeout: 1` delta** from dropping the mock (3 fail vs 0
+   before). I argue it is inherent to real IndexedDB and not a masked race;
+   seven 24-worker runs support that, but it is the one property the mock
+   removal genuinely changed.
+5. **Whether the refusal belongs in `dedupeAliasResolutions`** rather than in
+   `rememberedAliasInputs`. I put it in the lower one so *every* caller is
+   protected, including `importConstraint.test.ts`'s direct drive — which is
+   precisely how the live defect surfaced.
