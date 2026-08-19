@@ -51,9 +51,14 @@ import type {
 // the guard is load-bearing — four toothless guards shipped without one.
 //
 // One genuine exception to rule 2: an unreadable record is passed through
-// untouched *except* for aliases, which classifyAliases drops. An alias that
-// cannot be classified would keep short-circuiting the disambiguation flow
-// forever, and unlike a program or log it carries no user-authored content.
+// untouched *except* for aliases, which classifyAliases drops once nothing
+// usable is left of them. Do not justify that with "aliases are
+// machine-created" — that is false. Pre-v10 aliases came from the import flow,
+// where the resolution map is filled both by automatic scoring and by the
+// user's explicit manual pick, with no stored field distinguishing the two. The
+// honest justification is narrower: an alias with no usable token and no usable
+// target can never be matched, displayed, or redirected again, so keeping it
+// only lets it short-circuit the new disambiguation flow forever.
 
 const catalogById = new Map(exerciseCatalog.map((exercise) => [exercise.id, exercise]));
 
@@ -308,8 +313,22 @@ export function classifyAliases(
     if (!isReadableText(alias.alias) || !isReadableText(alias.canonicalExerciseId)) continue;
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
     const normalizedAlias = normalizeExerciseName(alias.alias);
-    if (alias.provenance === "remembered") {
-      claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "remembered" });
+    // Classification — and therefore the purge — is only for rows that arrive
+    // *without* a provenance: a pre-v10 database row, or a version-1 backup.
+    // A row that already carries one was classified by whoever wrote it, and
+    // re-running the rules against a catalogue that has since grown would
+    // delete aliases a live database of the same data keeps working with
+    // indefinitely (nothing re-classifies on read). Spec line 373 scopes the
+    // purge to version-1 backups; line 560 says to preserve remembered
+    // provenance. Recomputing the token and deduping still applies to every
+    // row — that is index integrity, not classification.
+    if (alias.provenance === "remembered" || alias.provenance === "legacy-auto") {
+      claim(normalizedAlias, {
+        ...alias,
+        normalizedAlias,
+        canonicalExerciseId,
+        provenance: alias.provenance,
+      });
       continue;
     }
 
@@ -342,19 +361,21 @@ export function classifyAliases(
 
 // Which of two rows claiming the same recomputed token survives.
 //
-// A user's own correction outranks a legacy guess, whichever order the rows
-// arrive in — losing a legacy duplicate costs a re-teach, losing the
-// remembered one discards explicit intent. Two colliding *legacy* rows
-// provably agree on their target (the `outcomes.size === 1 &&
-// outcomes.has(canonicalExerciseId)` gate above only admits rows whose shared
-// token has one outcome, and both must equal it), so which one survives
-// changes nothing but the stored display text. Two colliding *remembered* rows
-// can genuinely disagree, so the newer one wins; equal or unreadable
-// timestamps fall back to first-writer-wins, which is stable for a given
-// `getAll` order.
+// A user's own correction outranks anything else, whichever order the rows
+// arrive in — losing a legacy duplicate costs a re-teach, losing the remembered
+// one discards explicit intent. Within one class the newer `createdAt` wins.
+// Rows freshly classified from a pre-v10 database provably agree on their target
+// anyway (the `outcomes.size === 1 && outcomes.has(canonicalExerciseId)` gate
+// only admits rows whose shared token has exactly one outcome, and both must
+// equal it), so there the choice only changes stored display text; rows arriving
+// already classified from a hand-editable backup file can genuinely disagree,
+// which is why the tiebreak is not left to `getAll`'s key order. Equal or
+// unreadable timestamps fall back to first-writer-wins, stable for a given
+// order.
 function winsCollision(candidate: AliasDocument, incumbent: AliasDocument): boolean {
-  if (candidate.provenance !== "remembered") return false;
-  if (incumbent.provenance !== "remembered") return true;
+  const candidateRemembered = candidate.provenance === "remembered";
+  const incumbentRemembered = incumbent.provenance === "remembered";
+  if (candidateRemembered !== incumbentRemembered) return candidateRemembered;
   if (!isReadableText(candidate.createdAt) || !isReadableText(incumbent.createdAt)) return false;
   return candidate.createdAt > incumbent.createdAt;
 }

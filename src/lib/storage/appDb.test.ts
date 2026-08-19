@@ -1515,6 +1515,66 @@ describe("restoreBackup — version-2 documents", () => {
     resetDbConnection();
   });
 
+  // Ruling (spec line 373 scopes the purge to version-1 files; line 560 says to
+  // preserve remembered provenance): a row that arrives *carrying* a provenance
+  // has already been classified, so restore keeps it. A live v10 database does
+  // not re-run classification as the catalogue grows, so a legacy-auto alias
+  // that later became ambiguous keeps working there indefinitely — purging it on
+  // restore would make restore strictly more destructive than the state it
+  // claims to reproduce, silently and without a count.
+  it.each([
+    { name: "legacy-auto", provenance: "legacy-auto" as const },
+    { name: "remembered", provenance: "remembered" as const },
+  ])("keeps a $name alias whose token is now an underspecified choice", async ({ provenance }) => {
+    await restoreBackup({
+      version: 2,
+      exportedAt: "2026-08-19T00:00:00.000Z",
+      programs: [],
+      logs: [],
+      aliases: [{
+        id: "alias-back-squat",
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "barbell-back-squat",
+        provenance,
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }],
+      normalizationOverrides: [],
+    } as never);
+
+    await expect(aliasRepo.find("Back Squat")).resolves.toMatchObject({
+      id: "alias-back-squat",
+      canonicalExerciseId: "barbell-back-squat",
+      provenance,
+    });
+  });
+
+  // Recompute-and-dedupe is integrity, not classification, so it stays
+  // unconditional: a version-2 file is hand-editable JSON and
+  // `by-normalized-alias` is the only unique index.
+  it("still recomputes a stale token on an already-classified alias", async () => {
+    await restoreBackup({
+      version: 2,
+      exportedAt: "2026-08-19T00:00:00.000Z",
+      programs: [],
+      logs: [],
+      aliases: [{
+        id: "alias-back-squat",
+        alias: "Back Squat",
+        normalizedAlias: "WRONG-TOKEN",
+        canonicalExerciseId: "barbell-back-squat",
+        provenance: "legacy-auto",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }],
+      normalizationOverrides: [],
+    } as never);
+
+    await expect(aliasRepo.find("Back Squat")).resolves.toMatchObject({
+      normalizedAlias: "back squat",
+      provenance: "legacy-auto",
+    });
+  });
+
   it("round-trips normalization overrides and alias provenance", async () => {
     const saved = await normalizationOverrideRepo.save({
       targetKind: "normalized-name",

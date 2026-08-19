@@ -112,4 +112,23 @@ describe("classifyAliases — colliding remembered aliases", () => {
       normalizedAlias: "90 90 hamstring",
     }]);
   });
+
+  // Two rows that arrive already classified as legacy-auto skip the outcome
+  // gate, so — unlike rows classified here from a pre-v10 database — they can
+  // genuinely disagree about their target. The tiebreak must not be left to key
+  // order for them either.
+  it.each([
+    { name: "newer row first", order: [1, 0] },
+    { name: "older row first", order: [0, 1] },
+  ])("keeps the newer legacy-auto row on a token collision ($name)", ({ order }) => {
+    const rows = [
+      { ...older, provenance: "legacy-auto" as const },
+      { ...newer, provenance: "legacy-auto" as const },
+    ];
+    expect(classifyAliases(order.map((index) => rows[index]), [])).toEqual([{
+      ...newer,
+      provenance: "legacy-auto",
+      normalizedAlias: "90 90 hamstring",
+    }]);
+  });
 });

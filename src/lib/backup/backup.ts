@@ -304,14 +304,23 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   // point for them; running it unconditionally is what makes a file exported by
   // an older build safe to restore into a newer one.
   const userExercises = (b.userExercises ?? []) as UserExerciseDocument[];
-  // classifyAliases recomputes every token from its alias text and dedupes on
-  // the result. The file's own `normalizedAlias` is never written: it is what
-  // `by-normalized-alias` (the schema's only unique index) is keyed on, so a
-  // stale one restores without error and leaves the alias permanently
-  // unreachable by aliasRepo.find() — and two stale ones can collide and get
-  // the write rejected outright. Provenance is settled here too: version-1 rows
-  // have none and are classified exactly as the v10 migration classifies
-  // pre-existing aliases, retained as "legacy-auto" or purged.
+  // classifyAliases does two separable jobs here, and only one of them is
+  // version-dependent:
+  //
+  //  - Integrity, for every version: the token is recomputed from the alias text
+  //    and rows are deduped on the result. The file's own `normalizedAlias` is
+  //    never written. It is what `by-normalized-alias` (the schema's only unique
+  //    index) is keyed on, so a stale one restores without error and leaves the
+  //    alias permanently unreachable by aliasRepo.find(), and two stale ones can
+  //    collide and get the write rejected outright. A version-2 file is
+  //    hand-editable JSON, so this cannot be narrowed to version 1.
+  //  - Classification, only for rows that arrive without a provenance — a
+  //    version-1 file, since version 1 predates the field. Those pass through
+  //    the same retain-as-"legacy-auto"-or-purge rules as the v10 database
+  //    migration (spec line 373). A version-2 row already carries its
+  //    classification and keeps it: nothing re-classifies on read either, so
+  //    re-running the rules against a grown catalogue would make restore delete
+  //    aliases the live database it copied keeps using.
   const aliases = classifyAliases(b.aliases as AliasDocument[], userExercises);
   const context = createMigrationContext(
     aliases,

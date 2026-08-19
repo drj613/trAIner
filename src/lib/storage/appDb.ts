@@ -239,8 +239,9 @@ export function getDb() {
           }
 
           // v9 → v10: persist normalization overrides, normalize every stored
-          // catalogue reference in the same upgrade transaction, classify old
-          // automatic aliases, and drop the unused derived metrics cache.
+          // catalogue reference in the same upgrade transaction, classify the
+          // aliases that predate provenance, and drop the unused derived
+          // metrics cache.
           if (oldVersion < 10) {
             if (!db.objectStoreNames.contains("normalizationOverrides")) {
               db.createObjectStore("normalizationOverrides", { keyPath: "id" });
