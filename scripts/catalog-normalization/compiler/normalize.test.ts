@@ -48,7 +48,70 @@ test("candidate artifact covers Tier-1 and respects the cap", async () => {
     modifiersArtifact.records as MovementModifierDefinition[],
   );
   const snapshot = snapshotArtifact as CatalogExercise[];
-  validateVariantCandidates(artifact.records, registries, new Set(snapshot.map((exercise) => exercise.id)));
+  validateVariantCandidates(
+    artifact.records,
+    registries,
+    new Map(snapshot.map((exercise) => [exercise.id, exercise])),
+  );
+});
+
+test("candidate validation rejects empty required metadata from a full snapshot", async () => {
+  const artifact = await loadVariantCandidates();
+  const registries = buildRegistries(
+    movementsArtifact.records as MovementDefinition[],
+    modifiersArtifact.records as MovementModifierDefinition[],
+  );
+  const snapshot = snapshotArtifact as CatalogExercise[];
+  const metadataById = new Map(snapshot.map((exercise) => [exercise.id, exercise]));
+  const malformed = artifact.records.map((candidate, index) =>
+    index === 0 ? { ...candidate, metadataFromExerciseId: "suitcase-carry" } : candidate,
+  );
+
+  expect(() =>
+    validateVariantCandidates(
+      malformed,
+      registries,
+      metadataById,
+    ),
+  ).toThrow("Candidate metadata base has empty required fields: suitcase-carry");
+
+  const incompatible = artifact.records.map((candidate) =>
+    candidate.id === "squat--dumbbell"
+      ? { ...candidate, metadataFromExerciseId: "barbell-squat" }
+      : candidate,
+  );
+  expect(() => validateVariantCandidates(incompatible, registries, metadataById)).toThrow(
+    "Candidate metadata base incompatible with implement: squat--dumbbell",
+  );
+});
+
+test("candidate bases preserve implement and load-position identity", async () => {
+  const artifact = await loadVariantCandidates();
+  const candidate = (id: string) => artifact.records.find((record) => record.id === id);
+
+  expect(candidate("squat--dumbbell")?.metadataFromExerciseId).toBe("dumbbell-squat");
+  expect(candidate("loaded-carry--barbell")?.metadataFromExerciseId).toBe("farmer-carry");
+  expect(candidate("loaded-carry--barbell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
+  expect(candidate("loaded-carry--kettlebell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
+  expect(candidate("loaded-carry--dumbbell--single-arm")?.metadataFromExerciseId).toBe("farmer-carry");
+});
+
+test("combined families include canonical hinge and fly identities", async () => {
+  const artifact = await loadVariantCandidates();
+  const modifierIds = new Set((modifiersArtifact.records as MovementModifierDefinition[]).map((modifier) => modifier.id));
+
+  expect(modifierIds.has("romanian")).toBe(true);
+  expect(modifierIds.has("hinge")).toBe(true);
+  expect(modifierIds.has("fly")).toBe(true);
+  expect(artifact.records.some((candidate) =>
+    candidate.movementId === "deadlift-hinge" && candidate.movementModifierIds.includes("romanian"),
+  )).toBe(true);
+  expect(artifact.records.some((candidate) =>
+    candidate.movementId === "deadlift-hinge" && candidate.movementModifierIds.includes("hinge"),
+  )).toBe(true);
+  expect(artifact.records.some((candidate) =>
+    candidate.movementId === "raise-fly" && candidate.movementModifierIds.includes("fly"),
+  )).toBe(true);
 });
 
 function makeModifierRegistryFixture(input: {

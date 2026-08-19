@@ -2,7 +2,7 @@
 
 ## Result
 
-Created a versioned Luna-max proposal artifact with 154 non-Cartesian Tier-1
+Created a versioned Luna-max proposal artifact with 161 non-Cartesian Tier-1
 candidate records. Every required movement family is represented, no candidate
 uses prescription-only details as an identity, and `variant-rules.json` remains
 unchanged.
@@ -13,7 +13,7 @@ unchanged.
 | --- | ---: |
 | squat | 15 |
 | bench-press | 13 |
-| deadlift-hinge | 14 |
+| deadlift-hinge | 17 |
 | row | 15 |
 | pull-up-pulldown | 15 |
 | overhead-landmine-press | 13 |
@@ -21,9 +21,9 @@ unchanged.
 | push-up | 10 |
 | curl | 14 |
 | triceps-extension-pushdown | 12 |
-| raise-fly | 11 |
+| raise-fly | 15 |
 | loaded-carry | 10 |
-| **Total** | **154** |
+| **Total** | **161** |
 
 The proposals cover reviewed family anchors, common implement/support/grip/
 laterality/attachment identities, and a deliberately small set of compatible
@@ -48,11 +48,12 @@ candidate signature; generic family aliases are not proposed.
   reviewed registries, rejects unknown families/IDs, duplicate candidate IDs,
   duplicate canonical signatures, missing metadata bases, identity-erasing
   aliases, and missing required families.
-- The candidate test additionally validates all 154 bases against the frozen
+- The candidate test additionally validates all 161 bases against the frozen
   3,072-entry snapshot and all signatures against the movement/modifier
   registries. A separate mechanical audit confirmed every implement modifier
   is compatible with the base equipment (or an explicit reviewed equipment
-  override).
+  override); every effective metadata record has populated equipment,
+  movement-pattern, primary/secondary-muscle, and tag fields.
 
 ## RED / GREEN evidence
 
@@ -88,7 +89,7 @@ exit 0
 ```
 
 Artifact/schema predicates and family counts were also checked with `jq`; the
-artifact has 154 records and every record has `status: "candidate"` and a
+artifact has 161 records and every record has `status: "candidate"` and a
 rationale of at least 20 characters.
 
 ## Files changed
@@ -100,6 +101,9 @@ rationale of at least 20 characters.
 - `scripts/catalog-normalization/compiler/normalize.ts`
 - `scripts/catalog-normalization/compiler/compile.ts`
 - `scripts/catalog-normalization/compiler/normalize.test.ts`
+- `scripts/catalog-normalization/movements.json`
+- `scripts/catalog-normalization/modifiers.json`
+- `reports/catalog-normalization-report.json` (regenerated existing-stage input hashes)
 - This report.
 
 ## Self-review
@@ -123,3 +127,62 @@ rationale of at least 20 characters.
   into `variant-rules.json`.
 - Existing compiler stages intentionally do not consume candidate artifacts;
   candidate consumption and review gating remain Task 4 work.
+
+## Review fix round 1 — RED / GREEN evidence
+
+The review identified empty snapshot muscle fields, source-position-erasing
+metadata bases, and missing Romanian/hinge/fly identities. Tests were written
+before the fix and failed against the reviewed artifact and registries:
+
+```text
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t 'candidate validation rejects empty|required metadata|candidate bases preserve|combined families'
+$ jest --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t "candidate validation rejects empty|required metadata|candidate bases preserve|combined families"
+FAIL scripts/catalog-normalization/compiler/normalize.test.ts
+  ✕ candidate validation rejects empty required metadata from a full snapshot
+  ✕ candidate bases preserve implement and load-position identity
+  ✕ combined families include canonical hinge and fly identities
+Expected substring: "Candidate metadata base has empty required fields: suitcase-carry"
+Received function did not throw
+Expected: "dumbbell-squat"; Received: "dumbbell-goblet-squat"
+Expected: true; Received: false
+Tests: 3 failed, 15 skipped, 18 total
+```
+
+After changing candidate validation to consume full snapshot records,
+replacing incompatible/empty metadata bases, and adding the minimal hinge,
+Romanian, and fly registry vocabulary and candidates:
+
+```text
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t 'candidate validation rejects empty|required metadata|candidate bases preserve|combined families'
+PASS — 3 tests
+
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler/normalize.test.ts -t "candidate artifact"
+PASS — 1 test
+
+$ bun run test -- --runInBand scripts/catalog-normalization/compiler
+PASS — 2 suites, 28 tests
+
+$ bun run typecheck
+exit 0
+
+$ bun run lint
+exit 0
+
+$ bun run catalog:check
+exit 0
+
+$ bun scripts/catalog-normalization/compiler/compile.ts --stage existing --check-only
+exit 0
+
+$ git diff --check
+exit 0
+```
+
+The fix adds four fly candidates, three deadlift/hinge candidates, and
+updates affected bases while keeping the artifact at 161/300 records. Barbell
+carry records use populated farmer-carry metadata with an explicit equipment
+override; single-arm kettlebell and dumbbell carries use the neutral farmer
+base rather than waiter/suitcase positions. The exact dumbbell squat record is
+used, and all candidate metadata is checked against full snapshot records for
+required fields and implement compatibility. `variant-rules.json` remains
+unchanged.

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import type {
   AliasClassification,
   BuildRegistries,
+  CatalogExercise,
   MovementDefinition,
   MovementModifierDefinition,
   RegistrySignature,
@@ -450,10 +451,71 @@ function assertCandidateAliasIdentity(
   }
 }
 
+const IMPLEMENT_METADATA_EQUIPMENT: ReadonlyMap<string, readonly string[]> = new Map([
+  ["barbell", ["barbell"]],
+  ["dumbbell", ["dumbbell"]],
+  ["kettlebell", ["kettlebell", "kettlebells"]],
+  ["cable", ["cable"]],
+  ["machine", ["machine"]],
+  ["band", ["band", "resistance band"]],
+  ["bodyweight", ["bodyweight", "body weight"]],
+  ["trap-bar", ["trap bar", "trap-bar"]],
+  // A landmine press is anchored to the barbell that is fixed in the landmine.
+  ["landmine", ["landmine", "barbell"]],
+]);
+
+function candidateMetadata(
+  candidate: VariantCandidate,
+  metadataById: ReadonlyMap<string, CatalogExercise>,
+): CatalogExercise {
+  const base = metadataById.get(candidate.metadataFromExerciseId);
+  if (!base) throw new Error(`Candidate metadata base missing: ${candidate.metadataFromExerciseId}`);
+  const overrides = candidate.metadataOverrides;
+  return {
+    ...base,
+    ...(overrides ?? {}),
+    muscles: {
+      primary: overrides?.muscles?.primary ?? base.muscles.primary,
+      secondary: overrides?.muscles?.secondary ?? base.muscles.secondary,
+    },
+  };
+}
+
+function assertCandidateMetadata(
+  candidate: VariantCandidate,
+  metadataById: ReadonlyMap<string, CatalogExercise>,
+  modifierIds: readonly string[],
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+): void {
+  const metadata = candidateMetadata(candidate, metadataById);
+  const emptyFields = [
+    ["equipment", metadata.equipment],
+    ["movementPatterns", metadata.movementPatterns],
+    ["muscles.primary", metadata.muscles.primary],
+    ["muscles.secondary", metadata.muscles.secondary],
+    ["tags", metadata.tags],
+  ]
+    .filter(([, values]) => values.length === 0)
+    .map(([field]) => field);
+  if (emptyFields.length > 0) {
+    throw new Error(
+      `Candidate metadata base has empty required fields: ${candidate.metadataFromExerciseId}`,
+    );
+  }
+
+  const implementId = modifierIds.find((modifierId) => modifiersById.get(modifierId)?.category === "implement");
+  if (!implementId) return;
+  const expectedEquipment = IMPLEMENT_METADATA_EQUIPMENT.get(implementId) ?? [implementId];
+  const actualEquipment = new Set(metadata.equipment.map(normalizeCandidateText));
+  if (!expectedEquipment.some((equipment) => actualEquipment.has(normalizeCandidateText(equipment)))) {
+    throw new Error(`Candidate metadata base incompatible with implement: ${candidate.id}`);
+  }
+}
+
 export function validateVariantCandidates(
   candidates: readonly VariantCandidate[],
   registries: BuildRegistries,
-  metadataExerciseIds: ReadonlySet<string>,
+  metadataById: ReadonlyMap<string, CatalogExercise>,
   requiredMovementIds: readonly string[] = TIER_1_MOVEMENT_IDS,
 ): void {
   if (candidates.length > 300) throw new Error("Tier-1 candidate cap exceeded");
@@ -468,12 +530,13 @@ export function validateVariantCandidates(
     }
     if (seenIds.has(candidate.id)) throw new Error(`Duplicate variant candidate ID: ${candidate.id}`);
     seenIds.add(candidate.id);
-    if (!metadataExerciseIds.has(candidate.metadataFromExerciseId)) {
+    if (!metadataById.has(candidate.metadataFromExerciseId)) {
       throw new Error(`Candidate metadata base missing: ${candidate.metadataFromExerciseId}`);
     }
     const movement = registries.movementsById.get(candidate.movementId);
     if (!movement) throw new Error(`Unknown candidate movement: ${candidate.movementId}`);
     const modifierIds = canonicalModifierIds(candidate.movementId, candidate.movementModifierIds, registries);
+    assertCandidateMetadata(candidate, metadataById, modifierIds, registries.modifiersById);
     const signature = signatureFor(candidate.movementId, modifierIds);
     if (seenSignatures.has(signature)) throw new Error(`Duplicate candidate signature: ${signature}`);
     seenSignatures.add(signature);
