@@ -27,8 +27,7 @@ export function ExerciseReplaceSheet({ onSelect, onClose }: Props) {
     : undefined;
 
   const muscles = useMemo(() => {
-    // Exact concrete metadata lookup; grouping is intentionally not performed here.
-    const all = exerciseCatalog.flatMap((e) => e.muscles.primary);
+    const all = exerciseCatalog.flatMap((e) => e.muscles.primary); // Exact concrete metadata lookup; grouping is intentionally not performed here.
     return [...new Set(all)].sort();
   }, []);
 
