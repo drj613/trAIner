@@ -8,26 +8,30 @@
 // something else, and before this it took the whole import down with it.
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { deleteDB } from "idb";
 import { ImportClient } from "./ImportClient";
 import { collectNamed } from "@/lib/import/resolution.testFixtures";
 import fixture from "@/lib/import/__fixtures__/eight-back-squats.json";
+import { aliasRepo } from "@/lib/storage/aliasRepo";
+import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import type { AliasDocument, ProgramDocument } from "@/lib/programs/types";
 
 const mockSaveProgram = jest.fn();
 const mockNavigate = jest.fn();
-const mockAliasList = jest.fn<Promise<AliasDocument[]>, []>();
-const mockAliasSaveMany = jest.fn();
+let saveManySpy: jest.SpyInstance;
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
   useLocalData: () => ({ saveProgram: mockSaveProgram }),
 }));
 
-jest.mock("@/lib/storage/aliasRepo", () => ({
-  aliasRepo: {
-    list: () => mockAliasList(),
-    saveMany: (...args: unknown[]) => mockAliasSaveMany(...args),
-  },
-}));
+// `@/lib/storage/aliasRepo` is deliberately NOT mocked. A partial mock of it
+// only stayed green while no test touched the un-mocked exports, and would
+// have thrown `is not a function` for the next person who added one — the same
+// trap already removed from `ImportClient.test.tsx`. The real repository runs
+// against fake-indexeddb, so every "an alias was / was not written" assertion
+// below reads STORAGE rather than a spy, and `saveMany`'s own token derivation
+// and conflict guard are exercised instead of imagined. `saveManySpy` calls
+// through: it exists only to count transactions, which storage cannot show.
 
 jest.mock("@/lib/storage/userExerciseRepo", () => ({
   userExerciseRepo: { list: jest.fn().mockResolvedValue([]), save: jest.fn() },
@@ -50,12 +54,31 @@ const danglingBackSquatAlias: AliasDocument = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
-beforeEach(() => {
+beforeEach(async () => {
+  jest.restoreAllMocks();
   jest.clearAllMocks();
-  mockAliasList.mockResolvedValue([]);
+  resetDbConnection();
+  await deleteDB(DB_NAME);
+  resetDbConnection();
   mockSaveProgram.mockResolvedValue(undefined);
-  mockAliasSaveMany.mockResolvedValue(undefined);
+  saveManySpy = jest.spyOn(aliasRepo, "saveMany");
 });
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+/** Every remembered alias currently in storage, in a stable shape. */
+async function storedAliases() {
+  return (await aliasRepo.list())
+    .map(({ alias, normalizedAlias, canonicalExerciseId, provenance }) => ({
+      alias,
+      normalizedAlias,
+      canonicalExerciseId,
+      provenance,
+    }))
+    .sort((left, right) => left.normalizedAlias.localeCompare(right.normalizedAlias));
+}
 
 // One base-day path, four stored exercises — the two numbers the confirm step
 // must not confuse.
@@ -116,8 +139,11 @@ describe("ImportClient: import choices are local by default", () => {
     expect(
       collectNamed(savedProgram(), "Back Squat").map((e) => e.canonicalExerciseId),
     ).toEqual(Array(8).fill("barbell-high-bar-squat"));
-    // ...and nothing was written to the global alias table.
-    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+    // ...and nothing was written to the global alias table. Read from storage,
+    // not from a spy: an empty table cannot be satisfied by a write that was
+    // attempted and swallowed.
+    expect(await storedAliases()).toEqual([]);
+    expect(saveManySpy).not.toHaveBeenCalled();
   });
 
   it("persists exactly one bulk alias write for an explicit Remember", async () => {
@@ -125,20 +151,25 @@ describe("ImportClient: import choices are local by default", () => {
     await user.click(rememberBox());
     await reviewAndSave(user);
 
-    await waitFor(() => expect(mockAliasSaveMany).toHaveBeenCalledTimes(1));
-    expect(mockAliasSaveMany).toHaveBeenCalledWith([
-      {
-        alias: "Back Squat",
-        canonicalExerciseId: "barbell-low-bar-squat",
-        provenance: "remembered",
-      },
-    ]);
+    // Exactly one bulk write — one transaction, one identity event — and the
+    // row that actually landed, including the token the store derived for it.
+    await waitFor(() => expect(saveManySpy).toHaveBeenCalledTimes(1));
+    await waitFor(async () =>
+      expect(await storedAliases()).toEqual([
+        {
+          alias: "Back Squat",
+          normalizedAlias: "back squat",
+          canonicalExerciseId: "barbell-low-bar-squat",
+          provenance: "remembered",
+        },
+      ]),
+    );
     expect(mockSaveProgram).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
   });
 
   it("keeps the import when a remembered name is already taken", async () => {
-    mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
+    await aliasRepo.putRaw(danglingBackSquatAlias);
 
     const user = await chooseVersion("barbell-low-bar-squat");
     await user.click(rememberBox());
@@ -152,7 +183,15 @@ describe("ImportClient: import choices are local by default", () => {
 
     // The occupied token is never overwritten, and no batch is attempted that
     // the store would only reject.
-    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+    expect(saveManySpy).not.toHaveBeenCalled();
+    expect(await storedAliases()).toEqual([
+      {
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "user-exercise-since-deleted",
+        provenance: "remembered",
+      },
+    ]);
 
     // The user is told which name is taken, and is not stranded on this step.
     const notice = await screen.findByText(/already remembered/i);
@@ -162,7 +201,7 @@ describe("ImportClient: import choices are local by default", () => {
   });
 
   it("offers the save again once the user changes their mind", async () => {
-    mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
+    await aliasRepo.putRaw(danglingBackSquatAlias);
 
     const user = await chooseVersion("barbell-low-bar-squat");
     await user.click(rememberBox());
@@ -182,7 +221,7 @@ describe("ImportClient: import choices are local by default", () => {
     // The token is free at check time and taken by the time we write — the
     // race the store's own guard exists for. Losing a shortcut is acceptable;
     // losing the routine is not.
-    mockAliasSaveMany.mockRejectedValue(new Error("ConstraintError"));
+    saveManySpy.mockRejectedValue(new Error("ConstraintError"));
 
     const user = await chooseVersion("barbell-low-bar-squat");
     await user.click(rememberBox());
@@ -192,7 +231,7 @@ describe("ImportClient: import choices are local by default", () => {
     expect(
       collectNamed(savedProgram(), "Back Squat").map((e) => e.canonicalExerciseId),
     ).toEqual(Array(8).fill("barbell-low-bar-squat"));
-    expect(mockAliasSaveMany).toHaveBeenCalledTimes(1);
+    expect(saveManySpy).toHaveBeenCalledTimes(1);
 
     const notice = await screen.findByText(/routine is saved/i);
     expect(notice).toBeInTheDocument();
@@ -214,7 +253,8 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
 
     await waitFor(() => expect(screen.getByText(/QuotaExceededError/)).toBeInTheDocument());
     expect(mockSaveProgram).toHaveBeenCalledTimes(1);
-    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+    expect(saveManySpy).not.toHaveBeenCalled();
+    expect(await storedAliases()).toEqual([]);
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
@@ -238,14 +278,15 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
 
     await reviewAndSave(user);
     await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
-    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+    expect(saveManySpy).not.toHaveBeenCalled();
+    expect(await storedAliases()).toEqual([]);
   });
 
   it("re-validating the same paste updates one program instead of creating a second", async () => {
     // The conflict path deliberately does not navigate away, so the user can
     // walk back to the paste step and validate again. That reparses with a
     // fresh program id, which used to leave two documents for one routine.
-    mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
+    await aliasRepo.putRaw(danglingBackSquatAlias);
 
     const user = await chooseVersion("barbell-low-bar-squat");
     await user.click(rememberBox());
