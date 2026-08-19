@@ -303,6 +303,38 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
     expect(second.id).toBe(first.id);
   });
 
+  // The inverse of the test above, and the one that matters for data safety:
+  // reusing the saved id is a WRITE OVER an existing document, so the rule that
+  // decides when to reuse it has to be pinned in both directions. IndexedDB is
+  // the user's only copy — silently replacing routine A with routine B is
+  // permanent loss of A. Two guards block it (handleValidate clears the id when
+  // the text changed, handleSave re-checks it); with both loosened the whole
+  // suite stayed green, which is why this test exists.
+  it("saves a different paste as a new routine instead of overwriting the first", async () => {
+    await aliasRepo.putRaw(danglingBackSquatAlias);
+
+    const user = await chooseVersion("barbell-low-bar-squat");
+    await user.click(rememberBox());
+    await reviewAndSave(user);
+    await screen.findByRole("button", { name: /open program/i });
+
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.selectOptions(
+      await pasteAndValidate(user, fourWeekJson),
+      "barbell-high-bar-squat",
+    );
+    await reviewAndSave(user);
+
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(2));
+    const [first, second] = mockSaveProgram.mock.calls.map(([program]) => program as ProgramDocument);
+    // The routines really are different, so "same id" would mean the first is
+    // gone rather than merely re-saved.
+    expect(first.title).not.toBe(second.title);
+    expect(second.title).toBe("Four weeks, one squat");
+    expect(second.id).not.toBe(first.id);
+  });
+
   it("counts stored exercises in the confirm summary, not occurrence paths", async () => {
     const user = await chooseVersion("barbell-high-bar-squat", fourWeekJson);
     await user.click(screen.getByRole("button", { name: /review import/i }));
