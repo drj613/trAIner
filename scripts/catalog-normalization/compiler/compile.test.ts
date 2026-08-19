@@ -360,7 +360,19 @@ test.each([
   })).rejects.toThrow(expected);
 });
 
-test("complete builds reject disambiguation candidates missing from the final catalogue", async () => {
+type ShippedRule = {
+  kind: string;
+  movementId?: string;
+  matchedModifierIds?: string[];
+  candidateExerciseIds?: string[];
+};
+
+// Copies the REAL curation inputs into a temp root so the cross-reference check
+// runs against the shipped manifests, then hands the caller the first shipped
+// underspecified rule to corrupt. Returns the root to compile from.
+async function withCorruptedShippedRule(
+  corrupt: (rule: ShippedRule) => void,
+): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "catalog-disambiguation-xref-"));
   const inputs = [
     "scripts/catalog-normalization/catalog-v1.snapshot.json",
@@ -379,20 +391,42 @@ test("complete builds reject disambiguation candidates missing from the final ca
   await Promise.all(inputs.map(async (rel) => writeFile(join(root, rel), await readFile(rel))));
 
   const manifestPath = join(root, "scripts/catalog-normalization/disambiguations.json");
-  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
-    records: Array<{ kind: string; candidateExerciseIds?: string[] }>;
-  };
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as { records: ShippedRule[] };
   const rule = manifest.records.find((record) => record.kind === "underspecified-name");
   if (!rule?.candidateExerciseIds) throw new Error("expected a shipped underspecified rule to corrupt");
-  rule.candidateExerciseIds.push("this-exercise-does-not-exist");
+  corrupt(rule);
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return root;
+}
+
+// All three id kinds a rule points at are validated at `stage: "complete"`, and
+// all three need their own case: with only the exercise row committed, deleting
+// either the movement or the modifier branch left the whole suite green.
+test.each([
+  {
+    kind: "exercise",
+    corrupt: (rule: ShippedRule) => rule.candidateExerciseIds?.push("this-exercise-does-not-exist"),
+    expected: "references unknown exercise: this-exercise-does-not-exist",
+  },
+  {
+    kind: "movement",
+    corrupt: (rule: ShippedRule) => { rule.movementId = "this-movement-does-not-exist"; },
+    expected: "references unknown movement: this-movement-does-not-exist",
+  },
+  {
+    kind: "modifier",
+    corrupt: (rule: ShippedRule) => { rule.matchedModifierIds = ["this-modifier-does-not-exist"]; },
+    expected: "references unknown modifier: this-modifier-does-not-exist",
+  },
+])("complete builds reject a disambiguation rule naming an unknown $kind", async ({ corrupt, expected }) => {
+  const root = await withCorruptedShippedRule(corrupt);
 
   await expect(compileCatalog({
     rootDir: root,
     catalogOutputDir: join(root, "tmp-catalog"),
     reportOutputPath: join(root, "tmp-report.json"),
     stage: "complete",
-  })).rejects.toThrow("references unknown exercise: this-exercise-does-not-exist");
+  })).rejects.toThrow(expected);
 });
 
 test("reports near duplicates for review without automatically merging them", async () => {
