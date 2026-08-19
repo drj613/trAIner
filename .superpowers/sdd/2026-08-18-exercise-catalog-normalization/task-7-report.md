@@ -805,4 +805,54 @@ now; nothing in my lane contributed to either.
 4. **The I-3 test** — whether restoring the same document twice in one test is
    the clearest way to show the alias is the sole cause.
 
+---
+
+# Closing note (fix round 3)
+
+One commit, `956c349` — `test: pin the unrecognized-provenance scope branch`.
+
+**m-B — the one with teeth.** `!!alias.provenance` in place of
+`alias.provenance === "legacy-auto"` left the lane at 306/306, and it is the
+simplification a future reader reaches for: any string would then stand in for a
+real classification, reopening the v2 smuggle path `1fdacdf` closed. The existing
+unrecognized-value case could not reach the branch — it uses a **v1** file, where
+the scope is `"all"` and the branch never fires. One test in the scope describe
+closes it. Mutation: **1 failed, 256 passed** (`re-runs the rules over a row whose
+provenance is unrecognized`).
+
+**m-A — the false measurement, removed.** The `bodyweight` comment claimed the
+trailing write makes first-cause-wins load-bearing. It does not: that AbortError
+arrives a tick after the throw, which is precisely why `??=` → `=` is green. The
+comment now says what the fixture actually does — demonstrates the shape — points
+at `backup.ts`'s measurement, and states that the guard is kept for an ordering
+the IndexedDB spec does not pin and this harness cannot reproduce. Two comments
+disagreeing about one measurement was the right thing to flag; in a lane whose
+whole discipline is "comments state measured facts", that is the defect, not the
+prose.
+
+**m-C — four words.** "every row in a version-2 file" → "every version-2 row that
+carries a provenance". A provenance-less v2 row is still classified.
+
+## Gates
+
+```text
+$ bun run test -- --runInBand src/lib/storage src/lib/backup src/lib/catalog
+Test Suites: 18 passed, 18 total
+Tests:       307 passed, 307 total
+
+$ bun run typecheck
+(clean)
+
+$ bun run lint
+(clean)
+
+$ git diff --check
+(clean)
+```
+
+Repo-wide deliberately not run: three other agents are mid-flight in
+`src/components/`, `src/lib/import/`, and `src/main.tsx`.
+
+Lane closed.
+
 DONE
