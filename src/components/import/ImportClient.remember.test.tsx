@@ -194,21 +194,21 @@ describe("ImportClient: import choices are local by default", () => {
     await user.click(rememberBox());
     await reviewAndSave(user);
 
+    // Navigation happens only after the alias write has resolved, so waiting
+    // for it means storage can then be read directly rather than polled.
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
     // Exactly one bulk write — one transaction, one identity event — and the
     // row that actually landed, including the token the store derived for it.
-    await waitFor(() => expect(saveManySpy).toHaveBeenCalledTimes(1));
-    await waitFor(async () =>
-      expect(await storedAliases()).toEqual([
-        {
-          alias: "Back Squat",
-          normalizedAlias: "back squat",
-          canonicalExerciseId: "barbell-low-bar-squat",
-          provenance: "remembered",
-        },
-      ]),
-    );
+    expect(saveManySpy).toHaveBeenCalledTimes(1);
+    expect(await storedAliases()).toEqual([
+      {
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "barbell-low-bar-squat",
+        provenance: "remembered",
+      },
+    ]);
     expect(mockSaveProgram).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
   });
 
   it("keeps the import when a remembered name is already taken", async () => {

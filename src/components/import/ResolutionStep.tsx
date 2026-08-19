@@ -264,7 +264,11 @@ function GroupCard({
   // A tick that could never take effect is not offered. Deliberately NOT folded
   // into `rememberableTarget`: that value also drives the version selector, and
   // blanking it there would break the choice itself rather than the shortcut.
-  const unrememberable = unrememberableReason(displayName);
+  //
+  // Memoized on the name because `prepareImportName` compiles one regex per
+  // phrase rule, and the search box's state lives in the parent — so without
+  // this every card recompiles the whole rule set on every keystroke.
+  const unrememberable = useMemo(() => unrememberableReason(displayName), [displayName]);
   const chosen = new Set(
     group.occurrences.map((o) => resolutions[o.path]).filter((id) => Boolean(id)),
   );
