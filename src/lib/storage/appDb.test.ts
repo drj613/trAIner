@@ -1870,6 +1870,64 @@ describe("restoreBackup — version-2 documents", () => {
     await expect(userExerciseRepo.list()).resolves.toEqual([customExercise]);
   });
 
+  // The sync-throw test above probes the branch that is easiest to reach. The
+  // class this plan's own comments call the database-bricking one is different: a
+  // request the store accepts and then rejects *asynchronously*, which is what
+  // the unique by-normalized-alias index does to a colliding write. The upgrade
+  // path has a test for it; the restore path had none.
+  it("aborts and reports the real cause when a write is rejected asynchronously", async () => {
+    await programRepo.save(demoProgram);
+    const before = await programRepo.list();
+    const exported = await exportBackup();
+
+    // Force two distinct aliases onto one token, so the second put is rejected by
+    // the unique index rather than throwing.
+    const originalPut = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function patchedPut(
+      this: IDBObjectStore,
+      value: unknown,
+      ...rest: unknown[]
+    ) {
+      const forced = this.name === "aliases"
+        ? { ...(value as Record<string, unknown>), normalizedAlias: "one token for both" }
+        : value;
+      return (originalPut as (...args: unknown[]) => IDBRequest<IDBValidKey>)
+        .call(this, forced, ...rest);
+    } as typeof IDBObjectStore.prototype.put;
+
+    try {
+      // A support-ticket detail, not a nicety: "AbortError" tells a user with a
+      // possibly-only copy of their data nothing at all about why it would not
+      // restore. The rollback is what aborts, so the abort must not become the
+      // reported cause.
+      await expect(restoreBackup({
+        ...exported,
+        // Written *after* the aliases, so the abort rejects it too. That makes
+        // "keep the first cause" load-bearing: a last-one-wins capture would
+        // report this request's AbortError instead of the constraint violation.
+        bodyweight: [{
+          id: "2026-08-18", value: 80, unit: "kg", recordedAt: "2026-08-18T00:00:00.000Z",
+        }],
+        aliases: [
+          {
+            id: "a1", alias: "My Squat", normalizedAlias: "my squat",
+            canonicalExerciseId: "goblet-squat", provenance: "remembered",
+            createdAt: "2026-08-18T00:00:00.000Z",
+          },
+          {
+            id: "a2", alias: "My Pull", normalizedAlias: "my pull",
+            canonicalExerciseId: "pull-up", provenance: "remembered",
+            createdAt: "2026-08-18T00:00:00.000Z",
+          },
+        ],
+      })).rejects.toMatchObject({ name: "ConstraintError" });
+    } finally {
+      IDBObjectStore.prototype.put = originalPut;
+    }
+
+    await expect(programRepo.list()).resolves.toEqual(before);
+  });
+
   it("leaves the existing workspace intact when the document is rejected", async () => {
     await programRepo.save(demoProgram);
     const before = await programRepo.list();

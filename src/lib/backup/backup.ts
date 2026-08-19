@@ -355,24 +355,43 @@ export async function restoreBackup(backup: unknown): Promise<void> {
 
   // idb turns every request into a promise. The individual writes are
   // deliberately not awaited — `tx.done` is the authoritative outcome, and a
-  // failed request aborts its own transaction — so each rejection is marked
-  // handled as it is issued. Without this, aborting below turns every in-flight
-  // request into a separate unhandled AbortError.
-  const issue = (request: Promise<unknown>): void => {
-    void request.catch(() => {});
+  // failed request aborts its own transaction — so each rejection is handled as
+  // it is issued. Without that, aborting below turns every in-flight request
+  // into a separate unhandled AbortError.
+  //
+  // Handled, not discarded: the first rejection is *kept*, because it is the only
+  // place the real cause exists. `tx.done` then rejects with the AbortError from
+  // the rollback, and reporting that to a user whose only copy of their data will
+  // not restore is a support dead-end. Same recipe as the upgrade callback's
+  // `upgradeError ??= error`, and `??=` for the same reason: the abort must not
+  // overwrite what caused it. Measured under fake-indexeddb, `=` would behave
+  // identically — the AbortError rejections of requests queued behind the failing
+  // one arrive a tick *after* `tx.done` rejects, so nothing overwrites anything
+  // before the throw. That ordering is not something to depend on across engines,
+  // and first-cause-wins costs one character.
+  //
+  // The name carries an invariant the type cannot: pass it object-store requests
+  // only. Any promise would type-check, and handing it something like a
+  // validation call would silently swallow that failure and let the clears
+  // commit.
+  let writeError: unknown;
+  const issueTransactionWrite = (request: Promise<IDBValidKey | void>): void => {
+    void request.catch((error: unknown) => {
+      writeError ??= error;
+    });
   };
 
   try {
-    for (const store of BACKED_UP_STORES) issue(tx.objectStore(store).clear());
+    for (const store of BACKED_UP_STORES) issueTransactionWrite(tx.objectStore(store).clear());
 
-    if (b.profile) issue(tx.objectStore("profile").put(b.profile));
-    for (const p of programs) issue(tx.objectStore("programs").put(p));
-    for (const l of logs) issue(tx.objectStore("logs").put(l));
-    for (const a of aliases) issue(tx.objectStore("aliases").put(a));
-    for (const ue of b.userExercises ?? []) issue(tx.objectStore("userExercises").put(ue));
-    for (const e of b.bodyweight ?? []) issue(tx.objectStore("bodyweight").put(e));
-    for (const p of b.promptPresets ?? []) issue(tx.objectStore("promptPresets").put(p));
-    for (const o of normalizationOverrides) issue(tx.objectStore("normalizationOverrides").put(o));
+    if (b.profile) issueTransactionWrite(tx.objectStore("profile").put(b.profile));
+    for (const p of programs) issueTransactionWrite(tx.objectStore("programs").put(p));
+    for (const l of logs) issueTransactionWrite(tx.objectStore("logs").put(l));
+    for (const a of aliases) issueTransactionWrite(tx.objectStore("aliases").put(a));
+    for (const ue of b.userExercises ?? []) issueTransactionWrite(tx.objectStore("userExercises").put(ue));
+    for (const e of b.bodyweight ?? []) issueTransactionWrite(tx.objectStore("bodyweight").put(e));
+    for (const p of b.promptPresets ?? []) issueTransactionWrite(tx.objectStore("promptPresets").put(p));
+    for (const o of normalizationOverrides) issueTransactionWrite(tx.objectStore("normalizationOverrides").put(o));
 
     await tx.done;
   } catch (error) {
@@ -389,7 +408,11 @@ export async function restoreBackup(backup: unknown): Promise<void> {
       // Already finished — a failed request aborts its own transaction, and
       // abort() on a finished transaction throws.
     }
-    throw error;
+    // The request's own error, when there was one: `error` here is whatever
+    // `await tx.done` rejected with, which after a rollback is the AbortError the
+    // rollback itself produced. Falls back to `error` for the synchronous-throw
+    // path, where no request ever failed.
+    throw writeError ?? error;
   }
   // After the commit, never before: a listener that re-reads identity must not
   // see a half-cleared workspace. One event for the whole restore.
