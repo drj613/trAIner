@@ -17,6 +17,13 @@ export type ExerciseSessionRow = {
  * `rawCell` is read through `readableText` because a stored value that is not a
  * string is unreadable, not a label: dereferencing it threw out of both history
  * surfaces. Any readable weight and reps beside it still get their label.
+ *
+ * `weight` and `reps` are deliberately NOT guarded here, only in the arithmetic:
+ * a label shows what is stored (an unreadable weight renders as its text, e.g.
+ * `"[object Object]x5"`) while the volume refuses to invent a number and reads 0.
+ * The one rough edge is a stored `NaN` weight, which `!s.weight` reads as absent
+ * and labels `"BWx5"` — bodyweight it is not. Rendering a marker for unreadable
+ * set content is a display decision and belongs to the history UI, not here.
  */
 export function formatSetLabel(s: WorkoutSetLog, sep: string = "x"): string {
   const rawCell = readableText(s.rawCell);
