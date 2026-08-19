@@ -1,34 +1,70 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { exerciseCatalog } from "@/lib/catalog/exercises";
 import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
-import { CUSTOM_ID, type ResolutionItem } from "@/lib/import/resolution";
-import type { UserExerciseDocument } from "@/lib/programs/types";
+import {
+  CUSTOM_ID,
+  rememberableTarget,
+  type ResolutionGroup,
+  type ResolutionItem,
+} from "@/lib/import/resolution";
+import type { ExerciseSuggestion, UserExerciseDocument } from "@/lib/programs/types";
+
+type SearchResult = { id: string; name: string; isUser: boolean };
+
+// One search box's worth of plumbing, keyed by an arbitrary string so the same
+// machinery serves a whole group and a single occurrence path.
+type SearchBundle = {
+  query: (key: string) => string;
+  onQueryChange: (key: string, query: string) => void;
+  results: (query: string) => SearchResult[];
+  onCreate: (key: string, paths: string[], name: string) => Promise<void>;
+  isAdding: (key: string) => boolean;
+};
 
 type Props = {
   items: ResolutionItem[];
+  groups: ResolutionGroup[];
+  /**
+   * groupKey -> how many STORED exercises this group's decision changes. Not
+   * the occurrence-path count: a base-day path expands into one stored
+   * exercise per week-clone (see storedOccurrenceCounts).
+   */
+  storedCounts: Record<string, number>;
   resolutions: Record<string, string>;
+  /** groupKey -> the user explicitly ticked "Remember this interpretation". */
+  remembered: Record<string, boolean>;
   userExercises: UserExerciseDocument[];
   onChange: (path: string, canonicalId: string) => void;
-  onAddToUserCatalog: (path: string, name: string) => Promise<void>;
+  onRememberChange: (groupKey: string, remember: boolean) => void;
+  onAddToUserCatalog: (paths: string[], name: string) => Promise<void>;
   onBack: () => void;
   onNext: () => void;
 };
 
 export function ResolutionStep({
   items,
+  groups,
+  storedCounts,
   resolutions,
+  remembered,
   userExercises,
   onChange,
+  onRememberChange,
   onAddToUserCatalog,
   onBack,
   onNext,
 }: Props) {
-  const [autoExpanded, setAutoExpanded] = useState(false);
   const [searchState, setSearchState] = useState<Record<string, string>>({});
   const [adding, setAdding] = useState<Set<string>>(new Set());
+  const [separated, setSeparated] = useState<Set<string>>(new Set());
+
+  const itemsByPath = useMemo(
+    () => new Map(items.map((item) => [item.path, item])),
+    [items],
+  );
 
   const resolved = useMemo(
     () => items.filter((i) => resolutions[i.path] && resolutions[i.path] !== CUSTOM_ID),
@@ -56,7 +92,7 @@ export function ResolutionStep({
     return userItem?.name ?? id;
   }
 
-  function getSearchResults(query: string) {
+  function getSearchResults(query: string): SearchResult[] {
     if (!query.trim()) return [];
     const q = normalizeExerciseName(query);
     const catalogResults = exerciseCatalog
@@ -73,18 +109,30 @@ export function ResolutionStep({
     return [...userResults, ...catalogResults].slice(0, 6);
   }
 
-  async function handleCreate(path: string, name: string) {
-    setAdding((prev) => new Set([...prev, path]));
+  async function handleCreate(key: string, paths: string[], name: string) {
+    setAdding((prev) => new Set([...prev, key]));
     try {
-      await onAddToUserCatalog(path, name);
-      setSearchState((prev) => ({ ...prev, [path]: "" }));
+      await onAddToUserCatalog(paths, name);
+      setSearchState((prev) => ({ ...prev, [key]: "" }));
     } finally {
       setAdding((prev) => {
         const next = new Set(prev);
-        next.delete(path);
+        next.delete(key);
         return next;
       });
     }
+  }
+
+  const search: SearchBundle = {
+    query: (key) => searchState[key] ?? "",
+    onQueryChange: (key, query) => setSearchState((prev) => ({ ...prev, [key]: query })),
+    results: getSearchResults,
+    onCreate: handleCreate,
+    isAdding: (key) => adding.has(key),
+  };
+
+  function clearQuery(key: string) {
+    setSearchState((prev) => ({ ...prev, [key]: "" }));
   }
 
   return (
@@ -117,107 +165,36 @@ export function ResolutionStep({
         </div>
       </div>
 
-      {/* Pending items */}
-      {pending.length > 0 && (
-        <div className="stack">
-          <p className="tx-up text-[10px]">Needs attention</p>
-          {pending.map((item) => (
-            <PendingCard
-              key={item.path}
-              item={item}
-              searchQuery={searchState[item.path] ?? ""}
-              onSearchChange={(q) =>
-                setSearchState((prev) => ({ ...prev, [item.path]: q }))
-              }
-              searchResults={getSearchResults(searchState[item.path] ?? "")}
-              onSelect={(id) => {
-                onChange(item.path, id);
-                setSearchState((prev) => ({ ...prev, [item.path]: "" }));
-              }}
-              onKeepCustom={() => {
-                onChange(item.path, CUSTOM_ID);
-                setSearchState((prev) => ({ ...prev, [item.path]: "" }));
-              }}
-              onCreate={(name) => handleCreate(item.path, name)}
-              adding={adding.has(item.path)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Auto-resolved items */}
-      {resolved.length > 0 && (
-        <div className="stack">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 tx-up text-[10px]"
-            aria-expanded={autoExpanded}
-            onClick={() => setAutoExpanded((v) => !v)}
-          >
-            {autoExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-            Auto-resolved ({resolved.length})
-          </button>
-          {autoExpanded &&
-            resolved.map((item) => (
-              <div key={item.path} className="panel flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs muted tx-mono">imported</p>
-                  <p className="text-sm font-semibold">{item.rawName}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <p className="text-xs muted tx-mono">resolved to</p>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    {toTitleCase(getResolvedName(item.path))}
-                  </p>
-                  <button
-                    type="button"
-                    className="text-[11px] muted underline"
-                    onClick={() => onChange(item.path, "")}
-                  >
-                    change
-                  </button>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* Custom items */}
-      {custom.length > 0 && (
-        <div
-          className="panel"
-          style={{ background: "var(--bg-2)", borderStyle: "dashed" }}
-        >
-          <p className="tx-up text-[10px] mb-1">
-            Importing as custom (no history tracking)
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {custom.map((item) => (
-              <span
-                key={item.path}
-                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
-              >
-                {item.rawName}
-                <button
-                  type="button"
-                  title="Map to catalog"
-                  onClick={() => onChange(item.path, "")}
-                  style={{ color: "var(--fg-4)" }}
-                >
-                  <X size={10} />
-                </button>
-              </span>
-            ))}
-          </div>
-          <p className="text-[10px] muted mt-1">
-            Click × on any exercise above to map it to the catalog instead.
-          </p>
-        </div>
-      )}
+      {/* One decision per repeated name. Every group stays on screen after it
+          is decided: the selector doubles as the change affordance, and
+          `Remember this interpretation` is only reachable once a version has
+          been chosen. */}
+      <div className="stack">
+        {groups.map((group) => (
+          <GroupCard
+            key={group.groupKey}
+            group={group}
+            storedCount={storedCounts[group.groupKey]}
+            itemsByPath={itemsByPath}
+            resolutions={resolutions}
+            remembered={remembered[group.groupKey] ?? false}
+            resolvedName={getResolvedName}
+            onChange={onChange}
+            onRememberChange={onRememberChange}
+            onClearQuery={clearQuery}
+            search={search}
+            separated={separated.has(group.groupKey)}
+            onToggleSeparate={() =>
+              setSeparated((prev) => {
+                const next = new Set(prev);
+                if (next.has(group.groupKey)) next.delete(group.groupKey);
+                else next.add(group.groupKey);
+                return next;
+              })
+            }
+          />
+        ))}
+      </div>
 
       {/* Navigation */}
       <div className="flex gap-2">
@@ -237,147 +214,363 @@ export function ResolutionStep({
   );
 }
 
-type PendingCardProps = {
-  item: ResolutionItem;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  searchResults: { id: string; name: string; isUser: boolean }[];
-  onSelect: (id: string) => void;
-  onKeepCustom: () => void;
-  onCreate: (name: string) => Promise<void>;
-  adding: boolean;
+type GroupCardProps = {
+  group: ResolutionGroup;
+  storedCount: number | undefined;
+  itemsByPath: Map<string, ResolutionItem>;
+  resolutions: Record<string, string>;
+  remembered: boolean;
+  resolvedName: (path: string) => string;
+  onChange: (path: string, canonicalId: string) => void;
+  onRememberChange: (groupKey: string, remember: boolean) => void;
+  onClearQuery: (key: string) => void;
+  search: SearchBundle;
+  separated: boolean;
+  onToggleSeparate: () => void;
 };
 
-function PendingCard({
-  item,
-  searchQuery,
-  onSearchChange,
-  searchResults,
-  onSelect,
-  onKeepCustom,
-  onCreate,
-  adding,
-}: PendingCardProps) {
-  const showCreate = searchQuery.trim().length > 0 && searchResults.length === 0;
+/**
+ * One decision for every occurrence of a repeated name. Selecting a version
+ * fans out to each occurrence's own path — the paths stay authoritative, so
+ * `applyResolutions` keeps its name/path guards and a grouped choice cannot
+ * bypass them.
+ *
+ * `Remember this interpretation` starts unticked on purpose: a choice made here
+ * is local to this import, and only an explicit tick persists a global alias.
+ */
+function GroupCard({
+  group,
+  storedCount,
+  itemsByPath,
+  resolutions,
+  remembered,
+  resolvedName,
+  onChange,
+  onRememberChange,
+  onClearQuery,
+  search,
+  separated,
+  onToggleSeparate,
+}: GroupCardProps) {
+  const displayName = group.occurrences[0].rawName;
+  const firstItem = itemsByPath.get(group.occurrences[0].path);
+  const candidates = group.occurrences[0].candidates;
+  // Reviewed candidate versions are a closed list, so they get a selector.
+  // An unmatched name has only fuzzy suggestions, which stay suggestion-only
+  // and keep the search/create affordances.
+  const isVersionChoice = group.kind === "underspecified" && candidates.length > 0;
+  const target = rememberableTarget(group, resolutions);
+  const chosen = new Set(
+    group.occurrences.map((o) => resolutions[o.path]).filter((id) => Boolean(id)),
+  );
+  const isSplit = chosen.size > 1;
+  const paths = group.occurrences.map((o) => o.path);
+  const decided = group.occurrences.every((o) => Boolean(resolutions[o.path]));
+  const allCustom = group.occurrences.every((o) => resolutions[o.path] === CUSTOM_ID);
+
+  function fanOut(canonicalId: string) {
+    for (const path of paths) onChange(path, canonicalId);
+    onClearQuery(group.groupKey);
+  }
 
   return (
-    <div className="panel stack">
+    <div
+      className="panel stack"
+      style={decided ? { background: "var(--bg-2)" } : undefined}
+    >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs muted tx-mono">imported · {item.sectionType}</p>
-          <p className="text-sm font-semibold">{item.rawName}</p>
+          <p className="text-xs muted tx-mono">
+            imported · {firstItem?.sectionType ?? "strength"}
+          </p>
+          <p className="text-sm font-semibold">{displayName}</p>
         </div>
-        <button
-          type="button"
-          className="button secondary shrink-0"
-          style={{ fontSize: "0.7rem", padding: "2px 8px" }}
-          onClick={onKeepCustom}
-        >
-          Keep as custom
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {storedCount !== undefined && storedCount > 1 && (
+            <span className="text-xs muted tx-mono">used {storedCount} times</span>
+          )}
+          <button
+            type="button"
+            className="button secondary shrink-0"
+            style={{ fontSize: "0.7rem", padding: "2px 8px" }}
+            onClick={() => fanOut(allCustom ? "" : CUSTOM_ID)}
+          >
+            {allCustom ? "Map to catalog" : "Keep as custom"}
+          </button>
+        </div>
       </div>
 
-      {item.suggestions.length > 0 && (
-        <div className="stack">
-          <p className="tx-up text-[10px]">Suggestions</p>
-          {item.suggestions.map((s) => (
+      {allCustom ? (
+        <p className="text-xs muted">Imported as custom — no history tracking.</p>
+      ) : (
+        <>
+          {isVersionChoice && (
+            <VersionSelect
+              label={`Choose version for ${displayName}`}
+              candidates={candidates}
+              value={target}
+              onSelect={fanOut}
+            />
+          )}
+
+          {!isVersionChoice && decided && !isSplit && (
+            <p className="text-xs">
+              <span className="muted tx-mono">resolved to </span>
+              <span className="font-semibold" style={{ color: "var(--accent)" }}>
+                {toTitleCase(resolvedName(paths[0]))}
+              </span>
+            </p>
+          )}
+
+          {!isVersionChoice && !decided && (firstItem?.suggestions.length ?? 0) > 0 && (
+            <div className="stack">
+              <p className="tx-up text-[10px]">Suggestions</p>
+              {firstItem?.suggestions.map((s) => (
+                <SuggestionRow key={s.exerciseId} suggestion={s} onSelect={fanOut} />
+              ))}
+            </div>
+          )}
+
+          {!decided && (
+            <SearchPicker
+              searchKey={group.groupKey}
+              paths={paths}
+              search={search}
+              onSelect={fanOut}
+            />
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <label className="flex items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={remembered && target !== undefined}
+                disabled={target === undefined}
+                onChange={(e) => onRememberChange(group.groupKey, e.target.checked)}
+              />
+              Remember this interpretation
+            </label>
+            <div className="flex items-center gap-2 shrink-0">
+              {decided && !isVersionChoice && (
+                <button
+                  type="button"
+                  className="text-[11px] muted underline"
+                  onClick={() => fanOut("")}
+                >
+                  change
+                </button>
+              )}
+              {group.occurrenceCount > 1 && (
+                <button
+                  type="button"
+                  className="text-[11px] muted underline"
+                  aria-expanded={separated}
+                  onClick={onToggleSeparate}
+                >
+                  Resolve occurrences separately
+                </button>
+              )}
+            </div>
+          </div>
+          {isSplit && (
+            <p className="text-[10px] muted">
+              Different versions chosen — can't be remembered.
+            </p>
+          )}
+        </>
+      )}
+
+      {separated && (
+        <div className="stack" style={{ gap: 4 }}>
+          <p className="tx-up text-[10px]">Occurrences</p>
+          {group.occurrences.map((occurrence) =>
+            isVersionChoice ? (
+              <div key={occurrence.path} className="flex items-center gap-2">
+                <span
+                  className="text-[11px] muted tx-mono flex-1 truncate"
+                  title={occurrence.path}
+                >
+                  {occurrence.path}
+                </span>
+                <VersionSelect
+                  label={`Choose version for ${displayName} at ${occurrence.path}`}
+                  candidates={candidates}
+                  value={resolutions[occurrence.path]}
+                  onSelect={(id) => onChange(occurrence.path, id)}
+                  compact
+                />
+              </div>
+            ) : (
+              <div key={occurrence.path} className="stack" style={{ gap: 4 }}>
+                <span
+                  className="text-[11px] muted tx-mono truncate"
+                  title={occurrence.path}
+                >
+                  {occurrence.path}
+                </span>
+                <SearchPicker
+                  searchKey={occurrence.path}
+                  paths={[occurrence.path]}
+                  search={search}
+                  onSelect={(id) => {
+                    onChange(occurrence.path, id);
+                    onClearQuery(occurrence.path);
+                  }}
+                />
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VersionSelect({
+  label,
+  candidates,
+  value,
+  onSelect,
+  compact = false,
+}: {
+  label: string;
+  candidates: ExerciseSuggestion[];
+  value: string | undefined;
+  onSelect: (canonicalId: string) => void;
+  compact?: boolean;
+}) {
+  const known = candidates.some((c) => c.exerciseId === value);
+  return (
+    <select
+      aria-label={label}
+      className="input"
+      style={compact ? { padding: "2px 6px", fontSize: "0.7rem", width: "auto" } : undefined}
+      value={known ? value : ""}
+      onChange={(e) => onSelect(e.target.value)}
+    >
+      <option value="">Choose version…</option>
+      {candidates.map((candidate) => (
+        <option key={candidate.exerciseId} value={candidate.exerciseId}>
+          {toTitleCase(candidate.name)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function SuggestionRow({
+  suggestion,
+  onSelect,
+}: {
+  suggestion: ExerciseSuggestion;
+  onSelect: (canonicalId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
+      style={{ background: "var(--bg-2)", borderColor: "var(--line)" }}
+      onClick={() => onSelect(suggestion.exerciseId)}
+    >
+      <span className="font-mono text-[11px] shrink-0" style={{ color: "var(--fg-3)" }}>
+        ○
+      </span>
+      <span className="flex-1">{toTitleCase(suggestion.name)}</span>
+      <span
+        className="text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0"
+        style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
+      >
+        {Math.round(suggestion.score * 100)}%
+      </span>
+    </button>
+  );
+}
+
+function SearchPicker({
+  searchKey,
+  paths,
+  search,
+  onSelect,
+}: {
+  searchKey: string;
+  paths: string[];
+  search: SearchBundle;
+  onSelect: (canonicalId: string) => void;
+}) {
+  const query = search.query(searchKey);
+  const results = search.results(query);
+  const adding = search.isAdding(searchKey);
+  const showCreate = query.trim().length > 0 && results.length === 0;
+
+  return (
+    <div className="stack">
+      <div
+        className="flex items-center gap-2 rounded px-2 py-1.5"
+        style={{ background: "var(--bg-2)", border: "1px solid var(--line)" }}
+      >
+        <Search size={12} style={{ color: "var(--fg-3)", flexShrink: 0 }} />
+        <input
+          className="flex-1 bg-transparent outline-none text-xs"
+          placeholder="Search catalog…"
+          value={query}
+          onChange={(e) => search.onQueryChange(searchKey, e.target.value)}
+        />
+        {query && (
+          <button type="button" onClick={() => search.onQueryChange(searchKey, "")}>
+            <X size={11} style={{ color: "var(--fg-3)" }} />
+          </button>
+        )}
+      </div>
+      {query && results.length > 0 && (
+        <div
+          className="rounded flex flex-col gap-1"
+          style={{
+            background: "var(--bg-3)",
+            border: "1px solid var(--line)",
+            padding: "4px",
+          }}
+        >
+          {results.map((r) => (
             <button
-              key={s.exerciseId}
+              key={r.id}
               type="button"
               className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
-              style={{ background: "var(--bg-2)", borderColor: "var(--line)" }}
-              onClick={() => onSelect(s.exerciseId)}
+              style={{ background: "var(--bg-1)", borderColor: "var(--line)" }}
+              onClick={() => onSelect(r.id)}
             >
-              <span
-                className="font-mono text-[11px] shrink-0"
-                style={{ color: "var(--fg-3)" }}
-              >
-                ○
-              </span>
-              <span className="flex-1">{toTitleCase(s.name)}</span>
-              <span
-                className="text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0"
-                style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
-              >
-                {Math.round(s.score * 100)}%
-              </span>
+              <span className="flex-1">{toTitleCase(r.name)}</span>
+              {r.isUser && (
+                <span
+                  className="text-[10px] px-1 rounded font-mono shrink-0"
+                  style={{
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
+                  }}
+                >
+                  yours
+                </span>
+              )}
             </button>
           ))}
         </div>
       )}
-
-      {/* Inline search */}
-      <div className="stack">
-        <div
-          className="flex items-center gap-2 rounded px-2 py-1.5"
-          style={{ background: "var(--bg-2)", border: "1px solid var(--line)" }}
+      {showCreate && (
+        <button
+          type="button"
+          className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
+          style={{
+            background: "var(--bg-2)",
+            borderColor: "var(--line)",
+            borderStyle: "dashed",
+          }}
+          disabled={adding}
+          onClick={() => void search.onCreate(searchKey, paths, query.trim())}
         >
-          <Search size={12} style={{ color: "var(--fg-3)", flexShrink: 0 }} />
-          <input
-            className="flex-1 bg-transparent outline-none text-xs"
-            placeholder="Search catalog…"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-          {searchQuery && (
-            <button type="button" onClick={() => onSearchChange("")}>
-              <X size={11} style={{ color: "var(--fg-3)" }} />
-            </button>
-          )}
-        </div>
-        {searchQuery && searchResults.length > 0 && (
-          <div
-            className="rounded flex flex-col gap-1"
-            style={{
-              background: "var(--bg-3)",
-              border: "1px solid var(--line)",
-              padding: "4px",
-            }}
-          >
-            {searchResults.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
-                style={{ background: "var(--bg-1)", borderColor: "var(--line)" }}
-                onClick={() => onSelect(r.id)}
-              >
-                <span className="flex-1">{toTitleCase(r.name)}</span>
-                {r.isUser && (
-                  <span
-                    className="text-[10px] px-1 rounded font-mono shrink-0"
-                    style={{
-                      background: "var(--accent-soft)",
-                      color: "var(--accent)",
-                    }}
-                  >
-                    yours
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        {showCreate && (
-          <button
-            type="button"
-            className="flex items-center gap-2 text-left w-full px-2 py-1.5 rounded border text-xs transition-colors"
-            style={{
-              background: "var(--bg-2)",
-              borderColor: "var(--line)",
-              borderStyle: "dashed",
-            }}
-            disabled={adding}
-            onClick={() => onCreate(searchQuery.trim())}
-          >
-            <span className="flex-1">
-              {adding
-                ? "Creating…"
-                : `Create "${searchQuery.trim()}" as exercise`}
-            </span>
-          </button>
-        )}
-      </div>
+          <span className="flex-1">
+            {adding ? "Creating…" : `Create "${query.trim()}" as exercise`}
+          </span>
+        </button>
+      )}
     </div>
   );
 }
