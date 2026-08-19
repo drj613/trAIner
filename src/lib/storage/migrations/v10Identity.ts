@@ -398,6 +398,21 @@ export function classifyAliases(
     // — and 6 further entries through their aliases ("Farmer Carry with
     // 2-Second March Pauses", ...), so 77 entries in all it would have
     // wrongly unlinked.
+    //
+    // What this gate does NOT establish: that a retained legacy-auto row is
+    // redundant. It is redundant only *at the moment it is classified*, against
+    // the catalogue as it stands then — the token has one outcome, so the name
+    // resolves without the alias. Two things break that afterwards. The resolver
+    // consults `context.aliases` (identity.ts) *before* the underspecified
+    // disambiguation check and before catalogue name matching, so a row that is
+    // never re-classified — every row in a version-2 file, by the scope rule
+    // above — can override an ambiguity the catalogue has since acquired; and
+    // this plan regenerates the catalogue, so growth alone can turn a retained
+    // row into the only reason a name resolves. Measured: restoring a v2 file
+    // with one legacy-auto row for "Back Squat" resolves that slot to
+    // barbell-back-squat where no alias resolves it at all. So do not treat
+    // "drop every legacy-auto row" (at the September 30 compatibility removal,
+    // say) as safe on the grounds that they cannot matter. They can.
     const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
     if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
     claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });

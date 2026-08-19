@@ -1610,11 +1610,18 @@ describe("restoreBackup — version-1 compatibility on a current database", () =
     // otherwise-unknown "Mystery lift" slot a canonical id, so restoring with an
     // empty alias context leaves that slot unresolved and diverges.
     //
-    // It has to be a *remembered* row. A legacy one is only retained when its
-    // token already has exactly one concrete catalogue outcome — in which case
-    // the name would resolve without the alias, and the alias could never be the
-    // load-bearing input. So after v10 no legacy-auto alias can be the sole
-    // reason a name resolves; remembered ones can.
+    // It is a *remembered* row because that is the shape this fixture needs: a
+    // legacy row classified in this same pass is retained only when its token
+    // already has one concrete outcome, in which case the name resolves without
+    // it and the alias cannot be what the assertion below measures.
+    //
+    // That is a statement about rows classified *here*, and only at the moment
+    // they are classified — not a general property of legacy-auto rows. A row
+    // that arrives already classified (any row in a version-2 file, which the
+    // scope rule does not re-classify) can be the sole reason a name resolves,
+    // because the resolver consults context aliases before the underspecified
+    // check and before catalogue name matching. So can a row whose catalogue has
+    // grown since. An earlier version of this comment claimed otherwise.
     await v9.put("aliases", {
       id: "alias-mystery",
       alias: "Mystery lift",
@@ -1729,6 +1736,55 @@ describe("restoreBackup — version-2 documents", () => {
       normalizedAlias: "back squat",
       provenance: "legacy-auto",
     });
+  });
+
+  // Pins the corrected claim as behaviour, because the September 30
+  // compatibility removal will be tempted by "legacy-auto rows cannot matter, so
+  // drop them all". They can: this row is the only reason the slot resolves, and
+  // it is a legacy-auto row that no pass re-classifies.
+  it("lets a restored legacy-auto alias be the only reason a name resolves", async () => {
+    const programWithAmbiguousSlot = {
+      id: "p1",
+      title: "Restored routine",
+      days: [{
+        id: "day-1",
+        dayNumber: 1,
+        title: "Day 1",
+        sections: [{
+          id: "s1",
+          type: "strength" as const,
+          name: "Main",
+          groups: [{ id: "g1", type: "single" as const, exercises: [
+            { id: "slot-1", name: "Back Squat" },
+          ] }],
+        }],
+      }],
+      overrides: [],
+      createdAt: "2026-08-18T00:00:00.000Z",
+      updatedAt: "2026-08-18T00:00:00.000Z",
+    };
+    const document = (aliases: unknown[]) => ({
+      version: 2,
+      exportedAt: "2026-08-19T00:00:00.000Z",
+      programs: [programWithAmbiguousSlot],
+      logs: [],
+      aliases,
+      normalizationOverrides: [],
+    });
+
+    // Without the alias the catalogue leaves "back squat" underspecified.
+    await restoreBackup(document([]) as never);
+    await expect(readCanonicalIdForName("Back Squat")).resolves.toBeUndefined();
+
+    await restoreBackup(document([{
+      id: "alias-back-squat",
+      alias: "Back Squat",
+      normalizedAlias: "back squat",
+      canonicalExerciseId: "barbell-back-squat",
+      provenance: "legacy-auto",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    }]) as never);
+    await expect(readCanonicalIdForName("Back Squat")).resolves.toBe("barbell-back-squat");
   });
 
   it("round-trips normalization overrides and alias provenance", async () => {
