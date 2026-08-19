@@ -51,6 +51,26 @@ export function logLocalDate(log: { performedDate?: string; performedAt: string 
 }
 
 /**
+ * A stored timestamp as a sortable string, `""` when it is not text.
+ *
+ * `performedAt` and `completedAt` are typed `string` but nothing enforces it on
+ * the way in: `src/lib/storage/appDb.ts:186-195` never inspects them, so a
+ * hand-edited or foreign backup reaches the UI with a number or an object
+ * there. `b.performedAt.localeCompare(a.performedAt)` then threw on the day
+ * screen, and `(b.completedAt ?? b.performedAt).localeCompare(...)` threw
+ * inside the program page's week grid, where there is no error boundary — a
+ * render throw takes the whole page down.
+ *
+ * One function, not a guard per call site: two divergent copies of one rule is
+ * how the set-level `notes` miss happened on this plan. Unreadable maps to `""`,
+ * which is *last* in the descending orders both callers use, so a record we
+ * cannot place in time never wins a "most recent" selection.
+ */
+export function sortableStamp(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+/**
  * Deterministic log id for the session of (program, day, local date).
  * Concurrent first-saves converge on the same key, so IndexedDB's upsert
  * semantics make duplicate sessions impossible by construction.

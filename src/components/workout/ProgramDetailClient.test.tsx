@@ -103,6 +103,90 @@ describe("ProgramDetailClient completion badges", () => {
   });
 });
 
+describe("ProgramDetailClient badges survive an unreadable stored timestamp", () => {
+  // `src/lib/storage/appDb.ts:186-195` preserves a log whose fields it cannot
+  // read, so a hand-edited or foreign backup reaches this page with a
+  // `completedAt` or `performedAt` that is not a string, and
+  // `(b.completedAt ?? b.performedAt).localeCompare(...)` threw out of the week
+  // grid's render with no error boundary above it — the whole program page.
+  //
+  // THREE logs, not two, and both orderings: with two elements V8 calls the
+  // comparator once and `localeCompare` coerces its *argument*, so only the
+  // receiver throws and a two-log fixture is green without the fix.
+  const readableNewest: WorkoutLogDocument = {
+    id: "l-new", programId: "p1", dayId: "day-1",
+    performedAt: "2026-05-20T10:00:00.000Z",
+    completedAt: "2026-05-20T11:00:00.000Z",
+    entries: [],
+  };
+  const readableOldest: WorkoutLogDocument = {
+    id: "l-old", programId: "p1", dayId: "day-1",
+    performedAt: "2026-05-18T10:00:00.000Z",
+    completedAt: "2026-05-18T11:00:00.000Z",
+    entries: [],
+  };
+
+  it.each([
+    ["a number", 7],
+    ["an object", {}],
+    ["an array", []],
+    ["a boolean", true],
+  ])("renders the day badge when one log's completedAt is %s", async (_label, bad) => {
+    const unreadable = {
+      id: "l-bad", programId: "p1", dayId: "day-1",
+      performedAt: "2026-05-19T10:00:00.000Z",
+      completedAt: bad,
+      entries: [],
+    } as unknown as WorkoutLogDocument;
+    mockLogs = [readableOldest, unreadable, readableNewest];
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("\u25cf")).toBeInTheDocument();
+  });
+
+  it("renders the day badge in the reverse ordering too", async () => {
+    const unreadable = {
+      id: "l-bad", programId: "p1", dayId: "day-1",
+      performedAt: "2026-05-19T10:00:00.000Z",
+      completedAt: 7,
+      entries: [],
+    } as unknown as WorkoutLogDocument;
+    mockLogs = [readableNewest, unreadable, readableOldest];
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("\u25cf")).toBeInTheDocument();
+  });
+
+  it("falls back to performedAt so an unreadable completedAt still places the log", async () => {
+    // The unreadable value is on the log that is genuinely newest. Falling back
+    // to its readable `performedAt` keeps it first, and it has no readable
+    // `completedAt`, so the day reads as in-progress rather than complete.
+    const unreadable = {
+      id: "l-bad", programId: "p1", dayId: "day-1",
+      performedAt: "2026-05-25T10:00:00.000Z",
+      completedAt: 7,
+      entries: [],
+    } as unknown as WorkoutLogDocument;
+    mockLogs = [readableOldest, readableNewest, unreadable];
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("\u00b7")).toBeInTheDocument();
+    expect(screen.queryByText("\u25cf")).not.toBeInTheDocument();
+  });
+
+  it("renders the day badge when one log's performedAt is not a string", async () => {
+    const unreadable = {
+      id: "l-bad", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      entries: [],
+    } as unknown as WorkoutLogDocument;
+    mockLogs = [readableOldest, unreadable, readableNewest];
+    renderDetail();
+    await screen.findByText("Push Day");
+    expect(await screen.findByText("\u25cf")).toBeInTheDocument();
+  });
+});
+
 describe("ProgramDetailClient View→ navigation", () => {
   it("expanded day card shows View → button", async () => {
     renderDetail();

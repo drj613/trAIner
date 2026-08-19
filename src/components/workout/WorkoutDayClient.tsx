@@ -7,7 +7,7 @@ import { logRepo } from "@/lib/storage/logRepo";
 import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
 import { serialiseSets, hydrateFromLog, applyEntryNotes, entryIsFullyHydratable } from "@/lib/workout/sessionState";
-import { localDateString, logLocalDate, sessionLogId } from "@/lib/workout/localDate";
+import { localDateString, logLocalDate, sessionLogId, sortableStamp } from "@/lib/workout/localDate";
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
@@ -33,15 +33,14 @@ import { SessionSummary, computeSessionSummary, type SessionSummaryStats } from 
 /**
  * A log's timestamp as a sortable string, `""` when it is not text.
  *
- * `performedAt` is typed `string` but nothing enforces it on the way in:
- * `src/lib/storage/appDb.ts:186-195` never inspects it, so a hand-edited or
- * foreign backup reaches this screen with a number or an object there, and
- * `b.performedAt.localeCompare(a.performedAt)` threw. Unreadable sorts to `""`,
- * which is *last* in the descending order used here, so a log we cannot place
- * in time never becomes the session this visit resumes and rewrites.
+ * The rule itself lives in `sortableStamp` (`src/lib/workout/localDate.ts`) and
+ * is shared with the program page's day badge — one rule, one implementation.
+ * Unreadable sorts to `""`, which is *last* in the descending order used here,
+ * so a log we cannot place in time never becomes the session this visit resumes
+ * and rewrites.
  */
 function sessionStamp(log: { performedAt: string }): string {
-  return typeof log.performedAt === "string" ? log.performedAt : "";
+  return sortableStamp(log.performedAt);
 }
 
 /**
