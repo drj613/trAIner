@@ -17,6 +17,7 @@ import { deleteDB } from "idb";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import { logRepo } from "@/lib/storage/logRepo";
+import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import type { ProgramDocument } from "@/lib/programs/types";
 
 const makeExercise = (id: string, name: string, canonicalExerciseId?: string) => ({
@@ -507,6 +508,129 @@ describe("a log we cannot read must not disable the day screen", () => {
     }
     // The set the user just typed is recorded.
     expect(logs.some((l) => JSON.stringify(l.entries).includes('"weight":315'))).toBe(true);
+  });
+
+  // A non-array `entries` is the one shape preserve-by-index cannot cover:
+  // there is no index to merge into, so the autosave rewrite replaced the value
+  // with a proper array and the original was gone. The standing rule is that
+  // unreadable content is never grounds for deletion — a corrupt `entries`
+  // string may literally hold the user's sets as text, and normalising it away
+  // removes the last chance of manual recovery, permanently and silently.
+  it("parks an unreadable entries value on the log instead of overwriting it", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-2", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "bench 225x5, 235x5, 245x3",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // The user kept logging…
+    expect(logs[0].entries.some(
+      (e) => e && e.exerciseId === "e1"
+        && JSON.stringify(e.sets) === JSON.stringify([{ setNumber: 1, weight: 315, reps: 3 }]),
+    )).toBe(true);
+    // …and the only copy of whatever that string held is still on the record.
+    expect(logs[0].unreadableEntries).toBe("bench 225x5, 235x5, 245x3");
+  });
+
+  it("parks the unreadable value once and carries it through later rewrites", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-3", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: { note: "hand-edited" },
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+    // A second write over the now-normalised record must not lose the park, and
+    // must not re-park the array it just wrote over the original.
+    await typeIntoCell(user, cell("e1", 1), "325x2");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].unreadableEntries).toEqual({ note: "hand-edited" });
+    expect(Array.isArray(logs[0].entries)).toBe(true);
+  });
+
+  it("does not park an absent entries — absent is not unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-4", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
+  // Parking is only worth anything if the key survives the user's backup.
+  // If export/restore dropped it, the value would *look* preserved and vanish
+  // on the next restore — worse than the loss it prevents.
+  it("carries the parked value through a backup export and restore", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-5", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "bench 225x5",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const view = renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+    view.unmount();
+    await drainSaves();
+
+    // Through the file, not through the object: JSON is what the user's backup
+    // actually is.
+    const file = JSON.parse(JSON.stringify(await exportBackup()));
+    expect(file.logs[0].unreadableEntries).toBe("bench 225x5");
+    await restoreBackup(file);
+
+    const restored = await logRepo.list();
+    expect(restored).toHaveLength(1);
+    expect(restored[0].unreadableEntries).toBe("bench 225x5");
+    expect(restored[0].entries.some((e) => e.exerciseId === "e1")).toBe(true);
   });
 
   it("records the set being typed when today's log has an unreadable day note", async () => {

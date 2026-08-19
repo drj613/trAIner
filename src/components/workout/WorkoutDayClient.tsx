@@ -56,6 +56,44 @@ function mergePreservedEntries<T>(built: T[], preserved: Map<number, unknown>): 
   return out;
 }
 
+/**
+ * The unreadable `entries` value a rewrite of `log` must not destroy, or
+ * `undefined` when there is nothing to keep.
+ *
+ * `entries` is typed `WorkoutLogEntry[]` and is not checked on the way in.
+ * `mergePreservedEntries` saves individual elements the grid cannot show, but
+ * when the whole value is a string or an object there is no index to merge
+ * into, and the wholesale rewrite below replaced it with a proper array. That
+ * value may literally be the user's sets as text; this is a local-first app and
+ * IndexedDB is the only copy, so normalising it away removes the last chance of
+ * manual recovery, permanently and silently. Deleting is not on the table —
+ * "unreadable content is never grounds for deletion" is settled on this plan,
+ * and the sole exception is aliases, which would otherwise occupy their token
+ * forever. Blocking the day is not either: that locks the user out of logging a
+ * live workout to protect a value we can preserve instead.
+ *
+ * So: park it, and write the new entries alongside. An already-parked value
+ * wins, so a record that has been through this once is never re-parked with the
+ * normalised array the previous save wrote. Absent and `null` are not
+ * unreadable (`unreadableValue`,
+ * `src/lib/storage/migrations/v10Identity.ts:158`) and hold nothing to recover,
+ * so neither is parked — see the "absent is not unreadable" test.
+ *
+ * Verified to survive a backup round trip before being relied on: `exportBackup`
+ * copies whole records out of the store, `migrateLog`
+ * (`src/lib/storage/migrations/v10Identity.ts:265`) spreads `...log`, and
+ * `restoreBackup` validates named fields only. Parking additionally *fixes* a
+ * restore failure — `restoreBackup` requires every log's `entries` to be an
+ * array of objects, so before this a single corrupt `entries` made the user's
+ * whole backup file unrestorable.
+ */
+function parkedUnreadableEntries(log: { entries?: unknown; unreadableEntries?: unknown } | undefined): unknown {
+  if (!log) return undefined;
+  if (log.unreadableEntries !== undefined) return log.unreadableEntries;
+  if (log.entries === undefined || log.entries === null) return undefined;
+  return Array.isArray(log.entries) ? undefined : log.entries;
+}
+
 function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
 }
@@ -823,6 +861,8 @@ function WorkoutBody({
     const mergedEntries = preserved && preserved.logId === logIdRef.current
       ? mergePreservedEntries(entries, preserved.entries)
       : entries;
+    // Anything a rewrite of this record would otherwise destroy, kept verbatim.
+    const unreadableEntries = parkedUnreadableEntries(existing);
     await logRepo.save({
       id: logIdRef.current,
       programId: program.id,
@@ -838,6 +878,9 @@ function WorkoutBody({
       skipReason: skipReason ?? existing?.skipReason,
       dayNote: dn || existing?.dayNote || undefined,
       entries: mergedEntries,
+      // Spread, not `unreadableEntries: undefined`: writing the key with an
+      // undefined value would add it to every healthy log for no reason.
+      ...(unreadableEntries !== undefined ? { unreadableEntries } : {}),
     });
   }
 

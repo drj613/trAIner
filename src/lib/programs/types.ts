@@ -158,6 +158,19 @@ export type WorkoutLogDocument = {
   skipReason?: string;
   dayNote?: string;
   entries: WorkoutLogEntry[];
+  // Whatever `entries` held when it was not an array, kept verbatim so a
+  // rewrite cannot destroy it. Nothing reads it: it exists so the value is
+  // still in the user's export when someone comes looking for it.
+  //
+  // `entries` is typed `WorkoutLogEntry[]` but nothing enforces that on the way
+  // in — `src/lib/storage/appDb.ts:186-195` preserves a log whose fields it
+  // cannot read on purpose, because the unreadable value "may be standing in
+  // for real sets we have no way to recover". The day screen rebuilds `entries`
+  // wholesale on every autosave, and the element-level preserve-by-index has no
+  // index to merge into when the whole value is a string or an object, so the
+  // next save used to overwrite the user's only copy. Parking it here is what
+  // lets the grid keep taking input without destroying anything.
+  unreadableEntries?: unknown;
   notes?: string;
 };
 
