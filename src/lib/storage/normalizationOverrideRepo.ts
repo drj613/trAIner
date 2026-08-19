@@ -25,27 +25,38 @@ export type NormalizationOverrideRepository = {
 
 const catalogExerciseIds = new Set(exerciseCatalog.map((exercise) => exercise.id));
 
+// The only place a target value is normalized, and the only place an unknown
+// target kind is rejected. Two paths used to do this and disagreed: one threw
+// on an unknown kind, the other silently trimmed it.
+function normalizeTargetValue(
+  targetKind: NormalizationOverrideDocument["targetKind"],
+  targetValue: string,
+): string {
+  if (targetKind === "normalized-name") return normalizeExerciseName(targetValue);
+  if (targetKind === "exercise-id") return targetValue.trim();
+  throw new Error(`Unknown normalization target kind: ${String(targetKind)}`);
+}
+
+// Takes an already-normalized value so callers normalize exactly once.
+function overrideKeyFor(
+  targetKind: NormalizationOverrideDocument["targetKind"],
+  normalizedTargetValue: string,
+): string {
+  return `${targetKind}:${normalizedTargetValue}`;
+}
+
 export function normalizationOverrideKey(
   targetKind: NormalizationOverrideDocument["targetKind"],
   targetValue: string,
 ): string {
-  const normalized = targetKind === "normalized-name"
-    ? normalizeExerciseName(targetValue)
-    : targetValue.trim();
-  return `${targetKind}:${normalized}`;
-}
-
-function normalizedTargetValue(input: NormalizationOverrideSaveInput): string {
-  if (input.targetKind === "normalized-name") return normalizeExerciseName(input.targetValue);
-  if (input.targetKind === "exercise-id") return input.targetValue.trim();
-  throw new Error(`Unknown normalization target kind: ${String(input.targetKind)}`);
+  return overrideKeyFor(targetKind, normalizeTargetValue(targetKind, targetValue));
 }
 
 export function validateNormalizationOverrideInput(
   input: NormalizationOverrideSaveInput,
   userExerciseIds: ReadonlySet<string> = new Set(),
 ): void {
-  const targetValue = normalizedTargetValue(input);
+  const targetValue = normalizeTargetValue(input.targetKind, input.targetValue);
   if (!targetValue) throw new Error("Normalization override target cannot be empty");
   if (
     input.targetKind === "exercise-id" &&
@@ -133,19 +144,22 @@ export const normalizationOverrideRepo: NormalizationOverrideRepository = {
 
   async save(input, options) {
     const db = await getDb();
-    const tx = db.transaction(["normalizationOverrides", "userExercises"], "readwrite");
-    const userExerciseKeys = await tx.objectStore("userExercises").getAllKeys();
+    // Validated before the write transaction opens: rejecting inside one leaves
+    // a readwrite transaction dangling until it auto-commits, and this
+    // custom-exercise lookup only ever needed to read.
+    const userExerciseKeys = await db.getAllKeys("userExercises");
     const userExerciseIds = new Set(userExerciseKeys.filter((key): key is string => typeof key === "string"));
     validateNormalizationOverrideInput(input, userExerciseIds);
 
-    const targetValue = normalizedTargetValue(input);
+    const targetValue = normalizeTargetValue(input.targetKind, input.targetValue);
     const document: NormalizationOverrideDocument = {
       ...input,
-      id: normalizationOverrideKey(input.targetKind, targetValue),
+      id: overrideKeyFor(input.targetKind, targetValue),
       targetValue,
       movementModifierIds: [...input.movementModifierIds],
       updatedAt: new Date().toISOString(),
     };
+    const tx = db.transaction("normalizationOverrides", "readwrite");
     await tx.objectStore("normalizationOverrides").put(document);
     await tx.done;
     dispatchAfterWrite(options);

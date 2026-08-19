@@ -154,6 +154,25 @@ describe("aliasRepo.save", () => {
     });
   });
 
+  it("putRaw recomputes normalizedAlias instead of trusting the stored token", async () => {
+    // A backup file (validated only for string ids) can carry a token that
+    // disagrees with its alias text. Trusting it plants a duplicate on the
+    // unique by-normalized-alias index that later rejects a write — including
+    // the migration's re-put, which would then fail on every single load.
+    await aliasRepo.putRaw({
+      id: "legacy-alias-id",
+      alias: "90/90 Hamstring",
+      normalizedAlias: "totally-wrong-token",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    });
+
+    const [stored] = await aliasRepo.list();
+    expect(stored.normalizedAlias).toBe("90 90 hamstring");
+    // Reachable by the same lookup the app uses, which the bad token broke.
+    await expect(aliasRepo.find("90/90 Hamstring")).resolves.toMatchObject({ id: "legacy-alias-id" });
+  });
+
   it("replaceRemembered is the explicit one-transaction correction path", async () => {
     const listener = jest.fn();
     window.addEventListener("trainer-exercise-identity-changed", listener);

@@ -91,6 +91,12 @@ export const aliasRepo: AliasRepository = {
     if (!input.id) throw new Error("Cannot restore alias without id");
     const document: AliasDocument = {
       ...input,
+      // Recomputed, never taken from the file. `by-normalized-alias` is the
+      // schema's only unique index, so a token that disagrees with its own
+      // alias text is how a restored backup plants a duplicate that later
+      // rejects a write — including the database migration's re-put, which
+      // would then fail identically on every load.
+      normalizedAlias: normalizeExerciseName(input.alias),
       provenance: input.provenance ?? "legacy-auto",
     };
     const db = await getDb();

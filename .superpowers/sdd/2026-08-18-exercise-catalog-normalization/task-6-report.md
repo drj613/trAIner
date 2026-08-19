@@ -631,3 +631,115 @@ bun run build
 git diff --check
 (clean)
 ```
+
+## Code-quality round — the constraint-rejection class
+
+The critical finding is real and I reproduced it before changing anything. It is also a genuinely different failure class from everything the five fix rounds addressed, and the reviewer's framing is the lesson: **the guard scheme protects against exceptions thrown by bad reads; nothing protected against an IDB request rejected by a constraint.**
+
+### Critical — duplicate recomputed `normalizedAlias`
+
+Two aliases whose *stored* tokens differ (so v9's unique index accepted both) but which recompute to the same token. Before/after, same fixture:
+
+```text
+before:  openCurrentDatabase() → Rejected to value:
+         [ConstraintError: A mutation operation in the transaction failed because a
+          constraint was not satisfied...]                     version stays 9, retry identical
+after:   version 10, metrics deleted, exactly one alias survives
+```
+
+Two halves fixed:
+
+1. **`classifyAliases` dedupes by recomputed token.** A `byToken` map replaces the output array, with a `claim()` helper: a `remembered` document displaces a `legacy-auto` one on the same token; otherwise first writer wins, which keeps the pass deterministic and idempotent (the fixed-point tests still hold). Rationale in the code: a user's own correction outranks a legacy guess, and losing a legacy duplicate costs one re-teach where a bricked database costs the app.
+2. **`putRaw` recomputes `normalizedAlias` from `input.alias`** instead of trusting the file — closing the vector at source, as you asked, since `backup.ts` validates aliases with `hasIds` only.
+
+Tests: two colliding-token cases (legacy/legacy and remembered/legacy) plus a `putRaw` case asserting the recomputed token is what makes `find()` work again. Mutation evidence:
+
+```text
+remove the dedupe entirely                   → 2 failed (both ConstraintError)
+first-writer-wins instead of remembered-wins → 1 failed
+putRaw trusts the file token again           → 1 failed
+```
+
+The precedence test is table-driven over **both row orderings**, because `getAll` returns rows in key order: my first attempt at it passed under the first-writer-wins mutation purely because the remembered row happened to sort first. Worth recording as its own small lesson — a precedence test that does not control ordering is not testing precedence.
+
+### Rejected-vs-thrown sweep
+
+Mechanical, over every write in the upgrade callback and every alias write outside it:
+
+- **`by-normalized-alias` is the schema's only unique index** (`appDb.ts:384`; the other three indexes are non-unique), so constraint rejection is possible *only* on alias writes. That is now covered in the migration and in `putRaw`.
+- Every `createObjectStore`/`deleteObjectStore` is `contains`-guarded, except the v1 block which runs only against an empty database at `oldVersion === 0`.
+- `cursor.update` in v5/v7/v8 never alters `id` (the keyPath), so no `DataError`; `cursor.delete` cannot be rejected.
+- `programsStore.put` / `logsStore.put` write records read from the same keyPath store and never touch `id`, and the traversal only spreads plain objects and arrays, so nothing becomes unclonable.
+- `aliasRepo.saveMany` stages by token and reuses the existing row's `id`, so it cannot create a duplicate token.
+- **One remaining verbatim path, and it is Task 7's:** `backup.ts:215` still writes the file's `normalizedAlias`. A hand-edited backup carrying two aliases with the same token fails the restore with `ConstraintError`. That is *not* a brick — restore awaits its own transaction, so the pre-restore data is preserved atomically and the error surfaces to the caller — but restore should dedupe and recompute the way the migration now does. Added to the Task 7 input list.
+- Environmental rejection (`QuotaExceededError`) can hit any put; the round-4 abort already handles it correctly — data preserved, retried next load.
+
+### Important items
+
+**2. Five toothless `isRecord` guards** — new rows in the pass-through table for a non-record section, group, override, warning and suggestion. All five removal-mutations now fail (2, 2, 1, 1, 1 tests respectively).
+
+**3. Self-heal untested** — new test in `appDbUpgradeFailure.test.ts` that calls `getDb()` a second time with **no** `resetDbConnection()`. Removing the clear-on-failure line fails it. The pre-existing retry assertions only ever proved the manual path.
+
+**4. Two unverified classification rules** — both now pinned, and pinning the first required new fixtures: the `hasAlternative` rule is unreachable as a *distinct* behaviour unless the token also has a unique concrete outcome, so the test mock gained a `reject-alternative` phrase rule for `"or"` and a catalogue entry named `"Squat or Hinge"` (pre-curation entries genuinely looked like that, which is why the rule exists). The second — an alias whose token no longer resolves to its stored target — is the valuable one, and is exactly the silent mis-resolution the new disambiguation flow exists to end. Both mutations now fail.
+
+**5. `isRecord` accepted arrays** — added `&& !Array.isArray(value)` with tests for a day, section and group stored as an array (`{ ...[] }` is `{}`, the same silent-corruption shape as the `program.import` find). Restoring the old predicate fails 3 tests. Also added `isReadableText` guards on `exercise.id` and `entry.exerciseId` before they reach the resolver as `slotId`, each with a test; both removal-mutations fail.
+
+One related shape I checked and deliberately did *not* add a test for: an **entry** stored as an array is already passed through today, because `migrateLogEntry` returns the original object once the name guard trips rather than spreading it. A test there would have been green before and after, so it would have proved nothing.
+
+### Minors
+
+- **`unreadableValue` null policy pinned**, and the comment now says what the line actually is: *absent* versus *present-but-unreadable*, not null versus non-null. `undefined`/`null` are the legitimate shape of logs predating `entries` and stay deletable (v7 semantics preserved); `"corrupt"` stays. New test asserts `entries: null` is still deleted as a phantom; treating null as unreadable fails it.
+- **`dbPromise` stale-write hazard** — the open is captured as `attempt` and both the failure path and `terminated()` only clear when `dbPromise === attempt`, so a late failure cannot discard a newer connection installed by `resetDbConnection()`. Honest caveat: this one is **not** covered by a test — it needs a real race between a slow failing open and a reset, and I judged a timing-dependent test worse than none. It is a two-line invariant with the reasoning in a comment.
+- **`toStrictEqual`** for all pass-through assertions. Real-browser nuance worth recording: under `structuredClone` a malformed record *gains* an own `days: undefined` key (fake-indexeddb drops it, which is why `toEqual` passed either way). The clean fix is a conditional spread — `...(Array.isArray(day.sections) ? { sections: … } : {})` — which is a `mapArray` restructure, so it goes with the Task 7 extraction rather than being written twice.
+- **One normalisation path for override targets** — `normalizeTargetValue` is now the only normaliser and the only place an unknown `targetKind` is rejected; `overrideKeyFor` joins an already-normalized value; the exported `normalizationOverrideKey` composes the two. `save` normalizes exactly once.
+- **Validation moved before the write transaction** (`db.getAllKeys("userExercises")` in its own readonly transaction), so bad input no longer dangles a readwrite transaction. This also retires the earlier deferred minor about that transaction holding `userExercises` in readwrite for a read.
+- **`backup.ts`** equality branch dropped.
+
+### Requested wording for the Task 7 "adding a field" recipe
+
+To carry into the brief verbatim if it is useful:
+
+```ts
+// Adding a field to this traversal? Three rules, in order:
+//   1. Read nothing without a type guard. Containers go through mapArray (an
+//      array we can walk, or the value untouched); records through isRecord
+//      (which excludes arrays, because spreading one rewrites it into an
+//      index-keyed object); leaf strings through isReadableText before they
+//      reach normalizeExerciseName, prepareImportName, or the resolver.
+//   2. Never rewrite what you could not read. A malformed record is passed
+//      through exactly as stored — including its key set, so prefer a
+//      conditional spread over assigning a possibly-undefined mapped value.
+//   3. Check whether your write can be *rejected* as well as throw. Guards
+//      catch bad reads; a unique index (today only by-normalized-alias) or an
+//      invalid key rejects the request instead, and the upgrade's abort turns
+//      that into a deterministic failed migration on every load. If the field
+//      feeds an index, make the write set legal before issuing it.
+// Anything you add here needs a malformed-shape test AND a mutation showing
+// the guard is load-bearing — four toothless guards shipped without one.
+```
+
+### Constraints honoured
+
+`git diff 22ba71f --numstat -- src/lib/storage/appDb.test.ts` is **930 insertions, 1 deletion** (still the original `aliasRepo.save` provenance line), and `sessionPersistence.test.ts` — which owns the real v5/v7/v8 coverage — is absent from the diff entirely. Healthy-data behaviour is unchanged: the only production behaviour changes are the alias dedupe, the recomputed `putRaw` token, the array exclusion in `isRecord`, the two slot-id guards, and the override-repo restructure.
+
+### Gates after the code-quality round
+
+```text
+bun run test -- --runInBand
+Test Suites: 93 passed, 93 total
+Tests:       1164 passed, 1164 total   (was 1146; +18)
+
+bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+bun run lint
+$ eslint .
+(clean)
+
+bun run build
+✓ built in 1.42s   (only the pre-existing >500 kB chunk advisory)
+
+git diff --check
+(clean)
+```

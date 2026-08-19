@@ -141,12 +141,19 @@ function mapArray<T>(value: T[], mapper: (item: T) => T): T[] {
   return Array.isArray(value) ? value.map(mapper) : value;
 }
 
+// Arrays are excluded deliberately: `{ ...[1, 2] }` is `{ 0: 1, 1: 2 }`, so
+// treating an array-shaped day/section/group/entry as a record would silently
+// rewrite it into an index-keyed object instead of passing it through.
 function isRecord<T>(value: T): value is T & object {
-  return value !== null && typeof value === "object";
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-// "Present, but not the array we expected." Absent stays absent — only a value
-// that is actually there and unreadable counts.
+// The line here is *absent* versus *present-but-unreadable*, not null versus
+// non-null. `undefined`/`null` read as absent — the legitimate shape of logs
+// predating `entries`, and exactly what the v7 phantom rule was written to
+// delete — so they stay deletable. Anything else that is present but is not
+// the array we expected is unreadable, and unreadable content is never
+// grounds for deletion.
 function unreadableValue(value: unknown): boolean {
   return value !== undefined && value !== null && !Array.isArray(value);
 }
@@ -162,7 +169,10 @@ function migrateProgramExercise(
       canonicalExerciseId: canonicalizeExplicitExerciseId(exercise.canonicalExerciseId, context),
     };
   }
-  if (!isReadableText(exercise.name)) return exercise;
+  // `id` reaches the resolver as `slotId`. It only lands in a template string
+  // today, so a non-string survives by luck; guard it at the boundary rather
+  // than depend on that.
+  if (!isReadableText(exercise.name) || !isReadableText(exercise.id)) return exercise;
   const resolved = resolveExerciseIdentity({
     kind: "stored-exercise",
     slotId: exercise.id,
@@ -236,7 +246,7 @@ function migrateLogEntry(
       canonicalExerciseId: canonicalizeExplicitExerciseId(entry.canonicalExerciseId, context),
     };
   }
-  if (!isReadableText(entry.exerciseName)) return entry;
+  if (!isReadableText(entry.exerciseName) || !isReadableText(entry.exerciseId)) return entry;
   const resolved = resolveExerciseIdentity({
     kind: "stored-exercise",
     slotId: entry.exerciseId,
@@ -282,7 +292,24 @@ export function classifyAliases(
   userExercises: readonly UserExerciseDocument[],
 ): AliasDocument[] {
   const context = createMigrationContext([], userExercises);
-  const classified: AliasDocument[] = [];
+  // Keyed by recomputed token, not by row: `by-normalized-alias` is
+  // `{ unique: true }`, and recomputing tokens can collapse two rows that v9
+  // stored happily onto one key. A colliding re-put is *rejected* by the
+  // index rather than throwing on a read, so none of the read guards above
+  // catch it — and the retry would be deterministic, bricking the database
+  // with no way for the user to see or fix the offending alias. Deduping here
+  // is what keeps the write set legal.
+  const byToken = new Map<string, AliasDocument>();
+  const claim = (token: string, document: AliasDocument) => {
+    const existing = byToken.get(token);
+    // A user's own correction outranks a legacy guess, whichever order the
+    // rows arrive in. Otherwise first writer wins, which keeps the pass
+    // deterministic and idempotent.
+    if (existing && !(document.provenance === "remembered" && existing.provenance !== "remembered")) {
+      return;
+    }
+    byToken.set(token, document);
+  };
   for (const alias of aliases) {
     // An alias we cannot read cannot be classified, and an unclassifiable
     // alias left in the store would keep short-circuiting the new
@@ -291,7 +318,7 @@ export function classifyAliases(
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
     const normalizedAlias = normalizeExerciseName(alias.alias);
     if (alias.provenance === "remembered") {
-      classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "remembered" });
+      claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "remembered" });
       continue;
     }
 
@@ -317,9 +344,9 @@ export function classifyAliases(
     // wrongly unlinked.
     const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
     if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
-    classified.push({ ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });
+    claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });
   }
-  return classified;
+  return [...byToken.values()];
 }
 
 let dbPromise: Promise<IDBPDatabase<TrainerDb>> | undefined;
@@ -329,7 +356,12 @@ export function getDb() {
   if (!dbPromise) {
     let shouldDispatchIdentityChange = false;
     let upgradeError: unknown;
-    dbPromise = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
+    // `attempt` is read only by callbacks that cannot run before the open
+    // returns (`terminated` needs a live connection; the settle handlers need a
+    // settled promise), so referencing it from inside its own initialiser is
+    // safe. Comparing against it is what stops a late failure from clearing a
+    // newer connection that resetDbConnection() has since installed.
+    const attempt: Promise<IDBPDatabase<TrainerDb>> = openDB<TrainerDb>(DB_NAME, DB_VERSION, {
       async upgrade(db, oldVersion, _newVersion, tx) {
         // idb does not await this callback, so an unhandled throw after the
         // first `await` does NOT abort anything: the versionchange transaction
@@ -560,7 +592,7 @@ export function getDb() {
       terminated() {
         // Browser killed the connection (e.g. storage pressure); allow reopen.
         dbInstance = undefined;
-        dbPromise = undefined;
+        if (dbPromise === attempt) dbPromise = undefined;
       },
     }).then((db) => {
       dbInstance = db;
@@ -572,11 +604,15 @@ export function getDb() {
       if (shouldDispatchIdentityChange) dispatchExerciseIdentityChanged();
       return db;
     }).catch((e) => {
-      dbPromise = undefined; // let the next getDb() retry instead of re-throwing forever
+      // Only retire this attempt. If resetDbConnection() (or a terminated
+      // connection) already installed a newer promise, clearing unconditionally
+      // would throw that one away and leave two live opens racing.
+      if (dbPromise === attempt) dbPromise = undefined;
       // A failed migration surfaces its real cause rather than the AbortError
       // that the deliberate rollback produces.
       throw upgradeError ?? e;
     });
+    dbPromise = attempt;
   }
 
   return dbPromise;

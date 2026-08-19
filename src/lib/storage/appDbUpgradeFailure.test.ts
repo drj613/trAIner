@@ -100,6 +100,21 @@ describe("DB upgrade failure safety — every block", () => {
     expect(await migrated.getAll("aliases")).not.toHaveLength(0);
   });
 
+  it("retires the failed attempt so the next getDb() retries without an explicit reset", async () => {
+    // The existing retry assertions call resetDbConnection() first, which only
+    // proves the manual path. getDb() promises self-healing: a rejected open
+    // must not stay cached, or every later call replays the same rejection.
+    await seedVersion9Database(v9Fixture);
+
+    failure.inject = true;
+    await expect(getDb()).rejects.toThrow("injected migration failure");
+
+    failure.inject = false;
+    const migrated = await getDb();
+    expect(migrated.version).toBe(10);
+    expect((migrated.objectStoreNames as unknown as DOMStringList).contains("metrics")).toBe(false);
+  });
+
   it("does not empty the alias store when the failure lands after aliases are cleared", async () => {
     await seedVersion9Database(v9Fixture);
 

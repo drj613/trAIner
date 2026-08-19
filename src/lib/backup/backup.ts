@@ -212,7 +212,7 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   for (const a of b.aliases) {
     const provenance =
       a.provenance === "remembered" || a.provenance === "legacy-auto" ? a.provenance : "legacy-auto";
-    tx.objectStore("aliases").put(a.provenance === provenance ? a : { ...a, provenance });
+    tx.objectStore("aliases").put({ ...a, provenance });
   }
   for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
   for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);

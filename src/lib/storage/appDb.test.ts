@@ -34,6 +34,19 @@ jest.mock("@/lib/catalog/exercises", () => {
         ? { ...item, aliases: [...item.aliases, "RDL"] }
         : item),
       {
+        // Named with an alternative marker, which is why the compiler has a
+        // reject-alternative rule at all: pre-curation entries looked like this.
+        id: "alternative-shaped-id",
+        name: "Squat or Hinge",
+        aliases: [],
+        equipment: ["barbell"],
+        movementPatterns: ["squat"],
+        muscles: { primary: ["quads"], secondary: [] },
+        tags: ["strength"],
+        movementId: "squat",
+        movementModifierIds: ["barbell"],
+      },
+      {
         id: "surviving-squat-id",
         name: "Surviving Squat",
         aliases: [],
@@ -58,12 +71,20 @@ jest.mock("@/lib/catalog/registries", () => {
     candidateExerciseIds: ["barbell-high-bar-squat", "barbell-low-bar-squat"],
     matchedModifierIds: ["barbell", "back-rack"],
   };
+  const rejectAlternative = {
+    id: "alternative-or",
+    kind: "non-identity-phrase" as const,
+    normalizedPhrase: "or",
+    annotation: "alternative",
+    behavior: "reject-alternative" as const,
+  };
   return {
     ...actual,
-    disambiguationRules: [...actual.disambiguationRules, underspecifiedBackSquat],
+    disambiguationRules: [...actual.disambiguationRules, underspecifiedBackSquat, rejectAlternative],
     disambiguationsByNormalizedName: new Map([
       ...actual.disambiguationsByNormalizedName,
       ["back squat", underspecifiedBackSquat],
+      ["or", rejectAlternative],
     ]),
     legacyExerciseIdRedirects: new Map([
       ...actual.legacyExerciseIdRedirects,
@@ -579,6 +600,100 @@ describe("DB v10 — exercise identity normalization", () => {
     });
   });
 
+  // `by-normalized-alias` is `{ unique: true }` and the migration recomputes
+  // every token before re-putting. Two rows whose *stored* tokens differed —
+  // so v9's index accepted both — can recompute to the same token, and the
+  // re-put is then REJECTED by the index rather than throwing during a read.
+  // Nothing in the read-guard scheme covers that, and the retry is
+  // deterministic: the same rows recompute the same collision on every load,
+  // with no UI to see or fix the offending alias.
+  const collidingAliases = [
+    {
+      id: "alias-stored-slash",
+      alias: "90/90 Hamstring",
+      normalizedAlias: "90/90 hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: "2026-08-18T12:34:56.000Z",
+    },
+    {
+      id: "alias-stored-spaces",
+      alias: "90 90 Hamstring",
+      normalizedAlias: "90 90 hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: "2026-08-18T12:34:56.000Z",
+    },
+  ];
+
+  it("keeps one alias when two legacy tokens recompute to the same normalized alias", async () => {
+    await seedVersion9Records({ aliases: collidingAliases });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    const db = await getDb();
+    expect(db.version).toBe(10);
+    expect((db.objectStoreNames as unknown as DOMStringList).contains("metrics")).toBe(false);
+    expect(await readRawStore("aliases")).toEqual([{
+      ...collidingAliases[0],
+      normalizedAlias: "90 90 hamstring",
+      provenance: "legacy-auto",
+    }]);
+  });
+
+  // Both orderings, because `getAll` returns rows in key order and a
+  // first-writer-wins implementation would pass one of them by accident.
+  it.each([
+    { name: "legacy row first", legacyId: "alias-a", rememberedId: "alias-b" },
+    { name: "remembered row first", legacyId: "alias-b", rememberedId: "alias-a" },
+  ])("lets a remembered alias win a colliding token ($name)", async ({ legacyId, rememberedId }) => {
+    // A user's own correction outranks a legacy guess. Losing the legacy
+    // duplicate costs a re-teach at worst; losing the remembered one discards
+    // explicit user intent.
+    await seedVersion9Records({
+      aliases: [
+        { ...collidingAliases[0], id: legacyId },
+        {
+          id: rememberedId,
+          alias: "90 90 hamstring",
+          normalizedAlias: "90 90 hamstring ",
+          canonicalExerciseId: "barbell-high-bar-squat",
+          createdAt: "2026-08-18T12:34:56.000Z",
+          provenance: "remembered" as const,
+        },
+      ],
+    });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawStore("aliases")).toEqual([{
+      id: rememberedId,
+      alias: "90 90 hamstring",
+      normalizedAlias: "90 90 hamstring",
+      canonicalExerciseId: "barbell-high-bar-squat",
+      createdAt: "2026-08-18T12:34:56.000Z",
+      provenance: "remembered",
+    }]);
+  });
+
+  it.each([
+    {
+      name: "an alias text that expresses a choice, even when it matches an entry",
+      alias: { id: "a1", alias: "Squat or Hinge", normalizedAlias: "squat or hinge", canonicalExerciseId: "alternative-shaped-id", createdAt: "2026-08-18T12:34:56.000Z" },
+    },
+    {
+      name: "an alias whose token no longer resolves to its stored target",
+      alias: { id: "a2", alias: "90/90 Hamstring", normalizedAlias: "90 90 hamstring", canonicalExerciseId: "pull-up", createdAt: "2026-08-18T12:34:56.000Z" },
+    },
+  ])("purges $name", async ({ alias }) => {
+    // The second case is the load-bearing one: without it the migration would
+    // silently keep an alias pointing at an exercise its own token resolves
+    // somewhere else entirely, which is precisely the mis-resolution the new
+    // disambiguation flow exists to end.
+    await seedVersion9Records({ aliases: [alias] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawStore("aliases")).toEqual([]);
+    expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
+      .toBe(false);
+  });
+
   it("dispatches one identity event after the v10 migration commits", async () => {
     await seedVersion9Database(v9Fixture);
     const committedReads: Array<Promise<boolean>> = [];
@@ -822,7 +937,7 @@ describe("DB v10 — malformed legacy documents", () => {
   // truncated or hand-edited backup can plant any of them on a pre-v10
   // client. The `metrics` canary below is what distinguishes "migrated and
   // deliberately left alone" from "bailed out before touching it".
-  const leafProgramCases: Array<{ name: string; seeded: unknown }> = [
+  const untouchedProgramCases: Array<{ name: string; seeded: unknown }> = [
     {
       name: "suggestion with no exerciseId",
       seeded: program("p-suggestion-no-id", {
@@ -863,13 +978,52 @@ describe("DB v10 — malformed legacy documents", () => {
       name: "import metadata that is not an object",
       seeded: program("p-string-import", { days: [], overrides: [], import: "truncated" }),
     },
+    // Records, not just leaf strings: a container that is not an object at all
+    // must be passed over, and an *array* is the dangerous case — `{ ...[1, 2] }`
+    // is `{ 0: 1, 1: 2 }`, so treating one as a record silently rewrites it.
+    {
+      name: "a section that is not a record",
+      seeded: program("p-string-section", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: ["corrupt"] }], overrides: [] }),
+    },
+    {
+      name: "a group that is not a record",
+      seeded: program("p-number-group", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [42] }] }], overrides: [] }),
+    },
+    {
+      name: "an override that is not a record",
+      seeded: program("p-string-override", { days: [], overrides: ["corrupt"] }),
+    },
+    {
+      name: "a warning that is not a record",
+      seeded: program("p-string-warning", { days: [], overrides: [], import: { rawJson: {}, warnings: ["corrupt"] } }),
+    },
+    {
+      name: "a suggestion that is not a record",
+      seeded: program("p-string-suggestion", { days: [], overrides: [], import: { rawJson: {}, warnings: [{ path: "days.0", message: "m", suggestions: ["corrupt"] }] } }),
+    },
+    {
+      name: "a day stored as an array",
+      seeded: program("p-array-day", { days: [[]], overrides: [] }),
+    },
+    {
+      name: "a section stored as an array",
+      seeded: program("p-array-section", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [[]] }], overrides: [] }),
+    },
+    {
+      name: "a group stored as an array",
+      seeded: program("p-array-group", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [[]] }] }], overrides: [] }),
+    },
+    {
+      name: "an exercise with a non-string id",
+      seeded: program("p-number-slot-id", { days: [{ id: "d1", dayNumber: 1, weekNumber: 1, title: "Day", sections: [{ id: "s1", type: "strength", name: "Main", groups: [{ id: "g1", type: "single", exercises: [{ id: 42, name: "High Bar Back Squat" }] }] }] }], overrides: [] }),
+    },
   ];
 
-  it.each(leafProgramCases)("program: $name — left exactly as stored", async ({ seeded }) => {
+  it.each(untouchedProgramCases)("program: $name — left exactly as stored", async ({ seeded }) => {
     await seedVersion9Records({ programs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
-    expect(await readRawRecord("programs", (seeded as { id: string }).id)).toEqual(seeded);
+    expect(await readRawRecord("programs", (seeded as { id: string }).id)).toStrictEqual(seeded);
     // Completion canary: deleting `metrics` is the last statement of the
     // v10 block, so its absence proves the migration ran to the end instead
     // of bailing midway and leaving the record un-migrated.
@@ -877,7 +1031,7 @@ describe("DB v10 — malformed legacy documents", () => {
       .toBe(false);
   });
 
-  const leafLogCases: Array<{ name: string; seeded: unknown }> = [
+  const untouchedLogCases: Array<{ name: string; seeded: unknown }> = [
     {
       name: "log entry with a non-string exerciseName",
       seeded: {
@@ -898,13 +1052,23 @@ describe("DB v10 — malformed legacy documents", () => {
         entries: [{ exerciseId: "slot-1", exerciseName: "Squat", canonicalExerciseId: 42, sets: [] }],
       },
     },
+    {
+      name: "an entry with a non-string exerciseId",
+      seeded: {
+        id: "l-number-slot-id",
+        programId: "p1",
+        dayId: "d1",
+        performedAt: "2026-08-17T23:30:00.000Z",
+        entries: [{ exerciseId: 42, exerciseName: "High Bar Back Squat", sets: [] }],
+      },
+    },
   ];
 
-  it.each(leafLogCases)("log: $name — left exactly as stored", async ({ seeded }) => {
+  it.each(untouchedLogCases)("log: $name — left exactly as stored", async ({ seeded }) => {
     await seedVersion9Records({ logs: [seeded] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
-    expect(await readRawRecord("logs", (seeded as { id: string }).id)).toEqual(seeded);
+    expect(await readRawRecord("logs", (seeded as { id: string }).id)).toStrictEqual(seeded);
     // Completion canary: deleting `metrics` is the last statement of the
     // v10 block, so its absence proves the migration ran to the end instead
     // of bailing midway and leaving the record un-migrated.
@@ -1106,7 +1270,7 @@ describe("DB v7/v8 — malformed legacy logs", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
 
     // The malformed record is passed through untouched...
-    expect(await readRawRecord("logs", log["id"] as string)).toEqual(log);
+    expect(await readRawRecord("logs", log["id"] as string)).toStrictEqual(log);
     // ...the healthy one alongside it still gets both the v7 performedDate
     // backfill and the v8 kg rescue...
     expect(await readRawRecord("logs", "healthy")).toEqual({
@@ -1130,6 +1294,20 @@ describe("DB v7/v8 — malformed legacy logs", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     expect(await readRawRecord("logs", "unreadable"))
       .toEqual({ ...unreadable, performedDate: "2026-05-10" });
+  });
+
+  it("still deletes a phantom whose entries are null, because null reads as absent", async () => {
+    // Pins the line: `undefined`/`null` mean *absent* — the legitimate shape of
+    // logs predating `entries`, and exactly what the v7 phantom rule was
+    // written to delete. `"corrupt"` (previous test) is *present but
+    // unreadable* and is kept. The distinction is absent vs unreadable, not
+    // null vs non-null.
+    const nullEntries = { id: "null-entries", programId: "p1", dayId: "d1", performedAt: "2026-05-10T10:00:00.000Z", entries: null };
+    await seedLegacyLogs(6, [nullEntries, healthyLog]);
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawRecord("logs", "null-entries")).toBeUndefined();
+    expect(await readRawRecord("logs", "healthy")).toBeDefined();
   });
 
   it("keeps a log whose only entry is unreadable rather than deleting it as a phantom", async () => {
