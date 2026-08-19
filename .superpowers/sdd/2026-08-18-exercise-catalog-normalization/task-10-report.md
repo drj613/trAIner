@@ -209,3 +209,158 @@ Reviewer attention, in priority order:
 3. **The stale-reload guard** — whether dropping a superseded reload can ever drop the newest data, and whether `version` semantics (generation, not reload count) are right for Task 11/13 consumers.
 4. **The replacement gate** — that no path reaches `replaceRemembered` without the confirmation, and that replacing a `legacy-auto` occupant (not just a `remembered` one) is the intended behaviour.
 5. **`main.tsx` wiring coverage** — it is a source-text assertion, not a render test. It catches removal but proves nothing about runtime behaviour; the provider's own suite covers that.
+
+---
+
+# Fix round 1
+
+All five substantive items landed, plus the minors. Two of them (`C2`, `I2`) changed shipped behaviour; the rest are a token rename, a display cap, and corrected reasoning.
+
+## C1 — the sheet had no border in any theme
+
+`var(--line-strong)` has **zero definitions** in `globals.css` (verified: `grep -n "\-\-line-strong" src/app/globals.css` returns nothing, and the only occurrence anywhere in `src/` was my own line). An unresolvable `var()` invalidates the whole `border` shorthand at computed-value time, so the sheet's only visual boundary never rendered.
+
+Fixed to `var(--line-2)`, which `globals.css` defines in all six theme blocks (lines 14, 35, 56, 78, 99, 120) with `#353c46` first — exactly the strong-line value in `DESIGN.md:11`. No new token invented, and no `var(--line-strong, var(--line))` fallback, which would have silently downgraded to the weaker line and hidden the mistake.
+
+**The guard generalises.** A render test cannot see a missing border, so instead of pinning one token I added a scan: every `var(--token)` used by either component file must be defined in `globals.css`. It found exactly one violation (`--line-strong`) and carries a canary so a scan that matched nothing cannot pass.
+
+## C2 — `Return to standalone` reported success while doing nothing
+
+Confirmed the resolver order at source: `resolveName` returns from the alias branch at `identity.ts:283-298` before it ever reaches the `normalized-name` override at `identity.ts:336-340`. So for an alias-governed name every override write is dead weight.
+
+Three changes, all in `writeOverride`:
+
+1. **Clearing drops the alias.** For a `normalized-name` target with a governing alias, `aliasRepo.removeMany(ids, { dispatch: false })` runs before the override write, which then fires the single event. This is the one intent that *can* be honoured, because for such a name the alias **is** the identity being cleared.
+2. **Assigning refuses instead of lying.** The only way to make an assignment take effect is to destroy a mapping the user did not offer up, so the sheet reports `“Hatfield Squat” is mapped to High Bar Back Squat. Return it to standalone, or replace the mapping, before assigning a movement.` and writes nothing.
+3. **Success is verified against storage, not against the snapshot.** After the writes, `aliasRepo.find(target.value)` must come back empty. The sheet's own `context` has not reloaded yet, and a concurrent writer could have re-occupied the token.
+
+`governingAliases` is a `filter`, not a `find`: the unique index permits only one row per token, but a list costs nothing and means a duplicate arriving from a hand-edited backup cannot survive a deliberate correction.
+
+**M3 folded in, in the place where the dead data is created.** Creating a remembered alias makes any `normalized-name` override for that token permanently unreachable, so `writeAliasMapping` now deletes it. Ordered *after* the alias write, so a rejected mapping deletes nothing; a missing key is a no-op delete. The alias write is now `{ dispatch: false }` so the pair still fires exactly one identity event — pinned by an event counter in the mapping test (`expect(events).toBe(1)`), not merely implied.
+
+I read "in the same place" as the map action rather than the standalone action, because that is where the unreachable row is *produced*, and because deleting the override on the standalone path would contradict spec ~176: `movementId: null` **is** the stored representation of standalone, not the absence of a row. Flagging the reading in case it was meant the other way.
+
+## I1 — `Needs review` is now quiet by default
+
+Reproduced the scale: `142 of 3,175` catalogue entries carry a `movementId`. The section is now **collapsed behind its count**, and when open renders at most 10 rows with a `+N more` row that reveals the rest — the same `+N` idiom the sheet uses for the version list. `CategorySection`'s collapse pattern in the same file was the model, so the Library has one disclosure vocabulary rather than two.
+
+The count is the instrument; the rows are the detail you ask for. This is the pattern Tasks 11 and 13 will copy.
+
+## I2 — `deriveNeedsReview` no longer rescans the catalogue per entry
+
+Resolution outcomes are memoised on a key that determines everything the function reads. Measured with a throwaway harness (deleted, not committed — numbers below are the whole point of it):
+
+| entries | `canonicalExerciseId` | before | after |
+|---|---|---|---|
+| 600 | present | 1ms | 1ms |
+| 600 | absent (name-only) | **1,336ms** | **308ms** |
+| 2,400 | present | 2ms | 4ms |
+| 2,400 | absent (name-only) | **5,427ms** | **345ms** |
+
+The important property is not the constant but the shape: cost became flat in the number of entries and linear only in the number of *distinct* identities (80 in the harness), so a user's growing log no longer makes every saved correction slower. My machine is slower than the reviewer's per resolve (~4ms vs ~1ms), so my absolute numbers are higher at both ends; the ratio is the same story.
+
+**The key excludes `slotId` deliberately** and keys custom exercises on their **id**, not their name — a custom exercise resolves by id, so two custom exercises sharing a name are two different targets. That over-collapse is the failure mode a name-based key would introduce silently, so it has its own test.
+
+## I3 — the radio-name rationale was wrong; corrected and measured
+
+The reviewer is right and my comment was wrong. Reverting **only** the radio group `name` to a literal leaves the sheet suite at **16 passed, 16 total** (mutation F8 below). React's `updateNamedCousins` re-syncs controlled radios that share a name, so the other sheet's selection survives — my "silently clear the other's" claim was false.
+
+The comment at `ExerciseCorrectionSheet.tsx:137-147` now states both mechanisms accurately: the **id** collision makes both labels resolve to the first control (falsifiable, killed by S7), while the shared **name** merges two sheets into one keyboard radio group so arrow keys jump between them (correct, but unfalsifiable in jsdom, which implements no radio-group arrow traversal).
+
+I added the reviewer's state test anyway — two `normalized-name` sheets, click Map in A, assert B's `Assign a primary movement` is still checked. It passes on shipped code and, as measured, also passes with the mutation. It is recorded as a guarantee-pinning test, not as mutation coverage.
+
+## Minors
+
+- **M1 — recorded as a measured negative result, not an open question.** The `main.tsx` source-text assertion is adequate: the file is 13 lines, the regex catches removal of either the import or the wrapper, and the provider's own suite covers runtime behaviour. Not upgraded.
+- **M2 — not taken.** No unmount guard on `setSnapshot`; harmless in React 19, and `appliedRequest` is the natural home if a future consumer needs one.
+- **M4 — taken.** The version list is now filter-first: an empty filter lists **no** options and the placeholder reads `filter to choose a version…`, instead of presenting the 40 alphabetically-first of 3,175 entries as if they were a menu. The cap and its `+N` hint still apply once a query narrows the list (`squat` → 212 matches → 40 shown, `+172`).
+- **M5 — left to Task 11**, as ruled.
+
+## Two negative results the reviewer asked to have written down
+
+1. **`main.tsx` coverage**: adequate as-is (see M1 above). Measured, not assumed.
+2. **The atomic-reload probe records store *counts*.** A provider that mixed generation N aliases with generation N−1 overrides would pass if both generations happened to hold the same number of rows. Not worth fixing — the fixture adds exactly one row to each store, so the counts differ across generations by construction — but it is a real limit of the probe and is now recorded rather than implied. A content-hash probe would close it if a future task needs to.
+
+## Two flaws I found in my own new tests
+
+Both are the "passes for the wrong reason" family, and both were caught by running each test **in isolation** rather than only in suite order.
+
+1. **`reports failure when the alias survives the clearing write` asserted synchronously after three IndexedDB round-trips.** It passed in suite order and **failed in isolation** — neither the alert nor the status existed yet, so the assertion was sampling an unfinished handler. Fixed to `await screen.findByRole("alert")`.
+2. **`maps an unknown name…`'s event counter was sampled, not awaited** — `expect(events).toBe(1)` read `0` in **2 of 4** consecutive suite runs. Genuinely flaky, introduced by me in this round. Fixed by awaiting the status line (set only after both writes resolve) before asserting, then 6/6 clean runs.
+
+I then audited every test that asserts after an async write and moved the completion wait *before* the spy assertions in three more places, so no assertion in the suite samples an in-flight handler. The second `Return to standalone` phase waits on the status **text changing** rather than on the element appearing, because a status line is already on screen from the save before it.
+
+No timeout was raised anywhere in this round.
+
+## Mutation evidence (fix round)
+
+Each mutation was applied to the shipped file, run, then restored and `shasum`-verified against a pre-mutation copy (`fix.sheet.tsx` `36f3f43…`, `fix.library.tsx` `8d93be4…`, both matching after every restore).
+
+Sheet — `ExerciseCorrectionSheet.tsx`, suite of 16:
+
+| # | Exact mutation | Result |
+|---|---|---|
+| F1 | `border: "1px solid var(--line-2)"` → `var(--line-strong)` | 1 failed / 15 passed — `only uses theme tokens that globals.css actually defines` |
+| F2 | `if (governingAliases.length > 0 && input.movementId !== null) {` → `if (false) {` | 1 failed / 15 passed — `refuses to assign a movement while an alias governs the name` |
+| F3 | deleted the `aliasRepo.removeMany(governingAliases…)` block | 1 failed / 15 passed — `returns an alias-governed name to standalone by dropping the alias` |
+| F4 | `if (target.kind === "normalized-name" && (await aliasRepo.find(target.value))) {` → `if (false) {` | 1 failed / 15 passed — `reports failure when the alias survives the clearing write` |
+| F5 | deleted `await normalizationOverrideRepo.remove(normalizationOverrideKey(…))` | 3 failed / 13 passed — `clears an override…`, plus both alias tests via the lost event |
+| F6 | removed `{ dispatch: false }` from both alias writes | 2 failed / 14 passed — the event counter reads 2 |
+| F7 | `if (!query) return [];` → return the whole sorted catalogue | 1 failed / 15 passed — `lists no versions until the filter narrows them` |
+| F8 | `name={`${fieldId}-action`}` → `name="correction-action"` | **16 passed / 16 — SURVIVED, as the reviewer measured.** Recorded under I3. |
+
+Library — `LibraryClient.tsx`, suite of 9:
+
+| # | Exact mutation | Result |
+|---|---|---|
+| L6 | `useState(false)` → `useState(true)` for the section's `open` | 7 failed / 2 passed (blunt: the helper's expand click then collapses it; the precise kill is `keeps the review list collapsed behind its count`) |
+| L7 | `items.slice(0, NEEDS_REVIEW_PREVIEW)` → `items` | 1 failed / 8 passed — `caps the open list and reveals the rest on request` |
+| L8 | `if (!outcomes.has(cacheKey)) {` → `if (true) {` | 1 failed / 8 passed — `resolves each distinct identity once` (4 resolves observed, 2 expected) |
+| L9 | custom-exercise cache key `exerciseId` → `normalizeExerciseName(rawName)` | 1 failed / 8 passed — `does not collapse two custom exercises that share a name` |
+
+## Gates (fix round)
+
+```
+$ bun run test -- --runInBand
+Test Suites: 104 passed, 104 total
+Tests:       1416 passed, 1416 total
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(no output)
+
+$ bun run lint
+$ eslint .
+(no output)
+
+$ bun run build
+✓ built in 2.44s
+(!) Some chunks are larger than 500 kB after minification.   ← known-acceptable advisory
+
+$ git diff --check
+(clean)
+
+$ bun run test:e2e
+  93 passed (5.7m)
+[exited with code 0]
+```
+
+## Foreign failures, checked rather than assumed
+
+Every failure I saw outside my lane was verified before being attributed.
+
+- **`src/components/workout/WorkoutDayClient.tsx:1030` typecheck error** (`ExerciseSessionRow[]` not assignable to `ExerciseHistoryRow[]`) — the workout lane mid-refactor. Verified not mine two ways: the types are Task 12/13's history projection, nothing my modules export; and `HistoryDrawer.tsx` imports `ExerciseCorrectionSheet`, `correctionTargetLabel`, and `CorrectionTarget` from me, all of which still exist with unchanged signatures. Cleared on a later run without any change from me.
+- **`WorkoutDayClient.familyHistory.test.tsx` and `HistoryDrawer.test.tsx`, 21 tests, in 2 of 5 full-suite runs** — transient. The files changed *under the runner*: `WorkoutDayClient.familyHistory.test.tsx` no longer exists, and `HistoryDrawer.test.tsx` now passes 7/7 unchanged by me. That lane is also moving `historyProjection.ts`/`historyUtils.ts` into `src/components/workout/` as I write.
+- **`e2e/history-rawcell.spec.ts`** failed once in a full e2e run and I nearly mis-attributed it — in the wrong direction. My first isolation attempt showed it passing *without* my changes, which looked damning, but that comparison was confounded: the other agent added files between the two runs. Re-run with my changes present it **passes in isolation** (`1 passed (5.9s)`), and the subsequent full e2e run is **93 passed, exit 0**. I did not touch the drawer's set-pill rendering, which is what the assertion is about. Worth stating plainly: a path-scoped stash is not a clean control while another lane is writing, and I would have drawn the wrong conclusion from one run.
+- **One flake inside my own lane, disclosed rather than attributed away**: `renderSheet`'s 1000ms wait for the loaded snapshot blew its budget once in a 104-suite serial run (87s wall clock), on the first test in the file. It did not recur in four subsequent full runs. It is the RTL default async-util budget losing to a GC pause, not an ordering bug — but it is mine, and the honest statement is that my sheet suite is among the more expensive in the repo because every test recreates the database.
+
+---
+
+**Fix round status: DONE**
+
+What a reviewer should scrutinise most in this round:
+
+1. **My reading of M3** — I put the shadowed-override cleanup in the map action (where the dead row is created) rather than in the standalone action, because spec ~176 makes `movementId: null` the stored representation of standalone. If the intent was the other placement, say so.
+2. **The assign refusal** — refusing is a product decision. The alternative was to drop the alias and write the override, which honours the click but destroys a remembered mapping the user never offered up.
+3. **The post-write verification's falsifiability** — it is killed only by a fault-injected `removeMany` that resolves without deleting (F4). That injection is legitimate (it reproduces a concurrent re-occupier's end state) but it is an injection, not a natural path.
+4. **`I1`'s numbers** — 10 preview rows and collapsed-by-default are judgement, not measurement. The measurement is only that 142/3,175 entries carry a movement.
