@@ -308,6 +308,33 @@ function concreteOutcomesForToken(
  */
 export type AliasClassificationScope = "all" | "unclassified";
 
+/**
+ * The token an alias row is reachable by, and which field it came from.
+ *
+ * The display text is not what makes an alias work: `aliasRepo.find` queries the
+ * `by-normalized-alias` index and the resolver reads
+ * `candidate.normalizedAlias || candidate.alias`. So recompute from the display
+ * text when there is one, fall back to the stored token when there is not (or
+ * when the text normalizes to nothing), and report nothing usable only when
+ * neither leaves anything to match on. Never trust the stored token as written:
+ * it keys the schema's only unique index, so a stale one plants a row that
+ * `find()` can never reach and that a later write can collide with.
+ *
+ * Shared by the migration/restore classifier and by `aliasRepo.putRaw`, so the
+ * two cannot disagree about which rows are usable.
+ */
+export function aliasLookupToken(
+  alias: { alias?: unknown; normalizedAlias?: unknown },
+): { normalizedAlias: string; fromDisplayText: boolean } | undefined {
+  const fromDisplay = isReadableText(alias.alias) ? normalizeExerciseName(alias.alias) : "";
+  if (fromDisplay) return { normalizedAlias: fromDisplay, fromDisplayText: true };
+  const fromStored = isReadableText(alias.normalizedAlias)
+    ? normalizeExerciseName(alias.normalizedAlias)
+    : "";
+  if (fromStored) return { normalizedAlias: fromStored, fromDisplayText: false };
+  return undefined;
+}
+
 export function classifyAliases(
   aliases: readonly AliasDocument[],
   userExercises: readonly UserExerciseDocument[],
@@ -331,19 +358,12 @@ export function classifyAliases(
   for (const alias of aliases) {
     // No usable target means nothing to redirect to, whatever else survives.
     if (!isReadableText(alias.canonicalExerciseId)) continue;
-    // The display text is not what makes an alias work: `aliasRepo.find` queries
-    // the by-normalized-alias index and the resolver reads
-    // `candidate.normalizedAlias || candidate.alias`. So recompute from the
-    // display text when there is one, fall back to the stored token when there
-    // is not (or when the text normalizes to nothing), and drop only when
-    // neither leaves anything to match on. The unreadable `alias` field itself is
-    // passed through untouched, per rule 2 — it is not ours to invent.
-    const fromDisplay = isReadableText(alias.alias) ? normalizeExerciseName(alias.alias) : "";
-    const fromStored = isReadableText(alias.normalizedAlias)
-      ? normalizeExerciseName(alias.normalizedAlias)
-      : "";
-    const normalizedAlias = fromDisplay || fromStored;
-    if (!normalizedAlias) continue;
+    // Nothing left to match on means nothing to keep. The unreadable `alias`
+    // field itself is passed through untouched, per rule 2 — a display string is
+    // not ours to invent.
+    const token = aliasLookupToken(alias);
+    if (!token) continue;
+    const normalizedAlias = token.normalizedAlias;
     const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
     // A user's own correction is never re-litigated, whatever the scope.
     const alreadyClassified = alias.provenance === "remembered"
@@ -361,7 +381,7 @@ export function classifyAliases(
     // Read the disambiguation rules from whichever text produced the token, so a
     // row that only has a token is still checked for "or"-style alternatives and
     // underspecified names rather than skipping the rules by accident.
-    const textForRules = fromDisplay ? (alias.alias as string) : normalizedAlias;
+    const textForRules = token.fromDisplayText ? (alias.alias as string) : normalizedAlias;
     const prepared = prepareImportName(textForRules, disambiguationsByNormalizedName);
     const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
     if (prepared.hasAlternative || disambiguation?.kind === "underspecified-name") {
@@ -395,13 +415,27 @@ export function classifyAliases(
 // only admits rows whose shared token has exactly one outcome, and both must
 // equal it), so there the choice only changes stored display text; rows arriving
 // already classified from a hand-editable backup file can genuinely disagree,
-// which is why the tiebreak is not left to `getAll`'s key order. Equal or
-// unreadable timestamps fall back to first-writer-wins, stable for a given
-// order.
+// which is why the tiebreak is not left to `getAll`'s key order.
+//
+// Timestamps are compared as instants, not as strings: these rows can come from
+// a hand-edited file, ISO 8601 permits an offset, and "…T23:00:00.000-02:00"
+// sorts before "…T00:00:00.000Z" while being an hour later. A row whose
+// timestamp cannot be read at all loses to one whose can — no evidence should
+// not outrank evidence — and when neither can be read, or they are the same
+// instant, first-writer-wins keeps the pass stable for a given order.
 function winsCollision(candidate: AliasDocument, incumbent: AliasDocument): boolean {
   const candidateRemembered = candidate.provenance === "remembered";
   const incumbentRemembered = incumbent.provenance === "remembered";
   if (candidateRemembered !== incumbentRemembered) return candidateRemembered;
-  if (!isReadableText(candidate.createdAt) || !isReadableText(incumbent.createdAt)) return false;
-  return candidate.createdAt > incumbent.createdAt;
+  const candidateAt = instantOf(candidate.createdAt);
+  const incumbentAt = instantOf(incumbent.createdAt);
+  if (candidateAt === undefined) return false;
+  if (incumbentAt === undefined) return true;
+  return candidateAt > incumbentAt;
+}
+
+function instantOf(value: unknown): number | undefined {
+  if (!isReadableText(value)) return undefined;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
 }

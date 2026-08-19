@@ -113,6 +113,36 @@ describe("classifyAliases — colliding remembered aliases", () => {
     }]);
   });
 
+  // Hand-edited files carry hand-written timestamps, and ISO 8601 permits an
+  // offset. Comparing those as strings gets the order wrong: this candidate is
+  // an hour *later* than the incumbent in real time but sorts earlier.
+  it("compares createdAt as an instant, not as a string", () => {
+    const incumbent: AliasDocument = { ...newer, createdAt: "2026-06-01T00:00:00.000Z" };
+    const candidate: AliasDocument = {
+      ...older,
+      id: "alias-offset",
+      canonicalExerciseId: "goblet-squat",
+      createdAt: "2026-05-31T23:00:00.000-02:00",
+    };
+
+    expect(classifyAliases([incumbent, candidate], [], "unclassified")).toEqual([{
+      ...candidate,
+      normalizedAlias: "90 90 hamstring",
+    }]);
+  });
+
+  // An unreadable timestamp is no evidence of anything, so it must not beat a
+  // readable one by sitting in the store first.
+  it("prefers the row whose createdAt can be read at all", () => {
+    const incumbent = { ...newer, createdAt: undefined } as unknown as AliasDocument;
+    const candidate: AliasDocument = { ...older, canonicalExerciseId: "goblet-squat" };
+
+    expect(classifyAliases([incumbent, candidate], [], "unclassified")).toEqual([{
+      ...candidate,
+      normalizedAlias: "90 90 hamstring",
+    }]);
+  });
+
   // Two rows that arrive already classified as legacy-auto skip the outcome
   // gate, so — unlike rows classified here from a pre-v10 database — they can
   // genuinely disagree about their target. The tiebreak must not be left to key

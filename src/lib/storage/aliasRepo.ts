@@ -1,4 +1,5 @@
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { aliasLookupToken } from "./migrations/v10Identity";
 import { dispatchAfterWrite, type IdentityWriteOptions } from "@/lib/catalog/identityEvents";
 import type { AliasDocument } from "@/lib/programs/types";
 import { getDb } from "./appDb";
@@ -48,6 +49,17 @@ export const aliasRepo: AliasRepository = {
 
   async saveMany(inputs, options) {
     if (inputs.length === 0) return;
+    // Input shape is checked before the transaction opens, for the reason
+    // normalizationOverrideRepo.save documents: rejecting inside a readwrite
+    // transaction leaves it dangling until it auto-commits.
+    //
+    // The conflict check below stays inside, deliberately. It needs the stored
+    // rows, and read-then-write across two transactions would let a concurrent
+    // tab insert the same token between them — at which point this write takes a
+    // fresh UUID for a token another row already holds, and the unique index
+    // rejects it. That is the write-rejection class this whole effort exists to
+    // avoid, and it is strictly worse than briefly holding a readwrite lock.
+    const normalizedAliases = inputs.map((input) => assertRememberedInput(input));
     const db = await getDb();
     const tx = db.transaction("aliases", "readwrite");
     const store = tx.objectStore("aliases");
@@ -55,8 +67,8 @@ export const aliasRepo: AliasRepository = {
     const staged = new Map(existingAliases.map((alias) => [alias.normalizedAlias, alias]));
     const changed = new Map<string, AliasDocument>();
 
-    for (const input of inputs) {
-      const normalizedAlias = assertRememberedInput(input);
+    for (const [index, input] of inputs.entries()) {
+      const normalizedAlias = normalizedAliases[index];
       const existing = staged.get(normalizedAlias);
       if (existing && existing.canonicalExerciseId !== input.canonicalExerciseId) {
         throw new Error(
@@ -82,14 +94,17 @@ export const aliasRepo: AliasRepository = {
 
   async putRaw(input, options) {
     if (!input.id) throw new Error("Cannot restore alias without id");
+    // One shared rule with the migration/restore classifier, rather than a second
+    // opinion: recomputed from the display text, falling back to the stored
+    // token, and rejected outright when neither is usable. The old
+    // `normalizeExerciseName(input.alias)` threw on exactly the row
+    // classifyAliases now recovers, and accepted a row whose token normalized to
+    // "" — a key a second such row then collides with on the unique index.
+    const token = aliasLookupToken(input);
+    if (!token) throw new Error("Cannot restore alias without a usable alias or token");
     const document: AliasDocument = {
       ...input,
-      // Recomputed, never taken from the file. `by-normalized-alias` is the
-      // schema's only unique index, so a token that disagrees with its own
-      // alias text is how a restored backup plants a duplicate that later
-      // rejects a write — including the database migration's re-put, which
-      // would then fail identically on every load.
-      normalizedAlias: normalizeExerciseName(input.alias),
+      normalizedAlias: token.normalizedAlias,
       provenance: input.provenance ?? "legacy-auto",
     };
     const db = await getDb();

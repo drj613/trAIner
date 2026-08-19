@@ -139,6 +139,42 @@ describe("aliasRepo.save", () => {
     }
   });
 
+  // Same rule normalizationOverrideRepo.save documents: input that can be judged
+  // without reading the store is judged before a readwrite transaction is opened,
+  // so a rejected call never leaves one dangling until it auto-commits. The
+  // conflict check stays inside on purpose — it needs the stored rows, and
+  // splitting it would let a concurrent tab claim the token between the read and
+  // the write, which the unique index would then reject.
+  it.each([
+    {
+      name: "an alias that normalizes to nothing",
+      input: { alias: "!!!", canonicalExerciseId: "pull-up", provenance: "remembered" as const },
+      expected: "Alias cannot be empty",
+    },
+    {
+      name: "a provenance other than remembered",
+      input: { alias: "RDL", canonicalExerciseId: "pull-up", provenance: "legacy-auto" as unknown as "remembered" },
+      expected: "New aliases require remembered provenance",
+    },
+  ])("saveMany rejects $name before opening a write transaction", async ({ input, expected }) => {
+    const nativeTransaction = IDBDatabase.prototype.transaction;
+    const modes: string[] = [];
+    IDBDatabase.prototype.transaction = function patched(
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase["transaction"]>
+    ) {
+      const tx = nativeTransaction.apply(this, args);
+      modes.push(tx.mode);
+      return tx;
+    };
+    try {
+      await expect(aliasRepo.saveMany([input])).rejects.toThrow(expected);
+    } finally {
+      IDBDatabase.prototype.transaction = nativeTransaction;
+    }
+    expect(modes).not.toContain("readwrite");
+  });
+
   it("putRaw preserves ids and defaults old aliases to legacy-auto", async () => {
     await aliasRepo.putRaw({
       id: "legacy-alias-id",
@@ -152,6 +188,41 @@ describe("aliasRepo.save", () => {
       id: "legacy-alias-id",
       provenance: "legacy-auto",
     });
+  });
+
+  // putRaw is the imperative twin of the restore classifier, so it has to agree
+  // with it about which rows are usable. Before this, `normalizeExerciseName(
+  // input.alias)` threw on a row the classifier keeps, and accepted one whose
+  // token normalized to "" — a key the next such row collides with on the unique
+  // index.
+  it("putRaw keeps a row whose display text is unreadable but whose token is not", async () => {
+    await aliasRepo.putRaw({
+      id: "legacy-token-only",
+      alias: 42 as unknown as string,
+      normalizedAlias: "90/90 Hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    });
+
+    await expect(aliasRepo.find("90 90 hamstring")).resolves.toMatchObject({
+      id: "legacy-token-only",
+      normalizedAlias: "90 90 hamstring",
+      provenance: "legacy-auto",
+    });
+  });
+
+  it.each([
+    { name: "neither a readable alias nor a readable token", alias: 42, normalizedAlias: null },
+    { name: "an alias and token that both normalize to nothing", alias: "!!!", normalizedAlias: "   " },
+  ])("putRaw rejects a row with $name", async ({ alias, normalizedAlias }) => {
+    await expect(aliasRepo.putRaw({
+      id: "legacy-unusable",
+      alias: alias as unknown as string,
+      normalizedAlias: normalizedAlias as unknown as string,
+      canonicalExerciseId: "pull-up",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    })).rejects.toThrow("Cannot restore alias without a usable alias or token");
+    await expect(aliasRepo.list()).resolves.toEqual([]);
   });
 
   it("putRaw recomputes normalizedAlias instead of trusting the stored token", async () => {
