@@ -15,7 +15,6 @@ import { normalizeExerciseName } from "@/lib/catalog/normalize";
 export const CUSTOM_ID = "__custom__";
 
 const AUTO_CUSTOM_SECTION_TYPES = new Set(["warmup", "cooldown"]);
-const AUTO_RESOLVE_THRESHOLD = 0.65;
 
 export type ResolutionItem = {
   path: string;
@@ -29,16 +28,54 @@ export type Resolution = {
   canonicalId: string;
 };
 
+// One import occurrence needing a decision. `path` is the AUTHORITATIVE
+// address — grouping is a presentation convenience, and patching always goes
+// back through these paths (see applyResolutions). Two occurrences that share
+// a name are never collapsed into one identity.
+export type ResolutionOccurrence = {
+  path: string;
+  rawName: string;
+  kind: "underspecified" | "unmatched";
+  candidates: ExerciseSuggestion[];
+};
+
+// A derived (never persisted) view: every occurrence sharing a resolution kind
+// and a normalized raw name, so the user makes ONE decision that fans out to
+// all of them. `remember` starts false — an ordinary grouped choice is local
+// to this import, and only an explicit "Remember this interpretation" marks
+// the group for alias persistence.
+export type ResolutionGroup = {
+  groupKey: string;
+  normalizedRawName: string;
+  kind: "underspecified" | "unmatched";
+  occurrences: ResolutionOccurrence[];
+  occurrenceCount: number;
+  remember: boolean;
+};
+
+// Shared by extractUnresolvedExercises and groupResolutionOccurrences so the
+// two surfaces can never disagree about which warnings are exercise
+// resolutions. Structural warnings (duplicate day number, unsupported nested
+// override variant, unknown section type) carry no `rawName` and never match
+// the legacy message shape, so they stay out of both — and, because neither
+// function mutates `warnings`, they survive untouched in the program.
+function exerciseWarningName(warning: ImportWarning): string | undefined {
+  if (warning.rawName !== undefined) return warning.rawName;
+  // Warnings persisted before `rawName` existed: recover the name from the
+  // one message shape the old parser produced.
+  if (/^.+ was imported without a catalog match\.$/.test(warning.message)) {
+    return warning.message.split(" was imported")[0];
+  }
+  return undefined;
+}
+
 export function extractUnresolvedExercises(
   warnings: ImportWarning[],
 ): ResolutionItem[] {
   const items: ResolutionItem[] = [];
   for (const w of warnings) {
-    const rawName = w.rawName ?? w.message.split(" was imported")[0];
-    const isExerciseWarning =
-      w.rawName !== undefined ||
-      /^.+ was imported without a catalog match\.$/.test(w.message);
-    if (!isExerciseWarning) continue;
+    const rawName = exerciseWarningName(w);
+    if (rawName === undefined) continue;
     items.push({
       path: w.path,
       rawName,
@@ -49,6 +86,69 @@ export function extractUnresolvedExercises(
   return items;
 }
 
+/**
+ * Groups the occurrences that still need a decision by
+ * `${kind}:${normalizeExerciseName(rawName)}`.
+ *
+ * Kind is part of the key on purpose: an underspecified `back squat` (a
+ * movement whose concrete version is missing) and an unmatched `back squat`
+ * (no identity at all) offer different choices, so they must not share one
+ * selector even though their normalized text is identical.
+ *
+ * Group order is first-appearance order and occurrence order is warning order,
+ * both of which follow the parse walk (base days, then their variants, then
+ * override replacement days). No path is ever dropped or merged: a repeated
+ * name FANS OUT to every path, and structural safeguards stay authoritative —
+ * `applyResolutions` still refuses to patch a day whose path is ambiguous, so
+ * a grouped choice cannot bypass them.
+ *
+ * A warning with no `resolutionKind` predates the tri-state matcher and counts
+ * as `unmatched`; that is the only kind the old two-state matcher produced.
+ */
+export function groupResolutionOccurrences(warnings: ImportWarning[]): ResolutionGroup[] {
+  const groups = new Map<string, ResolutionGroup>();
+  for (const warning of warnings) {
+    const rawName = exerciseWarningName(warning);
+    if (rawName === undefined) continue;
+    const kind = warning.resolutionKind ?? "unmatched";
+    const normalizedRawName = normalizeExerciseName(rawName);
+    const groupKey = `${kind}:${normalizedRawName}`;
+    const occurrence: ResolutionOccurrence = {
+      path: warning.path,
+      rawName,
+      kind,
+      candidates: warning.suggestions ?? [],
+    };
+    const existing = groups.get(groupKey);
+    if (existing) {
+      existing.occurrences.push(occurrence);
+      existing.occurrenceCount = existing.occurrences.length;
+      continue;
+    }
+    groups.set(groupKey, {
+      groupKey,
+      normalizedRawName,
+      kind,
+      occurrences: [occurrence],
+      occurrenceCount: 1,
+      remember: false,
+    });
+  }
+  return [...groups.values()];
+}
+
+/**
+ * Pre-fills only the decisions that are NOT a catalogue-identity choice:
+ * warmup/cooldown items and items with no suggestion at all become custom
+ * exercises, exactly as before.
+ *
+ * It deliberately does NOT pick a concrete exercise. Fuzzy similarity is
+ * suggestion-only, so an underspecified set is never auto-selected and a fuzzy
+ * suggestion is never finalized just because it scores highly (the old `0.65`
+ * threshold did both, which silently answered the very question the
+ * disambiguation flow exists to ask — and then persisted that guess as a
+ * global alias).
+ */
 export function buildInitialResolutions(
   items: ResolutionItem[],
 ): Record<string, string> {
@@ -56,8 +156,6 @@ export function buildInitialResolutions(
   for (const item of items) {
     if (AUTO_CUSTOM_SECTION_TYPES.has(item.sectionType) || item.suggestions.length === 0) {
       result[item.path] = CUSTOM_ID;
-    } else if (item.suggestions[0].score >= AUTO_RESOLVE_THRESHOLD) {
-      result[item.path] = item.suggestions[0].exerciseId;
     }
   }
   return result;

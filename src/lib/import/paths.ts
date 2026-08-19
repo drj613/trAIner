@@ -4,6 +4,11 @@
 // MUST be built through these functions. Hand-built template strings drift
 // apart (e.g. array index vs. declared day number) and silently break the
 // warning-path <-> resolution-path contract.
+//
+// These paths stay AUTHORITATIVE once occurrences are grouped by name for the
+// UI (see groupResolutionOccurrences in resolution.ts): a group is only a
+// presentation convenience, and every patch still lands through the individual
+// occurrence path built here. Grouping never merges two paths into one.
 
 // A day's TEMPLATE identity for path building. `templateWeek` is the
 // EXPLICIT week the input declared for this day (`day.week`/`day.weekNumber`
@@ -48,9 +53,11 @@ export function variantExercisePath(
   return `${baseExercisePath(dayNumber, templateWeek, sectionIndex, groupIndex, exerciseIndex)}.variants.${variantIndex}`;
 }
 
-// Not yet wired end-to-end (override warning propagation + override
-// resolution application land in Phase 9). Defined now so the base and
-// override path shapes are declared side by side from the start.
+// Override replacement-day exercise path. Wired end to end: the parser emits
+// override warnings on these paths and applyResolutions patches the nested
+// replacement days through them. Note that an override day is NEVER expanded
+// across weeks, so one of these paths addresses exactly one stored exercise —
+// unlike a base path, which can address one exercise per week-clone.
 export function overrideExercisePath(
   overrideIndex: number,
   dayNumber: number,

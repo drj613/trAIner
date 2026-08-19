@@ -26,6 +26,26 @@ import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 const fixturePath = path.join(__dirname, "__fixtures__", "knee-conscious-powerbuilding-cut.json");
 const fixtureJson = fs.readFileSync(fixturePath, "utf-8");
 
+// `buildInitialResolutions` no longer finalizes a fuzzy suggestion (fuzzy
+// similarity is suggestion-only now), so this test stands in for the user's
+// choices in the resolution step: every item the parser left unresolved that
+// has at least one suggestion gets its top suggestion picked. That reproduces
+// the same repeated-name shape the regression is about — the ConstraintError
+// came from concurrent alias writes for a repeated raw name, not from how the
+// choice was made.
+function pickTopSuggestions(
+  items: ResolutionItem[],
+  resolutions: Record<string, string>,
+): Record<string, string> {
+  const chosen = { ...resolutions };
+  for (const item of items) {
+    if (!chosen[item.path] && item.suggestions.length > 0) {
+      chosen[item.path] = item.suggestions[0].exerciseId;
+    }
+  }
+  return chosen;
+}
+
 beforeEach(async () => {
   resetDbConnection();
   await deleteDB(DB_NAME);
@@ -41,7 +61,7 @@ describe("import -> save with a deload override that reuses base-day exercise na
     // Step 2: figure out which exercises need resolution and their
     // auto-assigned resolutions, exactly like ImportClient does.
     const unresolvedItems = extractUnresolvedExercises(review.warnings);
-    const resolutions = buildInitialResolutions(unresolvedItems);
+    const resolutions = pickTopSuggestions(unresolvedItems, buildInitialResolutions(unresolvedItems));
     const resolvedItems = unresolvedItems.filter(
       (item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID,
     );
@@ -93,7 +113,7 @@ describe("import -> save with a deload override that reuses base-day exercise na
   it("re-importing the same fixture into a DB that already has the aliases does not throw or duplicate", async () => {
     const review = parseProgramJson(fixtureJson, undefined, [], []);
     const unresolvedItems = extractUnresolvedExercises(review.warnings);
-    const resolutions = buildInitialResolutions(unresolvedItems);
+    const resolutions = pickTopSuggestions(unresolvedItems, buildInitialResolutions(unresolvedItems));
     const resolvedItems = unresolvedItems.filter(
       (item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID,
     );

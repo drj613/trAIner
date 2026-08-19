@@ -196,12 +196,24 @@ export type UserExerciseDocument = {
   createdAt: ISODate;
 };
 
+// Persisted with the program, so every added field is OPTIONAL: warnings
+// written by older builds stay valid and must keep resolving. `resolutionKind`
+// is the tri-state matcher's discriminator for THIS occurrence — absent means
+// the warning predates it, and consumers treat it as "unmatched" (the only
+// kind the old two-state matcher could produce). A structural warning
+// (duplicate day number, unsupported nested override variant, unknown section
+// type) carries no `rawName` and no `resolutionKind`; that is what keeps it out
+// of the resolution/grouping surfaces while the warning itself survives.
 export type ImportWarning = {
   path: string;
   rawName?: string;
   message: string;
   suggestions?: ExerciseSuggestion[];
   sectionType?: string;
+  resolutionKind?: "underspecified" | "unmatched";
+  candidateExerciseIds?: string[];
+  matchedModifierIds?: string[];
+  nonIdentityAnnotations?: string[];
 };
 
 export type ExerciseSuggestion = {
