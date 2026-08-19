@@ -303,6 +303,34 @@ test.each([
     expected: "Invalid disambiguation manifest record",
   },
   {
+    // A token the runtime can never look up is a rule that ships and does
+    // nothing: `prepareImportName` normalizes the input before `Map.get`, so a
+    // non-normalized key is unreachable. The compiler must refuse it.
+    name: "a disambiguation rule whose token is not normalized",
+    fileName: "disambiguations.json",
+    records: [{
+      id: "fixture-unnormalized",
+      kind: "underspecified-name",
+      normalizedName: "Fixture  Lift",
+      movementId: "squat",
+      candidateExerciseIds: ["candidate-a", "candidate-b"],
+      matchedModifierIds: [],
+    }],
+    expected: 'disambiguation rule fixture-unnormalized token is not normalized: "Fixture  Lift" (expected "fixture lift")',
+  },
+  {
+    name: "a disambiguation phrase whose token is not normalized",
+    fileName: "disambiguations.json",
+    records: [{
+      id: "fixture-unnormalized-phrase",
+      kind: "non-identity-phrase",
+      normalizedPhrase: "Pain-Free Depth",
+      annotation: "pain-free depth",
+      behavior: "strip",
+    }],
+    expected: 'disambiguation rule fixture-unnormalized-phrase token is not normalized: "Pain-Free Depth" (expected "pain free depth")',
+  },
+  {
     name: "a disambiguation rule with an unexpected key",
     fileName: "disambiguations.json",
     records: [{

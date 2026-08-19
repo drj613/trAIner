@@ -20,6 +20,10 @@ import type {
   NormalizedCatalogExercise,
   VariantCoverageCount,
 } from "./types";
+// The runtime's own normalizer, imported rather than reimplemented: a curated
+// token is only reachable if it is byte-identical to what `prepareImportName`
+// produces, so a second implementation here would rebuild the bug it guards.
+import { normalizeExerciseName } from "../../../src/lib/catalog/normalize";
 import {
   aliasCandidates,
   countUnclassifiedAliasCollisions,
@@ -319,6 +323,21 @@ export type DisambiguationRecord =
       behavior: "strip" | "paused-duration" | "reject-alternative";
     };
 
+// A token that is not already normalized can never be matched: the runtime
+// normalizes the imported name and then looks the token up by exact string, so
+// an unnormalized rule ships in the artifact and silently does nothing. That is
+// the whole-table BLOCKER's defect class at one-record granularity, so it is a
+// build failure rather than a no-op.
+function assertNormalizedToken(id: string, token: string): string {
+  const normalized = normalizeExerciseName(token);
+  if (normalized !== token) {
+    throw new Error(
+      `disambiguation rule ${id} token is not normalized: "${token}" (expected "${normalized}")`,
+    );
+  }
+  return token;
+}
+
 function decodeDisambiguations(artifact: VersionedArtifact<unknown>): DisambiguationRecord[] {
   const seenIds = new Set<string>();
   const seenTokens = new Set<string>();
@@ -330,7 +349,7 @@ function decodeDisambiguations(artifact: VersionedArtifact<unknown>): Disambigua
       assertOnlyKeys(record, [
         "id", "kind", "normalizedName", "movementId", "candidateExerciseIds", "matchedModifierIds",
       ], "disambiguation");
-      const normalizedName = nonEmptyString(record.normalizedName, "disambiguation");
+      const normalizedName = assertNormalizedToken(id, nonEmptyString(record.normalizedName, "disambiguation"));
       if (seenTokens.has(normalizedName)) invalidManifestRecord("disambiguation");
       seenTokens.add(normalizedName);
       // A token with exactly one outcome is not underspecified: it resolves,
@@ -348,7 +367,7 @@ function decodeDisambiguations(artifact: VersionedArtifact<unknown>): Disambigua
     }
     if (record.kind === "non-identity-phrase") {
       assertOnlyKeys(record, ["id", "kind", "normalizedPhrase", "annotation", "behavior"], "disambiguation");
-      const normalizedPhrase = nonEmptyString(record.normalizedPhrase, "disambiguation");
+      const normalizedPhrase = assertNormalizedToken(id, nonEmptyString(record.normalizedPhrase, "disambiguation"));
       if (seenTokens.has(normalizedPhrase)) invalidManifestRecord("disambiguation");
       seenTokens.add(normalizedPhrase);
       const behavior = record.behavior;
