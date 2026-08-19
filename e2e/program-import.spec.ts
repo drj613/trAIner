@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { clearDb, IMPORT_PROGRAM_JSON } from "./helpers";
+import { chooseImportVersions, clearDb, IMPORT_PROGRAM_JSON } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Program import suite — serial mode so tests chain: import → verify → map
@@ -54,7 +54,10 @@ test.describe("Program import", () => {
     const textarea = sharedPage.locator("textarea");
     await textarea.fill(IMPORT_PROGRAM_JSON);
     await sharedPage.getByRole("button", { name: /validate/i }).click();
-    // An exercise-resolution step may appear before the confirm step.
+    // An exercise-resolution step may appear before the confirm step. Plain
+    // `Squat` is an underspecified name, so it presents a version choice that
+    // must be answered before the step will let go.
+    await chooseImportVersions(sharedPage);
     const reviewBtn = sharedPage.getByRole("button", { name: /review import/i });
     if (await reviewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await reviewBtn.click();

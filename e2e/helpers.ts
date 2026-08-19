@@ -1,6 +1,33 @@
 import type { Page } from "@playwright/test";
 
 /**
+ * Answer every "Choose version for X" selector on the import resolve step by
+ * taking the first concrete version offered.
+ *
+ * A name covered by the reviewed import-disambiguation table (e.g. plain
+ * `Squat`) is deliberately underspecified: the importer refuses to guess which
+ * concrete version is meant, so "Review import →" stays disabled until the
+ * choice is made. Tests that only care about getting a program in have to make
+ * one, and any version will do for them.
+ */
+export async function chooseImportVersions(page: Page) {
+  // Group-level selectors only: the per-occurrence ones ("... at days.1...")
+  // appear behind "Resolve occurrences separately".
+  const selects = page.locator(
+    'select[aria-label^="Choose version for"]:not([aria-label*=" at "])',
+  );
+  try {
+    await selects.first().waitFor({ state: "visible", timeout: 5000 });
+  } catch {
+    return; // nothing underspecified in this program
+  }
+  for (let i = 0; i < (await selects.count()); i += 1) {
+    // index 0 is the "Choose version…" placeholder.
+    await selects.nth(i).selectOption({ index: 1 });
+  }
+}
+
+/**
  * Import a program via the /import UI if no program is loaded yet.
  * Returns when the Today screen shows workout content.
  */
@@ -13,6 +40,7 @@ export async function seedDemoIfNeeded(page: Page) {
   await page.waitForTimeout(300);
   await page.getByRole("button", { name: /validate/i }).click({ timeout: 10000 });
   // Handle "Resolve exercises" step — exercises may need attention
+  await chooseImportVersions(page);
   const reviewBtn = page.getByRole("button", { name: /review import/i });
   if (await reviewBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
     await reviewBtn.click();
