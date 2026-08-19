@@ -998,3 +998,204 @@ Commits: `5bd8e09` (C-1), `03eafa5` (C-2), `ea82170` (the four surviving mutatio
 My round-3 report commit `df0c77b` is **unreachable from HEAD**. Its content is intact — HEAD's copy of this file is byte-identical to what I wrote, verified by diff — but the change was swept into a sibling lane's commit `74f05d8 docs: report task 10a and correct the restore claim it disproved`, which is not mine and does not describe it.
 
 That is the signature of a wildcard stage (`git add -A` / `git add .` / `git commit -a`) in another lane, the thing the standards prohibit precisely because three agents share this worktree. Nothing was lost this time and my three code commits (`5bd8e09`, `03eafa5`, `ea82170`) are all reachable and unmodified — verified with `git diff --quiet ea82170 HEAD` on all five source files. Reporting it because the next one may not be so lucky, and because the plan's history now attributes this report to the wrong task.
+
+---
+
+# Fix round 4 — the two open rulings after the round-3 sweep
+
+Commits `ea674e3` (Ruling 3), `cba210b` (Ruling 2), `308d99a` (the two mutation survivors), `22ca529` (a comment), report pending. Branch `feat/exercise-catalog-normalization`, starting from `9fdf601`.
+
+**Ruling 1 — no action, as instructed.** The `HistoryClient.aggregateLogs.test.ts` fixture strengthening is accepted; nothing touched.
+
+**Zero tracked-file mutation.** Same technique as round 3, rebuilt: `scratchpad/mut/run.sh` copies the target to `__mut_t12r4_<stem>.<ext>` beside it, mutates the **copy**, and points an out-of-tree Jest config's `moduleNameMapper` at it. It records a `shasum` of the target before the run and asserts byte-identity after, deletes the copy, and greps `git status` for strays. Every run below printed `RESTORE OK … byte-identical, copy removed` and `no stray mutant files`. `git stash` was never run; every stage was `git add <explicit paths>`.
+
+**Control run, harness in place, no mutation:** 34 suites / 465 tests green in the lane.
+
+---
+
+## Ruling 2 — `entries: "corrupt"` must not be silently destroyed
+
+### The backup round-trip finding (constraint 1) — reported before relying on it
+
+Read `src/lib/backup/backup.ts` end to end. Three things decide whether parking is safe:
+
+1. **Export carries unknown keys.** `exportBackup` is `tx.objectStore("logs").getAll()` — whole records, every key (`backup.ts:139`).
+2. **Restore preserves unknown keys.** `restoreBackup` runs each log through `migrateLog`, which is `{ ...log, ...mappedArrayField("entries", …) }` (`v10Identity.ts:265-269`). The spread carries anything it does not name. Validation (`requireFields`, `backup.ts:236`) checks `programId`, `dayId`, `performedAt`, `entries` by name only; unknown keys are never inspected or stripped.
+3. **Parking additionally *fixes* a restore failure I did not expect to find.** `requireFields` demands every log's `entries` be `isArrayOfNonNullObjects`. So today, one log with `entries: "corrupt"` makes the user's **entire backup file unrestorable** — not that log, the whole workspace.
+
+Measured, not reasoned, with a throwaway probe run against `fake-indexeddb` and deleted afterwards (`src/lib/backup/__mut_t12r4_probe.test.ts`, removed; `git status` clean after):
+
+```
+RESTORE RESULT: Invalid backup: logs[0] (id x) — 'entries' must be an array of objects.
+PARKED RESTORE RESULT: no error
+PARKED VALUE AFTER RESTORE: "bench 225x5"
+```
+
+**Finding: preservation is safe, and it is strictly better than the status quo on the backup path as well as the storage path.** No `src/lib/storage/**` edit was needed or made.
+
+### RED — right reason
+
+Four new tests in `WorkoutDayClient.integration.test.tsx` (rendered, real `logRepo`, real `fake-indexeddb`, no mocks). At `cba210b^`:
+
+```
+✕ parks an unreadable entries value on the log instead of overwriting it
+    Expected: "bench 225x5, 235x5, 245x3"
+    Received: undefined
+✕ parks the unreadable value once and carries it through later rewrites
+    Expected: {"note": "hand-edited"}
+    Received: undefined
+✕ carries the parked value through a backup export and restore
+    Expected: "bench 225x5"
+    Received: undefined
+✓ does not park an absent entries — absent is not unreadable
+Tests: 3 failed, 17 passed, 20 total
+```
+
+`undefined` is the loss itself: the autosave rewrite had already replaced the stored value with a proper array and there was nothing left to read.
+
+### The fix
+
+`parkedUnreadableEntries(existing)` in `WorkoutDayClient.tsx`, read in `saveCells` and spread into the `logRepo.save` payload as `unreadableEntries`. New optional field on `WorkoutLogDocument` (`types.ts:161`), typed `unknown`, documented as write-only.
+
+Deliberate choices, each pinned:
+
+- **Read from `existing`, not from a hydration ref.** `saveCells` re-reads the record it is about to overwrite, so the park is computed from the thing actually at risk. A ref would have missed any write path the grid did not hydrate.
+- **An already-parked value wins.** Otherwise the second save would re-park the normalised array the first save wrote, overwriting the original with a copy of the replacement.
+- **Absent and `null` are not parked.** "Absent is not unreadable" (`unreadableValue`, `v10Identity.ts:158`), and `null` holds nothing to recover.
+- **A readable array is not parked.** Without this every healthy log would carry a second full copy of its entries that nothing ever clears.
+- **Spread, not `unreadableEntries: undefined`.** Writing the key with an undefined value would add it to every healthy log.
+- **Nothing surfaces it in the UI.** The recovery channel is the backup export, which now works; a banner for a value nobody can act on inside the app would be noise against "quiet by default".
+
+**Known gap, stated in the shipped comment rather than accepted silently:** a record corrupted a *second* time after it has already been parked keeps the first value and loses the second. Nothing in the app can produce that — `restoreBackup` rejects a non-array `entries` outright, so it takes two separate hand-edits of the raw database — and a list of parked values would make the field ambiguous (an array park indistinguishable from two parks).
+
+### Mutation evidence — Ruling 2
+
+Full lane run each time (34 suites / 471 tests at the end).
+
+| Mutation | Exact change | Killed | Named failures |
+| --- | --- | --- | --- |
+| **M-D** | delete the `...(unreadableEntries !== undefined ? { unreadableEntries } : {})` spread from the `logRepo.save` payload | **3** | `parks an unreadable entries value on the log instead of overwriting it`, `parks the unreadable value once and carries it through later rewrites`, `carries the parked value through a backup export and restore` |
+| **M-E** | delete `if (log.unreadableEntries !== undefined) return log.unreadableEntries;` (the already-parked-wins rule) | **1** | `parks the unreadable value once and carries it through later rewrites` |
+| **M-F** | `parkedUnreadableEntries` tail → `return log.entries;` (drop the null guard **and** `Array.isArray`) | **0 on the first pass — SURVIVOR**, **2** after | see below |
+| **M-F1** | drop only `Array.isArray`: `return log.entries;` | **1** | `does not park a healthy entries array — the ordinary log is untouched` |
+| **M-F2** | drop only the null half: `if (log.entries === undefined) return undefined;` | **1** | `does not park a null entries — null holds nothing to recover` |
+| **M-G** | `migrateLog` (`v10Identity.ts`) destructures `unreadableEntries` out before the spread, i.e. restore drops the parked key | **1** | `carries the parked value through a backup export and restore` |
+
+**The survivor, published rather than tuned away.** M-F killed **nothing** on the first pass. My "does not park an absent entries" test only covered `undefined`, and `undefined` is filtered again by the spread guard downstream — a probe downstream of the thing it claimed to detect. Two behaviours were entirely unpinned:
+
+- Without `Array.isArray`, **every healthy log** would get a second full copy of its entries written into `unreadableEntries` on every save. A healthy-data regression, in a hardening round, that the whole lane called green.
+- Without the null guard, `entries: null` would be parked as if it held something.
+
+Two tests added in `308d99a`; M-F now kills 2, and split into M-F1/M-F2 each half kills its own. M-G is the one that matters most: it proves the round-trip test is real rather than passing because nothing in the path could have dropped the key.
+
+---
+
+## Ruling 3 — the last unguarded stored-date `localeCompare`
+
+Path confirmed: `src/components/workout/ProgramDetailClient.tsx` (in my lane), `getDayBadge` at `:143`.
+
+### Can it reuse the C-1 guard? No — and why
+
+C-1 was fixed inside `logLocalDate`, which answers "which local calendar date does this log belong to". `getDayBadge` sorts on `completedAt ?? performedAt`, a *timestamp* comparison, and `completedAt` is a field `logLocalDate` does not read at all. Routing the badge through `logLocalDate` would silently coarsen the sort from timestamp to day and lose the completion stamp entirely.
+
+The guard it *can* reuse is the other one round 3 shipped: `sessionStamp` in `WorkoutDayClient.tsx:43`. That was module-private. So rather than writing a third copy, I lifted the rule into `sortableStamp(value: unknown)` in `src/lib/workout/localDate.ts` and rewrote **both** call sites in terms of it — `sessionStamp` is now a one-line delegation, and `badgeStamp` is `sortableStamp(completedAt) || sortableStamp(performedAt)`. One rule, one implementation, two callers.
+
+`||` not `??`, deliberately: an unreadable `completedAt` falls back to `performedAt` exactly as an unreadable `performedDate` does in `logLocalDate`, because `performedAt` is the authoritative timestamp.
+
+I also found a second defect at the same site while there. `if (latest.skippedAt)` / `if (latest.completedAt)` are raw truthiness reads, and a non-string is truthy — so the page reported a day **complete** on the strength of a value it could not read. Both now read through `sortableStamp`. For a readable string the behaviour is byte-identical (`""` is falsy either way), so healthy data does not move.
+
+### RED — right reason, and the fixture trap
+
+Seven new tests in `ProgramDetailClient.test.tsx`, rendered through the real component. **Three** logs, not two, with an explicit reverse-ordering case — with two elements V8 calls the comparator once and `localeCompare` coerces its *argument*, so only the receiver throws and a two-log fixture is green without the fix. Four unreadable shapes on `completedAt` (number, object, array, boolean) plus one on `performedAt`. At `ea674e3^`:
+
+```
+TypeError: (b.completedAt ?? b.performedAt).localeCompare is not a function
+
+  141 |   if (dayLogs.length === 0) return null;
+  142 |   const latest = [...dayLogs].sort((a, b) =>
+> 143 |     (b.completedAt ?? b.performedAt).localeCompare(a.completedAt ?? a.performedAt)
+      |                                      ^
+  at getDayBadge (src/components/workout/ProgramDetailClient.tsx:142:31)
+  at src/components/workout/ProgramDetailClient.tsx:453:26
+  at ProgramDetailClient (src/components/workout/ProgramDetailClient.tsx:449:39)
+
+Unable to find an element with the text: ●
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+
+Tests: 7 failed, 8 passed, 15 total
+```
+
+`<body><div /></body>` is the reviewer's inferred consequence, measured: the render throw unmounts the whole program page. M-1 is confirmed as more than a standalone repro.
+
+### Mutation evidence — Ruling 3
+
+| Mutation | Exact change | Killed | Named failures |
+| --- | --- | --- | --- |
+| **M-A** | `sortableStamp` body → `return value as string;` (the guard removed) | **8** | all 7 new badge tests, **plus** round 3's `records the set being typed when another log's performedAt is not a string` — which is the proof the extraction really is shared and not a parallel copy |
+| **M-B** | `badgeStamp` `\|\|` → `??` | **1** | `falls back to performedAt so an unreadable completedAt still places the log` |
+| **M-C** | restore the raw `if (latest.skippedAt)` / `if (latest.completedAt)` truthiness reads | **1** | same |
+
+---
+
+## Healthy-data behaviour
+
+Unchanged, deliberately and verifiably:
+
+- `sortableStamp` returns a readable string unchanged, so both comparators sort identically for healthy logs, and `""` is falsy under both the old and the new badge reads.
+- `parkedUnreadableEntries` returns `undefined` for every log with a readable `entries` array, so the `logRepo.save` payload is byte-identical for healthy records — pinned by `does not park a healthy entries array`, the test M-F1 kills.
+- `sessions`, the grouping key and the first-wins best-set tie in the history surfaces are **Task 13's** and were not touched. `git diff 9fdf601..HEAD -- src/components/workout/HistoryClient.tsx src/lib/workout/historyUtils.ts src/lib/workout/historyProjection.ts` is empty.
+
+## Self-review of the full diff, fresh eyes
+
+1. **M-F's survival was the biggest finding** and is written up above rather than quietly fixed. My original "absent is not unreadable" test was a probe downstream of the thing it claimed to detect.
+2. **Does anything enumerate a log's keys?** A new field on a stored document is only safe if nothing iterates `Object.keys(log)`. Grepped `src/` for `Object.keys(log`, `Object.entries(log`, `Object.keys(l)` outside tests — no hits. Nothing reads `unreadableEntries` either; it is write-only by design.
+3. **`badgeStamp` on `completedAt` changes which log wins** when the unreadable value is on the genuinely newest log. Pinned explicitly by the `falls back to performedAt` test, which asserts the day reads in-progress (`·`), not complete — the honest answer for a completion stamp we cannot read.
+4. **The double-corruption gap** in `parkedUnreadableEntries`, found by asking what my own fix loses rather than what the bug loses. Documented in the shipped comment (`22ca529`).
+5. **`git diff 9fdf601..HEAD --stat` includes `progress.md`.** That is `9fdf601`'s own content appearing because it is my merge base, not an edit of mine — `git log 6f9f3c5..HEAD -- progress.md` attributes it to `9fdf601` alone. I did not edit the ledger. Checked because of round 3's cross-lane commit incident.
+
+## Gates — real output
+
+```
+$ bun run test -- --runInBand
+Test Suites: 103 passed, 103 total
+Tests:       1569 passed, 1569 total
+Time:        22.592 s
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+(clean)
+
+$ bun run lint
+$ eslint .
+(clean)
+
+$ bun run build
+✓ built in 1.53s
+(Vite large-chunk advisory only — known-acceptable)
+
+$ git diff --check
+exit=0
+
+e2e not run — controller instruction
+```
+
+1,569 against the round-3 baseline of 1,556: my 13 new tests, no foreign delta. **Foreign failures: none.** Every gate run was fully green, so nothing needed attribution by filename; no `--maxWorkers=24` run was made, per the brief.
+
+**For the controller's single serial e2e run:** nothing here touches routing, seeding or `e2e/helpers.ts`, and no e2e spec was written or needed. The two surfaces I changed — the program detail page's week grid and the day screen's save path — are covered by rendered jsdom tests. If the controller wants one confirmation, the program-detail specs are the ones to watch, because `getDayBadge` now renders `·` in a case that previously rendered `●` for a non-string `completedAt`.
+
+## What a reviewer should scrutinise most
+
+1. **The new stored field.** `unreadableEntries` is the first write-only preservation field on this schema. Check it does not need a migration (it does not — it is optional and additive), and confirm the judgement that no UI should surface it.
+2. **M-F's survival.** Two behaviours were unpinned in a hardening round and the whole lane was green. Worth checking whether the two new tests are the right pins and whether any other half of a compound guard here is in the same position.
+3. **The badge semantics change.** A non-string `completedAt` used to render `●`; it now renders `·`. That is a visible change on corrupt data, and it is the only place this round moves behaviour rather than adding a guard.
+4. **`||` versus `??` in `badgeStamp`.** It makes an unreadable `completedAt` fall back to `performedAt`, consistent with `logLocalDate`, but it is a product judgement.
+5. **The restore finding.** `restoreBackup` rejecting a whole file over one log's non-array `entries` is a live data-safety issue for any *other* shape that produces it. Parking closes the path the day screen creates; it does not make `requireFields` more forgiving, and that belongs to whoever owns `src/lib/storage/**`.
+
+## Status
+
+**DONE**
+
+Commits: `ea674e3`, `cba210b`, `308d99a`, `22ca529`, plus this report.
