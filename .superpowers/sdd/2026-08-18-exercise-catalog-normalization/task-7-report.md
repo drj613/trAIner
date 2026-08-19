@@ -342,3 +342,234 @@ $ git diff --check
 6. **`terminated()`** — the one behaviour change in this task with no test.
 
 DONE
+
+---
+
+# Fix round 1
+
+Commits (Codex follow-up items are detailed in `task-6-codex-followup-report.md`):
+- `ac887ec` — `fix: validate the restored profile and abort a failing restore` (C1)
+- `49a9a81` — `fix: classify only aliases that arrive without a provenance` (Q1b ruling + I1)
+- `62a2b13` — `fix: close migration rejection paths and preservation gaps` (Codex C-2/C-3/C-4, gaps a–d, I2, I3, m2)
+- `44d6328` — `refactor: drop the unfalsifiable override id guard` (m1)
+- `b1706fc` — `test: name the alias drop rule after what it measures`
+
+## C1 — a malformed `profile` destroyed the entire workspace
+
+Reproduced exactly as reported, on a real database:
+
+```
+● rejects a primitive profile without destroying the workspace
+  DataError: Data provided to an operation does not meet requirements.
+      > 316 |   if (b.profile) tx.objectStore("profile").put(b.profile);
+
+  (with the throw assertion relaxed, the second half:)
+  expect(received).resolves.toEqual(expected)
+  - Expected  - 126      // the seeded program
+  + Received  +   1      // Array []
+```
+
+Fixed in three layers, increasing in generality:
+
+1. **Validation before the transaction.** `profile` must be absent, null, or an
+   object with a string `id`. It was the only backed-up field with just a
+   truthiness check while every other store got `isArrayOfObjects` + `hasIds`.
+2. **Nothing but `clear`/`put` inside the transaction.** `migrateProgram` and
+   `migrateLog` now run to completion *before* `db.transaction(...)`, so a throw
+   from a transform cannot land after the clears. I took the reviewer's suggested
+   shape; it makes the wrapper below belt-and-braces rather than the only defence.
+3. **The structural net.** The transaction body is wrapped: on any throw it
+   aborts, marks the resulting AbortError handled, and rethrows the original
+   cause. Each issued write's own rejection is marked handled as it is issued
+   (`issue(...)`), because `tx.done` is the authoritative outcome and aborting
+   otherwise turns every in-flight request into a separate unhandled AbortError —
+   which is exactly what happened on the first attempt and is now prevented by
+   construction rather than by luck.
+
+Tests (real database, `appDb.test.ts`): three rejection cases (primitive, no id,
+non-string id) each asserting the pre-restore programs *and* an empty logs store
+survive; an `accepts an absent or null profile` companion; and a separate
+`aborts the transaction when a write throws after the stores are cleared` that
+patches `IDBObjectStore.prototype.put` to throw for the `programs` store, so the
+net is tested independently of any one field's validation.
+
+Mutations:
+- drop the profile validation → **3 failed, 133 passed**. Worth noting what
+  *survives* this mutation: the workspace is intact (the net catches it), and the
+  three tests fail only on the error message. Defence in depth, working.
+- drop the `tx.abort()` branch → **1 failed, 135 passed** (the net test).
+
+The first draft of the net test was vacuous and I caught it before committing: it
+patched `put` for the `logs` store, but `programs` is written *before* `logs`, so
+the program had already been re-put and the assertion held either way. Re-pointed
+at `programs`, it failed as it should.
+
+## Q1b ruling — the v2 purge narrowed, recompute kept unconditional
+
+Implemented as ruled, and I agree with the reasoning; the argument I had not made
+myself is the decisive one: **a live v10 database never re-classifies on read**,
+so a `legacy-auto` alias that later becomes ambiguous keeps working there
+indefinitely. Purging it on restore made restore strictly more destructive than
+the state it claimed to reproduce.
+
+`classifyAliases` now classifies only rows that arrive **without** a provenance —
+a pre-v10 database row, or a version-1 file. Rows carrying `legacy-auto` or
+`remembered` keep it. Recompute-and-dedupe still applies to every row, in every
+version. The v10 migration is unchanged (pre-v10 rows have no provenance).
+
+One consequence I had to follow through: rows arriving already classified skip
+the outcome gate, so two colliding `legacy-auto` rows *can* genuinely disagree
+about their target — the previous comment's claim that colliding legacy rows
+provably share a target is only true of rows classified here. `winsCollision` now
+applies newest-`createdAt` within a provenance class rather than leaving that case
+to `getAll`'s key order, and its comment says which rows the "provably agree"
+argument covers.
+
+`backup.ts`'s comment (the one the reviewer flagged as implying the opposite) is
+rewritten to separate the two jobs explicitly: integrity for every version,
+classification only for rows with no provenance, each with its reason.
+
+## I1 — coverage for the ruled behaviour
+
+New tests, all mutation-verified:
+
+- `keeps a $name alias whose token is now an underspecified choice` (real
+  database, both `legacy-auto` and `remembered`). RED before the fix:
+  `aliasRepo.find("Back Squat")` → `undefined`.
+- `still recomputes a stale token on an already-classified alias` — the integrity
+  half, which must *not* be narrowed with the purge.
+- `keeps the newer legacy-auto row on a token collision` (both orderings, pure
+  helper).
+
+Mutations:
+- the exact one the reviewer used (any row carrying a provenance skips
+  re-classification → revert the gate to remembered-only): **4 failed, 144
+  passed**. It left the suite green before this round.
+- trust the file's token in the already-classified branch: **8 failed, 140
+  passed**.
+- revert `winsCollision` to remembered-only: **1 failed, 8 passed**.
+
+## I2 — `terminated()` is testable, and my Task 7 report was wrong to imply otherwise
+
+Correcting the record: I reported the mutation as passing, which was true of the
+suite as it stood, and I over-generalised from the sibling `dbPromise` invariant.
+The reviewer is right that this one discriminates. New `appDbConnection.test.ts`
+wraps `openDB` to record every open and its callbacks, then fires the *first*
+open's `terminated` late, after a reset installed a second connection.
+
+I could not use "a third open occurs" as the observable — the pre-guard code
+already compared `dbPromise === attempt` for `dbPromise`, so no reopen happens
+either way. What discriminates is the harm itself: with the unconditional
+`dbInstance = undefined`, the live connection is orphaned, so a later
+`resetDbConnection()` cannot close it. The test asserts no reopen *and* that the
+live connection is closed after a reset.
+
+Mutation (restore the unconditional clear): **1 failed, 3 passed**. The test
+closes its subject in a `finally`, because an orphan otherwise blocks the next
+test's `deleteDatabase` and the mutation shows up as a 120-second hang instead of
+a failure — which is how I first hit it.
+
+## I3 — override validation against the file's own custom exercises
+
+New test `validates an override against a custom exercise from the same file`:
+restores a v2 document carrying `userExercises: [{ id: "user-custom-1", … }]` and
+an `exercise-id` override targeting it, then asserts both the override and the
+custom exercise landed.
+
+Mutation (validate against an empty `Set` instead): **1 failed, 139 passed**.
+Confirms the wiring, and that the failure mode would have been a permanently
+unrestorable backup with an error blaming the user's file.
+
+## m1 — the unfalsifiable id guard, deleted
+
+`hasIds(doc["normalizationOverrides"])` is gone. `canonicalNormalizationOverride`
+derives the id from the target, so no input could ever fail that check. A comment
+now says why there is no id check, so nobody adds it back. Reviewer and I agreed;
+this is the class the recipe comment legislates against.
+
+## m2 — the divergence guard now covers the alias resolution context
+
+The v9 divergence fixture gains one alias whose token is the only thing that can
+give the fixture's otherwise-unknown "Mystery lift" slot a canonical id, plus an
+anti-vacuity assertion that the in-place migration really did resolve it.
+
+Mutation (pass `[]` as the alias context in restore): **1 failed, 139 passed**.
+It left the suite green before.
+
+**Finding worth recording, from getting this wrong first.** My first attempt used
+a *legacy* alias and failed: `readCanonicalIdForName("Mystery lift")` →
+`undefined`. A legacy alias is only retained when its token already has exactly
+one concrete catalogue outcome — in which case the name resolves without the alias
+— so after v10 **no `legacy-auto` alias can ever be the sole reason a name
+resolves**. Only `remembered` rows can. That is now stated in the test.
+
+## Concurrency with Task 8
+
+Staged by explicit path throughout; no `git add -A`. `src/lib/programs/types.ts`
+was dirty from the other agent for most of this round and I did not touch it (my
+type union landed in `b2ac7e9`, before the fix round).
+
+Suites I could **not** attribute to myself, both from the Task 8 agent's
+in-flight work:
+
+- `src/lib/import/parser.test.ts` — 3 failures.
+- `src/lib/catalog/shippedDisambiguations.test.ts` — 7 failures, and the one
+  `bun run typecheck` error (a fixture missing `provenance` on `AliasDocument`).
+  The file is untracked and was created after my last commit.
+
+I checked each rather than assuming: my own lane runs clean.
+
+## Gates
+
+```text
+$ bun run test -- --runInBand src/lib/backup src/lib/storage src/lib/catalog
+Test Suites: 1 failed, 17 passed, 18 total     (the failure is the untracked
+Tests:       7 failed, 272 passed, 279 total    shippedDisambiguations.test.ts)
+
+my lane, individually:
+  backup.test.ts                    49 passed
+  appDb.test.ts                     93 passed
+  migrations/v10Identity.test.ts    16 passed
+  appDbUpgradeFailure.test.ts        6 passed
+  appDbConnection.test.ts            4 passed   (new suite)
+  aliasRepo / userExerciseRepo / normalizationOverrideRepo / sessionPersistence
+  and the rest of src/lib/storage — all PASS
+
+$ bun run test -- --runInBand          (whole repo)
+Test Suites: 1 failed, 94 passed, 95 total
+Tests:       3 failed, 1235 passed, 1238 total   (src/lib/import/parser.test.ts)
+
+$ bun run typecheck
+one error, in the other agent's untracked shippedDisambiguations.test.ts;
+no error in any tracked file
+
+$ bun run lint
+(clean)
+
+$ bun run build
+✓ built in 3.68s   (only the pre-existing >500 kB chunk advisory)
+
+$ git diff --check
+(clean)
+```
+
+Floor check: before this round the repo was at 94 suites / 1194 tests. My lane
+added a suite and 44 tests (1238 total now, of which the Task 8 agent contributed
+some); the 3 remaining failures are theirs.
+
+## What a reviewer should scrutinise most, this round
+
+1. **C1's third layer** — `issue(...)` swallowing each request's individual
+   rejection. It is correct because a failed request aborts its own transaction
+   and `tx.done` carries the cause, but it is the kind of `catch(() => {})` that
+   deserves a second reading.
+2. **The v2 purge narrowing at the seam with `remembered`** — a file can now make
+   a provenance load-bearing on restore, which is what makes the Task 6
+   "fixture pins a shape production never wrote" note less hypothetical than it
+   was.
+3. **`winsCollision` generalised to newest-within-class** — new behaviour for
+   colliding `legacy-auto` rows arriving from a file.
+4. **C-4 closing a retired connection** (detailed in the Codex report) — the one
+   place I chose to break a caller rather than leak.
+
+DONE
