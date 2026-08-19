@@ -598,6 +598,55 @@ describe("a log we cannot read must not disable the day screen", () => {
     expect("unreadableEntries" in logs[0]).toBe(false);
   });
 
+  it("does not park a healthy entries array — the ordinary log is untouched", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-6", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 225, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() => expect(cell("e1", 0)).toHaveValue("225x5"));
+
+    await typeIntoCell(user, cell("e1", 1), "235x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // Parking a readable array would copy every healthy log's entries into a
+    // second field that nothing ever clears — silent duplication of the whole
+    // history, not preservation.
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
+  it("does not park a null entries — null holds nothing to recover", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-7", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: null,
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
   // Parking is only worth anything if the key survives the user's backup.
   // If export/restore dropped it, the value would *look* preserved and vanish
   // on the next restore — worse than the loss it prevents.
