@@ -11,10 +11,17 @@ import { localDateString, logLocalDate, sessionLogId, sortableStamp } from "@/li
 import { resolveNextDay } from "@/lib/workout/dayResolver";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { SetCell, classifyCell } from "./SetCell";
-import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
+import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection, WorkoutLogDocument } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
-import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
+import {
+  projectExerciseHistory,
+  rowsForIdentity,
+  versionKeyForIdentity,
+} from "@/lib/workout/historyProjection";
+import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
+import { resolveExerciseIdentity } from "@/lib/catalog/identity";
+import { ExerciseCorrectionSheet, type CorrectionTarget } from "@/components/catalog/ExerciseCorrectionSheet";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
@@ -666,6 +673,7 @@ function WorkoutBody({
 }) {
   const navigate = useNavigate();
   const { saveProgram } = useLocalData();
+  const { context: identityContext } = useExerciseNormalization();
 
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -691,32 +699,77 @@ function WorkoutBody({
   // stored index so the autosave rewrite puts them back exactly where they were.
   const preservedEntriesRef = useRef<{ logId: string; entries: Map<number, unknown> } | null>(null);
 
-  const [historyDrawer, setHistoryDrawer] = useState<{
+  // What the drawer is about, kept separately from the logs it reads.
+  //
+  // The rows are DERIVED below rather than stored, so a correction saved from
+  // inside the drawer regroups the history already on screen without another
+  // read of IndexedDB: the identity context is the only thing that changed, and
+  // `projectExerciseHistory` is a pure function of logs plus that context.
+  const [historyTarget, setHistoryTarget] = useState<{
     exerciseName: string;
-    rows: ExerciseSessionRow[];
+    exerciseId: string;
   } | null>(null);
+  const [historyLogs, setHistoryLogs] = useState<WorkoutLogDocument[]>([]);
+  const [correctionTarget, setCorrectionTarget] = useState<CorrectionTarget | null>(null);
   const [replaceTarget, setReplaceTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<ProgramExercise | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
 
   async function openHistoryFor(exerciseName: string, exerciseId: string) {
     try {
-      // Resolve the slot's current canonical exercise id from the day template.
-      let canonicalExerciseId: string | undefined;
-      for (const section of day.sections) {
-        for (const group of section.groups) {
-          for (const ex of group.exercises) {
-            if (ex.id === exerciseId) canonicalExerciseId = ex.canonicalExerciseId;
-          }
-        }
-      }
       const logs = await logRepo.list();
-      const rows = aggregateExerciseHistory(logs, exerciseId, canonicalExerciseId);
-      setHistoryDrawer({ exerciseName, rows });
+      setHistoryLogs(logs);
+      setHistoryTarget({ exerciseName, exerciseId });
     } catch (e) {
       console.error("[history] failed to load exercise history", e);
     }
   }
+
+  /**
+   * The whole movement family's history for the slot the user tapped.
+   *
+   * Two things this shape buys, both of them spec requirements:
+   *
+   * 1. **The family, not the version.** Identity is resolved once, the same way
+   *    `projectExerciseHistory` resolves each log entry, and `rowsForIdentity`
+   *    then returns every row in that identity's family. Grouping is decided in
+   *    one place; nothing here re-derives it.
+   * 2. **A correction regroups what is on screen.** `identityContext` is a
+   *    dependency, so saving a correction from inside the drawer recomputes the
+   *    rows from the logs already in memory. What the user logged is untouched:
+   *    only `currentVersionLabel` and the grouping move.
+   *
+   * Resolution goes through the slot's optional canonical id first and falls
+   * back to the performed name; the slot id is passed because the resolver's
+   * input requires it, but it is never the primary key — a slot id is a position
+   * in one routine, and history follows the exercise across routines.
+   */
+  const historyView = useMemo(() => {
+    if (!historyTarget) return null;
+    let canonicalExerciseId: string | undefined;
+    for (const section of day.sections) {
+      for (const group of section.groups) {
+        for (const ex of group.exercises) {
+          if (ex.id === historyTarget.exerciseId) canonicalExerciseId = ex.canonicalExerciseId;
+        }
+      }
+    }
+    const identity = resolveExerciseIdentity(
+      {
+        kind: "stored-exercise",
+        canonicalExerciseId,
+        slotId: historyTarget.exerciseId,
+        performedName: historyTarget.exerciseName,
+      },
+      identityContext,
+    );
+    const projection = projectExerciseHistory(historyLogs, identityContext);
+    return {
+      exerciseName: historyTarget.exerciseName,
+      rows: rowsForIdentity(projection, identity),
+      activeVersionKey: versionKeyForIdentity(identity),
+    };
+  }, [historyTarget, historyLogs, day, identityContext]);
 
   // Resolve which session this visit shows and hydrate from it.
   //
@@ -1178,11 +1231,19 @@ function WorkoutBody({
         </p>
       )}
 
-      {historyDrawer && (
+      {historyView && (
         <HistoryDrawer
-          exerciseName={historyDrawer.exerciseName}
-          rows={historyDrawer.rows}
-          onClose={() => setHistoryDrawer(null)}
+          exerciseName={historyView.exerciseName}
+          rows={historyView.rows}
+          activeVersionKey={historyView.activeVersionKey}
+          onCorrect={setCorrectionTarget}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
+      {correctionTarget && (
+        <ExerciseCorrectionSheet
+          target={correctionTarget}
+          onClose={() => setCorrectionTarget(null)}
         />
       )}
       {replaceTarget && (

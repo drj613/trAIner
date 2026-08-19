@@ -13,6 +13,7 @@ import { render, screen, act, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
 import { deleteDB } from "idb";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
@@ -64,13 +65,19 @@ jest.mock("@/lib/analytics/analyticsSeam", () => ({
   trackWorkoutEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// `ExerciseNormalizationProvider` is mounted at the app root
+// (`src/main.tsx`), and `WorkoutBody` resolves the tapped slot's identity
+// through it to load family-wide history. Rendering the component without it is
+// not a shape the app can produce.
 function renderDay(dayId = "day-1") {
   return render(
-    <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
-      <Routes>
-        <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
-      </Routes>
-    </MemoryRouter>
+    <ExerciseNormalizationProvider>
+      <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
+        <Routes>
+          <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
+        </Routes>
+      </MemoryRouter>
+    </ExerciseNormalizationProvider>
   );
 }
 

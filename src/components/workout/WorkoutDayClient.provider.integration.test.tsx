@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { deleteDB } from "idb";
 import { LocalDataProvider } from "@/components/app/LocalDataProvider";
+import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import { programRepo } from "@/lib/storage/programRepo";
 import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
@@ -54,13 +55,15 @@ afterEach(() => {
 
 function renderDay() {
   return render(
-    <LocalDataProvider>
-      <MemoryRouter initialEntries={["/programs/p1/days/day-1"]}>
-        <Routes>
-          <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
-        </Routes>
-      </MemoryRouter>
-    </LocalDataProvider>
+    <ExerciseNormalizationProvider>
+      <LocalDataProvider>
+        <MemoryRouter initialEntries={["/programs/p1/days/day-1"]}>
+          <Routes>
+            <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
+          </Routes>
+        </MemoryRouter>
+      </LocalDataProvider>
+    </ExerciseNormalizationProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import type { ProgramDocument } from "@/lib/programs/types";
 import { programRepo } from "@/lib/storage/programRepo";
@@ -18,7 +19,7 @@ const twoDay: ProgramDocument = {
       id: "day-1", dayNumber: 1, title: "Push Day",
       sections: [{
         id: "s1", name: "Main", type: "strength",
-        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press", "cat-bench")] }],
+        groups: [{ id: "g1", type: "single", exercises: [makeExercise("e1", "Bench Press", "barbell-bench-press")] }],
       }],
     },
     {
@@ -75,13 +76,19 @@ jest.mock("@/lib/analytics/analyticsSeam", () => ({
   trackWorkoutEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// `ExerciseNormalizationProvider` is mounted at the app root
+// (`src/main.tsx`), and `WorkoutBody` resolves the tapped slot's identity
+// through it to load family-wide history. Rendering the component without it is
+// not a shape the app can produce.
 function renderOnDay(dayId: string) {
   return render(
-    <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
-      <Routes>
-        <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
-      </Routes>
-    </MemoryRouter>
+    <ExerciseNormalizationProvider>
+      <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
+        <Routes>
+          <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
+        </Routes>
+      </MemoryRouter>
+    </ExerciseNormalizationProvider>
   );
 }
 
@@ -271,7 +278,7 @@ describe("WorkoutDayClient canonical id persistence", () => {
       (call) => call[0].completedAt !== undefined && call[0].dayId === "day-1",
     );
     expect(finishSave![0].entries[0]).toEqual(
-      expect.objectContaining({ exerciseId: "e1", canonicalExerciseId: "cat-bench" }),
+      expect.objectContaining({ exerciseId: "e1", canonicalExerciseId: "barbell-bench-press" }),
     );
   });
 });
@@ -430,14 +437,14 @@ describe("WorkoutDayClient history button after exercise change", () => {
         id: "log-old", programId: "p1", dayId: "day-1",
         performedAt: "2026-04-01T09:00:00.000Z",
         entries: [
-          { exerciseId: "e1", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 80, reps: 5 }] },
+          { exerciseId: "e1", canonicalExerciseId: "barbell-bench-press", sets: [{ setNumber: 1, weight: 80, reps: 5 }] },
         ],
       },
       {
         id: "log-other", programId: "p1", dayId: "day-1",
         performedAt: "2026-04-08T09:00:00.000Z",
         entries: [
-          { exerciseId: "some-other-slot", canonicalExerciseId: "cat-bench", sets: [{ setNumber: 1, weight: 90, reps: 5 }] },
+          { exerciseId: "some-other-slot", canonicalExerciseId: "barbell-bench-press", sets: [{ setNumber: 1, weight: 90, reps: 5 }] },
         ],
       },
     ]);
@@ -446,7 +453,12 @@ describe("WorkoutDayClient history button after exercise change", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /history for bench press/i }));
     const dialog = await screen.findByRole("dialog", { name: /history for bench press/i });
-    // Both logs should surface because they share canonicalExerciseId "cat-bench".
+    // Both logs surface because they share a canonical exercise id, so they
+    // resolve to one movement family whatever slot they were logged into.
+    // The id is a REAL catalogue id: `cat-bench` resolved to nothing, and with
+    // no `exerciseName` on the entries either (a shape the day screen never
+    // writes — `WorkoutDayClient.tsx:856`) the fixture exercised no matching
+    // rule at all.
     expect(dialog).toHaveTextContent("90x5");
     expect(dialog).toHaveTextContent("80x5");
   });

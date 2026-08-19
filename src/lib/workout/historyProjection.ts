@@ -48,6 +48,15 @@ export type ExerciseHistoryRow = {
   concreteExerciseId?: string;
   movementId?: string;
   currentVersionLabel?: string;
+  /**
+   * The metrics bucket this row belongs to (`versionKeyForIdentity`). Carried on
+   * the row so a rendering surface can group or filter by version without
+   * recomputing the key — the Today drawer's version filter needs it for rows
+   * that resolved to a movement but no concrete version, where
+   * `concreteExerciseId` is absent and the key is `movement:<id>`. It can
+   * contain `#`, so it is never safe in a CSS selector or a URL unescaped.
+   */
+  versionKey: string;
   sets: string[];
   note?: string;
   volumeLb: number;
@@ -320,11 +329,12 @@ export function projectExerciseHistory(
     readableEntries(log).forEach(({ entry, entryIndex }) => {
       if (!entryHasHistoryData(entry)) return;
       const identity = resolveEntry(entry);
+      const versionKey = versionKeyForIdentity(identity);
       projected.push({
         entry,
         identity,
         familyKey: familyKeyForIdentity(identity),
-        versionKey: versionKeyForIdentity(identity),
+        versionKey,
         row: {
           logId: log.id,
           entryIndex,
@@ -340,6 +350,7 @@ export function projectExerciseHistory(
           concreteExerciseId: identity.concreteExerciseId,
           movementId: identity.movementId,
           currentVersionLabel: identity.currentVersionLabel,
+          versionKey,
           sets: entrySetLabels(entry),
           note: entryNote(entry),
           volumeLb: entryVolumeLb(entry),
