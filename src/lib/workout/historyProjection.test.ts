@@ -13,7 +13,13 @@ import {
   makeHistoryProjectionFixture,
 } from "./historyProjection.testFixtures";
 import { resolveExerciseIdentity } from "@/lib/catalog/identity";
-import { highBar } from "@/lib/catalog/identity.testFixtures";
+import {
+  backRack,
+  barbell,
+  highBar,
+  makeIdentityContext,
+  squat,
+} from "@/lib/catalog/identity.testFixtures";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 import { aggregateExerciseHistory } from "./historyUtils";
 
@@ -892,5 +898,68 @@ describe("unreadable set fields", () => {
     expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
       bestSetLabel: "BWx5", sessionVolumesLb: [0],
     });
+  });
+});
+
+// ─── One underspecified movement logged under synonymous names ────────────────
+
+describe("underspecified names the catalogue declares identical", () => {
+  // The shipped catalogue gives movement `squat` four underspecified names —
+  // `back squat`, `barbell back squat`, `squat`, `squats`
+  // (`src/lib/catalog/importDisambiguations.generated.json`) — so it declares
+  // them the same thing at the same specificity. An underspecified name is
+  // healthy data, not corruption, and a user who types "Squat" some weeks and
+  // "Squats" others must keep one history with a real progression rather than a
+  // version card per spelling, each with its own PR and its own one-session
+  // trend.
+  const underspecifiedSquatContext = makeIdentityContext({
+    movementsById: new Map([[squat.id, squat]]),
+    modifiersById: new Map([[barbell.id, barbell], [backRack.id, backRack]]),
+    disambiguations: new Map((["squat", "squats", "back squat"]).map((normalizedName) => [
+      normalizedName,
+      {
+        id: `${normalizedName.replace(/\s/g, "-")}-choice`,
+        kind: "underspecified-name" as const,
+        normalizedName,
+        movementId: "squat",
+        candidateExerciseIds: [highBar.id],
+        matchedModifierIds: ["barbell", "back-rack"],
+      },
+    ])),
+  });
+
+  const logOf = (id: string, date: string, name: string, weight: number): WorkoutLogDocument => ({
+    id, programId: "p1", dayId: "d1",
+    performedAt: `${date}T14:00:00.000Z`, performedDate: date,
+    entries: [{ exerciseId: "slot-squat", exerciseName: name, sets: [{ setNumber: 1, weight, reps: 5 }] }],
+  });
+
+  it("keeps one version history across Squat, Squats and Back Squat", () => {
+    const projection = projectExerciseHistory([
+      logOf("l-1", "2027-03-01", "Squat", 300),
+      logOf("l-2", "2027-03-08", "Squats", 305),
+      logOf("l-3", "2027-03-15", "Back Squat", 310),
+    ], underspecifiedSquatContext);
+
+    expect([...projection.versionSummaries.keys()]).toEqual(["movement:squat"]);
+    expect(projection.versionSummaries.get("movement:squat")).toMatchObject({
+      sessionCount: 3,
+      entryCount: 3,
+      sessionVolumesLb: [1500, 1525, 1550],
+      bestSetLabel: "310x5",
+    });
+    // The family was never split, so this is a narrowing of the version key
+    // only.
+    expect([...projection.familySummaries.keys()]).toEqual(["squat"]);
+  });
+
+  it("keys an underspecified identity by its movement, unqualified", () => {
+    const identity = resolveExerciseIdentity(
+      { kind: "stored-exercise", slotId: "slot-squat", performedName: "Squats" },
+      underspecifiedSquatContext,
+    );
+    expect(identity).toMatchObject({ movementId: "squat", concreteExerciseId: undefined });
+    expect(versionKeyForIdentity(identity)).toBe("movement:squat");
+    expect(familyKeyForIdentity(identity)).toBe("squat");
   });
 });

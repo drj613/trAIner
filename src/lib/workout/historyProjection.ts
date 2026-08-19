@@ -121,9 +121,25 @@ export function familyKeyForIdentity(identity: ExerciseIdentityResult): string {
   return unresolvedKey(identity);
 }
 
-/** The metrics bucket an identity belongs to: its concrete version, else itself. */
+/**
+ * The metrics bucket an identity belongs to: its concrete version, else itself.
+ *
+ * A movement-level identity is already named by what it resolved to, so it is
+ * NOT qualified with the performed name. The `slot:<slotId>` case is different:
+ * that key ignores the performed name entirely, so two genuinely different
+ * exercises swapped into one slot collapse into one summary — see
+ * `unresolvedKey`. `movement:<id>` splits instead on names the catalogue has
+ * deliberately unified: `importDisambiguations.generated.json` gives movement
+ * `squat` four underspecified names (`back squat`, `barbell back squat`, `squat`,
+ * `squats`), so qualifying here would give a user who types "Squat" some weeks
+ * and "Squats" others a version card per spelling, each with its own PR and its
+ * own one-session trend, in place of one history with a real progression. An
+ * underspecified name is healthy data, not corruption.
+ */
 export function versionKeyForIdentity(identity: ExerciseIdentityResult): string {
-  return identity.concreteExerciseId ?? unresolvedKey(identity);
+  if (identity.concreteExerciseId) return identity.concreteExerciseId;
+  if (identity.movementId) return identity.groupKey;
+  return unresolvedKey(identity);
 }
 
 /** Every row for the identity's whole movement family, newest first. */
