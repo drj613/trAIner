@@ -88,7 +88,17 @@ bun run build
 git diff --check
 ```
 
-**Plus the e2e suite** (find the script in `package.json`). This was added mid-plan for a reason: the curation commit silently broke `e2e/helpers.ts` — bare `Squat` became underspecified, which blocked demo seeding and nine specs — and it went unnoticed through an implementer, an independent reviewer, and the controller, because every one of them ran a fully green unit suite over a broken e2e suite. If e2e is slow, run it once before you commit rather than never. If you cannot run it, say so explicitly in your report instead of omitting it.
+**Do NOT run the e2e suite.** Do not run Playwright in any form. Concurrent agents each launching browsers put several dozen Chrome instances on the repo owner's machine and throttled it; this is a hard stop, set by the repo owner.
+
+The controller runs e2e **once, serially**, before delivery. Your obligations instead:
+
+- If your change plausibly affects an `e2e/*.spec.ts` file, **write or update the spec anyway** and state in your report that it is unexecuted and needs a serial run. Unexecuted coverage that exists beats coverage nobody wrote.
+- Say `e2e not run — controller instruction` in your report's gate list. Never silently omit the line; the record has to stay honest about what was and was not verified.
+- Flag explicitly anything you believe genuinely needs a browser, so it lands in the controller's single run rather than being discovered at the delivery gate.
+
+Why the gate existed, so nobody quietly reinstates it: the curation commit silently broke `e2e/helpers.ts` — bare `Squat` became underspecified, which blocked demo seeding and nine specs — and it passed an implementer, an independent reviewer, and the controller, because all three ran a green unit suite over a broken e2e suite. That risk is now carried by the controller's serial run, not by you.
+
+**A rendered jsdom test is not e2e and is still required** where a defect only appears through the UI. React Testing Library against `fake-indexeddb`, driven through the real component, is the tool for that — several Criticals on this plan were invisible to unit tests and only appeared when the component was actually rendered. Do not downgrade one of those to a unit test on the strength of this rule.
 
 Known-acceptable console noise: React Router future warnings, intentional error-path logs, Vite's large-chunk advisory.
 
