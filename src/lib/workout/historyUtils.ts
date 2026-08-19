@@ -47,23 +47,50 @@ export function setHasData(s: WorkoutSetLog): boolean {
 }
 
 /**
+ * A log entry's readable sets. `sets` that is present but not an array is data
+ * we cannot render and must not drop: `src/lib/storage/appDb.ts:186-195` keeps
+ * such a log on purpose, because it "may be standing in for real sets we have no
+ * way to recover", so those entries reach this module and one of them must never
+ * remove another exercise's readable history from view.
+ */
+function readableSets(entry: WorkoutLogEntry): readonly WorkoutSetLog[] {
+  return Array.isArray(entry.sets) ? entry.sets : [];
+}
+
+/**
+ * Whether `sets` is present but unreadable. Same rule as `unreadableValue` in
+ * `src/lib/storage/migrations/v10Identity.ts:158` — absent (`undefined`/`null`)
+ * is the legitimate shape of an entry with nothing logged, while anything else
+ * that is not our array is unreadable and therefore counts as data-bearing. The
+ * two definitions encode one rule; the duplication is forced by this module's
+ * no-storage-import seam (pinned by `historyProjection.test.ts`'s import scan),
+ * not an oversight.
+ */
+function setsUnreadable(entry: WorkoutLogEntry): boolean {
+  return entry.sets !== undefined && entry.sets !== null && !Array.isArray(entry.sets);
+}
+
+/**
  * Whether a log entry belongs in exercise history: at least one recorded set,
  * or an exercise note. A note-only entry is history the user wrote by hand, so
  * it must survive; an entry with no sets and no note (a skipped placeholder)
- * has nothing to show.
+ * has nothing to show. Sets we cannot read count as recorded work, so the entry
+ * still earns a row (with no set labels and no volume) rather than vanishing.
  */
 export function entryHasHistoryData(entry: WorkoutLogEntry): boolean {
-  return entry.sets.some(setHasData) || Boolean(entry.notes?.trim());
+  return setsUnreadable(entry)
+    || readableSets(entry).some(setHasData)
+    || Boolean(entry.notes?.trim());
 }
 
 /** Display labels for an entry's sets, dropping labels with nothing in them. */
 export function entrySetLabels(entry: WorkoutLogEntry, sep: string = "x"): string[] {
-  return entry.sets.map((s) => formatSetLabel(s, sep)).filter(Boolean);
+  return readableSets(entry).map((s) => formatSetLabel(s, sep)).filter(Boolean);
 }
 
 /** Tonnage of an entry in lb (kg sets converted). */
 export function entryVolumeLb(entry: WorkoutLogEntry): number {
-  return entry.sets.reduce((sum, s) => sum + setVolume(s), 0);
+  return readableSets(entry).reduce((sum, s) => sum + setVolume(s), 0);
 }
 
 /**

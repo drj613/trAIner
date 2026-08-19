@@ -15,6 +15,7 @@ import {
 import { resolveExerciseIdentity } from "@/lib/catalog/identity";
 import { highBar } from "@/lib/catalog/identity.testFixtures";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
+import { aggregateExerciseHistory } from "./historyUtils";
 
 const {
   context,
@@ -369,5 +370,66 @@ describe("identity-context seam", () => {
     const imports = [...source.matchAll(/from "([^"]+)"/g)].map((m) => m[1]);
     expect(imports.length).toBeGreaterThan(0);
     expect(imports.filter((s) => /storage|Repo|appDb|indexedDB|idb/i.test(s))).toEqual([]);
+  });
+});
+
+// ─── Unreadable stored shapes ────────────────────────────────────────────────
+
+describe("unreadable sets", () => {
+  // `src/lib/storage/appDb.ts:186-195` deliberately keeps a log whose `sets` is
+  // present but not an array, because it "may be standing in for real sets we
+  // have no way to recover". Those logs reach this projection, so one of them
+  // must never remove another exercise's readable history from view.
+  const logWith = (sets: unknown): WorkoutLogDocument => ({
+    id: "log-corrupt", programId: "p1", dayId: "d1",
+    performedAt: "2026-09-01T14:00:00.000Z", performedDate: "2026-09-01",
+    entries: [
+      {
+        exerciseId: "slot-a", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+        sets: [{ setNumber: 1, weight: 315, reps: 2 }],
+      },
+      {
+        exerciseId: "slot-b", exerciseName: "Barbell Bench Press", canonicalExerciseId: bench.id,
+        sets,
+      },
+    ],
+  } as unknown as WorkoutLogDocument);
+
+  // Present but unreadable: counts as recorded work, so the entry keeps a dated
+  // row with no set labels and no volume rather than vanishing.
+  it.each([["a string", "corrupt"], ["a number", 42], ["an object", {}]])(
+    "rows an entry whose sets is %s, and keeps the readable entry beside it",
+    (_label, sets) => {
+      const projection = projectExerciseHistory([logWith(sets)], context);
+      expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`))
+        .toEqual(["log-corrupt#0", "log-corrupt#1"]);
+      expect(projection.rows[0]).toMatchObject({ sets: ["315x2"], volumeLb: 630 });
+      expect(projection.rows[1]).toMatchObject({
+        performedName: "Barbell Bench Press", sets: [], volumeLb: 0,
+      });
+      expect(projection.versionSummaries.get(bench.id)?.entryCount).toBe(1);
+    },
+  );
+
+  // Absent, not unreadable — the settled line (`v10Identity.ts:158`, ledger
+  // "the line is between absent and unreadable"). Nothing was recorded, so no
+  // row, but it must not throw and take the readable entry down with it.
+  it.each([["undefined", undefined], ["null", null]])(
+    "keeps the readable entry when a sibling's sets is %s",
+    (_label, sets) => {
+      const projection = projectExerciseHistory([logWith(sets)], context);
+      expect(projection.rows.map((r) => `${r.logId}#${r.entryIndex}`)).toEqual(["log-corrupt#0"]);
+      expect(projection.rows[0]).toMatchObject({ sets: ["315x2"], volumeLb: 630 });
+      expect(projection.versionSummaries.get(bench.id)).toBeUndefined();
+    },
+  );
+
+  it("still reports an unreadable-sets entry as data-bearing to the drawer path", () => {
+    const rows = aggregateExerciseHistory(
+      [logWith("corrupt")],
+      "slot-b",
+      bench.id,
+    );
+    expect(rows).toEqual([{ date: "2026-09-01", sets: [], note: undefined, volume: 0 }]);
   });
 });
