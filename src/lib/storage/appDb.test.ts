@@ -1132,14 +1132,19 @@ describe("DB v10 — malformed legacy documents", () => {
       .toBe(false);
   });
 
-  const unreadableAliases = [
+  // "Unusable", not "unreadable": the line is whether anything is left to match
+  // on, which is narrower than whether every field reads cleanly. A token or a
+  // display text is enough (find() queries the by-normalized-alias index and the
+  // resolver reads `normalizedAlias || alias`); a target is mandatory.
+  const unusableAliases = [
     { name: "no canonicalExerciseId", alias: { id: "a-no-target", alias: "RDL", normalizedAlias: "rdl", createdAt: NOW } },
-    { name: "no alias text", alias: { id: "a-no-text", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
-    { name: "a non-string alias text", alias: { id: "a-number-text", alias: 42, normalizedAlias: "42", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
     { name: "a non-string canonicalExerciseId", alias: { id: "a-number-target", alias: "RDL", normalizedAlias: "rdl", canonicalExerciseId: 42, createdAt: NOW } },
+    { name: "neither alias text nor token", alias: { id: "a-no-text", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
+    { name: "a non-string alias text and a non-string token", alias: { id: "a-number-text", alias: 42, normalizedAlias: 42, canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
+    { name: "an alias text and token that both normalize to nothing", alias: { id: "a-empty", alias: "!!!", normalizedAlias: "  ", canonicalExerciseId: "romanian-deadlift", createdAt: NOW } },
   ];
 
-  it.each(unreadableAliases)("drops an unreadable legacy alias with $name", async ({ alias }) => {
+  it.each(unusableAliases)("drops a legacy alias with $name", async ({ alias }) => {
     const healthy = {
       id: "a-healthy",
       alias: "90/90 Hamstring",
@@ -1150,14 +1155,40 @@ describe("DB v10 — malformed legacy documents", () => {
     await seedVersion9Records({ aliases: [alias, healthy] });
 
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
-    // Dropped, not retained: an alias we cannot read cannot be classified,
-    // and an unclassifiable alias left in the store would keep silently
-    // short-circuiting the new disambiguation flow forever.
+    // Dropped, not retained: an alias with nothing to match on and nothing to
+    // redirect to can never be found, displayed, or followed again, and leaving
+    // it in the store lets it keep short-circuiting the new disambiguation flow.
     expect(await readRawStore("aliases")).toEqual([
       { ...healthy, provenance: "legacy-auto" },
     ]);
     expect(((await getDb()).objectStoreNames as unknown as DOMStringList).contains("metrics"))
       .toBe(false);
+  });
+
+  it("retains a legacy alias whose display text is unreadable but whose token is not", async () => {
+    // The other side of that line, on a real database with the real unique
+    // index. The unreadable `alias` field is passed through exactly as stored —
+    // rule 2 — because a display string is not ours to invent; the recomputed
+    // token is what the index and the resolver actually use.
+    const recoverable = {
+      id: "a-recoverable",
+      alias: 42,
+      normalizedAlias: "90/90 Hamstring",
+      canonicalExerciseId: "90-90-hamstring",
+      createdAt: NOW,
+    };
+    await seedVersion9Records({ aliases: [recoverable] });
+
+    await expect(openCurrentDatabase()).resolves.toBeUndefined();
+    expect(await readRawStore("aliases")).toEqual([{
+      ...recoverable,
+      normalizedAlias: "90 90 hamstring",
+      provenance: "legacy-auto",
+    }]);
+    await expect(aliasRepo.find("90/90 hamstring")).resolves.toMatchObject({
+      id: "a-recoverable",
+      canonicalExerciseId: "90-90-hamstring",
+    });
   });
 
   it("survives a user exercise with a non-string name and still classifies everything else", async () => {
