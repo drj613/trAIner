@@ -87,30 +87,42 @@ test.describe("Routine builder", () => {
     ).toBeVisible();
   });
 
-  // 6. Search returns matching exercises
+  // 6. Search returns matching exercises, nested under their movement
   test("search returns matching exercises", async () => {
     await sharedPage.getByPlaceholder(/search exercises/i).fill("Squat");
 
-    // At least one result row containing "Squat" should be visible
+    // The Squat family is one navigation row; its concrete versions live under
+    // it and are what the user actually picks.
     await expect(
-      sharedPage.getByText(/squat/i).first()
+      sharedPage.getByRole("button", { name: /^Squat movement, \d+ versions$/ })
     ).toBeVisible();
   });
 
-  // 7. Selecting an exercise adds it to the day
+  // 7. A family row is navigation only — it cannot be added
+  test("a movement family cannot be added as an exercise", async () => {
+    const family = sharedPage.getByRole("button", {
+      name: /^Squat movement, \d+ versions$/,
+    });
+    await family.click();
+
+    // Nothing was selected: the footer is still the empty-state button.
+    await expect(sharedPage.getByRole("button", { name: "Add exercises" })).toBeDisabled();
+  });
+
+  // 8. Selecting a concrete version adds it to the day
   test("selecting an exercise adds it to the day", async () => {
-    // Click the first Squat result row (they are <button> elements in the list)
-    const firstSquatRow = sharedPage
-      .locator("button")
-      .filter({ hasText: /squat/i })
-      .first();
-    await firstSquatRow.click();
+    const family = sharedPage.getByRole("button", {
+      name: /^Squat movement, \d+ versions$/,
+    });
+    if ((await family.getAttribute("aria-expanded")) !== "true") await family.click();
+
+    await sharedPage.getByRole("button", { name: /High Bar Back Squat/ }).first().click();
 
     // Confirm by clicking "Add 1 exercise" in the sheet footer
     await sharedPage.getByRole("button", { name: /add \d+ exercise/i }).click();
 
-    // The sheet should be dismissed; "Squat" should appear in the day's exercise list
+    // The sheet should be dismissed; the concrete version appears in the day
     await expect(sharedPage.getByPlaceholder(/search exercises/i)).not.toBeVisible();
-    await expect(sharedPage.getByText(/squat/i).first()).toBeVisible();
+    await expect(sharedPage.getByText(/high bar back squat/i).first()).toBeVisible();
   });
 });
