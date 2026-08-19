@@ -17,9 +17,37 @@
       ]
     },
     {
+      "id": "barbell-back-squat-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "barbell back squat",
+      "movementId": "squat",
+      "candidateExerciseIds": [
+        "barbell-squat",
+        "barbell-high-bar-squat",
+        "barbell-low-bar-squat"
+      ],
+      "matchedModifierIds": [
+        "barbell",
+        "back-rack"
+      ]
+    },
+    {
       "id": "squat-choice",
       "kind": "underspecified-name",
       "normalizedName": "squat",
+      "movementId": "squat",
+      "candidateExerciseIds": [
+        "barbell-squat",
+        "squat--barbell--front-rack",
+        "bodyweight-squat",
+        "dumbbell-squat"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "squats-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "squats",
       "movementId": "squat",
       "candidateExerciseIds": [
         "barbell-squat",
@@ -35,7 +63,6 @@
       "normalizedName": "row",
       "movementId": "row",
       "candidateExerciseIds": [
-        "row",
         "bent-over-barbell-row",
         "row--cable",
         "row--dumbbell",
@@ -47,6 +74,19 @@
       "id": "lateral-raise-choice",
       "kind": "underspecified-name",
       "normalizedName": "lateral raise",
+      "movementId": "raise-fly",
+      "candidateExerciseIds": [
+        "lateral-raise-dumbbell",
+        "cable-lateral-raise",
+        "lateral-raise-machine",
+        "lateral-raise-with-bands"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "lateral-raises-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "lateral raises",
       "movementId": "raise-fly",
       "candidateExerciseIds": [
         "lateral-raise-dumbbell",
@@ -77,9 +117,23 @@
       "normalizedName": "split squat",
       "movementId": "lunge-split-squat",
       "candidateExerciseIds": [
+        "lunge-split-squat--bodyweight",
         "bulgarian-split-squat",
-        "dumbbell-split-squat",
-        "lunge-split-squat--bodyweight"
+        "dumbbell-split-squat"
+      ],
+      "matchedModifierIds": [
+        "split-stance"
+      ]
+    },
+    {
+      "id": "split-squats-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "split squats",
+      "movementId": "lunge-split-squat",
+      "candidateExerciseIds": [
+        "lunge-split-squat--bodyweight",
+        "bulgarian-split-squat",
+        "dumbbell-split-squat"
       ],
       "matchedModifierIds": [
         "split-stance"

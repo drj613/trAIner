@@ -69,31 +69,71 @@ test("a saved user alias outranks the reviewed back squat rule", () => {
   });
 });
 
-test("bare family names return curated choices instead of silent alias matches", () => {
-  expect(expectUnderspecified("Squat").candidates.map((c) => c.exerciseId)).toEqual([
-    "barbell-squat",
-    "squat--barbell--front-rack",
-    "bodyweight-squat",
-    "dumbbell-squat",
-  ]);
-  expect(expectUnderspecified("Row").candidates.map((c) => c.exerciseId)).toEqual([
-    "row",
-    "bent-over-barbell-row",
-    "row--cable",
-    "row--dumbbell",
-    "row--machine",
-  ]);
-  expect(expectUnderspecified("Lateral Raise").movementId).toBe("raise-fly");
-  expect(expectUnderspecified("Lateral Raise").candidates.map((c) => c.exerciseId)).toContain(
-    "lateral-raise-dumbbell",
-  );
-  expect(expectUnderspecified("Shoulder Press").movementId).toBe("overhead-landmine-press");
-  expect(expectUnderspecified("Shoulder Press").candidates.map((c) => c.exerciseId)).toContain(
-    "overhead-press",
-  );
-  expect(expectUnderspecified("Split Squat").candidates.map((c) => c.exerciseId)).toContain(
-    "bulgarian-split-squat",
-  );
+// Every shipped rule pinned in full: token -> movement family + exact ordered
+// candidate list. `toContain`-style spot checks let truncation and wrong-family
+// mutations survive, so each rule is asserted with `toEqual`.
+const squatCandidates = ["barbell-squat", "squat--barbell--front-rack", "bodyweight-squat", "dumbbell-squat"];
+const backSquatCandidates = ["barbell-squat", "barbell-high-bar-squat", "barbell-low-bar-squat"];
+const lateralRaiseCandidates = [
+  "lateral-raise-dumbbell",
+  "cable-lateral-raise",
+  "lateral-raise-machine",
+  "lateral-raise-with-bands",
+];
+const splitSquatCandidates = ["lunge-split-squat--bodyweight", "bulgarian-split-squat", "dumbbell-split-squat"];
+
+test.each([
+  { token: "Barbell Back Squat", movementId: "squat", candidates: backSquatCandidates },
+  { token: "Squat", movementId: "squat", candidates: squatCandidates },
+  { token: "Squats", movementId: "squat", candidates: squatCandidates },
+  {
+    token: "Row",
+    movementId: "row",
+    candidates: ["bent-over-barbell-row", "row--cable", "row--dumbbell", "row--machine"],
+  },
+  { token: "Lateral Raise", movementId: "raise-fly", candidates: lateralRaiseCandidates },
+  { token: "Lateral Raises", movementId: "raise-fly", candidates: lateralRaiseCandidates },
+  {
+    token: "Shoulder Press",
+    movementId: "overhead-landmine-press",
+    candidates: ["overhead-press", "dumbbell-shoulder-press", "cable-shoulder-press", "shoulder-press-with-bands"],
+  },
+  { token: "Split Squat", movementId: "lunge-split-squat", candidates: splitSquatCandidates },
+  { token: "Split Squats", movementId: "lunge-split-squat", candidates: splitSquatCandidates },
+])("$token returns the curated $movementId choice instead of a silent match", ({ token, movementId, candidates }) => {
+  const result = expectUnderspecified(token);
+  expect(result.movementId).toBe(movementId);
+  expect(result.candidates.map((candidate) => candidate.exerciseId)).toEqual(candidates);
+});
+
+test("every shipped underspecified rule offers a real choice", () => {
+  for (const rule of disambiguationRules) {
+    if (rule.kind !== "underspecified-name") continue;
+    expect(rule.candidateExerciseIds.length).toBeGreaterThanOrEqual(2);
+  }
+});
+
+// Known final-review item: these candidates carry `movementId: null` in the
+// shipped catalogue, so choosing them yields `groupKey: "exercise:<id>"` and no
+// family nesting or family history. The defect is upstream assignment
+// coverage, not the choice lists (the assigned equivalents have unusable
+// generated names). This pins the current loss so a fix — or a regression —
+// is visible in the suite.
+test("family-less candidates are exactly the known assignment-coverage gaps", () => {
+  const byId = new Map(exerciseCatalog.map((item) => [item.id, item]));
+  const familyless: Record<string, string[]> = {};
+  for (const rule of disambiguationRules) {
+    if (rule.kind !== "underspecified-name") continue;
+    const gaps = rule.candidateExerciseIds.filter((id) => byId.get(id)?.movementId == null);
+    if (gaps.length > 0) familyless[rule.id] = gaps;
+  }
+  expect(familyless).toEqual({
+    "lateral-raise-choice": ["lateral-raise-with-bands"],
+    "lateral-raises-choice": ["lateral-raise-with-bands"],
+    "shoulder-press-choice": ["dumbbell-shoulder-press", "cable-shoulder-press", "shoulder-press-with-bands"],
+    "split-squat-choice": ["bulgarian-split-squat", "dumbbell-split-squat"],
+    "split-squats-choice": ["bulgarian-split-squat", "dumbbell-split-squat"],
+  });
 });
 
 test("conventional names without a rule keep resolving exactly", () => {

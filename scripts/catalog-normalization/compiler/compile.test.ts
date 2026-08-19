@@ -248,6 +248,74 @@ test.each([
     }],
     expected: "Invalid movement manifest record",
   },
+  {
+    name: "a disambiguation with an unknown kind",
+    fileName: "disambiguations.json",
+    records: [{ id: "fixture-rule", kind: "mystery" }],
+    expected: "Invalid disambiguation manifest record",
+  },
+  {
+    name: "a disambiguation phrase with an unknown behavior",
+    fileName: "disambiguations.json",
+    records: [{
+      id: "fixture-phrase",
+      kind: "non-identity-phrase",
+      normalizedPhrase: "fixture phrase",
+      annotation: "fixture",
+      behavior: "delete-everything",
+    }],
+    expected: "Invalid disambiguation manifest record",
+  },
+  {
+    name: "a single-candidate disambiguation rule",
+    fileName: "disambiguations.json",
+    records: [{
+      id: "fixture-single",
+      kind: "underspecified-name",
+      normalizedName: "fixture lift",
+      movementId: "squat",
+      candidateExerciseIds: ["only-one-outcome"],
+      matchedModifierIds: [],
+    }],
+    expected: "Invalid disambiguation manifest record",
+  },
+  {
+    name: "duplicate disambiguation tokens",
+    fileName: "disambiguations.json",
+    records: [
+      {
+        id: "fixture-token-a",
+        kind: "underspecified-name",
+        normalizedName: "fixture lift",
+        movementId: "squat",
+        candidateExerciseIds: ["candidate-a", "candidate-b"],
+        matchedModifierIds: [],
+      },
+      {
+        id: "fixture-token-b",
+        kind: "underspecified-name",
+        normalizedName: "fixture lift",
+        movementId: "squat",
+        candidateExerciseIds: ["candidate-a", "candidate-b"],
+        matchedModifierIds: [],
+      },
+    ],
+    expected: "Invalid disambiguation manifest record",
+  },
+  {
+    name: "a disambiguation rule with an unexpected key",
+    fileName: "disambiguations.json",
+    records: [{
+      id: "fixture-extra",
+      kind: "underspecified-name",
+      normalizedName: "fixture lift",
+      movementId: "squat",
+      candidateExerciseIds: ["candidate-a", "candidate-b"],
+      matchedModifierIds: [],
+      note: "unexpected",
+    }],
+    expected: "Invalid disambiguation manifest record",
+  },
 ])("rejects $name", async ({ fileName, records, expected }) => {
   const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
   const outputDir = await mkdtemp(join(tmpdir(), "catalog-invalid-manifest-"));
@@ -262,6 +330,41 @@ test.each([
     reportOutputPath: join(outputDir, "report.json"),
     stage: "existing",
   })).rejects.toThrow(expected);
+});
+
+test("complete builds reject disambiguation candidates missing from the final catalogue", async () => {
+  const root = await mkdtemp(join(tmpdir(), "catalog-disambiguation-xref-"));
+  const inputs = [
+    "scripts/catalog-normalization/catalog-v1.snapshot.json",
+    "scripts/catalog-normalization/catalog-v1.sha256",
+    "scripts/catalog-normalization/movements.json",
+    "scripts/catalog-normalization/modifiers.json",
+    "scripts/catalog-normalization/merges.json",
+    "scripts/catalog-normalization/assignments.json",
+    "scripts/catalog-normalization/alias-classifications.json",
+    "scripts/catalog-normalization/disambiguations.json",
+    "scripts/catalog-normalization/variant-rules.json",
+    "scripts/catalog-normalization/reviews/variant-candidates.json",
+    "scripts/catalog-normalization/reviews/variant-adversarial-review.json",
+  ];
+  await mkdir(join(root, "scripts/catalog-normalization/reviews"), { recursive: true });
+  await Promise.all(inputs.map(async (rel) => writeFile(join(root, rel), await readFile(rel))));
+
+  const manifestPath = join(root, "scripts/catalog-normalization/disambiguations.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+    records: Array<{ kind: string; candidateExerciseIds?: string[] }>;
+  };
+  const rule = manifest.records.find((record) => record.kind === "underspecified-name");
+  if (!rule?.candidateExerciseIds) throw new Error("expected a shipped underspecified rule to corrupt");
+  rule.candidateExerciseIds.push("this-exercise-does-not-exist");
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+  await expect(compileCatalog({
+    rootDir: root,
+    catalogOutputDir: join(root, "tmp-catalog"),
+    reportOutputPath: join(root, "tmp-report.json"),
+    stage: "complete",
+  })).rejects.toThrow("references unknown exercise: this-exercise-does-not-exist");
 });
 
 test("reports near duplicates for review without automatically merging them", async () => {

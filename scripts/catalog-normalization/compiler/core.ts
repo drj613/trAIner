@@ -333,12 +333,16 @@ function decodeDisambiguations(artifact: VersionedArtifact<unknown>): Disambigua
       const normalizedName = nonEmptyString(record.normalizedName, "disambiguation");
       if (seenTokens.has(normalizedName)) invalidManifestRecord("disambiguation");
       seenTokens.add(normalizedName);
+      // A token with exactly one outcome is not underspecified: it resolves,
+      // and a one-option prompt would be worse than no rule at all.
+      const candidateExerciseIds = nonEmptyStringArray(record.candidateExerciseIds, "disambiguation");
+      if (candidateExerciseIds.length < 2) invalidManifestRecord("disambiguation");
       return {
         id,
         kind: "underspecified-name" as const,
         normalizedName,
         movementId: nonEmptyString(record.movementId, "disambiguation"),
-        candidateExerciseIds: nonEmptyStringArray(record.candidateExerciseIds, "disambiguation"),
+        candidateExerciseIds,
         matchedModifierIds: stringArray(record.matchedModifierIds, "disambiguation"),
       };
     }

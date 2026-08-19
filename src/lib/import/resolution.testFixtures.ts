@@ -1,12 +1,12 @@
 // Shared fixtures for the import grouping/fan-out tests.
 //
 // The runtime import-disambiguation artifact
-// (`src/lib/catalog/importDisambiguations.generated.json`) currently ships
-// ZERO records, so no name is underspecified in production yet — the reviewed
-// curation content is a separate, review-gated deliverable. These fixtures
-// therefore inject a small catalogue + disambiguation table through the
-// parser's `matchContext` seam so the tri-state behaviour can be pinned end to
-// end now. Nothing here is production data.
+// (`src/lib/catalog/importDisambiguations.generated.json`) now ships reviewed
+// records (see `src/lib/catalog/shippedDisambiguations.test.ts` for the pinned
+// production rules). These fixtures still inject their own small catalogue +
+// disambiguation table through the parser's `matchContext` seam so the
+// tri-state behaviour is pinned independently of curation content. Nothing
+// here is production data.
 import type { MatchExerciseContext } from "@/lib/catalog/match";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import type { DisambiguationRule, MovementDefinition, MovementModifierDefinition } from "@/lib/catalog/registries";

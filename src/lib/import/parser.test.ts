@@ -1296,8 +1296,8 @@ describe("variants inside override replacement days (defect: overrides leak)", (
 
 // Typed tri-state resolution metadata on the persisted warning. Every case
 // injects its own catalogue + disambiguation table through the parser's
-// `matchContext` seam; the shipped disambiguation artifact is still empty, so
-// nothing here depends on production curation content.
+// `matchContext` seam, so nothing here depends on the shipped curation
+// content (which is pinned separately in shippedDisambiguations.test.ts).
 describe("typed resolution warnings", () => {
   const singleExercise = (name: string) => ({
     program_name: "Metadata probe",
