@@ -361,3 +361,81 @@ describe("unreadable set fields", () => {
       .toBe(600);
   });
 });
+
+describe("an unreadable performedDate must not take the Today drawer down", () => {
+  // `src/lib/storage/appDb.ts:186-195` preserves a log whose fields it cannot
+  // read, so a non-string `performedDate` reaches this module despite the type.
+  // The absent-vs-unreadable line is the settled one (`unreadableValue`,
+  // `src/lib/storage/migrations/v10Identity.ts:158`): absent means the date was
+  // never stamped and `performedAt` answers instead; a present non-string is
+  // unreadable and must not remove every other workout's history from view.
+  //
+  // THREE logs, not two: with two elements V8 calls the comparator exactly once
+  // and `String.prototype.localeCompare` coerces its *argument*, so a two-log
+  // fixture passes whether or not the value is guarded. The same one-sided
+  // coercion trap this round already documented for `logId`.
+  const shapes: [string, unknown][] = [
+    ["a number", 7],
+    ["an object", {}],
+    ["a boolean", true],
+    ["an array", []],
+    ["an array holding null", [null]],
+  ];
+
+  function corpus(badDate: unknown): WorkoutLogDocument[] {
+    return [
+      {
+        id: "log-a", programId: "p1", dayId: "d1",
+        performedAt: "2026-04-15T09:00:00.000Z", performedDate: "2026-04-15",
+        entries: [{ exerciseId: "bench", sets: [{ setNumber: 1, weight: 100, reps: 5 }] }],
+      },
+      {
+        id: "log-bad", programId: "p1", dayId: "d1",
+        performedAt: "2026-04-16T09:00:00.000Z", performedDate: badDate,
+        entries: [{ exerciseId: "bench", sets: [{ setNumber: 1, weight: 110, reps: 5 }] }],
+      },
+      {
+        id: "log-c", programId: "p1", dayId: "d1",
+        performedAt: "2026-04-17T09:00:00.000Z", performedDate: "2026-04-17",
+        entries: [{ exerciseId: "bench", sets: [{ setNumber: 1, weight: 120, reps: 5 }] }],
+      },
+    ] as unknown as WorkoutLogDocument[];
+  }
+
+  it.each(shapes)(
+    "still lists every readable workout when one log's performedDate is %s",
+    (_label, badDate) => {
+      const rows = aggregateExerciseHistory(corpus(badDate), "bench");
+      expect(rows).toHaveLength(3);
+      expect(rows.map((r) => r.sets[0])).toEqual(
+        expect.arrayContaining(["100x5", "110x5", "120x5"]),
+      );
+    },
+  );
+
+  it.each(shapes)(
+    "gives every row a string date so the drawer can format it (%s)",
+    (_label, badDate) => {
+      for (const row of aggregateExerciseHistory(corpus(badDate), "bench")) {
+        expect(typeof row.date).toBe("string");
+      }
+    },
+  );
+
+  // The unreadable date falls back to `performedAt`, which is readable, so the
+  // row keeps its place in the ordering instead of being flung to one end.
+  it("orders the rows newest first, the unreadable date included", () => {
+    expect(aggregateExerciseHistory(corpus(7), "bench").map((r) => r.date)).toEqual([
+      "2026-04-17", "2026-04-16", "2026-04-15",
+    ]);
+  });
+
+  // Every input permutation, because a comparator throw depends on which side
+  // the unreadable value lands.
+  it("survives every ordering of the same three logs", () => {
+    const [a, b, c] = corpus({});
+    for (const order of [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]]) {
+      expect(aggregateExerciseHistory(order, "bench")).toHaveLength(3);
+    }
+  });
+});

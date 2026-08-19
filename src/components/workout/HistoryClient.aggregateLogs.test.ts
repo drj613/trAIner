@@ -120,11 +120,29 @@ describe("aggregateLogs on logs it cannot fully read", () => {
   it("shows a placeholder rather than a blank cell when the date is unreadable", () => {
     // A blank date reads as a rendering bug and invites the user to delete real
     // data; "—" says plainly that we have nothing to show there.
+    //
+    // FIXTURE STRENGTHENED in fix round 3 (assertion unchanged). It previously
+    // set only `performedDate: 7` and left `performedAt` readable, so the date
+    // was not in fact unreadable — `logLocalDate` now recovers it from
+    // `performedAt` (see the test below). Both fields are corrupt here so the
+    // condition the name describes actually holds.
     const summaries = aggregateLogs([badLog({
+      performedAt: 7,
       performedDate: 7,
       entries: [{ exerciseId: "a", exerciseName: "Mystery", sets: [{ setNumber: 1, reps: 5 }] }],
     })]);
     expect(summaries[0].lastDate).toBe("—");
+  });
+
+  // An unreadable `performedDate` is not a lost date. The v7 migration
+  // backfilled `performedDate` *from* `performedAt`, so `performedAt` is the
+  // authoritative value and recovering the real day beats showing a placeholder.
+  it("recovers the day from performedAt when performedDate is unreadable", () => {
+    const summaries = aggregateLogs([badLog({
+      performedDate: 7,
+      entries: [{ exerciseId: "a", exerciseName: "Mystery", sets: [{ setNumber: 1, reps: 5 }] }],
+    })]);
+    expect(summaries[0].lastDate).toBe("06/02");
   });
 
   it("keeps the readable sets of an entry that also holds an unreadable one", () => {

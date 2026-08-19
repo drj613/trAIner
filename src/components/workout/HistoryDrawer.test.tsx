@@ -57,4 +57,21 @@ describe("HistoryDrawer", () => {
     render(<HistoryDrawer exerciseName="New Move" rows={[]} onClose={jest.fn()} />);
     expect(screen.getByText(/no history yet/i)).toBeInTheDocument();
   });
+
+  // `ExerciseSessionRow.date` is a string by contract — `logLocalDate` now
+  // guarantees it (`src/lib/workout/localDate.ts`) rather than passing a stored
+  // non-string through. This is the belt to that brace: the drawer has no error
+  // boundary above it, so `localYmd.split is not a function` here unwound the
+  // whole day page rather than losing one row.
+  it("renders a row rather than throwing when a date is not a string", () => {
+    const corrupt = [
+      { date: 7, sets: ["100x5"], volume: 500 },
+      { date: {}, sets: ["110x5"], volume: 550 },
+      { date: null, sets: ["120x5"], volume: 600 },
+    ] as unknown as ExerciseSessionRow[];
+    render(<HistoryDrawer exerciseName="Bench Press" rows={corrupt} onClose={jest.fn()} />);
+    expect(screen.getByText("100x5")).toBeInTheDocument();
+    expect(screen.getByText("110x5")).toBeInTheDocument();
+    expect(screen.getByText("120x5")).toBeInTheDocument();
+  });
 });

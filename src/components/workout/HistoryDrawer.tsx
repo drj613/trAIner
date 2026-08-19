@@ -20,6 +20,10 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  * UTC midnight and shifts the day/weekday in non-UTC zones.
  */
 function formatSessionDate(localYmd: string): string {
+  // `logLocalDate` guarantees a string, but this component has no error
+  // boundary above it: `localYmd.split is not a function` unwound the entire
+  // day page rather than spoiling one row, so the contract is enforced here too.
+  if (typeof localYmd !== "string") return "";
   const [y, m, d] = localYmd.split("-").map(Number);
   if (isNaN(y) || isNaN(m) || isNaN(d)) return localYmd;
   const dt = new Date(y, m - 1, d);
