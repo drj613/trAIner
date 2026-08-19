@@ -14,7 +14,7 @@ import { SetCell, classifyCell } from "./SetCell";
 import type { ProgramDocument, ProgramDay, ProgramExercise, ProgramSection } from "@/lib/programs/types";
 import { buildInitialCells, updateCell, addSet, type CellMap } from "@/lib/workout/cellMap";
 import { sectionKind } from "@/lib/workout/sectionKind";
-import { aggregateExerciseHistory, entryNote, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
+import { aggregateExerciseHistory, type ExerciseSessionRow } from "@/lib/workout/historyUtils";
 import { HistoryDrawer } from "./HistoryDrawer";
 import { ModifyAiModal } from "./ModifyAiModal";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
@@ -726,8 +726,11 @@ function WorkoutBody({
           return;
         }
         hydrated[raw.exerciseId] = hydrateFromLog(raw, prescribedSetsMap.get(raw.exerciseId));
-        const note = entryNote(raw);
-        if (note) hydratedNotes[raw.exerciseId] = note;
+        // No guard on `notes`: `entryIsFullyHydratable` has already rejected any
+        // entry whose notes is not text, so a guard here could never fire.
+        // (Mutation-checked: replacing a `readableText` read with `raw.notes`
+        // left the whole lane green, which is the signature of dead code.)
+        if (raw.notes) hydratedNotes[raw.exerciseId] = raw.notes;
       });
       preservedEntriesRef.current = preserved.size > 0
         ? { logId: target.id, entries: preserved }

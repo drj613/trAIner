@@ -509,6 +509,108 @@ describe("a log we cannot read must not disable the day screen", () => {
     expect(logs.some((l) => JSON.stringify(l.entries).includes('"weight":315'))).toBe(true);
   });
 
+  it("records the set being typed when today's log has an unreadable day note", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "n-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      dayNote: {},
+      entries: [],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    // Pulling an unreadable dayNote into state made `dn.trim()` throw inside
+    // `saveCells`, which discarded the set with nothing on screen to say so.
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries[0].sets).toEqual([{ setNumber: 1, weight: 225, reps: 5 }]);
+    // The note we could not read is left exactly as it was.
+    expect(logs[0].dayNote).toEqual({});
+  });
+
+  it("finishes a day whose stored day note is unreadable", async () => {
+    // `saveCells` short-circuits `dn.trim()` whenever any entry has sets, so the
+    // shape that reaches it is a session with nothing logged — finishing or
+    // skipping an empty day. Pulling the unreadable note into state made that
+    // throw, and the day could never be marked complete.
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "n-2", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      dayNote: {},
+      entries: [],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    await user.click(await screen.findByRole("button", { name: /finish anyway/i }));
+    await drainSaves();
+
+    expect(screen.queryByText(/trim is not a function/i)).not.toBeInTheDocument();
+    const logs = await logRepo.list();
+    expect(logs[0].completedAt).toEqual(expect.any(String));
+    expect(logs[0].dayNote).toEqual({});
+  });
+
+  it("dates the rewrite by today when the resumed log's own date is unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "u-1", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 95, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() => expect(cell("e1", 0)).toHaveValue("95x5"));
+
+    await typeIntoCell(user, cell("e1", 1), "100x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // An empty performedDate would stop `getForDay` ever matching this session
+    // again, minting a duplicate log on the very next visit.
+    expect(logs[0].performedDate).toBe("2026-06-10");
+    // The value we could not read is still stored verbatim.
+    expect(logs[0].performedAt).toBe(7);
+  });
+
+  it("names the session in the read-only banner even when its date is unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "v-1", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      completedAt: "2026-06-09T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 95, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // The banner is the only thing explaining a read-only grid, so it must say
+    // something rather than not render at all.
+    expect(await screen.findByText(/Viewing completed session from \S/)).toBeInTheDocument();
+    expect(cell("e1", 0)).toHaveAttribute("readonly");
+  });
+
   it("tells the user and refuses input when the day's sessions cannot be loaded at all", async () => {
     useFakeClock("2026-06-10T16:00:00.000Z");
     const listForDay = jest
