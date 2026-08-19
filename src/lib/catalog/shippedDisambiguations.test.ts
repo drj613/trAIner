@@ -118,7 +118,9 @@ test("every shipped underspecified rule offers a real choice", () => {
 // family nesting or family history. The defect is upstream assignment
 // coverage, not the choice lists (the assigned equivalents have unusable
 // generated names). This pins the current loss so a fix — or a regression —
-// is visible in the suite.
+// is visible in the suite. It is a CHARACTERIZATION test: when `assignments.json`
+// gains coverage this expectation shrinks, and editing it downward is SUCCESS,
+// not a regression. Never resolve a failure here by editing the candidate lists.
 test("family-less candidates are exactly the known assignment-coverage gaps", () => {
   const byId = new Map(exerciseCatalog.map((item) => [item.id, item]));
   const familyless: Record<string, string[]> = {};
@@ -161,17 +163,48 @@ test("pain-free depth wording strips and still reaches the underspecified rule",
   expect(result.nonIdentityAnnotations).toEqual(["pain-free depth"]);
 });
 
-test("numeric pause wording canonicalizes to the coarse paused identity", () => {
-  const prepared = prepareImportName(
-    "2-second paused barbell back rack squat",
-    disambiguationsByNormalizedName,
-  );
-  expect(prepared.normalizedName).toBe("paused barbell back rack squat");
-  expect(prepared.nonIdentityAnnotations).toEqual(["2-second pause"]);
-  expect(matchExercise("2-second paused barbell back rack squat")).toMatchObject({
-    kind: "matched",
-    item: { id: "squat--barbell--back-rack--paused" },
-  });
+// Each duration is its OWN manifest record, so one row per shipped record.
+// Asserted through a real import name rather than by reading the manifest back:
+// a manifest-restating test passes whatever the manifest says, including a
+// record that ships and never fires. Deleting any single duration record leaves
+// its wording unstripped and unmatched, which is what these rows detect.
+// (The 2-second row replaces the former single-duration test; its assertions
+// are identical, so nothing is lost by folding it into the table.)
+test.each([1, 2, 3, 5])(
+  "%i-second pause wording canonicalizes to the coarse paused identity",
+  (seconds) => {
+    const name = `${seconds}-second paused barbell back rack squat`;
+    const prepared = prepareImportName(name, disambiguationsByNormalizedName);
+    expect(prepared.normalizedName).toBe("paused barbell back rack squat");
+    expect(prepared.nonIdentityAnnotations).toEqual([`${seconds}-second pause`]);
+    expect(matchExercise(name)).toMatchObject({
+      kind: "matched",
+      item: { id: "squat--barbell--back-rack--paused" },
+    });
+  },
+);
+
+// The four pain-free wordings are four separate records. The longer "to (a) …"
+// forms exist so the leading preposition is consumed too; without them the
+// shorter rule fires and leaves a dangling fragment ("back squat to a"), which
+// is why each row pins the surviving token exactly instead of only asserting
+// that something was stripped. Every row then reaches the real back-squat
+// choice, so a deleted record turns an underspecified import into an unmatched
+// one and fails here.
+test.each([
+  { ruleId: "phrase-pain-free", name: "Pain-free back squat", annotation: "pain-free" },
+  { ruleId: "phrase-pain-free-depth", name: "Pain-free depth back squat", annotation: "pain-free depth" },
+  { ruleId: "phrase-pain-free-depth-to", name: "Back squat to pain-free depth", annotation: "pain-free depth" },
+  { ruleId: "phrase-pain-free-depth-to-a", name: "Back squat to a pain-free depth", annotation: "pain-free depth" },
+])("$ruleId strips \"$name\" to the bare back squat token", ({ name, annotation }) => {
+  const prepared = prepareImportName(name, disambiguationsByNormalizedName);
+  expect(prepared.normalizedName).toBe("back squat");
+  expect(prepared.nonIdentityAnnotations).toEqual([annotation]);
+
+  const result = expectUnderspecified(name);
+  expect(result.movementId).toBe("squat");
+  expect(result.nonIdentityAnnotations).toEqual([annotation]);
+  expect(result.candidates.map((candidate) => candidate.exerciseId)).toEqual(backSquatCandidates);
 });
 
 test("alternative prescriptions with 'or' stay unresolved", () => {
