@@ -14,8 +14,27 @@ import type {
   MovementDefinition,
   MovementModifierDefinition,
   VersionedArtifact,
+  VariantCandidate,
+  VariantReviewArtifact,
+  VariantRule,
+  NormalizedCatalogExercise,
+  VariantCoverageCount,
 } from "./types";
-import { findNearDuplicateCandidates, validateNormalizedCatalogue } from "./normalize";
+import {
+  findNearDuplicateCandidates,
+  normalizeToken,
+  validateNormalizedCatalogue,
+} from "./normalize";
+import {
+  idForSignature,
+  joinCandidateReviews,
+  loadVariantCandidates,
+  loadVariantReviews,
+  materializeVariant,
+  canonicalModifierIds,
+  validateVariantCandidates,
+  validateVariantRule,
+} from "./validate";
 
 export type { CatalogBuildReport, CompileOptions, CompilerCliResult, VersionedArtifact } from "./types";
 
@@ -38,6 +57,8 @@ const CURATION_MANIFESTS = [
   "scripts/catalog-normalization/alias-classifications.json",
   "scripts/catalog-normalization/disambiguations.json",
   "scripts/catalog-normalization/variant-rules.json",
+  "scripts/catalog-normalization/reviews/variant-candidates.json",
+  "scripts/catalog-normalization/reviews/variant-adversarial-review.json",
 ] as const;
 
 const EMPTY_ARTIFACT = `${JSON.stringify({ schemaVersion: 1, records: [] })}\n`;
@@ -95,6 +116,12 @@ function stringArray(value: unknown, kind: string): string[] {
     invalidManifestRecord(kind);
   }
   return [...value];
+}
+
+function nonEmptyStringArray(value: unknown, kind: string): string[] {
+  const result = stringArray(value, kind);
+  if (result.length === 0) invalidManifestRecord(kind);
+  return result;
 }
 
 function integer(value: unknown, kind: string): number {
@@ -221,6 +248,58 @@ function decodeAliasClassifications(artifact: VersionedArtifact<unknown>): Alias
   });
 }
 
+function decodeVariantRules(artifact: VersionedArtifact<unknown>): VariantRule[] {
+  return manifestRecords(artifact, "variant rule").map((record) => {
+    assertOnlyKeys(record, [
+      "id",
+      "movementId",
+      "movementModifierIds",
+      "metadataFromExerciseId",
+      "metadataOverrides",
+      "approvedAliases",
+      "coverageTier",
+      "status",
+    ], "variant rule");
+    if (record.status !== "approved") invalidManifestRecord("variant rule");
+    const movementModifierIds = stringArray(record.movementModifierIds, "variant rule");
+    if (movementModifierIds.length === 0) invalidManifestRecord("variant rule");
+    let metadataOverrides: VariantRule["metadataOverrides"] | undefined;
+    if (record.metadataOverrides !== undefined) {
+      if (!isPlainObject(record.metadataOverrides) || Object.keys(record.metadataOverrides).length === 0) {
+        invalidManifestRecord("variant rule");
+      }
+      assertOnlyKeys(record.metadataOverrides, ["equipment", "movementPatterns", "muscles", "tags"], "variant rule");
+      metadataOverrides = {};
+      for (const key of ["equipment", "movementPatterns", "tags"] as const) {
+        const value = record.metadataOverrides[key];
+        if (value !== undefined) metadataOverrides[key] = nonEmptyStringArray(value, "variant rule");
+      }
+      if (record.metadataOverrides.muscles !== undefined) {
+        const muscles = record.metadataOverrides.muscles;
+        if (!isPlainObject(muscles)) invalidManifestRecord("variant rule");
+        assertOnlyKeys(muscles, ["primary", "secondary"], "variant rule");
+        metadataOverrides.muscles = {
+          primary: nonEmptyStringArray(muscles.primary, "variant rule"),
+          secondary: nonEmptyStringArray(muscles.secondary, "variant rule"),
+        };
+      }
+      if (Object.keys(metadataOverrides).length === 0) invalidManifestRecord("variant rule");
+    }
+    return {
+      id: nonEmptyString(record.id, "variant rule"),
+      movementId: nonEmptyString(record.movementId, "variant rule"),
+      movementModifierIds,
+      metadataFromExerciseId: nonEmptyString(record.metadataFromExerciseId, "variant rule"),
+      ...(metadataOverrides === undefined ? {} : { metadataOverrides }),
+      approvedAliases: stringArray(record.approvedAliases, "variant rule"),
+      coverageTier: record.coverageTier === 1 || record.coverageTier === 2
+        ? record.coverageTier
+        : invalidManifestRecord("variant rule"),
+      status: "approved" as const,
+    };
+  });
+}
+
 function validateUnmodeledManifestRecords(artifact: VersionedArtifact<unknown>, kind: string): void {
   manifestRecords(artifact, kind);
 }
@@ -245,6 +324,10 @@ type CurationArtifacts = {
   merges: Merge[];
   assignments: Assignment[];
   aliasClassifications: AliasClassification[];
+  variantRules: VariantRule[];
+  candidates: VariantCandidate[];
+  reviews: VariantReviewArtifact;
+  disambiguations: unknown[];
 };
 
 async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts> {
@@ -264,15 +347,17 @@ async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts
   const merges = artifacts.get("scripts/catalog-normalization/merges.json")!;
   const assignments = artifacts.get("scripts/catalog-normalization/assignments.json")!;
   const aliasClassifications = artifacts.get("scripts/catalog-normalization/alias-classifications.json")!;
+  const variantRules = artifacts.get("scripts/catalog-normalization/variant-rules.json")!;
+  const candidates = await loadVariantCandidates(
+    join(rootDir, "scripts/catalog-normalization/reviews/variant-candidates.json"),
+  );
+  const reviews = await loadVariantReviews(
+    join(rootDir, "scripts/catalog-normalization/reviews/variant-adversarial-review.json"),
+  );
   validateUnmodeledManifestRecords(
     artifacts.get("scripts/catalog-normalization/disambiguations.json")!,
     "disambiguation",
   );
-  validateUnmodeledManifestRecords(
-    artifacts.get("scripts/catalog-normalization/variant-rules.json")!,
-    "variant rule",
-  );
-
   return {
     hashes: stableRecord(hashes) as Record<string, string>,
     schemaVersions: stableRecord(schemaVersions) as Record<string, number>,
@@ -281,7 +366,370 @@ async function loadCurationManifests(rootDir: string): Promise<CurationArtifacts
     merges: decodeMerges(merges),
     assignments: decodeAssignments(assignments),
     aliasClassifications: decodeAliasClassifications(aliasClassifications),
+    variantRules: decodeVariantRules(variantRules),
+    candidates: candidates.records,
+    reviews,
+    disambiguations: [...artifacts.get("scripts/catalog-normalization/disambiguations.json")!.records],
   };
+}
+
+function versionedArtifact<T>(records: readonly T[]): string {
+  return `${JSON.stringify({ schemaVersion: 1, records }, null, 2)}\n`;
+}
+
+function compareById<T extends { id: string }>(left: T, right: T): number {
+  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+}
+
+function titleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (lower === "ez") return "EZ";
+      if (lower === "rdl") return "RDL";
+      return `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
+    })
+    .join(" ");
+}
+
+function renderVariantName(
+  movement: MovementDefinition,
+  modifierIds: readonly string[],
+  modifiersById: ReadonlyMap<string, MovementModifierDefinition>,
+): string {
+  const hasHighOrLowBar = modifierIds.includes("high-bar") || modifierIds.includes("low-bar");
+  const displayIds = modifierIds.filter((modifierId) => {
+    if (hasHighOrLowBar && modifierId === "barbell") return false;
+    if (hasHighOrLowBar && modifierId === "back-rack") return false;
+    if (modifierId === "hinge" && modifierIds.includes("romanian")) return false;
+    return true;
+  });
+  const displayLabels = displayIds.map((modifierId) => {
+    const modifier = modifiersById.get(modifierId);
+    if (!modifier) throw new Error(`Unknown modifier: ${modifierId}`);
+    if (modifierId === "high-bar") return "High Bar Back";
+    if (modifierId === "low-bar") return "Low Bar Back";
+    if (modifierId === "back-rack") return "Back";
+    if (modifierId === "front-rack") return "Front Rack";
+    return modifier.name;
+  });
+  const displayOrder = new Map([
+    ["paused", 1], ["deficit", 2], ["partial", 3], ["strict", 4], ["romanian", 5], ["fly", 6],
+    ["high-bar", 10], ["low-bar", 10], ["front-rack", 11], ["back-rack", 12], ["incline", 13],
+    ["decline", 13], ["seated", 14], ["overhead", 15], ["chest-supported", 16], ["bench-supported", 17],
+    ["single-arm", 20], ["single-leg", 20], ["pronated-grip", 30], ["supinated-grip", 30],
+    ["neutral-grip", 30], ["mixed-grip", 30], ["hook-grip", 30], ["rope", 40], ["straight-bar", 40],
+    ["ez-bar", 40], ["barbell", 50], ["dumbbell", 50], ["kettlebell", 50], ["cable", 50],
+    ["machine", 50], ["band", 50], ["bodyweight", 50], ["trap-bar", 50], ["landmine", 50],
+  ]);
+  const ordered = displayIds
+    .map((modifierId, index) => ({ modifierId, index }))
+    .sort((left, right) =>
+      (displayOrder.get(left.modifierId) ?? 100) - (displayOrder.get(right.modifierId) ?? 100)
+      || left.index - right.index,
+    )
+    .map(({ modifierId }) => displayLabels[displayIds.indexOf(modifierId)]);
+  const rendered = movement.displayTemplate
+    .replace("{modifiers}", ordered.join(" "))
+    .replace("{movement}", movement.name)
+    .replace(/\s+/g, " ")
+    .trim();
+  return titleCase(rendered);
+}
+
+const IMPLEMENT_EQUIPMENT: ReadonlyMap<string, readonly string[]> = new Map([
+  ["barbell", ["barbell"]],
+  ["dumbbell", ["dumbbell"]],
+  ["kettlebell", ["kettlebell", "kettlebells"]],
+  ["cable", ["cable"]],
+  ["machine", ["machine"]],
+  ["band", ["band", "resistance band"]],
+  ["bodyweight", ["bodyweight", "body weight"]],
+  ["trap-bar", ["trap bar", "trap-bar"]],
+  ["landmine", ["landmine", "barbell"]],
+]);
+
+const MODIFIER_MARKERS: ReadonlyMap<string, readonly string[]> = new Map([
+  ["back-rack", ["back rack", "back squat"]],
+  ["front-rack", ["front rack", "front squat", "clean grip"]],
+  ["high-bar", ["high bar", "high-bar"]],
+  ["low-bar", ["low bar", "low-bar"]],
+  ["single-arm", ["single arm", "one arm", "one-arm"]],
+  ["single-leg", ["single leg", "one leg", "one-leg"]],
+  ["split-stance", ["split stance", "split squat", "side split"]],
+  ["staggered-stance", ["staggered stance", "staggered"]],
+  ["neutral-grip", ["neutral grip", "parallel grip", "hammer grip", "hammer"]],
+  ["supinated-grip", ["supinated grip", "underhand", "chin up", "chin-up"]],
+  ["pronated-grip", ["pronated grip", "overhand"]],
+  ["mixed-grip", ["mixed grip"]],
+  ["hook-grip", ["hook grip"]],
+  ["overhead", ["overhead", "shoulder press", "military press"]],
+  ["paused", ["paused", "pause"]],
+  ["deficit", ["deficit"]],
+  ["partial", ["partial"]],
+  ["strict", ["strict"]],
+  ["romanian", ["romanian", "rdl"]],
+  ["hinge", ["hinge"]],
+  ["sumo", ["sumo"]],
+  ["seated", ["seated"]],
+  ["incline", ["incline"]],
+  ["decline", ["decline"]],
+  ["chest-supported", ["chest supported", "chest-supported"]],
+  ["bench-supported", ["bench supported", "bench-supported"]],
+  ["rope", ["rope"]],
+  ["straight-bar", ["straight bar", "straight-bar"]],
+  ["ez-bar", ["ez bar", "ez-bar", "curl bar", "sz bar"]],
+  ["fly", ["fly"]],
+  ["landmine", ["landmine"]],
+]);
+
+function hasMarker(text: string, marker: string): boolean {
+  const normalizedText = normalizeToken(text);
+  const normalizedMarker = normalizeToken(marker);
+  return normalizedMarker.length > 0 && normalizedText.includes(normalizedMarker);
+}
+
+function sourceRepresentsRule(
+  base: CatalogExercise,
+  rule: VariantRule,
+  modifierIds: readonly string[],
+): boolean {
+  const baseText = [base.id, base.name, ...base.aliases].join(" ");
+  const baseEquipment = new Set(base.equipment.map(normalizeToken));
+  const overrideEquipment = rule.metadataOverrides?.equipment;
+  if (overrideEquipment) {
+    const effectiveEquipment = new Set(overrideEquipment.map(normalizeToken));
+    if (effectiveEquipment.size !== baseEquipment.size || [...effectiveEquipment].some((item) => !baseEquipment.has(item))) {
+      return false;
+    }
+  }
+  for (const modifierId of modifierIds) {
+    const expectedEquipment = IMPLEMENT_EQUIPMENT.get(modifierId);
+    if (expectedEquipment) {
+      if (!expectedEquipment.some((equipment) => baseEquipment.has(normalizeToken(equipment)))) return false;
+      continue;
+    }
+    const markers = MODIFIER_MARKERS.get(modifierId);
+    if (!markers || !markers.some((marker) => hasMarker(baseText, marker))) {
+      // High/low-bar identities imply the back-rack position; Romanian
+      // identities imply the generic hinge category in the modifier registry.
+      if (modifierId === "back-rack" && (modifierIds.includes("high-bar") || modifierIds.includes("low-bar"))) continue;
+      if (modifierId === "hinge" && modifierIds.includes("romanian")) continue;
+      return false;
+    }
+  }
+  return true;
+}
+
+type ReviewedVariantResult = {
+  exercises: NormalizedCatalogExercise[];
+  approvedRules: VariantRule[];
+  coverage: Record<string, VariantCoverageCount>;
+  generatedCount: number;
+};
+
+function emptyCoverage(): Record<string, VariantCoverageCount> {
+  return Object.fromEntries(
+    [
+      "squat",
+      "bench-press",
+      "deadlift-hinge",
+      "row",
+      "pull-up-pulldown",
+      "overhead-landmine-press",
+      "lunge-split-squat",
+      "push-up",
+      "curl",
+      "triceps-extension-pushdown",
+      "raise-fly",
+      "loaded-carry",
+    ].map((movementId) => [movementId, {
+      proposed: 0,
+      approved: 0,
+      rejected: 0,
+      revised: 0,
+      colliding: 0,
+      unresolved: 0,
+    }]),
+  ) as Record<string, VariantCoverageCount>;
+}
+
+function reviewedVariants(
+  normalized: ReturnType<typeof validateNormalizedCatalogue>,
+  curation: CurationArtifacts,
+  stage: CompileOptions["stage"],
+): ReviewedVariantResult {
+  const coverage = emptyCoverage();
+  if (curation.candidates.length === 0) {
+    return { exercises: normalized.exercises.map((exercise) => ({
+      ...exercise,
+      aliases: [...exercise.aliases],
+      equipment: [...exercise.equipment],
+      movementPatterns: [...exercise.movementPatterns],
+      muscles: { primary: [...exercise.muscles.primary], secondary: [...exercise.muscles.secondary] },
+      tags: [...exercise.tags],
+      movementModifierIds: [...exercise.movementModifierIds],
+    })), approvedRules: [], coverage, generatedCount: 0 };
+  }
+  if (stage !== "complete") {
+    return { exercises: normalized.exercises.map((exercise) => ({
+      ...exercise,
+      aliases: [...exercise.aliases],
+      equipment: [...exercise.equipment],
+      movementPatterns: [...exercise.movementPatterns],
+      muscles: { primary: [...exercise.muscles.primary], secondary: [...exercise.muscles.secondary] },
+      tags: [...exercise.tags],
+      movementModifierIds: [...exercise.movementModifierIds],
+    })), approvedRules: [], coverage, generatedCount: 0 };
+  }
+
+  const metadataById = new Map<string, CatalogExercise>(
+    normalized.exercises.map((exercise) => [exercise.id, exercise]),
+  );
+  // Candidate validation deliberately remains the first gate: review decisions
+  // cannot bless a malformed registry signature or an empty/incompatible base.
+  validateVariantCandidates(curation.candidates, normalized.registries, metadataById);
+  const joined = joinCandidateReviews(curation.candidates, curation.reviews.records);
+  const approvedRules: VariantRule[] = [];
+  const seenSignatures = new Set<string>();
+  const existingSignatures = new Map<string, string>();
+  const sourceOwners = new Map<string, string>();
+  for (const signature of normalized.registries.signatures) {
+    const canonical = signatureForRegistry(signature, normalized.registries);
+    if (signature.exerciseId) {
+      existingSignatures.set(canonical, signature.exerciseId);
+      sourceOwners.set(signature.exerciseId, canonical);
+    }
+  }
+
+  for (const { candidate, review } of joined) {
+    const family = coverage[candidate.movementId] ?? (coverage[candidate.movementId] = {
+      proposed: 0, approved: 0, rejected: 0, revised: 0, colliding: 0, unresolved: 0,
+    });
+    family.proposed += 1;
+    if (review.decision === "reject") {
+      family.rejected += 1;
+      continue;
+    }
+    if (
+      review.decision === "revise"
+      && (review.revisedRule?.id !== candidate.id || review.revisedRule.movementId !== candidate.movementId)
+    ) {
+      throw new Error(`Revised rule identity mismatch: ${candidate.id}`);
+    }
+    const rule: VariantRule = review.decision === "revise"
+      ? { ...review.revisedRule!, status: "approved" }
+      : (() => {
+        const { rationale: _rationale, ...approvedCandidate } = candidate;
+        return { ...approvedCandidate, status: "approved" };
+      })();
+    const canonicalModifierIds = validateVariantRule(rule, normalized.registries, metadataById);
+    const signature = signatureForRegistry({ movementId: rule.movementId, modifierIds: canonicalModifierIds }, normalized.registries);
+    if (seenSignatures.has(signature)) {
+      family.colliding += 1;
+      throw new Error(`Duplicate approved variant signature: ${signature}`);
+    }
+    seenSignatures.add(signature);
+    family.approved += 1;
+    if (review.decision === "revise") family.revised += 1;
+    approvedRules.push({ ...rule, movementModifierIds: canonicalModifierIds });
+  }
+
+  const expectedRules = approvedRules
+    .map((rule) => ({ ...rule, status: "approved" as const }))
+    .sort(compareById);
+  const manifestRules = [...curation.variantRules].sort(compareById);
+  if (expectedRules.length > 0 && manifestRules.length === 0) {
+    throw new Error("variant-rules.json is missing independently reviewed approvals");
+  }
+  if (JSON.stringify(manifestRules) !== JSON.stringify(expectedRules)) {
+    throw new Error("variant-rules.json does not match independently reviewed approvals");
+  }
+
+  const byId = new Map(normalized.exercises.map((exercise) => [exercise.id, exercise]));
+  for (const rule of approvedRules) {
+    const signature = signatureForRegistry(
+      { movementId: rule.movementId, modifierIds: rule.movementModifierIds },
+      normalized.registries,
+    );
+    if (existingSignatures.has(signature)) continue;
+    const base = byId.get(rule.metadataFromExerciseId);
+    if (!base || !sourceRepresentsRule(base, rule, rule.movementModifierIds)) continue;
+    const owner = sourceOwners.get(base.id);
+    if (owner && owner !== signature) continue;
+    existingSignatures.set(signature, base.id);
+    sourceOwners.set(base.id, signature);
+  }
+  const materialized = normalized.exercises.map((exercise) => ({
+    ...exercise,
+    aliases: [...exercise.aliases],
+    equipment: [...exercise.equipment],
+    movementPatterns: [...exercise.movementPatterns],
+    muscles: { primary: [...exercise.muscles.primary], secondary: [...exercise.muscles.secondary] },
+    tags: [...exercise.tags],
+    movementModifierIds: [...exercise.movementModifierIds],
+  }));
+  const indexes = new Map(materialized.map((exercise, index) => [exercise.id, index]));
+  for (const rule of approvedRules) {
+    const base = byId.get(rule.metadataFromExerciseId);
+    if (!base) throw new Error(`Variant metadata base missing: ${rule.metadataFromExerciseId}`);
+    const variant = materializeVariant(base, rule);
+    const canonicalSignature = signatureForRegistry({ movementId: rule.movementId, modifierIds: rule.movementModifierIds }, normalized.registries);
+    const existingId = existingSignatures.get(canonicalSignature);
+    if (existingId) {
+      const index = indexes.get(existingId);
+      if (index === undefined) throw new Error(`Existing signature target missing: ${existingId}`);
+      const existing = materialized[index];
+      materialized[index] = {
+        ...existing,
+        equipment: variant.equipment,
+        movementPatterns: variant.movementPatterns,
+        muscles: variant.muscles,
+        tags: variant.tags,
+        // Existing concrete IDs retain their curated aliases. Approved aliases
+        // are emitted on genuinely new variant records so a review cannot
+        // silently change legacy matching behavior.
+        aliases: [...existing.aliases],
+        movementId: rule.movementId,
+        movementModifierIds: rule.movementModifierIds,
+      };
+      continue;
+    }
+    const generatedId = idForSignature(rule.movementId, rule.movementModifierIds);
+    if (indexes.has(generatedId)) throw new Error(`Generated variant ID collision: ${generatedId}`);
+    const movement = normalized.registries.movementsById.get(rule.movementId)!;
+    const generated: NormalizedCatalogExercise = {
+      ...variant,
+      id: generatedId,
+      name: renderVariantName(movement, rule.movementModifierIds, normalized.registries.modifiersById),
+      movementModifierIds: [...rule.movementModifierIds],
+    };
+    indexes.set(generated.id, materialized.length);
+    materialized.push(generated);
+  }
+  materialized.sort(compareById);
+  return {
+    exercises: materialized,
+    approvedRules,
+    coverage,
+    generatedCount: approvedRules.filter((rule) => !existingSignatures.has(
+      signatureForRegistry({ movementId: rule.movementId, modifierIds: rule.movementModifierIds }, normalized.registries),
+    )).length,
+  };
+}
+
+// Keeping these tiny adapters local avoids making the compiler's orchestration
+// depend on test-only module paths while preserving one canonical signature
+// implementation for validation and materialization.
+function signatureForRegistry(
+  signature: { movementId: string; modifierIds: string[] },
+  registries: ReturnType<typeof validateNormalizedCatalogue>["registries"],
+): string {
+  const movement = registries.movementsById.get(signature.movementId);
+  if (!movement) throw new Error(`Unknown movement: ${signature.movementId}`);
+  return [signature.movementId, ...canonicalModifierIds(signature.movementId, signature.modifierIds, registries)].join("|");
 }
 
 export async function compileCatalog(options: CompileOptions): Promise<CatalogBuildReport> {
@@ -299,14 +747,49 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   Object.assign(inputSchemaVersions, manifests.schemaVersions);
   const normalized = validateNormalizedCatalogue(records as CatalogExercise[], manifests);
   const nearDuplicateCandidates = findNearDuplicateCandidates(normalized.exercises);
+  const reviewed = reviewedVariants(normalized, manifests, options.stage);
+  const candidateBytes = await readFile(
+    join(options.rootDir, "scripts/catalog-normalization/reviews/variant-candidates.json"),
+  );
+  const reviewBytes = await readFile(
+    join(options.rootDir, "scripts/catalog-normalization/reviews/variant-adversarial-review.json"),
+  );
+  inputHashes.variantCandidates = sha256(candidateBytes);
+  inputHashes.variantAdversarialReview = sha256(reviewBytes);
+  inputSchemaVersions.variantCandidates = 1;
+  inputSchemaVersions.variantAdversarialReview = 1;
 
-  const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = {
-    "exercises.generated.json": snapshot,
-    "movements.generated.json": EMPTY_ARTIFACT,
-    "modifiers.generated.json": EMPTY_ARTIFACT,
-    "legacyRedirects.generated.json": EMPTY_ARTIFACT,
-    "importDisambiguations.generated.json": EMPTY_ARTIFACT,
-  };
+  const isComplete = options.stage === "complete";
+  // Empty fixture manifests intentionally exercise the compiler shell without
+  // changing the frozen snapshot bytes. A real complete build always has the
+  // reviewed candidate artifact and therefore emits normalized metadata.
+  const completeExercises = manifests.candidates.length === 0
+    ? (records as CatalogExercise[])
+    : reviewed.exercises;
+  const hasReviewedCandidates = manifests.candidates.length > 0;
+  const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = isComplete && hasReviewedCandidates
+    ? {
+      "exercises.generated.json": `${JSON.stringify(completeExercises, null, 2)}\n`,
+      "movements.generated.json": versionedArtifact(
+        [...normalized.registries.movementsById.values()].sort((left, right) => left.sortOrder - right.sortOrder),
+      ),
+      "modifiers.generated.json": versionedArtifact(
+        [...normalized.registries.modifiersById.values()].sort((left, right) => left.sortOrder - right.sortOrder),
+      ),
+      "legacyRedirects.generated.json": versionedArtifact(
+        Object.entries(normalized.redirects)
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([fromExerciseId, toExerciseId]) => ({ fromExerciseId, toExerciseId })),
+      ),
+      "importDisambiguations.generated.json": versionedArtifact(manifests.disambiguations),
+    }
+    : {
+      "exercises.generated.json": snapshot,
+      "movements.generated.json": EMPTY_ARTIFACT,
+      "modifiers.generated.json": EMPTY_ARTIFACT,
+      "legacyRedirects.generated.json": EMPTY_ARTIFACT,
+      "importDisambiguations.generated.json": EMPTY_ARTIFACT,
+    };
   const outputHashes = Object.fromEntries(
     OUTPUT_FILES.map((fileName) => [fileName, sha256(outputContents[fileName])]),
   ) as Record<string, string>;
@@ -316,8 +799,16 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     snapshotSha256,
     inputCount: records.length,
     survivingCount: normalized.exercises.length,
-    generatedVariantCount: 0,
-    stageCounts: { existing: records.length, complete: options.stage === "complete" ? records.length : 0 },
+    generatedVariantCount: isComplete ? reviewed.generatedCount : 0,
+    stageCounts: {
+      existing: normalized.exercises.length,
+      complete: isComplete ? completeExercises.length : 0,
+      variantsProposed: isComplete ? manifests.candidates.length : 0,
+      variantsApproved: isComplete ? reviewed.approvedRules.length : 0,
+      variantsRejected: isComplete
+        ? Object.values(reviewed.coverage).reduce((count, family) => count + family.rejected, 0)
+        : 0,
+    },
     inputSchemaVersions: stableRecord(inputSchemaVersions) as Record<string, number>,
     inputHashes: stableRecord(inputHashes) as Record<string, string>,
     outputHashes: stableRecord(outputHashes) as Record<string, string>,
@@ -328,6 +819,7 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
       (candidate) => candidate.disposition === "merged",
     ).length,
     nearDuplicateCandidates,
+    variantCoverage: reviewed.coverage,
   };
 
   await mkdir(options.catalogOutputDir, { recursive: true });

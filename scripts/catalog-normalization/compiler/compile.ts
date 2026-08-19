@@ -2,12 +2,22 @@ export * from "./core";
 export { buildRegistries, canonicalizeModifiers, flattenMerges, signatureFor, validateNormalizedCatalogue } from "./normalize";
 export {
   loadVariantCandidates,
+  loadVariantReviews,
   TIER_1_MOVEMENT_IDS,
+  idForSignature,
+  joinCandidateReviews,
+  materializeVariant,
   validateAliasOutcomes,
   validateRegistries,
+  validateVariantRule,
   validateVariantCandidates,
 } from "./validate";
-export type { VariantCandidate, VariantRule } from "./types";
+export type {
+  VariantCandidate,
+  VariantReviewArtifact,
+  VariantReviewDecision,
+  VariantRule,
+} from "./types";
 
 import { runCompilerCli } from "./core";
 

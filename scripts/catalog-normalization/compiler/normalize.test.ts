@@ -6,7 +6,11 @@ import {
 } from "./normalize";
 import {
   flattenMerges,
+  idForSignature,
+  joinCandidateReviews,
   loadVariantCandidates,
+  loadVariantReviews,
+  materializeVariant,
   validateAliasOutcomes,
   validateRegistries,
   validateVariantCandidates,
@@ -17,10 +21,23 @@ import type {
   ModifierCategory,
   MovementDefinition,
   MovementModifierDefinition,
+  VariantCandidate,
+  VariantReviewDecision,
+  VariantRule,
 } from "./types";
 import movementsArtifact from "../movements.json";
 import modifiersArtifact from "../modifiers.json";
 import snapshotArtifact from "../catalog-v1.snapshot.json";
+import {
+  approveHighBar,
+  approvedCableRowRule,
+  compileFixture,
+  exercise,
+  highBarCandidate,
+  newPausedHighBarRule,
+  rejectHighBar,
+  twoSecondPause,
+} from "./testFixtures";
 
 export const TIER_1_MOVEMENT_IDS = [
   "squat",
@@ -392,4 +409,157 @@ test("reports close canonical names for review without merging them", () => {
       disposition: "review-required",
     },
   ]);
+});
+
+test("review decisions emit only independently approved candidates", () => {
+  const candidate = {
+    id: "two-second-pause",
+    movementId: "squat",
+    movementModifierIds: ["paused"],
+    metadataFromExerciseId: "barbell-squat",
+    approvedAliases: ["paused barbell squat"],
+    coverageTier: 1,
+    status: "candidate",
+    rationale: "A coarse paused identity deliberately excludes duration prescriptions.",
+  } satisfies VariantCandidate;
+  const review: VariantReviewDecision = {
+    candidateId: candidate.id,
+    decision: "reject",
+    reason: "Numeric pause duration is a prescription, not a stable identity.",
+  };
+
+  expect(joinCandidateReviews([candidate], [review])).toEqual([{ candidate, review }]);
+  expect(joinCandidateReviews([candidate], [review])[0].review.decision).toBe("reject");
+});
+
+test("emits only independently approved rules", async () => {
+  const result = await compileFixture({
+    candidates: [twoSecondPause],
+    reviews: [{
+      candidateId: twoSecondPause.id,
+      decision: "reject",
+      reason: "duration is prescription",
+    }],
+  });
+  expect(result.exercises.some((candidate) => candidate.id === twoSecondPause.id)).toBe(false);
+});
+
+test("existing signatures retain existing IDs in a compiler fixture", async () => {
+  const result = await compileFixture({ approvedRule: {
+    ...highBarCandidate,
+    status: "approved",
+  } });
+  expect(result.bySignature.get("squat|barbell|back-rack|high-bar")?.id).toBe(
+    "barbell-high-bar-squat",
+  );
+});
+
+test("new fixture IDs and labels derive from the canonical signature", async () => {
+  const result = await compileFixture({ approvedRule: newPausedHighBarRule });
+  expect(result.bySignature.get("squat|barbell|back-rack|high-bar|paused")).toMatchObject({
+    id: "squat--barbell--back-rack--high-bar--paused",
+    name: "Paused High Bar Back Squat",
+  });
+});
+
+test("fixture helpers expose one-decision validation and reviewed overrides", () => {
+  expect(() => joinCandidateReviews([highBarCandidate], [])).toThrow(
+    "missing review decision: existing-high-bar",
+  );
+  expect(() => joinCandidateReviews([highBarCandidate], [approveHighBar, rejectHighBar])).toThrow(
+    "duplicate review decision: existing-high-bar",
+  );
+  const baseExercise = exercise({
+    id: "cable-row",
+    equipment: ["cable"],
+    movementPatterns: ["horizontal-pull"],
+    primaryMuscles: ["back"],
+    tags: ["strength"],
+  });
+  expect(materializeVariant(baseExercise, {
+    ...approvedCableRowRule,
+    metadataOverrides: { muscles: { primary: ["upper-back"], secondary: ["biceps"] } },
+  })).toMatchObject({
+    equipment: ["cable"],
+    movementPatterns: ["horizontal-pull"],
+    muscles: { primary: ["upper-back"], secondary: ["biceps"] },
+    tags: ["strength"],
+  });
+});
+
+test("requires exactly one independent decision per candidate", () => {
+  const candidate = {
+    id: "existing-high-bar",
+    movementId: "squat",
+    movementModifierIds: ["barbell", "back-rack", "high-bar"],
+    metadataFromExerciseId: "barbell-high-bar-squat",
+    approvedAliases: [],
+    coverageTier: 1,
+    status: "candidate",
+    rationale: "Existing reviewed high-bar squat identity remains mechanically distinct.",
+  } satisfies VariantCandidate;
+  const approve: VariantReviewDecision = {
+    candidateId: candidate.id,
+    decision: "approve",
+    reason: "Mechanically distinct and already represented.",
+  };
+  const reject: VariantReviewDecision = {
+    candidateId: candidate.id,
+    decision: "reject",
+    reason: "Duplicate decision used to exercise the validator.",
+  };
+
+  expect(() => joinCandidateReviews([candidate], [])).toThrow(
+    "missing review decision: existing-high-bar",
+  );
+  expect(() => joinCandidateReviews([candidate], [approve, reject])).toThrow(
+    "duplicate review decision: existing-high-bar",
+  );
+});
+
+test("existing signatures retain existing IDs and new IDs derive from canonical signatures", () => {
+  expect(idForSignature("squat", ["barbell", "back-rack", "high-bar"])).toBe(
+    "squat--barbell--back-rack--high-bar",
+  );
+  expect(idForSignature("squat", ["barbell", "back-rack", "high-bar", "paused"])).toBe(
+    "squat--barbell--back-rack--high-bar--paused",
+  );
+});
+
+test("materializes only reviewed metadata overrides from a populated base", () => {
+  const baseExercise: CatalogExercise = {
+    id: "cable-row",
+    name: "Cable Row",
+    aliases: [],
+    equipment: ["cable"],
+    movementPatterns: ["horizontal-pull"],
+    muscles: { primary: ["back"], secondary: [] },
+    tags: ["strength"],
+  };
+  const rule: VariantRule = {
+    id: "cable-row-upper-back",
+    movementId: "row",
+    movementModifierIds: ["cable"],
+    metadataFromExerciseId: baseExercise.id,
+    metadataOverrides: { muscles: { primary: ["upper-back"], secondary: ["biceps"] } },
+    approvedAliases: ["cable upper back row"],
+    coverageTier: 1,
+    status: "approved",
+  };
+
+  expect(materializeVariant(baseExercise, rule)).toMatchObject({
+    id: "cable-row-upper-back",
+    name: "Cable Row",
+    equipment: ["cable"],
+    movementPatterns: ["horizontal-pull"],
+    muscles: { primary: ["upper-back"], secondary: ["biceps"] },
+    tags: ["strength"],
+  });
+});
+
+test("review artifact loader rejects field-level schema violations", async () => {
+  const artifact = await loadVariantReviews();
+  expect(artifact.schemaVersion).toBe(1);
+  expect(artifact.records.length).toBeGreaterThan(0);
+  expect(artifact.records.every((record) => record.reason.trim().length > 0)).toBe(true);
 });

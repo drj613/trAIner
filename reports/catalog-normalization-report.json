@@ -4,10 +4,13 @@
   "snapshotSha256": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
   "inputCount": 3072,
   "survivingCount": 3072,
-  "generatedVariantCount": 0,
+  "generatedVariantCount": 54,
   "stageCounts": {
     "existing": 3072,
-    "complete": 0
+    "complete": 3126,
+    "variantsProposed": 161,
+    "variantsApproved": 149,
+    "variantsRejected": 12
   },
   "inputSchemaVersions": {
     "scripts/catalog-normalization/alias-classifications.json": 1,
@@ -16,7 +19,11 @@
     "scripts/catalog-normalization/merges.json": 1,
     "scripts/catalog-normalization/modifiers.json": 1,
     "scripts/catalog-normalization/movements.json": 1,
-    "scripts/catalog-normalization/variant-rules.json": 1
+    "scripts/catalog-normalization/reviews/variant-adversarial-review.json": 1,
+    "scripts/catalog-normalization/reviews/variant-candidates.json": 1,
+    "scripts/catalog-normalization/variant-rules.json": 1,
+    "variantAdversarialReview": 1,
+    "variantCandidates": 1
   },
   "inputHashes": {
     "scripts/catalog-normalization/alias-classifications.json": "54cf2ed460f3bc4ef21e17bcda20541e5c05664039a7a334cc66ac1cf075d302",
@@ -26,14 +33,18 @@
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/modifiers.json": "d83d88069012ebf7f4d858430aed5327efe57997b46fd35b4495f66870b34cb2",
     "scripts/catalog-normalization/movements.json": "fa928dadeb0490a27505ff4531fc4aeb1734943993641019f271ec2889f73293",
-    "scripts/catalog-normalization/variant-rules.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98"
+    "scripts/catalog-normalization/reviews/variant-adversarial-review.json": "f5b588bf314e4c14eeb6d92adfe0b7baeadf3d171815beb7712c1df7890c8822",
+    "scripts/catalog-normalization/reviews/variant-candidates.json": "0eb9f3bfa1e5fd773ee9a33cb718a87cd84a7eb181e06f3542baff957524cccf",
+    "scripts/catalog-normalization/variant-rules.json": "ee965f30d724dc40420f3e20c8356c2a95d2457a1c018f88a901228cc8767f21",
+    "variantAdversarialReview": "f5b588bf314e4c14eeb6d92adfe0b7baeadf3d171815beb7712c1df7890c8822",
+    "variantCandidates": "0eb9f3bfa1e5fd773ee9a33cb718a87cd84a7eb181e06f3542baff957524cccf"
   },
   "outputHashes": {
-    "exercises.generated.json": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
-    "importDisambiguations.generated.json": "d6916cb44d9de696ac0443650b106807e55047eeb5e8ecece2c19506aa00da46",
-    "legacyRedirects.generated.json": "d6916cb44d9de696ac0443650b106807e55047eeb5e8ecece2c19506aa00da46",
-    "modifiers.generated.json": "d6916cb44d9de696ac0443650b106807e55047eeb5e8ecece2c19506aa00da46",
-    "movements.generated.json": "d6916cb44d9de696ac0443650b106807e55047eeb5e8ecece2c19506aa00da46"
+    "exercises.generated.json": "c1f7d3032668c1f7d34fac1e68a978f391c14dad0d0c2eb7116a705f67ce68d4",
+    "importDisambiguations.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
+    "legacyRedirects.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
+    "modifiers.generated.json": "8b02d1d1194336b56514130ba9edb27ddf0f3fd8f5a18dc54582de6850f87b26",
+    "movements.generated.json": "49d772ed3d7029dd2d465f12683731471f877834a1bc9e0231a6afff090dbfde"
   },
   "blockingErrors": [],
   "unclassifiedAliasCollisionCount": 0,
@@ -560,5 +571,103 @@
       "similarity": 0.9565,
       "disposition": "review-required"
     }
-  ]
+  ],
+  "variantCoverage": {
+    "squat": {
+      "proposed": 15,
+      "approved": 15,
+      "rejected": 0,
+      "revised": 1,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "bench-press": {
+      "proposed": 13,
+      "approved": 12,
+      "rejected": 1,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "deadlift-hinge": {
+      "proposed": 17,
+      "approved": 16,
+      "rejected": 1,
+      "revised": 1,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "row": {
+      "proposed": 15,
+      "approved": 13,
+      "rejected": 2,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "pull-up-pulldown": {
+      "proposed": 15,
+      "approved": 13,
+      "rejected": 2,
+      "revised": 6,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "overhead-landmine-press": {
+      "proposed": 13,
+      "approved": 11,
+      "rejected": 2,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "lunge-split-squat": {
+      "proposed": 12,
+      "approved": 11,
+      "rejected": 1,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "push-up": {
+      "proposed": 10,
+      "approved": 10,
+      "rejected": 0,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "curl": {
+      "proposed": 14,
+      "approved": 12,
+      "rejected": 2,
+      "revised": 1,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "triceps-extension-pushdown": {
+      "proposed": 12,
+      "approved": 12,
+      "rejected": 0,
+      "revised": 1,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "raise-fly": {
+      "proposed": 15,
+      "approved": 15,
+      "rejected": 0,
+      "revised": 0,
+      "colliding": 0,
+      "unresolved": 0
+    },
+    "loaded-carry": {
+      "proposed": 10,
+      "approved": 9,
+      "rejected": 1,
+      "revised": 2,
+      "colliding": 0,
+      "unresolved": 0
+    }
+  }
 }

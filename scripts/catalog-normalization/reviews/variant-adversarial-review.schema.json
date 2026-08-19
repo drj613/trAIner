@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainer.local/schemas/catalog-normalization/variant-adversarial-review.schema.json",
+  "title": "Adversarial review of Tier-1 exercise variant candidates",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "records": {
+      "type": "array",
+      "maxItems": 300,
+      "items": { "$ref": "#/$defs/reviewDecision" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "stringArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "nonEmptyStringArray": {
+      "allOf": [{ "$ref": "#/$defs/stringArray" }],
+      "minItems": 1
+    },
+    "metadataOverrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "equipment": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "movementPatterns": { "$ref": "#/$defs/nonEmptyStringArray" },
+        "muscles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primary", "secondary"],
+          "properties": {
+            "primary": { "$ref": "#/$defs/nonEmptyStringArray" },
+            "secondary": { "$ref": "#/$defs/nonEmptyStringArray" }
+          }
+        },
+        "tags": { "$ref": "#/$defs/nonEmptyStringArray" }
+      }
+    },
+    "revisedRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "movementId",
+        "movementModifierIds",
+        "metadataFromExerciseId",
+        "approvedAliases",
+        "coverageTier",
+        "status"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "movementId": { "$ref": "#/$defs/nonEmptyString" },
+        "movementModifierIds": {
+          "allOf": [{ "$ref": "#/$defs/stringArray" }],
+          "minItems": 1
+        },
+        "metadataFromExerciseId": { "$ref": "#/$defs/nonEmptyString" },
+        "metadataOverrides": { "$ref": "#/$defs/metadataOverrides" },
+        "approvedAliases": { "$ref": "#/$defs/stringArray" },
+        "coverageTier": { "enum": [1, 2] },
+        "status": { "enum": ["candidate", "approved"] }
+      }
+    },
+    "reviewDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateId", "decision", "reason"],
+      "properties": {
+        "candidateId": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": { "enum": ["approve", "reject", "revise"] },
+        "reason": { "$ref": "#/$defs/nonEmptyString" },
+        "revisedRule": { "$ref": "#/$defs/revisedRule" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "decision": { "const": "revise" } } },
+          "then": { "required": ["revisedRule"] },
+          "else": {
+            "not": { "required": ["revisedRule"] }
+          }
+        }
+      ]
+    }
+  }
+}

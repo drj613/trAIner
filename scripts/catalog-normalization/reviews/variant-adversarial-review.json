@@ -1,0 +1,984 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "candidateId": "squat--barbell--back-rack",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed barbell back-squat anchor while making the rack position explicit."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--high-bar",
+      "decision": "approve",
+      "reason": "Approved: High-bar placement is a mechanically meaningful squat identity and already has a curated base."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--low-bar",
+      "decision": "approve",
+      "reason": "Approved: Low-bar placement is distinct from high-bar placement and is represented by a reviewed catalogue entry."
+    },
+    {
+      "candidateId": "squat--barbell--front-rack",
+      "decision": "approve",
+      "reason": "Approved: Front-rack squatting changes the load position without inventing a prescription-only distinction."
+    },
+    {
+      "candidateId": "squat--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Uses the exact reviewed dumbbell squat metadata instead of borrowing goblet-specific load position."
+    },
+    {
+      "candidateId": "squat--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Approved: Single-leg loading changes the movement identity and retains both the implement and laterality markers."
+    },
+    {
+      "candidateId": "squat--kettlebell",
+      "decision": "approve",
+      "reason": "Approved: Kettlebell squats are a distinct implement variant supported by a populated kettlebell base."
+    },
+    {
+      "candidateId": "squat--kettlebell--front-rack",
+      "decision": "approve",
+      "reason": "Approved: The front-rack kettlebell position is a concrete loading choice rather than a set or tempo instruction."
+    },
+    {
+      "candidateId": "squat--bodyweight",
+      "decision": "approve",
+      "reason": "Approved: Bodyweight squat is the canonical unloaded implementation and avoids weighted/unweighted prescription language."
+    },
+    {
+      "candidateId": "squat--bodyweight--single-leg",
+      "decision": "revise",
+      "reason": "Revised: use the populated one-leg bodyweight squat source so the single-leg identity is not erased by a generic bilateral squat base.",
+      "revisedRule": {
+        "id": "squat--bodyweight--single-leg",
+        "movementId": "squat",
+        "movementModifierIds": [
+          "bodyweight",
+          "single-leg"
+        ],
+        "metadataFromExerciseId": "one-leg-squat",
+        "approvedAliases": [
+          "single leg bodyweight squat"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--paused",
+      "decision": "approve",
+      "reason": "Approved: Paused is retained only as the coarse registry identity; numeric pause durations remain prescription details."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--deficit",
+      "decision": "approve",
+      "reason": "Approved: A deficit changes range and setup at the movement level without encoding its height or programming prescription."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--partial",
+      "decision": "approve",
+      "reason": "Approved: Partial range is the registry's deliberately coarse identity; depth targets and pain-free instructions are excluded."
+    },
+    {
+      "candidateId": "squat--barbell--split-stance",
+      "decision": "approve",
+      "reason": "Approved: Split stance captures a stable bilateral stance change while avoiding a Cartesian mix of every squat modifier."
+    },
+    {
+      "candidateId": "squat--dumbbell--split-stance",
+      "decision": "approve",
+      "reason": "Approved: Anchors split stance to a populated dumbbell split-squat record with complete muscle metadata."
+    },
+    {
+      "candidateId": "bench-press--barbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed barbell bench-press family anchor with its stable horizontal-press metadata."
+    },
+    {
+      "candidateId": "bench-press--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Dumbbell bench pressing is an independent implement identity with compatible chest and press metadata."
+    },
+    {
+      "candidateId": "bench-press--cable",
+      "decision": "approve",
+      "reason": "Approved: Cable loading is a concrete bench-press implementation and is not conflated with free-weight variants."
+    },
+    {
+      "candidateId": "bench-press--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine bench press is a distinct implement family supported by a machine-specific metadata base."
+    },
+    {
+      "candidateId": "bench-press--barbell--incline",
+      "decision": "approve",
+      "reason": "Approved: Incline support changes the press setup and is represented without recording a numeric bench angle."
+    },
+    {
+      "candidateId": "bench-press--barbell--decline",
+      "decision": "approve",
+      "reason": "Approved: Decline support is the complementary coarse bench-angle identity and has compatible metadata."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Approved: Incline dumbbell pressing combines two mechanically meaningful dimensions already present in source data."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--decline",
+      "decision": "approve",
+      "reason": "Approved: Decline dumbbell pressing is a distinct supported implementation without Cartesian expansion into prescriptions."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral grip changes the dumbbell press identity and is explicitly represented by a matching source record."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm loading is a stable laterality identity and the alias retains both required markers."
+    },
+    {
+      "candidateId": "bench-press--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Rejected: pronated grip is the ordinary barbell bench default and creates no independently represented mechanical version."
+    },
+    {
+      "candidateId": "bench-press--barbell--paused",
+      "decision": "approve",
+      "reason": "Approved: Paused remains a coarse movement identity; seconds, tempo, and load prescriptions are intentionally excluded."
+    },
+    {
+      "candidateId": "bench-press--barbell--partial",
+      "decision": "approve",
+      "reason": "Approved: Partial range is kept coarse and does not create separate rules for pin height or prescribed depth."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed barbell deadlift anchor for the combined deadlift-and-hinge family."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Uses the exact populated generic dumbbell deadlift metadata without borrowing Romanian position."
+    },
+    {
+      "candidateId": "deadlift-hinge--kettlebell",
+      "decision": "approve",
+      "reason": "Approved: Keeps the exact kettlebell deadlift base and supplies a justified populated hinge-muscle override for its empty source fields."
+    },
+    {
+      "candidateId": "deadlift-hinge--trap-bar",
+      "decision": "approve",
+      "reason": "Approved: Trap-bar loading changes the implement and is backed by a populated trap-bar deadlift record."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Rejected: a standard barbell deadlift already uses the ordinary pronated grip; this duplicates the existing barbell signature."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--mixed-grip",
+      "decision": "approve",
+      "reason": "Approved: Mixed grip is a named grip identity that remains separate from hook grip and ordinary pronated grip."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--hook-grip",
+      "decision": "approve",
+      "reason": "Approved: Hook grip is mechanically meaningful and is not inferred from load, tempo, or competition prescription text."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--sumo",
+      "decision": "approve",
+      "reason": "Approved: Sumo stance changes the hinge mechanics and has an explicit populated source base."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--staggered-stance",
+      "decision": "revise",
+      "reason": "Revised: use neutral populated deadlift metadata rather than inheriting the single-leg source, which would overstate laterality for a staggered stance.",
+      "revisedRule": {
+        "id": "deadlift-hinge--barbell--staggered-stance",
+        "movementId": "deadlift-hinge",
+        "movementModifierIds": [
+          "barbell",
+          "staggered-stance"
+        ],
+        "metadataFromExerciseId": "barbell-deadlift",
+        "approvedAliases": [
+          "staggered stance barbell deadlift"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--paused",
+      "decision": "approve",
+      "reason": "Approved: Paused is retained only as a coarse identity; exact pause position and duration remain prescriptions."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--deficit",
+      "decision": "approve",
+      "reason": "Approved: Deficit setup changes range and start height without creating rules for numeric platform heights."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--partial",
+      "decision": "approve",
+      "reason": "Approved: Partial hinge range is intentionally coarse and does not encode rack height or prescribed block position."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--single-leg",
+      "decision": "approve",
+      "reason": "Approved: Single-leg barbell hinging has a distinct balance demand and keeps laterality at the family level."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Approved: The dumbbell single-leg hinge is a common concrete variant with compatible implement and laterality metadata."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--hinge",
+      "decision": "approve",
+      "reason": "Approved: Adds the generic hip-hinge identity with a populated barbell hinge base and no prescription details."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--romanian",
+      "decision": "approve",
+      "reason": "Approved: Romanian deadlift is a mechanically distinct hinge subfamily and is backed by populated barbell metadata."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell--romanian",
+      "decision": "approve",
+      "reason": "Approved: Extends Romanian identity to the populated dumbbell hinge base without generating load or tempo variants."
+    },
+    {
+      "candidateId": "row--barbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed barbell row family anchor and its horizontal-pull metadata."
+    },
+    {
+      "candidateId": "row--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Dumbbell row uses a populated generic two-dumbbell row base with complete pull metadata."
+    },
+    {
+      "candidateId": "row--kettlebell",
+      "decision": "approve",
+      "reason": "Approved: Kettlebell row covers the common implement without multiplying every stance and grip combination."
+    },
+    {
+      "candidateId": "row--cable",
+      "decision": "approve",
+      "reason": "Approved: Cable row is a core horizontal-pull implementation backed by complete cable metadata."
+    },
+    {
+      "candidateId": "row--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine row is kept distinct from cable row and uses a populated lever-machine base."
+    },
+    {
+      "candidateId": "row--band",
+      "decision": "approve",
+      "reason": "Approved: Band resistance is a concrete row implementation with source metadata normalized to the band modifier."
+    },
+    {
+      "candidateId": "row--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Rejected: the proposed pronated barbell row is the ordinary base execution and is redundant without a distinct source identity."
+    },
+    {
+      "candidateId": "row--dumbbell--supinated-grip",
+      "decision": "approve",
+      "reason": "Approved: Supinated dumbbell row preserves the explicit grip marker and remains distinct from neutral and pronated grips."
+    },
+    {
+      "candidateId": "row--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral grip is a stable cable-row identity and does not encode handle width or rep prescription."
+    },
+    {
+      "candidateId": "row--dumbbell--chest-supported",
+      "decision": "approve",
+      "reason": "Approved: Chest support changes stabilization demands and is directly represented by a matching metadata base."
+    },
+    {
+      "candidateId": "row--dumbbell--bench-supported",
+      "decision": "reject",
+      "reason": "Rejected: bench-supported is ambiguous and overlaps the explicit chest-supported row; the candidate base does not establish a distinct support posture."
+    },
+    {
+      "candidateId": "row--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Uses the exact one-arm dumbbell row base so the laterality marker is not erased by a two-arm source."
+    },
+    {
+      "candidateId": "row--cable--rope",
+      "decision": "approve",
+      "reason": "Approved: Rope attachment is identity-bearing for cable rows and is not expanded into handle length or grip-width prescriptions."
+    },
+    {
+      "candidateId": "row--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Approved: Straight-bar cable row covers a common attachment while retaining a compatible cable metadata base."
+    },
+    {
+      "candidateId": "row--cable--ez-bar",
+      "decision": "approve",
+      "reason": "Approved: EZ-bar cable row is a concrete attachment identity and remains separate from rope and straight-bar rows."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed bodyweight vertical-pull anchor for pull-ups and related bodyweight pulls."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable",
+      "decision": "revise",
+      "reason": "Revised: replace the neutral-grip source with a populated generic cable pulldown so the unqualified cable rule does not inherit an unstated grip.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable"
+        ],
+        "metadataFromExerciseId": "cable-pulldown",
+        "approvedAliases": [
+          "cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine pulldown is distinct from cable and bodyweight versions and uses a machine-specific base."
+    },
+    {
+      "candidateId": "pull-up-pulldown--band",
+      "decision": "revise",
+      "reason": "Revised: use a populated generic band pulldown source rather than inheriting the source record’s one-arm kneeling position.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--band",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "band"
+        ],
+        "metadataFromExerciseId": "band-close-grip-pulldown",
+        "approvedAliases": [
+          "band pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--pronated-grip",
+      "decision": "reject",
+      "reason": "Rejected: pronated bodyweight pull-up is already the represented pull-up anchor, so this adds a redundant signature."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--supinated-grip",
+      "decision": "approve",
+      "reason": "Approved: Supinated grip is a concrete chin-up identity rather than a weight or repetition annotation."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral-grip bodyweight pulling covers a common handle orientation without inventing attachment details."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--pronated-grip",
+      "decision": "revise",
+      "reason": "Revised: use populated generic cable-pulldown metadata; the prior neutral-grip source contradicted the explicit pronated identity.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--pronated-grip",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "pronated-grip"
+        ],
+        "metadataFromExerciseId": "cable-pulldown",
+        "approvedAliases": [
+          "pronated grip cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--supinated-grip",
+      "decision": "revise",
+      "reason": "Revised: use the populated underhand cable pulldown source so the supinated-grip identity is supported by the metadata base.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--supinated-grip",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "supinated-grip"
+        ],
+        "metadataFromExerciseId": "cable-underhand-pulldown",
+        "approvedAliases": [
+          "supinated grip cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral cable pulldown is explicitly represented and avoids preserving ambiguous close/parallel grip prose."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm bodyweight pulling is a rare but mechanically distinct capability with explicit laterality."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm cable pulldown is common import vocabulary and retains both identity dimensions."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--rope",
+      "decision": "revise",
+      "reason": "Revised: anchor the rope attachment to a populated rope-pulldown source instead of a neutral-grip-only base.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--rope",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "rope"
+        ],
+        "metadataFromExerciseId": "cable-lateral-pulldown-with-rope-attachment",
+        "approvedAliases": [
+          "rope cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--straight-bar",
+      "decision": "revise",
+      "reason": "Revised: anchor the straight-bar attachment to a populated bar-pulldown source instead of importing neutral-grip metadata.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--straight-bar",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "straight-bar"
+        ],
+        "metadataFromExerciseId": "cable-bar-lateral-pulldown",
+        "approvedAliases": [
+          "straight bar cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--ez-bar",
+      "decision": "reject",
+      "reason": "Rejected: the frozen catalogue has no populated cable EZ-bar pulldown base; a V-bar or generic cable source would misstate the attachment."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--overhead",
+      "decision": "approve",
+      "reason": "Approved: Uses populated barbell shoulder-press metadata for the overhead identity."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--overhead",
+      "decision": "approve",
+      "reason": "Approved: Dumbbell overhead press is a distinct implement identity with compatible shoulder and triceps metadata."
+    },
+    {
+      "candidateId": "overhead-landmine-press--kettlebell--overhead",
+      "decision": "approve",
+      "reason": "Approved: Kettlebell overhead press broadens representative implement coverage without adding load prescriptions."
+    },
+    {
+      "candidateId": "overhead-landmine-press--cable--overhead",
+      "decision": "approve",
+      "reason": "Approved: Cable shoulder pressing is a concrete vertical-push implementation backed by a populated cable base."
+    },
+    {
+      "candidateId": "overhead-landmine-press--machine--overhead",
+      "decision": "approve",
+      "reason": "Approved: Machine overhead press is separate from free weights and uses compatible machine metadata."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine",
+      "decision": "approve",
+      "reason": "Approved: Landmine is an explicit implement identity in this family and is not inferred from generic press names."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--seated",
+      "decision": "approve",
+      "reason": "Approved: Seated support changes the overhead press setup without creating seat-angle or bench-height variants."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--seated",
+      "decision": "approve",
+      "reason": "Approved: Seated dumbbell pressing is a common supported variant with complete metadata."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral dumbbell grip is a stable shoulder-press identity and avoids recording wrist-angle prescriptions."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm dumbbell pressing retains implement and laterality for deterministic variant identity."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine--neutral-grip",
+      "decision": "reject",
+      "reason": "Rejected: neutral grip is the ordinary landmine handle orientation and is redundant without a separate source distinction."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm landmine press is a representative unilateral pattern and does not encode side-specific IDs."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--overhead--neutral-grip",
+      "decision": "reject",
+      "reason": "Rejected: a plain barbell overhead press does not provide a stable neutral-grip identity; the combination is mechanically misleading."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed dumbbell lunge anchor for the lunge-and-split-squat family."
+    },
+    {
+      "candidateId": "lunge-split-squat--barbell",
+      "decision": "approve",
+      "reason": "Approved: Barbell lunge is a common implement variant and retains complete lower-body metadata."
+    },
+    {
+      "candidateId": "lunge-split-squat--kettlebell",
+      "decision": "approve",
+      "reason": "Approved: Kettlebell lunge covers a concrete implement without distinguishing load or walking distance."
+    },
+    {
+      "candidateId": "lunge-split-squat--bodyweight",
+      "decision": "approve",
+      "reason": "Approved: Bodyweight lunge is the unloaded family anchor and avoids weighted/unweighted prescription semantics."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--split-stance",
+      "decision": "approve",
+      "reason": "Approved: Split stance distinguishes a stable lunge setup while retaining a populated dumbbell lower-body base."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--staggered-stance",
+      "decision": "reject",
+      "reason": "Rejected: staggered stance is not independently distinguishable from the lunge/split-stance family here and would duplicate a weakly specified setup."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--bench-supported",
+      "decision": "approve",
+      "reason": "Approved: Bench support changes the split-squat setup and is represented by a matching bench-equipped base."
+    },
+    {
+      "candidateId": "lunge-split-squat--barbell--single-leg",
+      "decision": "approve",
+      "reason": "Approved: Single-leg barbell split squat retains the explicit laterality identity without separate side rules."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Approved: Single-leg dumbbell split squat is a representative unilateral variant backed by a populated base."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--paused",
+      "decision": "approve",
+      "reason": "Approved: Paused remains coarse; pause duration, bottom position, and tempo are deliberately not separate identities."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--deficit",
+      "decision": "approve",
+      "reason": "Approved: Deficit lunge captures a setup change without preserving platform height or programming details."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--partial",
+      "decision": "approve",
+      "reason": "Approved: Partial range remains a coarse movement identity and does not encode a prescribed depth target."
+    },
+    {
+      "candidateId": "push-up--bodyweight",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed bodyweight push-up anchor and its horizontal-press metadata."
+    },
+    {
+      "candidateId": "push-up--band",
+      "decision": "approve",
+      "reason": "Approved: Band resistance is an allowed push-up implementation with an explicit equipment override."
+    },
+    {
+      "candidateId": "push-up--bodyweight--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral grip is retained as a coarse hand-orientation identity for imported close-handle push-ups."
+    },
+    {
+      "candidateId": "push-up--bodyweight--incline",
+      "decision": "approve",
+      "reason": "Approved: Incline support is mechanically meaningful and does not preserve a numeric surface height."
+    },
+    {
+      "candidateId": "push-up--bodyweight--decline",
+      "decision": "approve",
+      "reason": "Approved: Decline support complements incline as a concrete push-up setup without Cartesian surface variations."
+    },
+    {
+      "candidateId": "push-up--bodyweight--paused",
+      "decision": "approve",
+      "reason": "Approved: Paused is coarse and deliberately excludes seconds, tempo, and bottom-position prescriptions."
+    },
+    {
+      "candidateId": "push-up--bodyweight--partial",
+      "decision": "approve",
+      "reason": "Approved: Partial range is retained only at the registry's coarse level and does not encode a target depth."
+    },
+    {
+      "candidateId": "push-up--bodyweight--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm push-up is mechanically distinct and already has a compatible source metadata base."
+    },
+    {
+      "candidateId": "push-up--band--incline",
+      "decision": "approve",
+      "reason": "Approved: This single combined rule covers a common assisted setup with explicit band metadata."
+    },
+    {
+      "candidateId": "push-up--band--decline",
+      "decision": "approve",
+      "reason": "Approved: Decline band push-up is included as a representative combined setup with explicit equipment metadata."
+    },
+    {
+      "candidateId": "curl--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed dumbbell curl anchor for the curl family."
+    },
+    {
+      "candidateId": "curl--barbell",
+      "decision": "approve",
+      "reason": "Approved: Barbell curl is a common implement identity with complete biceps metadata."
+    },
+    {
+      "candidateId": "curl--cable",
+      "decision": "approve",
+      "reason": "Approved: Cable curl is a distinct implement variant and has a populated isolation base."
+    },
+    {
+      "candidateId": "curl--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine curl represents stable machine loading with populated biceps and forearm metadata."
+    },
+    {
+      "candidateId": "curl--dumbbell--supinated-grip",
+      "decision": "reject",
+      "reason": "Rejected: ordinary dumbbell curls are already supinated; no separate source-backed version justifies another identity."
+    },
+    {
+      "candidateId": "curl--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral-grip hammer-style curling is a mechanically meaningful orientation variant with compatible metadata."
+    },
+    {
+      "candidateId": "curl--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Approved: Incline support changes shoulder position and is represented by a populated incline curl base."
+    },
+    {
+      "candidateId": "curl--dumbbell--single-arm",
+      "decision": "revise",
+      "reason": "Revised: use the populated one-arm standing curl source so the candidate does not inherit the prior source’s unmodeled incline-bench posture.",
+      "revisedRule": {
+        "id": "curl--dumbbell--single-arm",
+        "movementId": "curl",
+        "movementModifierIds": [
+          "dumbbell",
+          "single-arm"
+        ],
+        "metadataFromExerciseId": "dumbbell-one-arm-standing-curl",
+        "approvedAliases": [
+          "single arm dumbbell curl"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "curl--cable--supinated-grip",
+      "decision": "approve",
+      "reason": "Approved: Supinated cable curl is a concrete orientation variant anchored to complete cable metadata."
+    },
+    {
+      "candidateId": "curl--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral cable curl covers hammer-style vocabulary while using complete cable muscle metadata."
+    },
+    {
+      "candidateId": "curl--cable--rope",
+      "decision": "approve",
+      "reason": "Approved: Rope attachment is a stable cable-curl identity and remains separate from straight-bar and EZ-bar attachments."
+    },
+    {
+      "candidateId": "curl--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Approved: Straight-bar cable curl covers common attachment vocabulary without multiplying grip prescriptions."
+    },
+    {
+      "candidateId": "curl--cable--ez-bar",
+      "decision": "approve",
+      "reason": "Approved: the populated generic cable-curl base is compatible, while the explicit EZ-bar attachment remains a distinct coarse identity."
+    },
+    {
+      "candidateId": "curl--barbell--supinated-grip",
+      "decision": "reject",
+      "reason": "Rejected: ordinary barbell curls are inherently supinated, making this signature redundant with the barbell curl anchor."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed cable pushdown anchor with complete triceps and forearm metadata."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Dumbbell triceps extension is a distinct implement variant with populated arm metadata."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine triceps extension is kept distinct from cable loading with populated arm metadata."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--band",
+      "decision": "approve",
+      "reason": "Approved: Band resistance is an allowed concrete implementation; speed and load prescriptions are not retained."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--overhead",
+      "decision": "approve",
+      "reason": "Approved: Overhead cable extension changes shoulder position and uses a populated overhead base."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell--overhead",
+      "decision": "approve",
+      "reason": "Approved: Overhead dumbbell extension is a concrete position variant without encoding elbow angle or tempo."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm dumbbell extension retains implement and laterality identity without side-specific records."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm cable extension is a common laterality distinction with complete cable metadata."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--rope",
+      "decision": "approve",
+      "reason": "Approved: Rope attachment is identity-bearing for cable pushdowns and uses populated attachment metadata."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Approved: Straight-bar attachment covers common pushdown vocabulary while retaining a populated cable base."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--ez-bar",
+      "decision": "revise",
+      "reason": "Revised: the original V-bar source is not an EZ-bar source; neutral populated cable-pushdown metadata preserves the reviewed EZ-bar attachment without conflating V-bar identity.",
+      "revisedRule": {
+        "id": "triceps-extension-pushdown--cable--ez-bar",
+        "movementId": "triceps-extension-pushdown",
+        "movementModifierIds": [
+          "cable",
+          "ez-bar"
+        ],
+        "metadataFromExerciseId": "cable-pushdown",
+        "approvedAliases": [
+          "ez bar cable triceps pushdown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--band--overhead",
+      "decision": "approve",
+      "reason": "Approved: Uses the exact overhead band source with a justified populated secondary-muscle override; speed remains outside identity."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell",
+      "decision": "approve",
+      "reason": "Approved: Preserves the reviewed dumbbell raise anchor for the raise-and-fly family."
+    },
+    {
+      "candidateId": "raise-fly--cable",
+      "decision": "approve",
+      "reason": "Approved: Cable lateral raise is a common implement variant with complete shoulder metadata."
+    },
+    {
+      "candidateId": "raise-fly--machine",
+      "decision": "approve",
+      "reason": "Approved: Machine lateral raise uses a compatible shoulder base and a reviewed equipment override rather than empty source metadata."
+    },
+    {
+      "candidateId": "raise-fly--band",
+      "decision": "approve",
+      "reason": "Approved: Band lateral raise reuses compatible muscle metadata with an explicit implement override for the band rule."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Approved: Incline support changes shoulder raise setup and is represented without numeric bench-angle prescriptions."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm lateral raise is a concrete laterality variant and avoids left/right identity multiplication."
+    },
+    {
+      "candidateId": "raise-fly--cable--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Single-arm cable raise is explicitly represented and retains both identity dimensions with compatible metadata."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--strict",
+      "decision": "approve",
+      "reason": "Approved: Strict is the registry's coarse execution identity; no tempo, load, or rep prescription is embedded."
+    },
+    {
+      "candidateId": "raise-fly--cable--strict",
+      "decision": "approve",
+      "reason": "Approved: Strict cable raising is included as one execution variant without generating a tempo matrix."
+    },
+    {
+      "candidateId": "raise-fly--band--strict",
+      "decision": "approve",
+      "reason": "Approved: The band strict rule keeps execution coarse and makes its equipment change explicit through a reviewed override."
+    },
+    {
+      "candidateId": "raise-fly--machine--strict",
+      "decision": "approve",
+      "reason": "Approved: Strict machine raise is a representative combined rule, not a Cartesian expansion of all machine settings."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--fly",
+      "decision": "approve",
+      "reason": "Approved: Adds the fly subfamily with a populated dumbbell chest-fly metadata base."
+    },
+    {
+      "candidateId": "raise-fly--cable--fly",
+      "decision": "approve",
+      "reason": "Approved: Uses the generic cable fly base with justified populated equipment and secondary-muscle overrides."
+    },
+    {
+      "candidateId": "raise-fly--machine--fly",
+      "decision": "approve",
+      "reason": "Approved: Uses the generic machine chest-fly base with a justified populated secondary-muscle override."
+    },
+    {
+      "candidateId": "raise-fly--band--fly",
+      "decision": "approve",
+      "reason": "Approved: Uses a populated generic band fly source without importing one-handed or standing position into the candidate identity."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell",
+      "decision": "revise",
+      "reason": "Revised: narrow the farmer-carry base’s combined kettlebell/dumbbell equipment to the reviewed dumbbell implement.",
+      "revisedRule": {
+        "id": "loaded-carry--dumbbell",
+        "movementId": "loaded-carry",
+        "movementModifierIds": [
+          "dumbbell"
+        ],
+        "metadataFromExerciseId": "farmer-carry",
+        "approvedAliases": [
+          "dumbbell farmer carry"
+        ],
+        "coverageTier": 1,
+        "status": "approved",
+        "metadataOverrides": {
+          "equipment": [
+            "dumbbell"
+          ]
+        }
+      }
+    },
+    {
+      "candidateId": "loaded-carry--barbell",
+      "decision": "approve",
+      "reason": "Approved: Uses neutral farmer-carry metadata with an explicit barbell equipment override instead of Zercher position metadata."
+    },
+    {
+      "candidateId": "loaded-carry--kettlebell",
+      "decision": "revise",
+      "reason": "Revised: narrow the farmer-carry base’s combined kettlebell/dumbbell equipment to the reviewed kettlebell implement.",
+      "revisedRule": {
+        "id": "loaded-carry--kettlebell",
+        "movementId": "loaded-carry",
+        "movementModifierIds": [
+          "kettlebell"
+        ],
+        "metadataFromExerciseId": "farmer-carry",
+        "approvedAliases": [
+          "kettlebell loaded carry"
+        ],
+        "coverageTier": 1,
+        "status": "approved",
+        "metadataOverrides": {
+          "equipment": [
+            "kettlebell"
+          ]
+        }
+      }
+    },
+    {
+      "candidateId": "loaded-carry--trap-bar",
+      "decision": "approve",
+      "reason": "Approved: Trap-bar carry is mechanically distinct and has complete loaded-carry source metadata."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--pronated-grip",
+      "decision": "approve",
+      "reason": "Approved: Pronated carry grip is retained as a coarse identity without encoding handle diameter or load."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Approved: Neutral carry grip distinguishes a common orientation while retaining a compatible farmer-carry base."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Uses neutral farmer-carry metadata for single-arm loading without borrowing empty suitcase metadata."
+    },
+    {
+      "candidateId": "loaded-carry--barbell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Uses neutral farmer-carry metadata with an explicit barbell override and no Zercher position implication."
+    },
+    {
+      "candidateId": "loaded-carry--kettlebell--single-arm",
+      "decision": "approve",
+      "reason": "Approved: Uses neutral farmer-carry metadata so single-arm kettlebell carry does not imply an overhead waiter position."
+    },
+    {
+      "candidateId": "loaded-carry--trap-bar--neutral-grip",
+      "decision": "reject",
+      "reason": "Rejected: the trap-bar carry already has a fixed neutral handle orientation, so this adds no independent identity."
+    }
+  ]
+}

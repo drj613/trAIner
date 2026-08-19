@@ -114,6 +114,24 @@ export type VariantCandidate = VariantRule & {
   rationale: string;
 };
 
+export type VariantReviewDecision = {
+  candidateId: string;
+  decision: "approve" | "reject" | "revise";
+  reason: string;
+  revisedRule?: VariantRule;
+};
+
+export type VariantReviewArtifact = VersionedArtifact<VariantReviewDecision>;
+
+export type VariantCoverageCount = {
+  proposed: number;
+  approved: number;
+  rejected: number;
+  revised: number;
+  colliding: number;
+  unresolved: number;
+};
+
 export type CatalogBuildReport = {
   schemaVersion: 1;
   compilerVersion: 1;
@@ -130,6 +148,7 @@ export type CatalogBuildReport = {
   redirectChainCount: number;
   automaticFuzzyMergeCount: number;
   nearDuplicateCandidates: NearDuplicateCandidate[];
+  variantCoverage: Record<string, VariantCoverageCount>;
 };
 
 export type CompileOptions = {

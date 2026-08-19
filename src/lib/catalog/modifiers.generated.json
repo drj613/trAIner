@@ -1,1 +1,383 @@
-{"schemaVersion":1,"records":[]}
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "id": "barbell",
+      "name": "Barbell",
+      "aliases": [
+        "bar"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 1
+    },
+    {
+      "id": "dumbbell",
+      "name": "Dumbbell",
+      "aliases": [
+        "db"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 2
+    },
+    {
+      "id": "kettlebell",
+      "name": "Kettlebell",
+      "aliases": [
+        "kb"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 3
+    },
+    {
+      "id": "cable",
+      "name": "Cable",
+      "aliases": [],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 4
+    },
+    {
+      "id": "machine",
+      "name": "Machine",
+      "aliases": [],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 5
+    },
+    {
+      "id": "bodyweight",
+      "name": "Bodyweight",
+      "aliases": [
+        "body weight"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 6
+    },
+    {
+      "id": "trap-bar",
+      "name": "Trap Bar",
+      "aliases": [
+        "hex bar"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 7
+    },
+    {
+      "id": "landmine",
+      "name": "Landmine",
+      "aliases": [],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 8
+    },
+    {
+      "id": "band",
+      "name": "Band",
+      "aliases": [
+        "resistance band"
+      ],
+      "category": "implement",
+      "identity": true,
+      "sortOrder": 9
+    },
+    {
+      "id": "pronated-grip",
+      "name": "Pronated Grip",
+      "aliases": [
+        "overhand grip"
+      ],
+      "category": "grip",
+      "exclusiveGroup": "grip-orientation",
+      "identity": true,
+      "sortOrder": 10
+    },
+    {
+      "id": "supinated-grip",
+      "name": "Supinated Grip",
+      "aliases": [
+        "underhand grip"
+      ],
+      "category": "grip",
+      "exclusiveGroup": "grip-orientation",
+      "identity": true,
+      "sortOrder": 11
+    },
+    {
+      "id": "neutral-grip",
+      "name": "Neutral Grip",
+      "aliases": [],
+      "category": "grip",
+      "exclusiveGroup": "grip-orientation",
+      "identity": true,
+      "sortOrder": 12
+    },
+    {
+      "id": "mixed-grip",
+      "name": "Mixed Grip",
+      "aliases": [],
+      "category": "grip",
+      "exclusiveGroup": "grip-orientation",
+      "identity": true,
+      "sortOrder": 13
+    },
+    {
+      "id": "hook-grip",
+      "name": "Hook Grip",
+      "aliases": [],
+      "category": "grip",
+      "exclusiveGroup": "grip-orientation",
+      "identity": true,
+      "sortOrder": 14
+    },
+    {
+      "id": "back-rack",
+      "name": "Back Rack",
+      "aliases": [],
+      "category": "position",
+      "identity": true,
+      "sortOrder": 15,
+      "excludes": [
+        "front-rack"
+      ]
+    },
+    {
+      "id": "front-rack",
+      "name": "Front Rack",
+      "aliases": [],
+      "category": "position",
+      "identity": true,
+      "sortOrder": 16,
+      "excludes": [
+        "back-rack"
+      ]
+    },
+    {
+      "id": "high-bar",
+      "name": "High Bar",
+      "aliases": [],
+      "category": "position",
+      "exclusiveGroup": "bar-height",
+      "identity": true,
+      "sortOrder": 17,
+      "implies": [
+        "back-rack"
+      ],
+      "excludes": [
+        "low-bar"
+      ]
+    },
+    {
+      "id": "low-bar",
+      "name": "Low Bar",
+      "aliases": [],
+      "category": "position",
+      "exclusiveGroup": "bar-height",
+      "identity": true,
+      "sortOrder": 18,
+      "implies": [
+        "back-rack"
+      ],
+      "excludes": [
+        "high-bar"
+      ]
+    },
+    {
+      "id": "overhead",
+      "name": "Overhead",
+      "aliases": [],
+      "category": "position",
+      "identity": true,
+      "sortOrder": 19
+    },
+    {
+      "id": "seated",
+      "name": "Seated",
+      "aliases": [],
+      "category": "position",
+      "identity": true,
+      "sortOrder": 20
+    },
+    {
+      "id": "split-stance",
+      "name": "Split Stance",
+      "aliases": [],
+      "category": "stance",
+      "identity": true,
+      "sortOrder": 21
+    },
+    {
+      "id": "sumo",
+      "name": "Sumo",
+      "aliases": [],
+      "category": "stance",
+      "identity": true,
+      "sortOrder": 22
+    },
+    {
+      "id": "staggered-stance",
+      "name": "Staggered Stance",
+      "aliases": [],
+      "category": "stance",
+      "identity": true,
+      "sortOrder": 23
+    },
+    {
+      "id": "chest-supported",
+      "name": "Chest Supported",
+      "aliases": [],
+      "category": "support",
+      "identity": true,
+      "sortOrder": 24
+    },
+    {
+      "id": "bench-supported",
+      "name": "Bench Supported",
+      "aliases": [],
+      "category": "support",
+      "identity": true,
+      "sortOrder": 25
+    },
+    {
+      "id": "incline",
+      "name": "Incline",
+      "aliases": [],
+      "category": "support",
+      "exclusiveGroup": "bench-angle",
+      "identity": true,
+      "sortOrder": 26,
+      "excludes": [
+        "decline"
+      ]
+    },
+    {
+      "id": "decline",
+      "name": "Decline",
+      "aliases": [],
+      "category": "support",
+      "exclusiveGroup": "bench-angle",
+      "identity": true,
+      "sortOrder": 27,
+      "excludes": [
+        "incline"
+      ]
+    },
+    {
+      "id": "paused",
+      "name": "Paused",
+      "aliases": [],
+      "category": "range-of-motion",
+      "identity": true,
+      "sortOrder": 28
+    },
+    {
+      "id": "deficit",
+      "name": "Deficit",
+      "aliases": [],
+      "category": "range-of-motion",
+      "identity": true,
+      "sortOrder": 29
+    },
+    {
+      "id": "partial",
+      "name": "Partial",
+      "aliases": [],
+      "category": "range-of-motion",
+      "identity": true,
+      "sortOrder": 30
+    },
+    {
+      "id": "single-arm",
+      "name": "Single Arm",
+      "aliases": [
+        "one arm"
+      ],
+      "category": "laterality",
+      "identity": true,
+      "sortOrder": 31
+    },
+    {
+      "id": "single-leg",
+      "name": "Single Leg",
+      "aliases": [
+        "one leg"
+      ],
+      "category": "laterality",
+      "identity": true,
+      "sortOrder": 32
+    },
+    {
+      "id": "rope",
+      "name": "Rope",
+      "aliases": [],
+      "category": "attachment",
+      "identity": true,
+      "sortOrder": 33
+    },
+    {
+      "id": "straight-bar",
+      "name": "Straight Bar",
+      "aliases": [],
+      "category": "attachment",
+      "identity": true,
+      "sortOrder": 34
+    },
+    {
+      "id": "ez-bar",
+      "name": "EZ Bar",
+      "aliases": [
+        "curl bar"
+      ],
+      "category": "attachment",
+      "identity": true,
+      "sortOrder": 35
+    },
+    {
+      "id": "strict",
+      "name": "Strict",
+      "aliases": [],
+      "category": "execution",
+      "identity": true,
+      "sortOrder": 36
+    },
+    {
+      "id": "hinge",
+      "name": "Hinge",
+      "aliases": [
+        "hip hinge"
+      ],
+      "category": "execution",
+      "identity": true,
+      "sortOrder": 37
+    },
+    {
+      "id": "romanian",
+      "name": "Romanian",
+      "aliases": [
+        "romanian deadlift",
+        "rdl"
+      ],
+      "category": "execution",
+      "identity": true,
+      "sortOrder": 38,
+      "implies": [
+        "hinge"
+      ]
+    },
+    {
+      "id": "fly",
+      "name": "Fly",
+      "aliases": [
+        "flye",
+        "flyes"
+      ],
+      "category": "execution",
+      "identity": true,
+      "sortOrder": 39
+    }
+  ]
+}

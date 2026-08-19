@@ -7,6 +7,10 @@ import type {
   MovementModifierDefinition,
   RegistrySignature,
   VariantCandidate,
+  VariantReviewArtifact,
+  VariantReviewDecision,
+  VariantRule,
+  NormalizedCatalogExercise,
 } from "./types";
 
 export type { VariantCandidate, VariantRule } from "./types";
@@ -67,6 +71,12 @@ function candidateStringArray(value: unknown): string[] {
   return result;
 }
 
+function candidateNonEmptyStringArray(value: unknown): string[] {
+  const result = candidateStringArray(value);
+  if (result.length === 0) invalidCandidateRecord();
+  return result;
+}
+
 function candidateEnum(value: unknown): 1 | 2 {
   if (value !== 1 && value !== 2) invalidCandidateRecord();
   return value;
@@ -79,7 +89,7 @@ function candidateMetadataOverrides(value: unknown): VariantCandidate["metadataO
 
   const result: VariantCandidate["metadataOverrides"] = {};
   for (const key of ["equipment", "movementPatterns", "tags"] as const) {
-    if (value[key] !== undefined) result[key] = candidateStringArray(value[key]);
+    if (value[key] !== undefined) result[key] = candidateNonEmptyStringArray(value[key]);
   }
   if (value.muscles !== undefined) {
     if (!isPlainCandidateObject(value.muscles)) invalidCandidateRecord();
@@ -88,8 +98,8 @@ function candidateMetadataOverrides(value: unknown): VariantCandidate["metadataO
       invalidCandidateRecord();
     }
     result.muscles = {
-      primary: candidateStringArray(value.muscles.primary),
-      secondary: candidateStringArray(value.muscles.secondary),
+      primary: candidateNonEmptyStringArray(value.muscles.primary),
+      secondary: candidateNonEmptyStringArray(value.muscles.secondary),
     };
   }
   return result;
@@ -128,6 +138,38 @@ function decodeVariantCandidate(value: unknown): VariantCandidate {
   };
 }
 
+function decodeVariantRule(value: unknown, allowCandidateStatus = true): VariantRule {
+  if (!isPlainCandidateObject(value)) invalidCandidateRecord();
+  assertCandidateKeys(value, [
+    "id",
+    "movementId",
+    "movementModifierIds",
+    "metadataFromExerciseId",
+    "metadataOverrides",
+    "approvedAliases",
+    "coverageTier",
+    "status",
+  ]);
+  const status = value.status;
+  if (status !== "approved" && (allowCandidateStatus ? status !== "candidate" : true)) {
+    invalidCandidateRecord();
+  }
+  const movementModifierIds = candidateStringArray(value.movementModifierIds);
+  if (movementModifierIds.length === 0) invalidCandidateRecord();
+  return {
+    id: candidateString(value.id),
+    movementId: candidateString(value.movementId),
+    movementModifierIds,
+    metadataFromExerciseId: candidateString(value.metadataFromExerciseId),
+    ...(value.metadataOverrides === undefined
+      ? {}
+      : { metadataOverrides: candidateMetadataOverrides(value.metadataOverrides) }),
+    approvedAliases: candidateStringArray(value.approvedAliases),
+    coverageTier: candidateEnum(value.coverageTier),
+    status,
+  } as VariantRule;
+}
+
 export async function loadVariantCandidates(
   path = "scripts/catalog-normalization/reviews/variant-candidates.json",
 ): Promise<{ schemaVersion: 1; records: VariantCandidate[] }> {
@@ -145,6 +187,60 @@ export async function loadVariantCandidates(
     ids.add(record.id);
   }
   return { schemaVersion: 1, records };
+}
+
+export async function loadVariantReviews(
+  path = "scripts/catalog-normalization/reviews/variant-adversarial-review.json",
+): Promise<VariantReviewArtifact> {
+  const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
+  if (!isPlainCandidateObject(parsed)) throw new Error("Invalid variant adversarial review artifact");
+  assertCandidateKeys(parsed, ["schemaVersion", "records"]);
+  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.records)) {
+    throw new Error("Invalid variant adversarial review artifact");
+  }
+  if (parsed.records.length > 300) throw new Error("Variant review cap exceeded");
+
+  const records: VariantReviewDecision[] = parsed.records.map((value) => {
+    if (!isPlainCandidateObject(value)) invalidCandidateRecord();
+    assertCandidateKeys(value, ["candidateId", "decision", "reason", "revisedRule"]);
+    const candidateId = candidateString(value.candidateId);
+    const reason = candidateString(value.reason);
+    if (value.decision !== "approve" && value.decision !== "reject" && value.decision !== "revise") {
+      invalidCandidateRecord();
+    }
+    if (value.decision === "revise") {
+      if (value.revisedRule === undefined) invalidCandidateRecord();
+      const revisedRule = decodeVariantRule(value.revisedRule, false);
+      return { candidateId, decision: "revise", reason, revisedRule };
+    }
+    if (value.revisedRule !== undefined) invalidCandidateRecord();
+    return { candidateId, decision: value.decision, reason };
+  });
+
+  return { schemaVersion: 1, records };
+}
+
+export function joinCandidateReviews(
+  candidates: readonly VariantCandidate[],
+  reviews: readonly VariantReviewDecision[],
+): Array<{ candidate: VariantCandidate; review: VariantReviewDecision }> {
+  const candidateIds = new Set(candidates.map((candidate) => candidate.id));
+  const byCandidateId = new Map<string, VariantReviewDecision>();
+  for (const review of reviews) {
+    if (!candidateIds.has(review.candidateId)) {
+      throw new Error(`unknown review decision: ${review.candidateId}`);
+    }
+    if (byCandidateId.has(review.candidateId)) {
+      throw new Error(`duplicate review decision: ${review.candidateId}`);
+    }
+    byCandidateId.set(review.candidateId, review);
+  }
+
+  return candidates.map((candidate) => {
+    const review = byCandidateId.get(candidate.id);
+    if (!review) throw new Error(`missing review decision: ${candidate.id}`);
+    return { candidate, review };
+  });
 }
 
 function closureForModifier(
@@ -351,6 +447,10 @@ export function signatureFor(movementId: string, modifierIds: readonly string[])
   return [movementId, ...modifierIds].join("|");
 }
 
+export function idForSignature(movementId: string, modifierIds: readonly string[]): string {
+  return [movementId, ...modifierIds].join("--");
+}
+
 export function flattenMerges(
   merges: Readonly<Record<string, string>>,
   survivingIds: ReadonlySet<string>,
@@ -546,4 +646,76 @@ export function validateVariantCandidates(
   for (const movementId of required) {
     if (!seenMovements.has(movementId)) throw new Error(`Missing Tier-1 candidate family: ${movementId}`);
   }
+}
+
+export function validateVariantRule(
+  rule: VariantRule,
+  registries: BuildRegistries,
+  metadataById: ReadonlyMap<string, CatalogExercise>,
+): string[] {
+  if (rule.status !== "candidate" && rule.status !== "approved") {
+    throw new Error(`Invalid variant rule status: ${rule.id}`);
+  }
+  if (!rule.id.trim()) throw new Error("Variant rule ID missing");
+  if (!rule.metadataFromExerciseId.trim()) throw new Error(`Variant metadata base missing: ${rule.id}`);
+  const movement = registries.movementsById.get(rule.movementId);
+  if (!movement) throw new Error(`Unknown variant movement: ${rule.movementId}`);
+  if (!metadataById.has(rule.metadataFromExerciseId)) {
+    throw new Error(`Variant metadata base missing: ${rule.metadataFromExerciseId}`);
+  }
+  const modifierIds = canonicalModifierIds(rule.movementId, rule.movementModifierIds, registries);
+  assertCandidateMetadata(rule as VariantCandidate, metadataById, modifierIds, registries.modifiersById);
+  assertCandidateAliasIdentity(rule as VariantCandidate, movement, registries.modifiersById, modifierIds);
+  return modifierIds;
+}
+
+function assertNonEmptyMetadata(exercise: CatalogExercise, ruleId: string): void {
+  const emptyFields = [
+    ["equipment", exercise.equipment],
+    ["movementPatterns", exercise.movementPatterns],
+    ["muscles.primary", exercise.muscles.primary],
+    ["muscles.secondary", exercise.muscles.secondary],
+    ["tags", exercise.tags],
+  ]
+    .filter(([, values]) => values.length === 0)
+    .map(([field]) => field);
+  if (emptyFields.length > 0) {
+    throw new Error(`Variant metadata has empty required fields: ${ruleId}: ${emptyFields.join(",")}`);
+  }
+}
+
+export function materializeVariant(
+  base: CatalogExercise,
+  rule: VariantRule,
+): NormalizedCatalogExercise {
+  if (base.id !== rule.metadataFromExerciseId) {
+    throw new Error(`Variant metadata base mismatch: ${rule.metadataFromExerciseId}`);
+  }
+  const overrides = rule.metadataOverrides;
+  const materialized: NormalizedCatalogExercise = {
+    id: rule.id,
+    name: base.name,
+    aliases: [...new Set([...base.aliases, ...rule.approvedAliases])],
+    equipment: [...(overrides?.equipment ?? base.equipment)],
+    movementPatterns: [...(overrides?.movementPatterns ?? base.movementPatterns)],
+    muscles: {
+      primary: [...(overrides?.muscles?.primary ?? base.muscles.primary)],
+      secondary: [...(overrides?.muscles?.secondary ?? base.muscles.secondary)],
+    },
+    tags: [...(overrides?.tags ?? base.tags)],
+    movementId: rule.movementId,
+    movementModifierIds: [...rule.movementModifierIds],
+  };
+  const implementId = rule.movementModifierIds.find((modifierId) =>
+    IMPLEMENT_METADATA_EQUIPMENT.has(modifierId),
+  );
+  if (implementId) {
+    const expectedEquipment = IMPLEMENT_METADATA_EQUIPMENT.get(implementId)!;
+    const actualEquipment = new Set(materialized.equipment.map(normalizeCandidateText));
+    if (!expectedEquipment.some((equipment) => actualEquipment.has(normalizeCandidateText(equipment)))) {
+      throw new Error(`Variant metadata base incompatible with implement: ${rule.id}`);
+    }
+  }
+  assertNonEmptyMetadata(materialized, rule.id);
+  return materialized;
 }
