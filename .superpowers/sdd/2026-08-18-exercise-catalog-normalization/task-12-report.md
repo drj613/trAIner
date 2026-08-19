@@ -273,7 +273,7 @@ Mutations (lane, 349 tests at that point):
 | Mutation | Killed | Named failure |
 | --- | --- | --- |
 | MC1a: `readableSets` → `return entry.sets` (guard deleted) | 6 | all 5 shape tests + `still reports an unreadable-sets entry as data-bearing to the drawer path` |
-| MC1b: `setsUnreadable` → `return false` | 3 | `rows an entry whose sets is a string / a number / an object` |
+| MC1b: `setsUnreadable` → `return false` | 3 at the time of measurement (lane = 349 tests); **4 at the end of round 1, 4 at the end of round 2** (re-measured — see N4 in "Fix round 2") | `rows an entry whose sets is a string / a number / an object`; the fourth is `rows an entry whose only set element is unreadable, with no fabricated set`, added later in round 1 |
 | MC1c: `setsUnreadable` → `return !Array.isArray(entry.sets)` (absent treated as unreadable) | 2 | `keeps the readable entry when a sibling's sets is undefined / null` |
 
 ## C2/I1 (Important) — two exercises in one slot stay apart
@@ -296,7 +296,7 @@ A third test (`still groups repeats of the same performed name in one slot toget
 
 | Mutation | Killed | Named failure |
 | --- | --- | --- |
-| MI1a: `unresolvedKey` → `return identity.groupKey` (pre-fix behaviour) | 4 | both new tests + `unresolved records › keeps an unknown canonical id visible…` + `shared projection boundary › keeps both entries…` |
+| MI1a: `unresolvedKey` → `return identity.groupKey` (pre-fix behaviour) | 4 at the time of measurement; **5 at the end of round 1, 5 at the end of round 2** (re-measured — see N4 in "Fix round 2") | both new tests + `unresolved records › keeps an unknown canonical id visible…` + `shared projection boundary › keeps both entries…`; the fifth is `unreadable entry fields › keeps a readable set that sits beside an unreadable one`, added later in round 1 |
 | MI1b: delete `if (identity.concreteExerciseId) return identity.groupKey` from `familyKeyForIdentity` | 1 | `identity-context seam › regroups the very same logs under a changed context…` |
 | MI1c: qualify with the raw performed name instead of the normalized one | 3 | `still groups repeats of the same performed name in one slot together` + 2 |
 
@@ -418,7 +418,8 @@ Unchanged except where the I2 ruling changes best-set selection. Evidence: every
 
 - **An unreadable entry *element* gets no row.** A `null` or non-record entry has no name, id, sets or note, so there is nothing to key or label a row with. Every other entry in that log and every other log survive, which is the property that matters. Rendering "something was logged here that we cannot read" is a display decision, and the review's Task 13 note 10 already anticipates it.
 - **`HistoryClient.tsx`'s own `best`/`sessions`/`deriveTrend` duplicates** — Task 13 owns that file (I3/I4).
-- **A non-string `log.id` or `performedDate`** flows into a row untouched. It cannot throw and cannot lose data; coercing it would be unfalsifiable in this module.
+- ~~**A non-string `log.id` or `performedDate`** flows into a row untouched. It cannot throw and cannot lose data; coercing it would be unfalsifiable in this module.~~
+  **CORRECTED in fix round 2 — this claim was false.** A non-string `log.id` DOES throw: `left.logId.localeCompare(...)` at `historyProjection.ts:190,208` runs whenever two logs share one `performedAt` instant, and takes the whole projection down with it. Measured by the re-reviewer and reproduced here. Fixed in `e07d8fa`; see N3 in "Fix round 2". A non-string `performedDate` also threw, out of `aggregateLogs` (`last?.date.slice is not a function`); fixed in `a2d74e6`.
 
 ## Effect on Task 13's items I3, I4, I5
 
@@ -466,3 +467,269 @@ $ bun run test:e2e
 3. **`unresolvedKey`'s reach.** It now also qualifies the `movement:<id>` version key for underspecified identities, so two different unresolved names in one movement family get separate version summaries (same family). I believe that is right by the same argument as the slot case, but it is broader than the review's letter and no test in the repo covers it directly.
 4. **ML1**, the one mutation that survives, and whether the by-construction argument holds.
 5. Whether the entry/entries/field hardening beyond C1 was in scope, and whether skipping an unreadable entry *element* (rather than rowing it) is the right call.
+
+---
+
+# Fix round 2
+
+Commits `a2d74e6`, `aed5827`, `e07d8fa`, `acc61c2`, `d956791`, `7ebd207`, `f54dce9`.
+Lane (`src/lib/workout` + `src/components/workout`) **379 → 420 tests**, 33 → 34 suites. Whole repo **103 suites / 1,493 tests**, e2e **93 passed**.
+
+Two claims in the text above are corrected in place rather than only supplemented: the "cannot throw" line in *Deliberately deferred* and the two stale counts in the C1 and C2/I1 mutation tables. Both now carry the round-2 measurement.
+
+Every mutation below was applied singly, the lane suite run, and all three source files restored from byte copies and `shasum -c`-verified afterwards:
+
+```
+$ shasum -c round2.sha
+src/lib/workout/historyUtils.ts: OK
+src/lib/workout/historyProjection.ts: OK
+src/components/workout/HistoryClient.tsx: OK
+```
+
+## N1 (Critical) — an unreadable set field no longer destroys all history
+
+Commit `a2d74e6`. The finding is confirmed exactly as measured, and the hunt went wider than the two fields named.
+
+**What was open.** `formatSetLabel` (`historyUtils.ts:18`) and `setHasData` (`:42,:46`) dereferenced `rawCell` and a set-level `notes` as strings. Round 1 fixed the *entry*-level `notes` and left the set-level one open — same field name, same class, one level in.
+
+RED, real text (13 failures in `historyUtils.test.ts`, 9 in `historyProjection.test.ts`):
+
+```
+● unreadable set fields › counts a set whose rawCell is a number as recorded work
+    TypeError: s.rawCell?.trim is not a function
+● unreadable set fields › counts a set whose notes is an object as recorded work
+    TypeError: s.notes?.trim is not a function
+● unreadable set fields › gives an unreadable rawCell (an array) no verbatim label
+    TypeError: s.rawCell.trim is not a function
+● unreadable set fields › keeps every workout's history when rawCell is a number
+    TypeError: s.rawCell?.trim is not a function
+● unreadable set fields › keeps the drawer path readable too when rawCell is an object
+    TypeError: s.rawCell.trim is not a function
+● unreadable set fields › keeps an unreadable weight from turning a readable session's volume into NaN
+    Expected: [1500]   Received: [NaN]
+```
+
+**The fix, on the same rule and with the same citations.** Three local helpers in `historyUtils.ts`, no import from `src/lib/storage/**` (the no-storage seam is pinned by the projection's import-scan test):
+
+- `readableText(value)` — a string, else `undefined`.
+- `textUnreadable(value)` — present and not a string. Absent (`undefined`/`null`) is *not* unreadable: the settled line at `v10Identity.ts:158` and `progress.md:154`. Unreadable content makes the set data-bearing without producing a label, so the entry keeps its dated row and any readable weight and reps beside it still get theirs.
+- `setNumberField(value)` — a finite number, else 0. `Number(...)` rather than a `typeof` check, because `weight * 1` has always read a numeric string as its number and narrowing that would zero real logged weight; the only behaviour that changes is the `NaN` case.
+
+**The sweep found three more reachable throws in the same class,** all of which take the *shipped all-time History page* down completely. `aggregateLogs` (`HistoryClient.tsx`) renders that page and dereferences stored logs directly. Measured before the fix, one corrupt log beside a healthy one:
+
+```
+entries undefined      -> THREW log.entries is not iterable
+entries null           -> THREW log.entries is not iterable
+entries "corrupt"      -> THREW Cannot read properties of undefined (reading 'map')
+entries [null]         -> THREW Cannot read properties of null (reading 'canonicalExerciseId')
+sets "corrupt"         -> THREW last?.sets.map is not a function
+sets undefined         -> THREW Cannot read properties of undefined (reading 'map')
+sets [null]            -> THREW Cannot read properties of null (reading 'rawCell')
+performedDate 7        -> THREW last?.date.slice is not a function
+rawCell 7              -> ok (fixed by the guard above)
+```
+
+`aggregateLogs` now reads through `readableEntries`, `readableSets`, `entryPerformedName` and `textOf`. Its grouping, its `sessions` count and its first-wins best-set tie are **untouched** — Task 13 owns replacing those, and characterizing them here would create a test Task 13 must delete.
+
+**N5 folded in, and the review's mechanism is narrower than stated — measured.** The review said a non-numeric `weight` makes every clause of `compareSetsByStrength` `NaN` so "best" becomes the last set. Reproduced at HEAD: it does not. `a || b || c` returns `c` when `a` and `b` are `NaN`, because `NaN` is falsy, so an unreadable *weight* leaves the reps clause deciding and "best" correctly stays the earliest set. What an unreadable weight *did* destroy is the volume — `sessionVolumesLb: [NaN]` for a session with a perfectly readable set in it, and a trend derived from `NaN`. The shape that makes every clause `NaN` is an unreadable **reps**, and it is only *reached* when volume and load both tie, i.e. two no-load sets. Both are now pinned, the second with a bodyweight fixture written for that reason.
+
+| Mutation | Killed | Named failure |
+| --- | --- | --- |
+| MN1a: `readableText` → `return value as string \| undefined` | **22** | 19 × `unreadable set fields › …` + 3 × `unreadable entry fields › …` |
+| MN1b: `textUnreadable` → `return false` | **7** | 6 × `counts a set whose rawCell/notes is … as recorded work` + `rows a set whose only content is an unreadable rawCell` |
+| MN1c: `textUnreadable` → `typeof value !== "string"` (absent read as unreadable) | **4** | `leaves an absent rawCell or notes as nothing recorded`, `treats a set as recorded when it has a raw cell, a weight, or reps`, `counts an entry as history when…`, `skips an entry with no sets and no note` |
+| MN1d: `setNumberField` → `(value as number) ?? 0` (raw `NaN` arithmetic restored) | **3** | `keeps an unreadable weight from turning a readable session's volume into NaN`, `keeps an unreadable reps from stealing the best set…`, `keeps an unreadable weight or reps from turning a readable volume into NaN` |
+| MN1e: `setNumberField` → `typeof value === "number" … : 0` (a numeric string zeroed) | **1** | `still reads a numeric string weight the way multiplication always did` |
+| MN1f: `compareSetsByStrength` reps clause → `(right.reps ?? 0) - (left.reps ?? 0)` | **1** | `keeps an unreadable reps from stealing the best set from a readable bodyweight one` |
+| MN1g: `aggregateLogs` iterates `log.entries` raw | **4** | 4 × `still lists the readable workout when entries is …` |
+| MN1h: `aggregateLogs` pushes `entry.sets` raw | **4** | 3 × `still lists the readable workout when an entry's sets …` + `keeps the readable sets of an entry that also holds an unreadable one` |
+| MN1i: drop `textOf` on the session date | **1** | `still lists the readable workout when performedDate is a number` |
+| MN1j: `name: (entry.exerciseName ?? entry.exerciseId)` raw | **1** | `names a row from an unreadable exercise name as text rather than throwing it away` |
+| MN1k: `lastDate: … ?? "—"` instead of `\|\| "—"` | **1** | `shows a placeholder rather than a blank cell when the date is unreadable` |
+
+**MN1c pins the absent side in both directions**, matching MC1b/MC1c: present-but-unreadable earns a row (MN1b), absent does not (MN1c). Neither can drift.
+
+**Two of my own tests were passing for incidental reasons and were rewritten.** Both are the shape the standards name:
+
+1. `keeps an unreadable reps from stealing the best set…` originally used a *loaded* set, so the volume clause decided before the reps clause was ever reached and MN1f killed **0**. Rewritten with bodyweight sets, which is the only way to reach that clause; MN1f now kills 1.
+2. `still lists the readable workout when entries is a string` originally asserted only that the good workout survived. Iterating the string `"corrupt"` walks its characters, produces a summary with no id, and never throws, so MN1g killed **3 of 4**. Adding `expect(summaries.map(s => s.exerciseId)).not.toContain(undefined)` — no phantom row invented from a log we cannot read — makes it 4.
+
+A third fixture bug was caught by RED itself rather than by mutation: my first projection fixture put the corrupt set *after* a readable one, and `readableSets(entry).some(setHasData)` short-circuits, so the corrupt field was never read at all. The corrupt set is now first, and the comment says why.
+
+**Deliberately not guarded, and written into the code comment rather than left silent:** `formatSetLabel` still reads `weight` and `reps` raw, so a label shows what is stored (`"[object Object]x5"`) while the volume refuses to invent a number and reads 0. The rough edge is a stored `NaN` weight, which `!s.weight` reads as absent and labels `"BWx5"` — bodyweight it is not. Rendering a marker for unreadable set content is a display decision the history UI owns (Task 13 note 10), so I recorded it instead of inventing UI here.
+
+## N2 (Important) — the `unresolvedKey` broadening is reverted, per the controller's ruling
+
+Commit `aed5827`. I agree with the ruling and did not push back: this was the item I flagged myself as broader than the review's letter and uncovered by a test, and the measurement makes it plain.
+
+RED reproduces the reviewer's numbers exactly, three workouts on progressive load in one slot:
+
+```
+● underspecified names the catalogue declares identical › keeps one version history across Squat, Squats and Back Squat
+    - Expected  - 1        + Received  + 3
+      Array [
+    -   "movement:squat",
+    +   "movement:squat#back squat",
+    +   "movement:squat#squats",
+    +   "movement:squat#squat",
+● … › keys an underspecified identity by its movement, unqualified
+    Expected: "movement:squat"   Received: "movement:squat#squats"
+```
+
+The fix is the reviewer's suggested shape verbatim. After it: one summary, `sessionCount: 3`, `sessionVolumesLb: [1500, 1525, 1550]`, `bestSetLabel: "310x5"`, and `familySummaries` still holds the single bare `squat` key — the family was never split, so this narrows the version key only.
+
+| Mutation | Killed | Named failure |
+| --- | --- | --- |
+| MN2a: delete `if (identity.movementId) return identity.groupKey;` | **2** | both new tests |
+| **MI1a re-run at HEAD**: `unresolvedKey` → `return identity.groupKey` | **5** | `unresolvable exercises sharing a slot id › keeps them as two versions…` + `… two families…` + `unresolved records › keeps an unknown canonical id visible…` + `shared projection boundary › keeps both entries…` + `unreadable entry fields › keeps a readable set that sits beside an unreadable one` |
+
+MI1a still killing 5 is the check that matters: **C2/I1's slot behaviour is intact after the narrowing**, not traded away for it.
+
+**No existing test was changed.** I looked for tests encoding the broadened keying before touching the code and there are none — `grep -rn 'movement:squat' src | grep -i test` returns four hits in `identity.test.ts` (all `groupKey`, another lane, untouched) and three in my new block. The lane went green on the first run after the fix. This confirms the round-1 disclosure that no test covered the broadening.
+
+## N3 (Important) — a non-string `log.id` no longer throws, and the false claim is corrected
+
+Commit `e07d8fa`. The finding is correct and the round-1 report's "cannot throw and cannot lose data" was false. It is now struck through and corrected in place in *Deliberately deferred* above, not merely supplemented.
+
+RED:
+
+```
+● deterministic ordering with unreadable timestamps › keeps two same-instant workouts apart when both log ids are numbers
+    TypeError: left.logId.localeCompare is not a function
+● deterministic ordering with unreadable timestamps › keeps rows whose log id is not a string
+    TypeError: left.logId.localeCompare is not a function
+```
+
+Both comparators now call one `logIdOrder` helper that coerces **both sides**.
+
+**The obvious test for this passes without the fix, and I caught it by mutation.** `localeCompare` coerces its *argument*, so only the receiver throws. My first fixture was `[1, "l-two"]`, and with two elements V8 calls `compare(element[1], element[0])` — the string id lands on the left and nothing throws. The test now drives **both input orders**, and the comment says why.
+
+| Mutation | Killed | Named failure |
+| --- | --- | --- |
+| MN3a: `logIdOrder` → `left.logId.localeCompare(right.logId)` | **2** | both new tests |
+| MN3b: coerce the argument only — `left.logId.localeCompare(String(right.logId))` | **2** | both new tests |
+| MN3c: delete `logIdOrder` from `compareRows` (newest-first) | **1** | `ordering › sorts by performedAt descending, then logId, then entryIndex` |
+| **MO4 re-run at HEAD**: delete `logIdOrder` from `compareRowsChronologically` | **2** (was 1) | `keeps same-workout rows adjacent so one workout is one session`, `keeps two same-instant workouts apart when both log ids are numbers` |
+
+MN3b is the mutation that matters — it is exactly the half-fix a reader would write.
+
+## N4 (Minor) — the two stale counts, re-measured at HEAD
+
+Both re-run at the end of round 2 and corrected **in the round-1 tables above**, each with the mutation named and the baseline it was taken at:
+
+| Mutation | Report said | Round 2 measurement | Why it moved |
+| --- | --- | --- | --- |
+| MI1a: `unresolvedKey` → `return identity.groupKey` | 4 (lane 349) | **5** | `unreadable entry fields › keeps a readable set that sits beside an unreadable one` was added later in round 1 |
+| MC1b: `setsUnreadable` → `return false` | 3 (lane 349) | **4** | `rows an entry whose only set element is unreadable, with no fabricated set` was added later in round 1 |
+
+## N5 (Minor) — folded into N1
+
+See the N1 section: the review's stated mechanism does not reproduce for an unreadable *weight* (the `||` chain returns the last clause, not `NaN`), the real damage from an unreadable weight is a `NaN` session volume, and the "best becomes the last set" shape needs an unreadable **reps** on a no-load set. Both are fixed and pinned; MN1d kills 3, MN1f kills 1.
+
+## N6 (Minor) — the permutation test now says what it pins, and a real transitivity pin was added
+
+Commit `acc61c2`. Both halves of the option, because the pairwise check is cheap and genuinely falsifiable:
+
+1. The permutation test's comment now states the measured negative result — green under the pre-round intransitive comparator at n=3, 4, 5, 6 exhaustively and at n=40 over 400 shuffles, so it pins output stability, not transitivity, and the literal-order assertion carries it.
+2. A new `orders every pair the same way the whole list is ordered` compares all 28 pairs of 8 rows against the whole list's order. It does not depend on the sort algorithm noticing.
+
+**The obvious fixture for that test cannot fail, and I found that by mutation, not by reasoning.** With ISO stamps and unparseable garbage the pre-round comparator is *transitive*: a brute force over all ordered triples of an 11-value pool found **0 cycles**, and MO1 left the new test green. The reason is that ISO strings sort lexicographically in the same order they sort chronologically, so the two rules never disagree. Exposing the intransitivity needs a stamp that **parses but is not ISO**: `"May 1 2026"` is compared by instant against another parseable stamp and as text against an unparseable one, and its text order contradicts its chronological order. With `"Foo"` sitting lexicographically between it and an ISO stamp, the three form a cycle — the same pool with those two values added contains **72**. With that fixture:
+
+| Mutation | Killed | Named failure |
+| --- | --- | --- |
+| MO1 (old fixture): restore the pre-round intransitive `performedAtOrder` | 2 | `sorts rows with an unparseable timestamp oldest`, `returns the same order for every input permutation` — the new pairwise test stayed **green** |
+| **MO1 (new fixture)**: same mutation | **3** | the two above **plus** `orders every pair the same way the whole list is ordered` |
+
+The test also carries a canary (`expect(globalOrder).toHaveLength(8)`) so it cannot pass by comparing nothing.
+
+Also done: `labelOf`'s comment now names `identity.ts:170`'s `??` chain as the external premise its by-construction argument rests on, and says to re-check that line before deleting it.
+
+## Losslessness — re-verified, and the check is now a committed test
+
+Commits `d956791`, `7ebd207`. The brief asked me to re-check rather than assume, because keying and sorting are exactly where a regression from this round would hide. `src/lib/workout/historyProjection.losslessness.test.ts`: 300 seeded random corpora, 1-5 logs each, colliding instants, non-string log ids and timestamps, and ten entry shapes drawn from `null`, `"corrupt"`, empty sets, `sets: "corrupt"`, `sets: [null]`, note-only, unreadable set fields, unreadable weights and reps, non-string names and slot ids, mixed canonical ids. Per corpus:
+
+1. row identities equal the expected `logId#entryIndex` set exactly — no drop, no duplicate, no renumbering;
+2. `rowsByFamilyKey` and `rowsByVersionKey` each partition that same set once;
+3. `Σ entryCount === rows.length`;
+4. per version, `sessionCount === distinct logIds`, `sessionVolumesLb.length === sessionCount`, `Σ sessionVolumesLb === Σ row.volumeLb` to 6 dp, **and the row total is finite** (the assertion that catches a `NaN` volume);
+5. per family, `workoutCount === distinct logIds`.
+
+**Proven non-vacuous — it fails under six single mutations:** MO4, MN3a, MN1d, MC1b, MN1a, ME3. Seeded, so it cannot flake; 0.9s.
+
+**Self-review caught it proving less than it looked.** The expected data-bearing set was first computed by calling `historyUtils`' own `readableEntries`/`readableSets`/`setHasData`/`entryNote`, so a mutation in any of them moved *both* sides of the comparison and the check said nothing about them. The derivation is now spelled out inside the test; that is what took it from three killing mutations to six.
+
+**One fuzz failure was chased down rather than assumed.** The first run failed `sessionCount 3 vs 2 distinct logIds`. Cause: my corpus generator picked log ids from a pool with repeats, so two **distinct** logs could share one id. That is the reviewer's A6, out of contract and still open — `logId#entryIndex` stops identifying a row, and if the two logs' instants differ the bucketing reports one workout as several. Ids are unique per corpus now and the file header records why.
+
+## Healthy-data behaviour
+
+Unchanged, and this round *restores* one healthy-data behaviour the previous round changed (N2). Evidence: every pre-existing test in the repo passes untouched — **no existing assertion was modified, relaxed or deleted in this round, and no existing test file line was removed** (`git diff 0395f26..HEAD -- src/lib/workout src/components/workout | grep '^-' | grep -v '^---'` is three source lines and nothing else). The numeric guard is a strict superset of the old arithmetic (`Number(x)` is what `x * 1` computes) except where the result would be `NaN`, and MN1e pins that a numeric string still reads as its number.
+
+## Self-review findings (found and fixed before the final commit)
+
+1. **Two of my own new tests passed for incidental reasons.** The reps/best-set test never reached the clause it claimed to cover; the `entries is a string` test could not tell "guarded" from "walked the characters and invented a phantom row". Both rewritten, both mutations now kill. Detail under N1.
+2. **The losslessness fuzz shared code with the module under test**, so three of its six killing mutations were invisible. Rewritten to be independent (`7ebd207`).
+3. **A fixture ordering bug caught by RED**: `.some(setHasData)` short-circuits, so a corrupt field on a *later* set is never read. The corrupt set now goes first.
+4. **`formatSetLabel` is deliberately half-guarded** and I nearly left that silent. Now written into the function's comment, including the `NaN`-weight `"BWx5"` mislabel, with the reason it is the UI's decision and not this module's.
+5. **Considered and rejected:** coercing `aggregateLogs`' map key (`entry.canonicalExerciseId ?? entry.exerciseId`). A non-string key cannot throw — it is only a `Map` key and a React `key=` — so a guard there would be unfalsifiable in this harness and the standards say not to add it. Recorded for Task 13 instead.
+
+## Out of scope, measured by inspection only — for the controller
+
+`WorkoutDayClient.tsx:666,678` dereference `b.performedAt.localeCompare(...)` and `target.entries` without a guard while hydrating a day's logged sets. Both sit inside an async IIFE with a `.catch`, so the failure mode is a logged error and **no hydration**, not a crash — the user's already-logged sets do not appear in the grid. That is the day-*logging* path, not the history projection, so it is outside Task 12's boundary and I did not touch it. Flagged rather than fixed. I did not run it, so this is inspection, not measurement.
+
+## Effect on Task 13's brief
+
+Replaces items 5, 8 and 10 of the re-review's list and adds three. Everything else there carries over unchanged.
+
+- **Item 5 (key spaces) — the version space changed back.** It is now `version = {concreteExerciseId} ∪ {movement:<id>} ∪ {exercise:<id>} ∪ {slot:<id>#<name>} ∪ {name:<name>#<name>}`; `family` is unchanged. A `movement:<id>` version key no longer carries `#`. The rest of the warning stands: `push-up` is still `familyKey === versionKey`, the two spaces must never be flattened, and any key reaching a URL, route param, fragment, `id` or `aria-*` still needs `encodeURIComponent` because the slot and name keys still contain `#`.
+- **Item 8 (`bestSetLabel`) — still true, and `HistoryClient.aggregateLogs` now has guards Task 13 will delete with it.** When you replace `aggregateLogs` with `VersionHistorySummary`, the guards added here go too; make sure the replacement reads logs through `readableEntries`/`readableSets` or the all-time page reopens the crash.
+- **Item 10 (rows with `sets: []`) — now also reachable from a readable set.** A set whose only content is an unreadable `rawCell` or `notes` produces a row with `sets: []` and `volumeLb: 0` while `entryCount` is 1. Render a marker, not a blank line.
+- **NEW: a set label can be `"[object Object]x5"` or a false `"BWx5"`.** Labels deliberately show stored text; only the arithmetic is guarded. If the UI wants to say "this set is unreadable" it needs its own check — that display decision is Task 13's, and `historyUtils.ts`' `formatSetLabel` comment says so.
+- **NEW: volumes are always finite.** `sessionVolumesLb`, `volumeLb` and the trend can no longer be `NaN`, so a chart does not need to defend against it. Pinned by the losslessness test's finiteness assertion.
+- **NEW: `aggregateLogs`' `exerciseId` can be a non-string** at runtime despite its type, because the map key is `canonicalExerciseId ?? exerciseId` verbatim. It is used as a React `key`, which coerces. If Task 13 puts it in a URL or a selector, coerce it first.
+
+## Gates — real output
+
+```
+$ bun run test -- --runInBand
+Test Suites: 103 passed, 103 total
+Tests:       1493 passed, 1493 total
+Snapshots:   0 total
+Time:        23.683 s
+Ran all test suites.
+
+$ bun run typecheck
+$ tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json
+TC:0
+
+$ bun run lint
+$ eslint .
+LINT:0
+
+$ bun run build
+✓ built in 1.68s            (with Vite's known-acceptable large-chunk advisory)
+
+$ git diff --check
+DIFFCHECK-CLEAN
+
+$ bun run test:e2e
+  ✓  93 [chromium] › e2e/workspace.spec.ts:65:7 › … mono font persists after reload (99ms)
+  93 passed (1.7m)
+```
+
+### Foreign failure — checked in isolation and attributed with a control, not assumed
+
+One full-suite run mid-round failed `src/components/catalog/ExerciseCorrectionSheet.test.tsx › returns an alias-governed name to standalone by dropping the alias`. Another lane's file. Checked rather than assumed:
+
+- run in isolation it failed **2** tests, a *different* pair from the full run — so it was broken in that lane, not order-dependent noise from mine;
+- neither `ExerciseCorrectionSheet.tsx` nor its test imports anything from `src/lib/workout` or `src/components/workout`;
+- **control**: a throwaway worktree at `e07d8fa` — all three of my fix commits present, the sibling's later `1671076 refactor: derive the alias lookup token in one place` absent — ran that suite **23 passed, 23 total**. The worktree was removed afterwards.
+
+That pins it on the sibling lane's commit. It is green again at my final gate run (103 suites / 1,493 tests), so that lane fixed it while I worked. `--maxWorkers=24` was not re-run: three lanes are writing to this worktree, so a load run would produce exactly the cross-lane misattribution the brief warns about, and no timeout was touched this round (`git diff 0395f26..HEAD -- src/` contains no timeout change).
+
+## What a reviewer should scrutinise most
+
+1. **The `aggregateLogs` hardening** — the widest thing I did that the review did not literally ask for. It is the same class and it fixes eight measured crashes of the shipped all-time page, but it touches a function Task 13 is going to delete, and I had to be careful not to characterize its `sessions` count or its first-wins best-set tie while guarding it. Check that nothing about its healthy-data output moved.
+2. **The N5 correction.** I contradict the review's stated mechanism with a measurement: an unreadable *weight* does not make "best" the last set, because `NaN` is falsy and the `||` chain returns its last clause. The real harm was a `NaN` volume, and the last-set shape needs an unreadable **reps** on a no-load set. If that reading is wrong, MN1f's fixture is wrong with it.
+3. **The pairwise transitivity fixture.** The whole test hinges on `"May 1 2026"` and `"Foo"`; with ISO stamps and garbage alone the pre-round comparator is transitive and the test cannot fail. Verify the 0-cycles-versus-72-cycles claim before trusting the pin.
+4. **The two incidental-pass tests I rewrote**, and whether any of my other new tests has the same shape. The `.some` short-circuit and `localeCompare`'s one-sided coercion both hid a guard; there may be a third.
+5. **`setNumberField`'s use of `Number(...)` rather than `typeof value === "number"`.** It is deliberately permissive so a numeric string keeps reading as it always did (MN1e), but it means a stored `"60"` still contributes volume. If the plan would rather treat a non-number as unreadable, that is a one-line change and two test expectations.
