@@ -2071,3 +2071,72 @@ describe("restoreBackup — version-2 documents", () => {
     await expect(programRepo.list()).resolves.toEqual(before);
   });
 });
+
+// The Critical this closes, end to end over a real fake-indexeddb database
+// rather than a mocked transaction: the app could WRITE a backup it could not
+// READ back. `appDb`'s v7 rule keeps a log whose `entries` is unreadable
+// (`appDb.ts:181-191`), `exportBackup`'s `getAll()` copies it into the file
+// verbatim, and `restoreBackup`'s `requireFields` then refused the whole file
+// with `logs[0] (id …) — 'entries' must be an array of objects.` One malformed
+// log therefore destroyed the restorability of every other record in the user's
+// only safety net.
+describe("export → restore round trip with a log the database keeps but cannot read", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it.each([
+    ["a non-array entries", "corrupt"],
+    ["an entries array whose element is null", [null]],
+  ])("restores every record and preserves the value when a log has %s", async (_label, entries) => {
+    await programRepo.save(demoProgram);
+    await profileRepo.save(defaultProfile);
+    await aliasRepo.save({
+      alias: "Strict Pullup",
+      canonicalExerciseId: "pull-up",
+      provenance: "remembered",
+    });
+    const healthyLog = {
+      id: "log-healthy",
+      programId: demoProgram.id,
+      dayId: demoProgram.days[0].id,
+      performedAt: "2026-08-10T12:00:00.000Z",
+      entries: [{ exerciseId: "slot-1", exerciseName: "Squat", sets: [] }],
+    };
+    await logRepo.save(healthyLog as WorkoutLogDocument);
+    await logRepo.save({
+      id: "log-unreadable",
+      programId: demoProgram.id,
+      dayId: demoProgram.days[0].id,
+      performedAt: "2026-08-11T12:00:00.000Z",
+      entries,
+    } as unknown as WorkoutLogDocument);
+
+    const backup = await exportBackup();
+    // The malformed value really is in the file — otherwise the restore below
+    // would be asserting nothing.
+    expect(backup.logs.find((log) => log.id === "log-unreadable")?.entries).toEqual(entries);
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+
+    await expect(restoreBackup(backup)).resolves.toBeUndefined();
+
+    // The malformed value survives untouched, exactly as `appDb` treats it.
+    const restored = await logRepo.list();
+    expect(restored.find((log) => log.id === "log-unreadable")?.entries).toEqual(entries);
+    // Every OTHER record landed too — the point of the fix is that one
+    // unreadable field does not condemn the rest of the file.
+    expect(restored.find((log) => log.id === "log-healthy")?.entries).toEqual(healthyLog.entries);
+    await expect(programRepo.list()).resolves.toHaveLength(1);
+    await expect(aliasRepo.list()).resolves.toHaveLength(1);
+    await expect(profileRepo.get()).resolves.toMatchObject({ id: defaultProfile.id });
+  });
+});

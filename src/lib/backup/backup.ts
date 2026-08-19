@@ -234,6 +234,51 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   // A record that passes the shallow id check but lacks required structure
   // would commit, destroy the workspace, and crash every page that reads it.
   // Validate everything the app dereferences unconditionally BEFORE clearing.
+  //
+  // WHERE THE LINE IS, and why it is not "validate everything":
+  //
+  // The reasoning above is a claim about *consumers*, so it holds only for
+  // fields the app still dereferences unconditionally. It over-reached once
+  // already, for `logs[].entries`, and the cost was the worst reachable outcome
+  // short of bricking the database: `appDb.ts:181-191` deliberately KEEPS a log
+  // whose `entries` is unreadable, `exportBackup`'s `getAll()` above writes that
+  // log into the file verbatim, and this check then refused the ENTIRE file.
+  // The app could produce a backup it could not restore, with no hand-editing,
+  // in an app where the backup is the user's only safety net.
+  //
+  // So the standing principle — a record we cannot read is a record we must not
+  // rewrite; unreadable content is never grounds for deletion — extends with the
+  // corollary that case demands: **unreadable content in one record is not
+  // grounds for rejecting the whole file.** A field is validated here only when
+  // BOTH of these hold:
+  //
+  //  1. Some consumer still dereferences it unconditionally, so passing a bad
+  //     value through would trade an unrestorable file for a crashing page. That
+  //     is not an improvement, and it is why the check is retained rather than
+  //     deleted wholesale.
+  //  2. The database cannot already hold the bad shape on purpose. If a
+  //     migration deliberately preserves it, refusing it here contradicts the
+  //     store the file was copied out of, and the file is not hand-edited — it
+  //     is one this build wrote.
+  //
+  // `entries` fails (2) — hence its removal from the log list below. Every
+  // field still listed passes both, checked rather than assumed:
+  //
+  //  - `programs[].days` / `.overrides`: `LibraryClient.tsx:45-50` does
+  //    `program.overrides.flatMap(...)` and `[...program.days, ...]` with no
+  //    guard, `requireOverrideReplacements` a few lines down indexes `overrides`
+  //    as an array, and `getRenderableDays` sorts a copy of `overrides` on every
+  //    page that renders a program. No migration preserves a malformed `days` or
+  //    `overrides` — the v7 rule is about a log's entries only — so a bad one
+  //    means a hand-edited file, which is exactly the population this refuses.
+  //  - `logs[].performedAt`: `trainingHeatmap.ts:39` calls
+  //    `log.performedAt.slice(0, 10)` unguarded, and it is how a log is placed
+  //    in time at all.
+  //  - `logs[].programId` / `.dayId`: the references that attach a log to a
+  //    routine; nothing preserves an unreadable one.
+  //
+  // Narrowing either of the program fields is a separate change and needs the
+  // consumers hardened first. Do not widen this by symmetry with `entries`.
   requireFields(doc["programs"], "programs", [
     { name: "title", check: isString, expected: "a string" },
     { name: "days", check: isArrayOfNonNullObjects, expected: "an array of objects" },
@@ -245,7 +290,14 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     { name: "programId", check: isString, expected: "a string" },
     { name: "dayId", check: isString, expected: "a string" },
     { name: "performedAt", check: isString, expected: "a string timestamp" },
-    { name: "entries", check: isArrayOfNonNullObjects, expected: "an array of objects" },
+    // `entries` is deliberately NOT here — see the boundary note above. It is
+    // passed through untouched (`migrateLog`'s `mappedArrayField` returns `{}`
+    // for a non-array, so `...log` keeps the original value and its key set),
+    // exactly as `appDb` treats it. Every reader was verified guarded:
+    // `readableEntries`/`readableSets` (`historyUtils.ts:133,213`) cover
+    // history, projection, the workout grid and now `trainingHeatmap` and
+    // `LibraryClient`; `appDb`'s v7/v8 passes short-circuit on
+    // `unreadableValue`/`mapArrayOrKeep`; `logRepo` never reads the field.
   ]);
   requireOverrideReplacements(doc["programs"]);
 

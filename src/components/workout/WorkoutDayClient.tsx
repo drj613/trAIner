@@ -77,10 +77,13 @@ function mergePreservedEntries<T>(built: T[], preserved: Map<number, unknown>): 
  * normalised array the previous save wrote. Known gap, stated rather than
  * silently accepted: a record that is corrupted a *second* time after it has
  * already been parked keeps the first value and loses the second. Nothing in
- * the app can produce that — `restoreBackup` rejects a non-array `entries`
- * outright, so it takes two separate hand-edits of the raw database — and a
- * list of parked values would make the field ambiguous (an array park would be
- * indistinguishable from two parks) for a path with no realistic reader.
+ * the app can produce that. Parking rewrites `entries` as a normal array, so a
+ * second unreadable value has to be put there by hand — and while a restore now
+ * carries an unreadable `entries` through rather than refusing the file, a
+ * restore only *copies* what the file holds, so the hand-edit is still required,
+ * it just has to happen once rather than twice. A list of parked values would
+ * make the field ambiguous (an array park would be indistinguishable from two
+ * parks) for a path with no realistic reader.
  * Absent and `null` are not
  * unreadable (`unreadableValue`,
  * `src/lib/storage/migrations/v10Identity.ts:158`) and hold nothing to recover,
@@ -89,10 +92,13 @@ function mergePreservedEntries<T>(built: T[], preserved: Map<number, unknown>): 
  * Verified to survive a backup round trip before being relied on: `exportBackup`
  * copies whole records out of the store, `migrateLog`
  * (`src/lib/storage/migrations/v10Identity.ts:265`) spreads `...log`, and
- * `restoreBackup` validates named fields only. Parking additionally *fixes* a
- * restore failure — `restoreBackup` requires every log's `entries` to be an
- * array of objects, so before this a single corrupt `entries` made the user's
- * whole backup file unrestorable.
+ * `restoreBackup` validates named fields only. Checking that turned up a
+ * Critical which is now fixed at its source rather than here: `restoreBackup`
+ * used to require every log's `entries` to be an array of objects, so a single
+ * corrupt `entries` made the user's whole backup file unrestorable. `entries` is
+ * no longer validated (see the boundary note in `src/lib/backup/backup.ts`), so
+ * both the parked value and the unreadable `entries` itself now survive a round
+ * trip. Parking is preservation, not a workaround for that check.
  */
 function parkedUnreadableEntries(log: { entries?: unknown; unreadableEntries?: unknown } | undefined): unknown {
   if (!log) return undefined;

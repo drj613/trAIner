@@ -277,16 +277,15 @@ describe("restoreBackup deep validation", () => {
     expect(mockGetDb).not.toHaveBeenCalled();
   });
 
-  it("rejects a log with non-array entries", async () => {
-    const doc = { ...validDoc, logs: [{ ...validDoc.logs[0], entries: {} }] };
-    await expect(restoreBackup(doc)).rejects.toThrow(/logs\[0\]/);
-  });
-
-  it("rejects null elements inside days/entries", async () => {
+  // The `entries` halves of the two tests that used to live here — a non-array
+  // `entries` and `entries: [null]` — asserted the OPPOSITE of the shipped rule
+  // and are gone deliberately, not weakened. Both shapes are now asserted to
+  // RESTORE, in "an unreadable `entries` does not condemn the file" at the
+  // bottom of this file, with the reasoning in `backup.ts`'s boundary note.
+  // Nothing was lost from the `programs` side, which still refuses both.
+  it("rejects null elements inside a program's days", async () => {
     const badProgram = { ...validDoc, programs: [{ ...validDoc.programs[0], days: [null] }] };
     await expect(restoreBackup(badProgram)).rejects.toThrow(/programs\[0\]/);
-    const badLog = { ...validDoc, logs: [{ ...validDoc.logs[0], entries: [null] }] };
-    await expect(restoreBackup(badLog)).rejects.toThrow(/logs\[0\]/);
   });
 
   it("rejects a null element inside overrides, without touching the db", async () => {
@@ -709,8 +708,14 @@ describe("restoreBackup — alias tokens are kept, then deduped", () => {
   // The cost of keeping a stale token, stated rather than hidden: an
   // unclassified legacy row is still judged on it by the outcome gate, so a
   // hand-edited one that names no exercise is purged instead of repaired. No
-  // writer in `src/` can produce such a row, and it was already unreachable in
-  // the database that exported it.
+  // writer in `src/` **with a production caller** can produce such a row, and it
+  // was already unreachable in the database that exported it. The wider claim
+  // would be false: `save` and `replaceRemembered` both mint rows whose stored
+  // token disagrees with their display text (that is what a phrase-stripped
+  // remembered correction IS), and `putRaw` will store any token verbatim. What
+  // saves the first two is that they hard-code `provenance: "remembered"`, which
+  // short-circuits classification before the outcome gate under both scopes;
+  // what saves `putRaw` is that nothing in `src/` calls it.
   it("keeps the token the file gave an already-classified alias", async () => {
     mockPut.mockClear();
     await restoreBackup(makeBackupV2({
@@ -791,5 +796,56 @@ describe("restoreBackup — identity notification", () => {
     }
     expect(listener).toHaveBeenCalledTimes(1);
     expect(committedAtDispatch).toEqual([true]);
+  });
+});
+
+// A malformed `entries` is a shape the database deliberately KEEPS: appDb's v7
+// rule (`appDb.ts:181-191`) treats a non-array `entries`, or a non-record
+// element, as content that "may be standing in for real sets we have no way to
+// recover", and `exportBackup`'s `getAll()` writes it into the file verbatim.
+// Requiring it to be an array of objects here therefore made the app able to
+// produce a backup it could not restore — one malformed log condemned the whole
+// file, which in a local-first app is the user's only safety net.
+//
+// The standing principle — a record we cannot read is a record we must not
+// rewrite, and unreadable content is never grounds for deletion — extends here
+// to: unreadable content in ONE record is not grounds for rejecting the WHOLE
+// FILE. `entries` is passed through untouched, exactly as `appDb` treats it.
+describe("restoreBackup — an unreadable `entries` does not condemn the file", () => {
+  const isLog = (value: Record<string, unknown>) => "dayId" in value;
+  const healthyLog = {
+    id: "l-ok", programId: "p1", dayId: "d1",
+    performedAt: "2026-01-03T00:00:00.000Z", entries: [{ exerciseId: "e1" }],
+  };
+
+  it.each([
+    ["a non-array entries", "corrupt"],
+    ["an array whose element is null", [null]],
+  ])("restores every record when one log has %s", async (_label, entries) => {
+    mockPut.mockClear();
+    mockClear.mockClear();
+    const badLog = { ...validDoc.logs[0], id: "l-bad", entries };
+    const doc = { ...validDoc, logs: [badLog, healthyLog] };
+
+    await expect(restoreBackup(doc)).resolves.toBeUndefined();
+
+    // The malformed value survives byte-for-byte, key set included: the log is
+    // written back exactly as the file held it.
+    expect(putsToStore(isLog)).toEqual([badLog, healthyLog]);
+    // Completion canary — the transaction really committed rather than the
+    // assertion above passing over a restore that bailed before writing.
+    expect(txCommitted).toBe(true);
+    // Every store was still cleared-then-repopulated, so this is a real restore.
+    expect(mockClear).toHaveBeenCalledWith("logs");
+  });
+
+  // The other side of the boundary: `entries` is passed through because every
+  // reader of it is hardened, and because the database keeps the shape on
+  // purpose. `programId`/`dayId`/`performedAt` are NOT — they are the keys the
+  // app dereferences unconditionally to place a log in time and against a
+  // program — so a bad one must still refuse the file.
+  it("still refuses a log whose performedAt is unreadable", async () => {
+    const doc = { ...validDoc, logs: [{ ...validDoc.logs[0], performedAt: 7 }] };
+    await expect(restoreBackup(doc)).rejects.toThrow(/logs\[0\]/);
   });
 });
