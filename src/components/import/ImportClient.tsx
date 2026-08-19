@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Copy, Save } from "lucide-react";
 import { parseProgramJson, ImportError, type ImportReview } from "@/lib/import/parser";
@@ -12,6 +12,8 @@ import {
   buildInitialResolutions,
   groupResolutionOccurrences,
   storedOccurrenceCounts,
+  storedExerciseCount,
+  rememberableTarget,
   rememberedAliasInputs,
   rememberedAliasConflicts,
   CUSTOM_ID,
@@ -40,7 +42,14 @@ export function ImportClient() {
   const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("syntax");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [rememberNotice, setRememberNotice] = useState<string | null>(null);
+  // The document already written for the CURRENT paste, and the paste it was
+  // written for. Kept across edits on purpose: re-validating the same text must
+  // update that document, not create a second one for the same routine.
   const [savedProgramId, setSavedProgramId] = useState<string | null>(null);
+  const [savedJson, setSavedJson] = useState<string | null>(null);
+  // Whether the last save finished with nothing changed since — the only thing
+  // that swaps Save for "Open program".
+  const [settled, setSettled] = useState(false);
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
   // groupKey -> the user explicitly asked to remember this interpretation.
   // Absent means local to this import, which is the default for every group.
@@ -73,6 +82,27 @@ export function ImportClient() {
     [groups, remembered],
   );
 
+  // A tick only ever means "remember THIS answer". Once the group stops having
+  // one answer, drop the tick rather than letting it re-arm itself against
+  // whatever the occurrences settle on next.
+  useEffect(() => {
+    setRemembered((ticks) => {
+      const next: Record<string, boolean> = {};
+      let changed = false;
+      for (const [groupKey, ticked] of Object.entries(ticks)) {
+        const group = groups.find((g) => g.groupKey === groupKey);
+        const stillAnswerable = group !== undefined
+          && rememberableTarget(group, resolutions) !== undefined;
+        if (ticked && !stillAnswerable) {
+          changed = true;
+          continue;
+        }
+        next[groupKey] = ticked;
+      }
+      return changed ? next : ticks;
+    });
+  }, [groups, resolutions]);
+
   const exerciseCount = useMemo(
     () =>
       review?.program.days.reduce(
@@ -103,7 +133,11 @@ export function ImportClient() {
       setResolutions(initial);
       setRemembered({});
       setRememberNotice(null);
-      setSavedProgramId(null);
+      setSettled(false);
+      if (json !== savedJson) {
+        setSavedProgramId(null);
+        setSavedJson(null);
+      }
       if (items.length > 0) {
         setStep("resolve");
       } else {
@@ -120,11 +154,11 @@ export function ImportClient() {
     }
   }
 
-  // Any change after a save invalidates what was saved: drop the "already
-  // saved" state so the Save button comes back rather than stranding the user
-  // on a stale "Open program".
+  // Any change after a save means there is something new to save: bring the
+  // Save button back rather than stranding the user on a stale "Open program".
+  // The saved document's id deliberately survives, so saving again updates it.
   function clearSavedState() {
-    setSavedProgramId(null);
+    setSettled(false);
     setRememberNotice(null);
   }
 
@@ -183,16 +217,25 @@ export function ImportClient() {
         .filter((item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID)
         .map((item) => ({ path: item.path, canonicalId: resolutions[item.path] }));
 
-      const resolvedProgram =
+      const applied =
         catalogResolutions.length > 0
           ? applyResolutions(review.program, catalogResolutions)
           : review.program;
+      // Same paste, already saved once (the conflict path stays on this step,
+      // so the user can walk back and validate again): update that document
+      // instead of leaving two for one routine.
+      const resolvedProgram =
+        savedProgramId && savedJson === json
+          ? { ...applied, id: savedProgramId }
+          : applied;
 
       // The routine goes in FIRST. Aliases are only a shortcut for future
       // imports, and alias save legitimately rejects a token that already
       // means something else — so saving them first would let a shortcut
       // conflict cost the user the whole import.
       await saveProgram(resolvedProgram);
+      setSavedProgramId(resolvedProgram.id);
+      setSavedJson(json);
 
       // Only groups the user explicitly marked. Everything else stays local to
       // this import, which is why an ordinary import performs no alias write
@@ -200,7 +243,7 @@ export function ImportClient() {
       const aliasesToSave = rememberedAliasInputs(groupsWithRemember, resolutions);
       const notice = aliasesToSave.length > 0 ? await rememberAliases(aliasesToSave) : null;
       if (notice) {
-        setSavedProgramId(resolvedProgram.id);
+        setSettled(true);
         setRememberNotice(notice);
         return;
       }
@@ -308,12 +351,18 @@ export function ImportClient() {
   }
 
   if (step === "confirm" && review) {
-    const resolvedCount = unresolvedItems.filter(
-      (i) => resolutions[i.path] && resolutions[i.path] !== CUSTOM_ID,
-    ).length;
-    const customCount = unresolvedItems.filter(
-      (i) => resolutions[i.path] === CUSTOM_ID,
-    ).length;
+    // Stored exercises, not occurrence paths: one base-day path can be four
+    // week-clones, and a path in a structurally ambiguous day is none at all.
+    const resolvedCount = storedExerciseCount(
+      review.program,
+      unresolvedItems
+        .filter((i) => resolutions[i.path] && resolutions[i.path] !== CUSTOM_ID)
+        .map((i) => i.path),
+    );
+    const customCount = storedExerciseCount(
+      review.program,
+      unresolvedItems.filter((i) => resolutions[i.path] === CUSTOM_ID).map((i) => i.path),
+    );
 
     return (
       <div className="stack">
@@ -354,7 +403,7 @@ export function ImportClient() {
           >
             ← Back
           </button>
-          {savedProgramId ? (
+          {settled && savedProgramId ? (
             <button
               type="button"
               className="button flex-1"

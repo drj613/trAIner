@@ -57,16 +57,44 @@ beforeEach(() => {
   mockAliasSaveMany.mockResolvedValue(undefined);
 });
 
-async function chooseVersion(optionId: string) {
+// One base-day path, four stored exercises — the two numbers the confirm step
+// must not confuse.
+const fourWeekJson = JSON.stringify({
+  program_name: "Four weeks, one squat",
+  weeks: 4,
+  days: [
+    {
+      day: 1,
+      title: "Lower",
+      sections: [
+        {
+          name: "Main",
+          type: "strength",
+          groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 5, reps: "5" }] }],
+        },
+      ],
+    },
+  ],
+});
+
+async function pasteAndValidate(
+  user: ReturnType<typeof userEvent.setup>,
+  json = JSON.stringify(fixture),
+) {
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: json } });
+  await user.click(screen.getByRole("button", { name: "Validate →" }));
+  return screen.findByLabelText("Choose version for Back Squat");
+}
+
+async function chooseVersion(optionId: string, json = JSON.stringify(fixture)) {
   const user = userEvent.setup();
   render(<ImportClient />);
-  fireEvent.change(screen.getByRole("textbox"), {
-    target: { value: JSON.stringify(fixture) },
-  });
-  await user.click(screen.getByRole("button", { name: "Validate →" }));
-  const select = await screen.findByLabelText("Choose version for Back Squat");
-  await user.selectOptions(select, optionId);
+  await user.selectOptions(await pasteAndValidate(user, json), optionId);
   return user;
+}
+
+function rememberBox() {
+  return screen.getByRole("checkbox", { name: /^Remember "Back Squat"/ });
 }
 
 async function reviewAndSave(user: ReturnType<typeof userEvent.setup>) {
@@ -94,9 +122,7 @@ describe("ImportClient: import choices are local by default", () => {
 
   it("persists exactly one bulk alias write for an explicit Remember", async () => {
     const user = await chooseVersion("barbell-low-bar-squat");
-    await user.click(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
-    );
+    await user.click(rememberBox());
     await reviewAndSave(user);
 
     await waitFor(() => expect(mockAliasSaveMany).toHaveBeenCalledTimes(1));
@@ -115,9 +141,7 @@ describe("ImportClient: import choices are local by default", () => {
     mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
 
     const user = await chooseVersion("barbell-low-bar-squat");
-    await user.click(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
-    );
+    await user.click(rememberBox());
     await reviewAndSave(user);
 
     // The routine is saved — the whole point. It used to be lost entirely.
@@ -141,19 +165,14 @@ describe("ImportClient: import choices are local by default", () => {
     mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
 
     const user = await chooseVersion("barbell-low-bar-squat");
-    const remember = screen.getByRole("checkbox", {
-      name: "Remember this interpretation",
-    });
-    await user.click(remember);
+    await user.click(rememberBox());
     await reviewAndSave(user);
     await screen.findByRole("button", { name: /open program/i });
 
     // Drop the Remember tick: the conflict is gone, so saving is on offer
     // again rather than leaving a stale "already saved" state on screen.
     await user.click(screen.getByRole("button", { name: /back/i }));
-    await user.click(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
-    );
+    await user.click(rememberBox());
     await user.click(screen.getByRole("button", { name: /review import/i }));
     expect(screen.getByRole("button", { name: /save program/i })).toBeInTheDocument();
     expect(screen.queryByText(/already remembered/i)).not.toBeInTheDocument();
@@ -166,9 +185,7 @@ describe("ImportClient: import choices are local by default", () => {
     mockAliasSaveMany.mockRejectedValue(new Error("ConstraintError"));
 
     const user = await chooseVersion("barbell-low-bar-squat");
-    await user.click(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
-    );
+    await user.click(rememberBox());
     await reviewAndSave(user);
 
     await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
@@ -181,5 +198,75 @@ describe("ImportClient: import choices are local by default", () => {
     expect(notice).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open program/i })).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("ImportClient: what a failed or repeated save must not do", () => {
+  it("writes no alias when the routine itself could not be saved", async () => {
+    // Ordering is what protects this: an alias is a permanent shortcut for a
+    // routine, so persisting one for an import the user does not have would
+    // leave a mapping pointing at nothing they can see.
+    mockSaveProgram.mockRejectedValue(new Error("QuotaExceededError"));
+
+    const user = await chooseVersion("barbell-low-bar-squat");
+    await user.click(rememberBox());
+    await reviewAndSave(user);
+
+    await waitFor(() => expect(screen.getByText(/QuotaExceededError/)).toBeInTheDocument());
+    expect(mockSaveProgram).toHaveBeenCalledTimes(1);
+    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("does not remember a stale tick after the choice becomes ambiguous and settles elsewhere", async () => {
+    const user = await chooseVersion("barbell-low-bar-squat");
+    await user.click(rememberBox());
+
+    // Split the occurrences, which makes Remember impossible...
+    await user.click(
+      screen.getByRole("button", { name: /resolve occurrences separately/i }),
+    );
+    const occurrence = screen.getByLabelText(
+      "Choose version for Back Squat at days.2.sections.0.groups.0.exercises.0",
+    );
+    await user.selectOptions(occurrence, "barbell-high-bar-squat");
+    expect(rememberBox()).toBeDisabled();
+
+    // ...then settle every occurrence on a version the user never ticked for.
+    await user.selectOptions(occurrence, "barbell-low-bar-squat");
+    expect(rememberBox()).not.toBeChecked();
+
+    await reviewAndSave(user);
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+    expect(mockAliasSaveMany).not.toHaveBeenCalled();
+  });
+
+  it("re-validating the same paste updates one program instead of creating a second", async () => {
+    // The conflict path deliberately does not navigate away, so the user can
+    // walk back to the paste step and validate again. That reparses with a
+    // fresh program id, which used to leave two documents for one routine.
+    mockAliasList.mockResolvedValue([danglingBackSquatAlias]);
+
+    const user = await chooseVersion("barbell-low-bar-squat");
+    await user.click(rememberBox());
+    await reviewAndSave(user);
+    await screen.findByRole("button", { name: /open program/i });
+
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.click(screen.getByRole("button", { name: /back/i }));
+    await user.selectOptions(await pasteAndValidate(user), "barbell-high-bar-squat");
+    await reviewAndSave(user);
+
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(2));
+    const [first, second] = mockSaveProgram.mock.calls.map(([program]) => program as ProgramDocument);
+    expect(second.id).toBe(first.id);
+  });
+
+  it("counts stored exercises in the confirm summary, not occurrence paths", async () => {
+    const user = await chooseVersion("barbell-high-bar-squat", fourWeekJson);
+    await user.click(screen.getByRole("button", { name: /review import/i }));
+    // One warning path; four week-clones actually mapped.
+    expect(screen.getByText(/4 exercises mapped to catalog/i)).toBeInTheDocument();
+    expect(screen.queryByText(/1 exercise mapped to catalog/i)).not.toBeInTheDocument();
   });
 });
