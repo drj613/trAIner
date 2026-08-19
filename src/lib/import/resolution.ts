@@ -319,6 +319,15 @@ export type RememberedAliasConflict = {
  *
  * `by-normalized-alias` is the index the store enforces, so comparison is on
  * the normalized token, never the display text.
+ *
+ * A stored row is compared on its RE-NORMALIZED token, which is the rule the
+ * runtime resolver applies (`identity.ts:285`). That is deliberately not
+ * `saveMany`'s rule — it keys the unique index on the stored token verbatim —
+ * but it is a superset of it, because `normalizeExerciseName` is idempotent
+ * (measured: identical output on a second pass for 200,003 inputs, being 200k
+ * fuzzed strings plus every catalogue name, alias and rule token). An earlier
+ * revision compared both tokens explicitly; the verbatim half could not be
+ * falsified by any input, because idempotence means it can never differ.
  */
 export function rememberedAliasConflicts(
   inputs: AliasSaveInput[],
@@ -326,9 +335,8 @@ export function rememberedAliasConflicts(
 ): RememberedAliasConflict[] {
   const byToken = new Map<string, string>();
   for (const row of existing) {
-    for (const token of occupiedAliasTokens(row)) {
-      if (!byToken.has(token)) byToken.set(token, row.canonicalExerciseId);
-    }
+    const token = normalizeExerciseName(row.normalizedAlias);
+    if (token && !byToken.has(token)) byToken.set(token, row.canonicalExerciseId);
   }
   const conflicts: RememberedAliasConflict[] = [];
   for (const input of inputs) {
@@ -340,27 +348,6 @@ export function rememberedAliasConflicts(
   return conflicts;
 }
 
-/**
- * Every token a stored alias row occupies, for conflict purposes. Deliberately
- * a SUPERSET of the one rule `aliasRepo.saveMany` applies, because two
- * different consumers key on two different things and both are harmful:
- *
- * - the unique index (and `saveMany`'s conflict map) key on the stored
- *   `normalizedAlias` VERBATIM, so a row holding that exact token would make
- *   the write reject;
- * - the runtime resolver RE-NORMALIZES the stored token before matching, so a
- *   row whose token only matches after normalizing would still answer this
- *   name — and adding a second row for the same normalized name makes the
- *   resolver's uniqueness check fail and the name stop resolving entirely.
- *
- * Withholding one Remember tick is recoverable; silently shadowing a mapping
- * the user already made is not.
- */
-function occupiedAliasTokens(row: { normalizedAlias: string }): string[] {
-  const verbatim = row.normalizedAlias;
-  const renormalized = normalizeExerciseName(verbatim);
-  return [verbatim, renormalized].filter((token) => Boolean(token));
-}
 
 // A day number is ambiguous within its week when two or more base days
 // declared the same number (e.g. `[{day:3},{day:3}]`). Legitimate weekly

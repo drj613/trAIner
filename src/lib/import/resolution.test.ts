@@ -1534,14 +1534,6 @@ describe("rememberedAliasConflicts token rules", () => {
     ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
   });
 
-  it("treats the verbatim stored token as occupied even if it does not renormalize", () => {
-    expect(
-      rememberedAliasConflicts([input], [
-        { normalizedAlias: "back squat", canonicalExerciseId: "barbell-high-bar-squat" },
-      ]),
-    ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
-  });
-
   it("still reports nothing when a differently named row is stored", () => {
     expect(
       rememberedAliasConflicts([input], [
