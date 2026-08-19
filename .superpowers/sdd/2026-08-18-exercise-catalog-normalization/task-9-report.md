@@ -556,3 +556,345 @@ Commits, in order:
 
 Gates: 102 suites / 1,365 tests / 0 failures; typecheck, lint, build, `git diff
 --check` all clean; e2e 92 passed.
+
+---
+
+# Fix round 1
+
+Commits: `0eca59e`, `3af8ee7`, `1b3cd8e`, `1553e15`, `b79ebf1`, plus this report
+amend. All ten items taken, nothing declined. **15 new unit tests** (my slice:
+199 → 214) plus one new e2e test and two existing tests given teeth.
+
+## Important 1 — the stale `resolution` mock (ruled, and now landed)
+
+Dropped the mock entirely rather than completing it, as the reviewer preferred.
+The real module is pure and cheap, so there was nothing to fake.
+
+Two things fell out of doing it properly. First, **the trap was real**, and the
+predicted error is exactly the predicted error:
+
+```
+M-I1a: put the stale partial mock back
+  ● ImportClient confirm step pluralization › does not use (s) suffixes in confirm step
+    TypeError: (0 , resolution_1.groupResolutionOccurrences) is not a function
+Tests:       1 failed, 1 total
+```
+
+Second, **that test could never have failed.** Its subject is confirm-step
+copy, and it asserted on `document.body.textContent` while still on the *paste*
+step — the strings under test were not rendered at all. It now pastes, clicks
+Validate, and asserts `1 day · 1 exercise` as a completion canary before
+checking for `(s)`. Teeth confirmed:
+
+```
+M-I1b: regress the confirm copy to "day(s) · exercise(s)"
+  ● ImportClient confirm step pluralization › does not use (s) suffixes in confirm step
+Tests:       1 failed, 1 total
+```
+
+Making it reach the step needed `overrides: []` on the mocked program (the real
+`storedExerciseCount` walks overrides). No assertion was weakened; one was added.
+
+## Important 2 — no alias for an import whose program save failed
+
+The reviewer was right that this was the invariant ordering protects and that
+nothing covered. New test: `mockSaveProgram.mockRejectedValue(new Error("QuotaExceededError"))`
+with Remember ticked, asserting `saveMany` was never called, `saveError` shows,
+and no navigation happened.
+
+**Re-confirmed on the current tree, as asked.** The ordering swap now kills
+exactly one test — this one:
+
+```
+N1: aliases written before the routine
+   ● ImportClient: what a failed or repeated save must not do › writes no alias when the routine itself could not be saved
+Tests:       1 failed, 213 passed, 214 total
+```
+
+Compare with round 1, where the same mutant left all 191 tests green. Ordering
+is load-bearing now, and it is pinned as the narrow invariant it actually is
+rather than as the headline rule.
+
+## Important 3 — a structurally ambiguous group was silently a no-op
+
+Confirmed the whole chain: `storedOccurrenceCounts` returns `0`, the row showed
+nothing (the count only rendered above 1), the banner said handled, and the
+confirm step counted warning paths and claimed the exercise was mapped.
+
+Two fixes, both quiet and factual:
+
+- the row now says `won't apply — the routine's structure is ambiguous here` in
+  `--warn`. Worded without naming the cause on purpose: duplicate day numbers
+  are the realistic path to `0`, but `patchExercise` can also decline on a name
+  guard, and stating a reason I cannot prove would be worse than stating none.
+- the confirm tally counts stored exercises, so a group that patches nothing
+  contributes nothing. That exclusion is not special-cased — it falls out of
+  counting the patch.
+
+```
+N5: remove the zero-count note
+   ● ResolutionStep grouped choices › says so when a decision would not reach any exercise
+Tests:       1 failed, 213 passed, 214 total
+```
+
+**One thing I did not do, deliberately:** I did not block `Review import →` for
+such a group. Spec ~445 says the import "cannot finalize those resolutions",
+and it does not — nothing is patched, and the warnings survive in the saved
+program. Blocking the button would block the whole import, and a user cannot
+fix duplicate day numbers from this screen, so it would trade a silent no-op
+for a dead end. Flagging it in case the controller reads the spec as requiring
+the harder stop.
+
+## Minors
+
+### m5 (prioritised) — a second program document
+
+Reproduced first: two saves, two ids.
+
+```
+  Expected: "program-45ca5512-5684-4d94-a463-ab962b94b255"
+  Received: "program-a4d544e4-62e9-4fd9-9119-d372b0583c58"
+```
+
+Fixed by keying the saved document to the pasted text. This needed the state
+split apart, which is the substantive part of the change: `savedProgramId` +
+`savedJson` are now the **document's identity** and survive edits, while a new
+`settled` flag is the **UI state** that swaps Save for `Open program →`. Round
+1's `clearSavedState()` cleared the id, which is precisely why re-validating
+minted a new one.
+
+```
+N3: document id not reused
+   ● ImportClient … › re-validating the same paste updates one program instead of creating a second
+Tests:       1 failed, 213 passed, 214 total
+```
+
+### m7 — nothing asserted the version step exists
+
+This one got the most attention, because the original defect was exactly this
+shape: a helper that returns silently after a timeout inside an `if (isVisible)`
+wrapper. New e2e test asserts the choice appears, that `Review import →` is
+**disabled** until it is answered, and that Remember is disabled before and
+enabled-but-unticked after. The permissive helper stays for the other nine
+specs, which only need a program.
+
+Two mutations, because the second is the one that matters:
+
+```
+E1: the version step stops rendering (isVersionChoice = false)
+  ✘ 4 › an underspecified name demands a version before the import may proceed
+    Error: expect(locator).toBeVisible() failed — element(s) not found
+    > 63 |     await expect(select).toBeVisible();
+  1 failed, 3 passed
+```
+
+```
+E2: the choice is silently answered for the user (the old 0.65 auto-select, re-added)
+  ✘  4 › an underspecified name demands a version before the import may proceed
+    Error: expect(locator).toBeDisabled() failed
+    > 64 |     await expect(... /review import/i ...).toBeDisabled();
+  ✓ 10-15 › e2e/today.spec.ts (all six, through the permissive helper)
+  1 failed, 9 passed
+```
+
+E2 is the proof the coordinator asked for. Under a mutant where the
+underspecified flow silently stops being **required**, every `today.spec.ts`
+test that goes through `chooseImportVersions` stays green, and only the new
+assertion fails. That is the defect class that slipped through before.
+
+### m1 — `dedupeAliasResolutions` relied on a caller-side filter
+
+Skip moved inside the loop, so the shared function is safe for the contract it
+advertises rather than for the one caller that happened to pre-filter.
+
+```
+N7: skip removed
+   ● … › skips an occurrence kept as custom instead of remembering it
+   ● … › skips an undecided occurrence instead of remembering an empty target
+   ● … › still remembers the concrete answers alongside a skipped one
+Tests:       3 failed, 211 passed, 214 total
+```
+
+### m2 — the confirm summary counted paths
+
+Both tallies now go through `storedExerciseCount`, so "used 4 times" and "4
+exercises mapped to catalog" cannot disagree about the same routine. Pinned with
+a 4-week/one-path routine, which is the only shape where the two numbers differ.
+
+```
+N4: tally counts occurrence paths again
+   ● ImportClient … › counts stored exercises in the confirm summary, not occurrence paths
+Tests:       1 failed, 213 passed, 214 total
+```
+
+### m3 — a stale Remember tick
+
+Worth stating precisely, because the hazard is narrower than it looks: a stale
+tick could never have **persisted** an alias, since `rememberedAliasInputs`
+gates on `rememberableTarget` independently. The real hazard is re-arming — tick
+for high-bar, split the occurrences (tick greys out), settle them all on low-bar,
+and the tick returns meaning something the user never confirmed. A `useEffect`
+now drops a tick once its group stops having one answer, returning the same
+object when nothing changed so it cannot loop.
+
+```
+N2: prune removed
+   ● ImportClient … › does not remember a stale tick after the choice becomes ambiguous and settles elsewhere
+Tests:       1 failed, 213 passed, 214 total
+```
+
+### m4 — the Remember label
+
+Now `Remember "Back Squat" as Low Bar Back Squat`, or `Remember "Back Squat"`
+before a version is chosen. Kept fully **visible** rather than hidden in an
+`aria-label`, so the accessible name contains the visible label (WCAG 2.5.3) and
+sighted users get the same disambiguation.
+
+```
+N6: label drops the name
+   10 failed, 204 passed, 214 total
+```
+
+Ten is a locator dependency, not ten independent judgements — the label is how
+every test finds the checkbox. The one meaningful killer is
+`names the exercise and the chosen version in the Remember label`. Reporting the
+raw count with that caveat rather than the flattering number.
+
+### m6 — one token rule (with a partial push-back)
+
+**I could not do what was literally asked, and I think the substance is better
+served anyway.** `saveMany` is in `src/lib/storage/aliasRepo.ts`, outside my
+lane, and a second agent was editing that exact file this round (it now imports
+`aliasLookupToken` from `migrations/v10Identity.ts`, which it did not at round
+1). So a helper shared with `saveMany` was not mine to create.
+
+More to the point, three different rules already exist and they are not
+interchangeable:
+
+- `aliasRepo.ts:67` builds its conflict map from `alias.normalizedAlias`
+  **verbatim** — the value the unique index actually keys on;
+- `aliasRepo.ts:30` normalizes the **input** text;
+- `identity.ts:285` **re-normalizes** the stored token before matching.
+
+Unifying on `saveMany`'s rule would have made my pre-check *weaker*: a stale
+stored token is invisible to the index but load-bearing for the resolver, so
+writing past it leaves two rows matching one name and `findUnique` then resolves
+neither — the name stops working entirely. So `rememberedAliasConflicts` now
+compares against **both** tokens through one local helper,
+`occupiedAliasTokens`, documented as a deliberate superset with that reasoning.
+Withholding one Remember tick is recoverable; silently shadowing a mapping the
+user already made is not.
+
+```
+N8: verbatim-token comparison only
+   ● rememberedAliasConflicts › compares normalized tokens, not display text
+   ● rememberedAliasConflicts token rules › treats a stored token that only matches after normalizing as occupied
+Tests:       2 failed, 212 passed, 214 total
+```
+
+## Optional — taken
+
+Replaced the sentinel-plus-second-traversal with
+`applyResolutionsWithStats(program, resolutions) -> { program, patchedByPath }`.
+`applyResolutions` now delegates to it and keeps its signature, so no caller
+changed. The count comes from the patch reporting what it did, which removes the
+fragility the reviewer identified: a second walk that could undercount if the
+patch ever touched a container the walk missed.
+
+A placeholder id is still needed (the patch only records a non-empty,
+non-`CUSTOM_ID` target), but nothing is keyed on its value and the patched
+program is discarded — only counts leave the function.
+
+```
+N9: count once per path instead of once per patched exercise
+   ● storedOccurrenceCounts › counts every week-clone one base-day path expands into
+   ● storedOccurrenceCounts › agrees with what one grouped choice actually patches
+   ● applyResolutionsWithStats › reports how many stored exercises each path patched
+   ● ImportClient … › counts stored exercises in the confirm summary, not occurrence paths
+Tests:       4 failed, 210 passed, 214 total
+```
+
+## Gates — fix round
+
+```
+$ bun run test -- --runInBand src/lib/import src/components/import
+Test Suites: 8 passed, 8 total
+Tests:       214 passed, 214 total
+
+$ bun run test -- --runInBand
+Test Suites: 2 failed, 102 passed, 104 total
+Tests:       2 failed, 1414 passed, 1416 total     [both foreign — attributed below]
+
+$ bun run typecheck
+exit=0
+
+$ bun run lint
+exit=0
+
+$ bun run build
+dist/assets/index-DRZU_Zh2.css     27.67 kB │ gzip:   6.97 kB
+dist/assets/index-z0Ce1eFN.js   1,557.79 kB │ gzip: 276.73 kB
+(!) Some chunks are larger than 500 kB after minification.   [known-acceptable]
+✓ built in 2.23s
+
+$ git diff --check
+exit=0
+
+$ bun run test:e2e
+93 passed (2.4m)
+```
+
+## Foreign failures, attributed by filename — checked, not assumed
+
+Two other agents are resuming with uncommitted work. I checked each failure
+rather than waving at it:
+
+| File | Verdict |
+|---|---|
+| `src/components/workout/HistoryClient.test.tsx` | Foreign. **Untracked** file belonging to the workout agent. Passes alone (8/8). |
+| `src/lib/storage/appDb.test.ts` | Foreign trigger. The file is clean and committed, and passes alone (99/99). |
+| `src/components/catalog/ExerciseCorrectionSheet.test.tsx` | Foreign. **Modified**, uncommitted, catalog agent. |
+
+The failing *set* rotates with which foreign suites share a run, which is the
+signature of in-flight code sharing global fake-IndexedDB and identity-event
+state:
+
+```
+appDb.test.ts + MY LANE ONLY                        → 313 passed, 0 failed
+appDb.test.ts + src/components/workout              → 1 failed (HistoryClient)
+appDb.test.ts + src/components/catalog + app        → 154 passed, 0 failed
+appDb.test.ts + workout + catalog + app             → 1 failed (ExerciseCorrectionSheet)
+src/lib/storage + src/lib/backup                    → 257 passed, 0 failed
+```
+
+The first line is the one that matters: **my suites cannot be the trigger.**
+Neither failing file imports anything from `src/lib/import/` or
+`src/components/import/` (verified by grep). I changed nothing in their lanes.
+
+Also worth recording: an earlier run this round showed a typecheck error at
+`src/components/workout/WorkoutDayClient.tsx:1030`
+(`ExerciseSessionRow[]` not assignable to `ExerciseHistoryRow[]`) and three
+history-drawer e2e failures. That agent has since fixed it — typecheck and e2e
+are both clean now — but it is why the intermediate gate output in this round
+was red.
+
+## What a reviewer should scrutinise most (fix round)
+
+1. **The Important 3 judgement call**: a zero-count group is flagged and
+   excluded from the tally, but `Review import →` is not blocked. If the spec's
+   "cannot finalize" means a hard stop, that is a one-line change with a real
+   cost (the user cannot fix duplicate day numbers from this screen).
+2. **The m6 push-back**: `rememberedAliasConflicts` is deliberately a *superset*
+   of `aliasRepo.saveMany`'s rule rather than the same helper. If you disagree,
+   the argument to beat is `identity.ts:285` versus `aliasRepo.ts:67`.
+3. **The m5 state split**: `savedProgramId`/`savedJson` now survive edits while
+   `settled` does not. Reusing a program id is the kind of thing worth a second
+   pair of eyes, since logs and sessions key off it.
+4. **`applyResolutionsWithStats`**: `applyResolutions` is heavily used and now
+   delegates. Its ~40 existing tests all still pass, and `is what
+   applyResolutions returns` pins the equivalence, but the refactor touched the
+   patch's inner loop.
+5. **N6's blast radius (10 tests)** is a locator dependency, not evidence. The
+   real killer is one test.
+
+**Status: DONE.**
