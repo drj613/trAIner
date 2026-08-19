@@ -1,5 +1,32 @@
-import type { BackupDocument } from "@/lib/programs/types";
+import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
+import { dispatchExerciseIdentityChanged } from "@/lib/catalog/identityEvents";
+import type {
+  AliasDocument,
+  BackupDocument,
+  BackupDocumentV2,
+  UserExerciseDocument,
+} from "@/lib/programs/types";
 import { DB_NAME, getDb, resetDbConnection } from "@/lib/storage/appDb";
+import {
+  classifyAliases,
+  createMigrationContext,
+  migrateLog,
+  migrateProgram,
+} from "@/lib/storage/migrations/v10Identity";
+import {
+  canonicalNormalizationOverride,
+  normalizationOverrideKey,
+  validateNormalizationOverrideInput,
+} from "@/lib/storage/normalizationOverrideRepo";
+
+// Every store a backup covers, in one list, so the export snapshot and the
+// restore write set cannot drift apart. `backups` is deliberately absent: the
+// in-app snapshots are undo points for *this* database, not user data to carry
+// between installs.
+const BACKED_UP_STORES = [
+  "profile", "programs", "logs", "aliases",
+  "userExercises", "bodyweight", "promptPresets", "normalizationOverrides",
+] as const;
 
 // Fix 2: Deep validation helpers
 function isArrayOfObjects(val: unknown): val is Record<string, unknown>[] {
@@ -66,20 +93,52 @@ function requireOverrideReplacements(programs: Record<string, unknown>[]): void 
   });
 }
 
-export async function exportBackup(): Promise<BackupDocument> {
+const isStringOrNull = (v: unknown) => v === null || typeof v === "string";
+const isArrayOfStrings = (v: unknown) =>
+  Array.isArray(v) && v.every((e) => typeof e === "string");
+
+// Runs before the write transaction opens, so a bad override set leaves the
+// existing workspace exactly as it was. Two rows can carry different ids and
+// still name the same target once normalized, in which case the store would
+// keep one and silently lose the other — that is a corrupt file, not a merge to
+// resolve here.
+function validateRestoredOverrides(
+  overrides: readonly NormalizationOverrideDocument[],
+  userExercises: readonly Record<string, unknown>[] | undefined,
+): void {
+  const userExerciseIds = new Set(
+    (userExercises ?? [])
+      .map((exercise) => exercise["id"])
+      .filter((id): id is string => typeof id === "string"),
+  );
+  const seenTargets = new Set<string>();
+  for (const override of overrides) {
+    // The same validation the override editor applies, against the same bundled
+    // movement/modifier definitions, so a restored file cannot install an
+    // override the app itself would have refused to save.
+    validateNormalizationOverrideInput(override, userExerciseIds);
+    const key = normalizationOverrideKey(override.targetKind, override.targetValue);
+    if (seenTargets.has(key)) {
+      throw new Error(`Invalid backup: duplicate normalization override target: ${key}.`);
+    }
+    seenTargets.add(key);
+  }
+}
+
+export async function exportBackup(): Promise<BackupDocumentV2> {
   // One readonly transaction across every exported store: the file is a
   // consistent point-in-time snapshot even if another tab writes mid-export.
   const db = await getDb();
-  const tx = db.transaction(
-    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
-    "readonly",
-  );
+  const tx = db.transaction(BACKED_UP_STORES, "readonly");
   // tx.done is included in the same Promise.all (last, resolves to
   // undefined, ignored below) rather than awaited afterward — if a getAll()
   // rejects, Promise.all rejects immediately and control would otherwise
   // never reach a standalone `await tx.done`, leaving its rejection (the
   // transaction aborts when a request fails) unhandled.
-  const [profiles, programs, logs, aliases, userExercises, bodyweight, promptPresets] = await Promise.all([
+  const [
+    profiles, programs, logs, aliases,
+    userExercises, bodyweight, promptPresets, normalizationOverrides,
+  ] = await Promise.all([
     tx.objectStore("profile").getAll(),
     tx.objectStore("programs").getAll(),
     tx.objectStore("logs").getAll(),
@@ -87,10 +146,11 @@ export async function exportBackup(): Promise<BackupDocument> {
     tx.objectStore("userExercises").getAll(),
     tx.objectStore("bodyweight").getAll(),
     tx.objectStore("promptPresets").getAll(),
+    tx.objectStore("normalizationOverrides").getAll(),
     tx.done,
   ]);
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     // BackupDocument.profile is `ProfileDocument | undefined` — do NOT use
     // `?? null`, strict typechecking rejects null here.
@@ -101,6 +161,7 @@ export async function exportBackup(): Promise<BackupDocument> {
     userExercises,
     bodyweight,
     promptPresets,
+    normalizationOverrides,
   };
 }
 
@@ -110,8 +171,12 @@ export async function restoreBackup(backup: unknown): Promise<void> {
     throw new Error("Invalid backup: expected an object.");
   }
   const doc = backup as Record<string, unknown>;
-  if (doc["version"] !== 1) {
-    throw new Error(`Unsupported backup version: ${doc["version"]}. Expected 1.`);
+  // Version 1 is accepted only while the temporary legacy-id compatibility
+  // table exists (see the spec's September 30 removal date). A *newer* version
+  // is rejected rather than read as a version 2: dropping fields this build does
+  // not recognize would silently destroy whatever they held.
+  if (doc["version"] !== 1 && doc["version"] !== 2) {
+    throw new Error(`Unsupported backup version: ${doc["version"]}. Expected 1 or 2.`);
   }
 
   // Fix 2: Deep array validation — elements must be non-null objects
@@ -184,41 +249,83 @@ export async function restoreBackup(backup: unknown): Promise<void> {
   ]);
   requireOverrideReplacements(doc["programs"]);
 
+  // Version 2 carries normalization overrides. Absent is only legal in a
+  // version-1 file, where it means "none"; a version-2 file that lost the field
+  // is a truncated file, not an empty override set.
+  if (doc["version"] === 2) {
+    if (!isArrayOfObjects(doc["normalizationOverrides"])) {
+      throw new Error("Invalid backup: 'normalizationOverrides' must be an array of objects.");
+    }
+    if (!hasIds(doc["normalizationOverrides"])) {
+      throw new Error("Invalid backup: 'normalizationOverrides' entries must have string ids.");
+    }
+    requireFields(doc["normalizationOverrides"], "normalizationOverrides", [
+      { name: "targetKind", check: isString, expected: "a string" },
+      { name: "targetValue", check: isString, expected: "a string" },
+      { name: "movementId", check: isStringOrNull, expected: "a string or null" },
+      { name: "movementModifierIds", check: isArrayOfStrings, expected: "an array of strings" },
+      { name: "updatedAt", check: isString, expected: "a string timestamp" },
+    ]);
+    validateRestoredOverrides(
+      doc["normalizationOverrides"] as unknown as NormalizationOverrideDocument[],
+      doc["userExercises"] as Record<string, unknown>[] | undefined,
+    );
+  }
+
   const b = backup as BackupDocument;
+
+  // getDb() runs any pending schema upgrade against whatever is in the stores
+  // *right now* — never against the file, which is cleared in and repopulated
+  // from the transaction below. So the restored records are put through the same
+  // pure transforms the upgrade uses, from the same module: without this, a
+  // legacy canonical id or an unclassified alias in the file would survive
+  // forever, because the stored version is already current and the upgrade
+  // block never runs again. Reusing the transforms rather than restating the
+  // rules is what keeps the two paths from diverging.
+  //
+  // Version-2 records were exported already normalized, so this is a fixed
+  // point for them; running it unconditionally is what makes a file exported by
+  // an older build safe to restore into a newer one.
+  const userExercises = (b.userExercises ?? []) as UserExerciseDocument[];
+  // classifyAliases recomputes every token from its alias text and dedupes on
+  // the result. The file's own `normalizedAlias` is never written: it is what
+  // `by-normalized-alias` (the schema's only unique index) is keyed on, so a
+  // stale one restores without error and leaves the alias permanently
+  // unreachable by aliasRepo.find() — and two stale ones can collide and get
+  // the write rejected outright. Provenance is settled here too: version-1 rows
+  // have none and are classified exactly as the v10 migration classifies
+  // pre-existing aliases, retained as "legacy-auto" or purged.
+  const aliases = classifyAliases(b.aliases as AliasDocument[], userExercises);
+  const context = createMigrationContext(
+    aliases,
+    userExercises,
+    // Overrides are a read-time input. Baking override-derived identity into
+    // the restored records would outlive the override being deleted.
+    [],
+  );
+  const normalizationOverrides = (
+    b.version === 2 ? b.normalizationOverrides : []
+  ).map((override) => canonicalNormalizationOverride(override));
 
   // Fix 1: Atomic multi-store transaction — either fully restores or fully rolls back
   const db = await getDb();
-  const tx = db.transaction(
-    ["profile", "programs", "logs", "aliases", "userExercises", "bodyweight", "promptPresets"],
-    "readwrite",
-  );
+  const tx = db.transaction(BACKED_UP_STORES, "readwrite");
 
-  tx.objectStore("profile").clear();
-  tx.objectStore("programs").clear();
-  tx.objectStore("logs").clear();
-  tx.objectStore("aliases").clear();
-  tx.objectStore("userExercises").clear();
-  tx.objectStore("bodyweight").clear();
-  tx.objectStore("promptPresets").clear();
+  for (const store of BACKED_UP_STORES) tx.objectStore(store).clear();
 
   if (b.profile) tx.objectStore("profile").put(b.profile);
-  for (const p of b.programs) tx.objectStore("programs").put(p);
-  for (const l of b.logs) tx.objectStore("logs").put(l);
-  // Version-1 backups predate alias provenance. Preserve every stored field
-  // (id, alias, normalizedAlias, canonicalExerciseId, createdAt) verbatim and
-  // only fill in a missing or unrecognized provenance with "legacy-auto" — the
-  // same classification the v10 database migration gives pre-existing aliases.
-  // A later backup version will export provenance explicitly.
-  for (const a of b.aliases) {
-    const provenance =
-      a.provenance === "remembered" || a.provenance === "legacy-auto" ? a.provenance : "legacy-auto";
-    tx.objectStore("aliases").put({ ...a, provenance });
-  }
+  for (const p of b.programs) tx.objectStore("programs").put(migrateProgram(p, context));
+  for (const l of b.logs) tx.objectStore("logs").put(migrateLog(l, context));
+  for (const a of aliases) tx.objectStore("aliases").put(a);
   for (const ue of b.userExercises ?? []) tx.objectStore("userExercises").put(ue);
   for (const e of b.bodyweight ?? []) tx.objectStore("bodyweight").put(e);
   for (const p of b.promptPresets ?? []) tx.objectStore("promptPresets").put(p);
+  for (const o of normalizationOverrides) tx.objectStore("normalizationOverrides").put(o);
 
   await tx.done;
+  // After the commit, never before: a listener that re-reads identity must not
+  // see a half-cleared workspace. One event for the whole restore.
+  dispatchExerciseIdentityChanged();
 }
 
 export async function resetWorkspace(onBlocked?: () => void): Promise<void> {

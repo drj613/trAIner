@@ -14,6 +14,9 @@ import {
   migrateProgram,
 } from "./migrations/v10Identity";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
+import { normalizationOverrideRepo } from "./normalizationOverrideRepo";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import type { BackupDocumentV1 } from "@/lib/programs/types";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 import {
@@ -1343,5 +1346,235 @@ describe("DB v7/v8 — malformed legacy logs", () => {
     await expect(openCurrentDatabase()).resolves.toBeUndefined();
     expect(await readRawRecord("logs", "unreadable-sets"))
       .toEqual({ ...unreadableSets, performedDate: "2026-05-10" });
+  });
+});
+
+// The restore path is the other half of the v10 migration story. restoreBackup
+// calls getDb(), which runs the upgrade against whatever is in the stores at
+// that moment, and only then clears them and writes the file's records — so
+// without an explicit pass here the restored records never see the migration at
+// all (the version is already 10, so `oldVersion < 10` is false forever).
+// Spec: "their aliases pass through the same legacy-auto classification/purge
+// rules as the database migration" and "Backup and database migration use the
+// same canonical redirect function so their results cannot diverge."
+describe("restoreBackup — version-1 compatibility on a current database", () => {
+  const NOW = "2026-08-18T00:00:00.000Z";
+
+  const legacyAlias = (alias: string, canonicalExerciseId: string) => ({
+    id: `legacy:${alias}`,
+    alias,
+    normalizedAlias: normalizeExerciseName(alias),
+    canonicalExerciseId,
+    createdAt: NOW,
+  });
+
+  const legacyProgram = (canonicalExerciseId: string) => ({
+    id: "p1",
+    title: "Restored routine",
+    days: [{
+      id: "day-1",
+      dayNumber: 1,
+      title: "Day 1",
+      sections: [{
+        id: "s1",
+        type: "strength" as const,
+        name: "Main",
+        groups: [{ id: "g1", type: "single" as const, exercises: [
+          { id: "slot-1", name: "Former squat", canonicalExerciseId },
+          { id: "slot-2", name: "High Bar Back Squat" },
+        ] }],
+      }],
+    }],
+    overrides: [],
+    createdAt: NOW,
+    updatedAt: NOW,
+  });
+
+  const legacyLog = (canonicalExerciseId: string) => ({
+    id: "l1",
+    programId: "p1",
+    dayId: "day-1",
+    performedAt: NOW,
+    entries: [
+      { exerciseId: "slot-1", exerciseName: "Former squat", canonicalExerciseId, sets: [] },
+      { exerciseId: "slot-2", exerciseName: "High Bar Back Squat", sets: [] },
+    ],
+  });
+
+  const makeBackupV1 = (overrides: Partial<BackupDocumentV1> = {}) => ({
+    version: 1 as const,
+    exportedAt: NOW,
+    programs: [legacyProgram("removed-squat-id")],
+    logs: [legacyLog("removed-squat-id")],
+    aliases: [],
+    ...overrides,
+  } as unknown as BackupDocumentV1);
+
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("retains unique legacy aliases and purges ambiguous or noisy ones", async () => {
+    await restoreBackup(makeBackupV1({
+      aliases: [
+        legacyAlias("RDL", "romanian-deadlift"),
+        legacyAlias("Back Squat", "barbell-back-squat"),
+        legacyAlias("3x8 @ RPE 7", "barbell-back-squat"),
+      ] as never,
+    }));
+
+    await expect(aliasRepo.find("RDL")).resolves.toMatchObject({ provenance: "legacy-auto" });
+    await expect(aliasRepo.find("Back Squat")).resolves.toBeUndefined();
+    await expect(aliasRepo.find("3x8 @ RPE 7")).resolves.toBeUndefined();
+  });
+
+  it("makes a restored alias findable even when the file's own token was stale", async () => {
+    // The silent case: one stale token needs no collision to break anything.
+    // Written verbatim, the row restores without error and is then unreachable
+    // by aliasRepo.find() forever, because find() looks up the recomputed one.
+    await restoreBackup(makeBackupV1({
+      aliases: [{ ...legacyAlias("RDL", "romanian-deadlift"), normalizedAlias: "WRONG-TOKEN" }] as never,
+    }));
+
+    await expect(aliasRepo.find("RDL")).resolves.toMatchObject({
+      alias: "RDL",
+      normalizedAlias: "rdl",
+      canonicalExerciseId: "romanian-deadlift",
+      provenance: "legacy-auto",
+    });
+  });
+
+  it("rewrites legacy canonical ids in restored programs and logs", async () => {
+    await restoreBackup(makeBackupV1());
+
+    const program = (await programRepo.get("p1"))!;
+    const exercises = program.days[0].sections[0].groups[0].exercises;
+    expect(exercises[0].canonicalExerciseId).toBe("surviving-squat-id");
+    // Also backfilled: a name-only slot with one exact concrete match, exactly
+    // as the migration would have done had these records been in the store.
+    expect(exercises[1].canonicalExerciseId).toBe("barbell-high-bar-squat");
+
+    const log = (await logRepo.get("l1"))!;
+    expect(log.entries[0].canonicalExerciseId).toBe("surviving-squat-id");
+    expect(log.entries[1].canonicalExerciseId).toBe("barbell-high-bar-squat");
+  });
+
+  it("produces the same stores as migrating the same records in place", async () => {
+    // The divergence guard: a v1 file restored into a v10 database must land in
+    // exactly the state the v9 → v10 upgrade would have produced from the same
+    // records. Anything else means backup and migration have drifted apart.
+    await seedVersion9Database(v9Fixture);
+    const v9 = await openDB(DB_NAME, 9);
+    const [rawPrograms, rawLogs, rawAliases] = await Promise.all([
+      v9.getAll("programs"), v9.getAll("logs"), v9.getAll("aliases"),
+    ]);
+    v9.close();
+    resetDbConnection();
+
+    await openCurrentDatabase();
+    const migratedInPlace = await snapshotNormalizedStores();
+    // Guards the comparison itself: if the pre-migration records already equalled
+    // the migrated ones, the assertion below would hold for a restore that did
+    // nothing at all.
+    expect(await readRawStore("aliases")).not.toEqual(rawAliases);
+    expect(await readRawStore("programs")).not.toEqual(rawPrograms);
+    expect(await readRawStore("logs")).not.toEqual(rawLogs);
+
+    // Rebuild the same pre-migration records as a version-1 file and restore
+    // them into a fresh, already-upgraded database.
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await openCurrentDatabase();
+    await restoreBackup({
+      version: 1,
+      exportedAt: NOW,
+      programs: rawPrograms,
+      logs: rawLogs,
+      aliases: rawAliases,
+    } as unknown as BackupDocumentV1);
+
+    expect(await snapshotNormalizedStores()).toEqual(migratedInPlace);
+  });
+});
+
+describe("restoreBackup — version-2 documents", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  it("round-trips normalization overrides and alias provenance", async () => {
+    const saved = await normalizationOverrideRepo.save({
+      targetKind: "normalized-name",
+      targetValue: "Hatfield Squat",
+      movementId: "squat",
+      movementModifierIds: ["barbell"],
+    });
+    await aliasRepo.save({
+      alias: "My high bar",
+      canonicalExerciseId: "barbell-high-bar-squat",
+      provenance: "remembered",
+    });
+    await programRepo.save(demoProgram);
+
+    const exported = await exportBackup();
+    expect(exported).toMatchObject({ version: 2, normalizationOverrides: [saved] });
+
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await restoreBackup(exported);
+
+    await expect(normalizationOverrideRepo.list()).resolves.toEqual([saved]);
+    await expect(aliasRepo.find("My high bar")).resolves.toMatchObject({ provenance: "remembered" });
+  });
+
+  it("dispatches one identity event whose listener can read the restored data", async () => {
+    await programRepo.save(demoProgram);
+    const exported = await exportBackup();
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+
+    const committedReads: Array<Promise<number>> = [];
+    const listener = jest.fn(() => {
+      committedReads.push(programRepo.list().then((programs) => programs.length));
+    });
+    window.addEventListener("trainer-exercise-identity-changed", listener);
+    try {
+      await restoreBackup(exported);
+      expect(listener).toHaveBeenCalledTimes(1);
+      await expect(Promise.all(committedReads)).resolves.toEqual([1]);
+    } finally {
+      window.removeEventListener("trainer-exercise-identity-changed", listener);
+    }
+  });
+
+  it("leaves the existing workspace intact when the document is rejected", async () => {
+    await programRepo.save(demoProgram);
+    const before = await programRepo.list();
+    const exported = await exportBackup();
+
+    await expect(restoreBackup({
+      ...exported,
+      normalizationOverrides: [
+        { id: "x", targetKind: "normalized-name", targetValue: "hatfield squat", movementId: "squat", movementModifierIds: ["barbell"], updatedAt: "2026-08-18T00:00:00.000Z" },
+        { id: "y", targetKind: "normalized-name", targetValue: "Hatfield squat", movementId: "squat", movementModifierIds: [], updatedAt: "2026-08-18T00:00:00.000Z" },
+      ],
+    })).rejects.toThrow("duplicate normalization override target");
+
+    await expect(programRepo.list()).resolves.toEqual(before);
   });
 });

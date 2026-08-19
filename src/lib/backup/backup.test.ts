@@ -1,4 +1,7 @@
 import { exportBackup, restoreBackup, resetWorkspace } from "./backup";
+import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
+import type { BackupDocumentV1, BackupDocumentV2, LegacyAliasDocument } from "@/lib/programs/types";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import { resetDbConnection } from "@/lib/storage/appDb";
 
 const mockClear = jest.fn().mockResolvedValue(undefined);
@@ -8,6 +11,10 @@ const mockPut = jest.fn();
 // storeData.programs = [myProgram] instead of mocking programRepo.list.
 const storeData: Record<string, unknown[]> = {};
 const mockGetAll = jest.fn();
+// Set when the mocked transaction's `done` settles, so "after the commit" is an
+// observable fact rather than a claim. Counting writes cannot see the
+// difference: every put is issued synchronously before `await tx.done`.
+let txCommitted = false;
 const mockTransaction = jest.fn().mockImplementation(() => ({
   objectStore: jest.fn().mockImplementation((name: string) => ({
     // Route through the shared spy so clear-per-store is attributable
@@ -21,7 +28,9 @@ const mockTransaction = jest.fn().mockImplementation(() => ({
       return Promise.resolve(storeData[name] ?? []);
     }),
   })),
-  done: Promise.resolve(undefined),
+  done: Promise.resolve().then(() => {
+    txCommitted = true;
+  }),
 }));
 const mockGetDb = jest.fn().mockResolvedValue({
   clear: mockClear,
@@ -30,6 +39,7 @@ const mockGetDb = jest.fn().mockResolvedValue({
 
 beforeEach(() => {
   for (const k of Object.keys(storeData)) delete storeData[k];
+  txCommitted = false;
 });
 
 // Shared fixture for restoreBackup validation and store-safety tests below.
@@ -108,9 +118,10 @@ jest.mock("@/lib/storage/promptPresetRepo", () => ({
 }));
 
 describe("exportBackup", () => {
-  it("returns a backup document with version 1", async () => {
+  it("returns a backup document with version 2", async () => {
     const backup = await exportBackup();
-    expect(backup.version).toBe(1);
+    expect(backup.version).toBe(2);
+    expect(Array.isArray(backup.normalizationOverrides)).toBe(true);
     expect(backup.exportedAt).toBeDefined();
     expect(Array.isArray(backup.programs)).toBe(true);
     expect(Array.isArray(backup.logs)).toBe(true);
@@ -226,7 +237,7 @@ describe("restoreBackup — C7 validation", () => {
   it("does not call getDb when validation fails", async () => {
     mockGetDb.mockClear();
     await expect(
-      restoreBackup({ version: 2, programs: [], logs: [], aliases: [] })
+      restoreBackup({ version: 3, programs: [], logs: [], aliases: [] })
     ).rejects.toThrow();
     expect(mockGetDb).not.toHaveBeenCalled();
   });
@@ -481,13 +492,15 @@ describe("exportBackup point-in-time", () => {
     const [stores, mode] = mockTransaction.mock.calls[0];
     expect(mode).toBe("readonly");
     expect([...stores].sort()).toEqual([
-      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+      "aliases", "bodyweight", "logs", "normalizationOverrides",
+      "profile", "programs", "promptPresets", "userExercises",
     ]);
     // Pins "reads every store, once, in the one transaction" — not just
     // that the store list passed to transaction() was right.
-    expect(mockGetAll).toHaveBeenCalledTimes(7);
+    expect(mockGetAll).toHaveBeenCalledTimes(8);
     expect([...new Set(mockGetAll.mock.calls.map((call) => call[0]))].sort()).toEqual([
-      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+      "aliases", "bodyweight", "logs", "normalizationOverrides",
+      "profile", "programs", "promptPresets", "userExercises",
     ]);
   });
 });
@@ -500,9 +513,10 @@ describe("restoreBackup v10 store safety", () => {
     const [stores, mode] = mockTransaction.mock.calls[0];
     expect(mode).toBe("readwrite");
     expect([...stores].sort()).toEqual([
-      "aliases", "bodyweight", "logs", "profile", "programs", "promptPresets", "userExercises",
+      "aliases", "bodyweight", "logs", "normalizationOverrides",
+      "profile", "programs", "promptPresets", "userExercises",
     ]);
-    expect(mockClear).toHaveBeenCalledTimes(7);
+    expect(mockClear).toHaveBeenCalledTimes(8);
     expect(mockClear).not.toHaveBeenCalledWith("metrics");
   });
 
@@ -512,8 +526,8 @@ describe("restoreBackup v10 store safety", () => {
       ...validDoc,
       aliases: [{
         id: "legacy-alias-id",
-        alias: "RDL",
-        normalizedAlias: "rdl",
+        alias: "Romanian Deadlift",
+        normalizedAlias: "romanian deadlift",
         canonicalExerciseId: "romanian-deadlift",
         createdAt: "2026-08-18T00:00:00.000Z",
       }],
@@ -521,11 +535,232 @@ describe("restoreBackup v10 store safety", () => {
 
     expect(mockPut).toHaveBeenCalledWith({
       id: "legacy-alias-id",
-      alias: "RDL",
-      normalizedAlias: "rdl",
+      alias: "Romanian Deadlift",
+      normalizedAlias: "romanian deadlift",
       canonicalExerciseId: "romanian-deadlift",
       provenance: "legacy-auto",
       createdAt: "2026-08-18T00:00:00.000Z",
     });
+  });
+});
+
+const validOverride: NormalizationOverrideDocument = {
+  id: "normalized-name:hatfield squat",
+  targetKind: "normalized-name",
+  targetValue: "hatfield squat",
+  movementId: "squat",
+  movementModifierIds: ["barbell"],
+  updatedAt: "2026-08-18T00:00:00.000Z",
+};
+
+const legacyAlias = (alias: string, canonicalExerciseId: string): LegacyAliasDocument => ({
+  id: `legacy:${alias}`,
+  alias,
+  normalizedAlias: normalizeExerciseName(alias),
+  canonicalExerciseId,
+  createdAt: "2026-08-18T00:00:00.000Z",
+});
+
+function makeBackupV1(overrides: Partial<BackupDocumentV1> = {}): BackupDocumentV1 {
+  return {
+    ...(validDoc as unknown as BackupDocumentV1),
+    version: 1,
+    ...overrides,
+  };
+}
+
+function makeBackupV2(overrides: Partial<BackupDocumentV2> = {}): BackupDocumentV2 {
+  return {
+    ...(validDoc as unknown as BackupDocumentV1),
+    version: 2,
+    aliases: [],
+    normalizationOverrides: [],
+    ...overrides,
+  };
+}
+
+const putsToStore = (predicate: (value: Record<string, unknown>) => boolean) =>
+  mockPut.mock.calls.map((call) => call[0]).filter(predicate);
+const isOverride = (value: Record<string, unknown>) => "targetKind" in value;
+const isAlias = (value: Record<string, unknown>) => "normalizedAlias" in value;
+
+describe("restoreBackup — version 2 overrides", () => {
+  it("restores every override in the document", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV2({ normalizationOverrides: [validOverride] }));
+    expect(putsToStore(isOverride)).toEqual([validOverride]);
+  });
+
+  // A hand-edited (or older-build) file can carry a target that is not yet
+  // normalized. Written verbatim it would sit under a key nothing looks up, so
+  // the override silently never applies.
+  it("re-derives an override's id and target value from its target text", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV2({
+      normalizationOverrides: [{
+        ...validOverride,
+        id: "stale-id",
+        targetValue: " Hatfield   Squat ",
+      }],
+    }));
+    expect(putsToStore(isOverride)).toEqual([validOverride]);
+  });
+
+  it("defaults a version-1 document's overrides to an empty list", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV1());
+    expect(putsToStore(isOverride)).toEqual([]);
+    expect(mockClear).toHaveBeenCalledWith("normalizationOverrides");
+  });
+
+  it("rejects duplicate override targets before clearing stores", async () => {
+    mockPut.mockClear();
+    mockClear.mockClear();
+    mockGetDb.mockClear();
+    await expect(restoreBackup(makeBackupV2({
+      normalizationOverrides: [validOverride, { ...validOverride, movementModifierIds: [] }],
+    }))).rejects.toThrow("duplicate normalization override target");
+    expect(mockGetDb).not.toHaveBeenCalled();
+    expect(mockClear).not.toHaveBeenCalled();
+  });
+
+  // Two rows that only *look* distinct: the ids differ, but both normalize to
+  // the same target, so the store would silently keep one and lose the other.
+  it("treats differently-spelled targets that normalize alike as duplicates", async () => {
+    mockGetDb.mockClear();
+    await expect(restoreBackup(makeBackupV2({
+      normalizationOverrides: [
+        validOverride,
+        { ...validOverride, id: "normalized-name:Hatfield  Squat", targetValue: "Hatfield  Squat" },
+      ],
+    }))).rejects.toThrow("duplicate normalization override target");
+    expect(mockGetDb).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { name: "an unknown movement", movementId: "no-such-movement", expected: "Unknown movement" },
+    { name: "an unknown modifier", modifierIds: ["no-such-modifier"], expected: "Unknown modifier" },
+    { name: "a noncanonical modifier order", modifierIds: ["back-rack", "barbell"], expected: "Modifier order is not canonical" },
+  ])("rejects $name before clearing stores", async ({ movementId, modifierIds, expected }) => {
+    mockClear.mockClear();
+    mockGetDb.mockClear();
+    await expect(restoreBackup(makeBackupV2({
+      normalizationOverrides: [{
+        ...validOverride,
+        ...(movementId ? { movementId } : {}),
+        ...(modifierIds ? { movementModifierIds: modifierIds } : {}),
+      }],
+    }))).rejects.toThrow(expected);
+    expect(mockGetDb).not.toHaveBeenCalled();
+    expect(mockClear).not.toHaveBeenCalled();
+  });
+
+  it("rejects a version-2 document whose normalizationOverrides is missing", async () => {
+    mockGetDb.mockClear();
+    const { normalizationOverrides: _dropped, ...withoutOverrides } = makeBackupV2();
+    await expect(restoreBackup(withoutOverrides))
+      .rejects.toThrow("'normalizationOverrides' must be an array of objects");
+    expect(mockGetDb).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown override target kind before opening the write transaction", async () => {
+    // Passes the shape check (it *is* a string) and would otherwise reach
+    // canonicalNormalizationOverride, which throws — but by then the stores
+    // would already be cleared.
+    mockGetDb.mockClear();
+    await expect(restoreBackup(makeBackupV2({
+      normalizationOverrides: [{ ...validOverride, targetKind: "banana" } as unknown as NormalizationOverrideDocument],
+    }))).rejects.toThrow("Unknown normalization target kind: banana");
+    expect(mockGetDb).not.toHaveBeenCalled();
+  });
+
+  it("rejects an override that is not shaped like one", async () => {
+    mockGetDb.mockClear();
+    await expect(restoreBackup(makeBackupV2({
+      normalizationOverrides: [{ ...validOverride, movementModifierIds: "barbell" } as unknown as NormalizationOverrideDocument],
+    }))).rejects.toThrow(/normalizationOverrides\[0\]/);
+    expect(mockGetDb).not.toHaveBeenCalled();
+  });
+
+  // A newer build's file is rejected, not coerced: silently dropping fields
+  // this build does not know about would destroy whatever they held.
+  it("rejects a future version rather than discarding its unknown fields", async () => {
+    mockGetDb.mockClear();
+    await expect(restoreBackup({ ...makeBackupV2(), version: 3 }))
+      .rejects.toThrow("Unsupported backup version: 3");
+    expect(mockGetDb).not.toHaveBeenCalled();
+  });
+});
+
+describe("restoreBackup — alias tokens are recomputed, never trusted", () => {
+  // The file's own token is untrustworthy in every version: hand-edited files
+  // exist, and `by-normalized-alias` is the schema's only unique index. A stale
+  // token restores with no error at all and the alias is simply dead —
+  // aliasRepo.find() looks it up by the *recomputed* token and gets nothing.
+  it("recomputes normalizedAlias from the alias text", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV1({
+      aliases: [{ ...legacyAlias("Romanian Deadlift", "romanian-deadlift"), normalizedAlias: "WRONG-TOKEN" }],
+    }));
+    expect(putsToStore(isAlias)).toEqual([{
+      id: "legacy:Romanian Deadlift",
+      alias: "Romanian Deadlift",
+      normalizedAlias: "romanian deadlift",
+      canonicalExerciseId: "romanian-deadlift",
+      provenance: "legacy-auto",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    }]);
+  });
+
+  it("keeps one row when two aliases recompute to the same token", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV2({
+      aliases: [
+        {
+          id: "alias-older", alias: "My Squat", normalizedAlias: "my squat",
+          canonicalExerciseId: "goblet-squat", provenance: "remembered",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "alias-newer", alias: "My  squat", normalizedAlias: "my  squat",
+          canonicalExerciseId: "pull-up", provenance: "remembered",
+          createdAt: "2026-06-01T00:00:00.000Z",
+        },
+      ],
+    }));
+    expect(putsToStore(isAlias)).toEqual([{
+      id: "alias-newer",
+      alias: "My  squat",
+      normalizedAlias: "my squat",
+      canonicalExerciseId: "pull-up",
+      provenance: "remembered",
+      createdAt: "2026-06-01T00:00:00.000Z",
+    }]);
+  });
+
+  it("purges a legacy alias whose token has no unique concrete outcome", async () => {
+    mockPut.mockClear();
+    await restoreBackup(makeBackupV1({
+      aliases: [
+        legacyAlias("Romanian Deadlift", "romanian-deadlift"),
+        legacyAlias("3x8 @ RPE 7", "romanian-deadlift"),
+      ],
+    }));
+    expect(putsToStore(isAlias).map((alias) => alias["alias"])).toEqual(["Romanian Deadlift"]);
+  });
+});
+
+describe("restoreBackup — identity notification", () => {
+  it("dispatches exactly one identity event, after the transaction commits", async () => {
+    const committedAtDispatch: boolean[] = [];
+    const listener = jest.fn(() => committedAtDispatch.push(txCommitted));
+    window.addEventListener("trainer-exercise-identity-changed", listener);
+    try {
+      await restoreBackup(makeBackupV2({ normalizationOverrides: [validOverride] }));
+    } finally {
+      window.removeEventListener("trainer-exercise-identity-changed", listener);
+    }
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(committedAtDispatch).toEqual([true]);
   });
 });

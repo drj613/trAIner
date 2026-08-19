@@ -1,3 +1,8 @@
+// Type-only, so no runtime cycle: identity.ts imports the document types from
+// here, and the override document is defined there beside the resolver that
+// consumes it.
+import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
+
 export type ISODate = string;
 export type ID = string;
 
@@ -212,17 +217,36 @@ export type BodyweightEntry = {
   recordedAt: ISODate;
 };
 
-export type BackupDocument = {
+/**
+ * Version-1 backups predate alias provenance, so their alias rows are exactly
+ * an AliasDocument minus that field.
+ */
+export type LegacyAliasDocument = Omit<AliasDocument, "provenance">;
+
+export type BackupDocumentV1 = {
   version: 1;
   exportedAt: ISODate;
   profile?: ProfileDocument;
   programs: ProgramDocument[];
   logs: WorkoutLogDocument[];
-  aliases: AliasDocument[];
+  aliases: LegacyAliasDocument[];
   userExercises?: UserExerciseDocument[];
   bodyweight?: BodyweightEntry[];
   promptPresets?: PromptPresetDocument[];
 };
+
+export type BackupDocumentV2 = Omit<BackupDocumentV1, "version" | "aliases"> & {
+  version: 2;
+  aliases: AliasDocument[];
+  normalizationOverrides: NormalizationOverrideDocument[];
+};
+
+/**
+ * Only the versions this build can read. A file from a *newer* build is
+ * rejected rather than parsed as one of these — dropping a field we do not
+ * recognize would silently discard user data.
+ */
+export type BackupDocument = BackupDocumentV1 | BackupDocumentV2;
 
 export type PromptPresetDocument = {
   id: ID;

@@ -42,6 +42,23 @@ function overrideKeyFor(
   return `${targetKind}:${normalizedTargetValue}`;
 }
 
+/**
+ * The single place a stored override document's key fields are derived, so the
+ * repository and a restored backup cannot disagree about what a target means.
+ * The caller's `id` and `targetValue` are replaced, never trusted.
+ */
+export function canonicalNormalizationOverride<T extends NormalizationOverrideSaveInput>(
+  input: T,
+): T & { id: string; targetValue: string; movementModifierIds: string[] } {
+  const targetValue = normalizeTargetValue(input.targetKind, input.targetValue);
+  return {
+    ...input,
+    id: overrideKeyFor(input.targetKind, targetValue),
+    targetValue,
+    movementModifierIds: [...input.movementModifierIds],
+  };
+}
+
 export function normalizationOverrideKey(
   targetKind: NormalizationOverrideDocument["targetKind"],
   targetValue: string,
@@ -174,14 +191,10 @@ export const normalizationOverrideRepo: NormalizationOverrideRepository = {
     const userExerciseIds = new Set(userExerciseKeys.filter((key): key is string => typeof key === "string"));
     validateNormalizationOverrideInput(input, userExerciseIds);
 
-    const targetValue = normalizeTargetValue(input.targetKind, input.targetValue);
-    const document: NormalizationOverrideDocument = {
+    const document: NormalizationOverrideDocument = canonicalNormalizationOverride({
       ...input,
-      id: overrideKeyFor(input.targetKind, targetValue),
-      targetValue,
-      movementModifierIds: [...input.movementModifierIds],
       updatedAt: new Date().toISOString(),
-    };
+    });
     const tx = db.transaction("normalizationOverrides", "readwrite");
     await tx.objectStore("normalizationOverrides").put(document);
     await tx.done;
