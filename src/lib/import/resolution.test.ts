@@ -1503,6 +1503,35 @@ describe("dedupeAliasResolutions skips answers that are not a catalogue identity
     expect(out).toEqual([]);
   });
 
+  it("collapses two duration variants of one name and refuses to pick a winner", () => {
+    // Both variants are remembered under the token the resolver reads
+    // (`paused hatfield squat`), so they are ONE mapping, not two. Two answers
+    // for one mapping is exactly the conflict this function exists to drop:
+    // keying them apart would send both to `saveMany`, which rejects the whole
+    // batch — taking every unrelated alias in the same import with it.
+    const out = dedupeAliasResolutions(
+      [item("a", "3 second paused Hatfield Squat"), item("b", "5 second paused Hatfield Squat")],
+      { a: "barbell-high-bar-squat", b: "barbell-low-bar-squat" },
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("remembers one duration variant as the whole name, once", () => {
+    const out = dedupeAliasResolutions(
+      [item("a", "3 second paused Hatfield Squat"), item("b", "5 second paused Hatfield Squat")],
+      { a: "barbell-high-bar-squat", b: "barbell-high-bar-squat" },
+    );
+    // Completion canary: agreeing variants must still produce a mapping, or the
+    // test above would pass with the function returning [] for everything.
+    expect(out).toEqual([
+      {
+        alias: "3 second paused Hatfield Squat",
+        canonicalExerciseId: "barbell-high-bar-squat",
+        provenance: "remembered",
+      },
+    ]);
+  });
+
   it("still remembers the concrete answers alongside a skipped one", () => {
     const out = dedupeAliasResolutions(
       [item("a", "Sled Drag"), item("b", "Back Squat")],
@@ -1532,6 +1561,23 @@ describe("rememberedAliasConflicts token rules", () => {
         { normalizedAlias: "back  SQUAT ", canonicalExerciseId: "barbell-high-bar-squat" },
       ]),
     ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
+  });
+
+  it("sees a stored row occupying an annotated name's resolver token", () => {
+    // `aliasRepo` keys a remembered alias on the token `resolveName` reads, so
+    // this is the row a `5 second paused` variant would collide with. Comparing
+    // the input on its plain normalized text misses it, and the miss is not
+    // harmless: `saveMany` then rejects the whole batch instead of this one name.
+    const annotated = {
+      alias: "5 second paused Hatfield Squat",
+      canonicalExerciseId: "barbell-low-bar-squat",
+      provenance: "remembered" as const,
+    };
+    expect(
+      rememberedAliasConflicts([annotated], [
+        { normalizedAlias: "paused hatfield squat", canonicalExerciseId: "barbell-high-bar-squat" },
+      ]),
+    ).toEqual([{ input: annotated, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
   });
 
   it("still reports nothing when a differently named row is stored", () => {

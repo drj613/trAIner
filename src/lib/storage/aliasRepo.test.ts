@@ -1,5 +1,6 @@
 import { deleteDB } from "idb";
-import { aliasRepo } from "./aliasRepo";
+import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { aliasRepo, rememberedAliasToken } from "./aliasRepo";
 import { DB_NAME, resetDbConnection } from "./appDb";
 
 beforeEach(async () => {
@@ -69,6 +70,54 @@ describe("aliasRepo.save", () => {
 
     const all = await aliasRepo.list();
     expect(all).toHaveLength(1);
+  });
+
+  it("stores a new alias under the token the resolver looks it up by", async () => {
+    // `resolveName` strips the duration annotation before it consults the alias
+    // store, so it looks up `paused hatfield squat`. A row keyed on
+    // `3 second paused hatfield squat` would be invisible to it: the write
+    // succeeds and the mapping never takes effect.
+    const raw = "3 second paused Hatfield Squat";
+    // Canary: the annotation really is stripped in the shipped artifact, so this
+    // fixture can still tell the two tokens apart.
+    expect(rememberedAliasToken(raw)).not.toBe(normalizeExerciseName(raw));
+
+    await aliasRepo.save({ alias: raw, canonicalExerciseId: "barbell-high-bar-squat", provenance: "remembered" });
+
+    const [stored] = await aliasRepo.list();
+    expect(stored.normalizedAlias).toBe("paused hatfield squat");
+    // The user's own wording survives, because it is the display text.
+    expect(stored.alias).toBe(raw);
+  });
+
+  it("collapses two duration variants of one name onto a single mapping", async () => {
+    // The annotation is not part of identity, so remembering one variant is
+    // remembering the name — not a second row that shadows the first.
+    await aliasRepo.save({
+      alias: "3 second paused Hatfield Squat",
+      canonicalExerciseId: "barbell-high-bar-squat",
+      provenance: "remembered",
+    });
+    await aliasRepo.save({
+      alias: "5 second paused Hatfield Squat",
+      canonicalExerciseId: "barbell-high-bar-squat",
+      provenance: "remembered",
+    });
+
+    expect(await aliasRepo.list()).toHaveLength(1);
+  });
+
+  it("lets a caller supply the lookup token instead of deriving it", async () => {
+    await aliasRepo.save({
+      alias: "Hatfield Squat",
+      normalizedAlias: "paused hatfield squat",
+      canonicalExerciseId: "barbell-high-bar-squat",
+      provenance: "remembered",
+    });
+
+    const [stored] = await aliasRepo.list();
+    expect(stored.normalizedAlias).toBe("paused hatfield squat");
+    expect(stored.alias).toBe("Hatfield Squat");
   });
 
   it("still inserts distinct aliases as separate records", async () => {

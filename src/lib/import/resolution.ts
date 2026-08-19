@@ -10,9 +10,24 @@ import type {
 } from "@/lib/programs/types";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { getOverrideReplacementDays } from "@/lib/programs/overrides";
+import { prepareImportName } from "@/lib/catalog/identity";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { disambiguationsByNormalizedName } from "@/lib/catalog/registries";
 
 export const CUSTOM_ID = "__custom__";
+
+/**
+ * The token a remembered alias for this raw name will be STORED under, which is
+ * the token `resolveName` looks one up by (`identity.ts:280-286`).
+ *
+ * The same rule as `aliasRepo.rememberedAliasToken`, expressed here from the
+ * catalogue primitives rather than imported from it: this module is pure rules
+ * and must not drag IndexedDB into its import graph. The shared rule is
+ * `prepareImportName` itself — there is no second rule to drift from.
+ */
+function storedAliasToken(rawName: string): string {
+  return prepareImportName(rawName, disambiguationsByNormalizedName).normalizedName;
+}
 
 const AUTO_CUSTOM_SECTION_TYPES = new Set(["warmup", "cooldown"]);
 
@@ -197,7 +212,12 @@ export function dedupeAliasResolutions(
     // these; the skip lives here so the contract this function advertises
     // ("resolved items") is enforced where it is relied on.
     if (!canonicalExerciseId || canonicalExerciseId === CUSTOM_ID) continue;
-    const normalized = normalizeExerciseName(item.rawName);
+    // Keyed on the token the alias will be STORED under, which is the token the
+    // resolver reads (`storedAliasToken`). Two duration variants of one name
+    // share it, so they are one mapping: keying them apart would hand
+    // `saveMany` two answers for one index key, and it rejects the whole batch
+    // rather than one name.
+    const normalized = storedAliasToken(item.rawName);
     const existing = byNormalizedAlias.get(normalized);
     if (!existing) {
       byNormalizedAlias.set(normalized, {
@@ -320,14 +340,21 @@ export type RememberedAliasConflict = {
  * `by-normalized-alias` is the index the store enforces, so comparison is on
  * the normalized token, never the display text.
  *
- * A stored row is compared on its RE-NORMALIZED token, which is the rule the
- * runtime resolver applies (`identity.ts:285`). That is deliberately not
- * `saveMany`'s rule — it keys the unique index on the stored token verbatim —
- * but it is a superset of it, because `normalizeExerciseName` is idempotent
- * (measured: identical output on a second pass for 200,003 inputs, being 200k
- * fuzzed strings plus every catalogue name, alias and rule token). An earlier
- * revision compared both tokens explicitly; the verbatim half could not be
- * falsified by any input, because idempotence means it can never differ.
+ * The two sides are compared by different rules on purpose, because they hold
+ * different things:
+ *
+ * - a STORED row already holds a token, so it is re-normalized, which is the
+ *   rule the runtime resolver applies (`identity.ts:285`). That is not
+ *   `saveMany`'s rule — it keys the unique index on the stored token verbatim —
+ *   but it is a superset of it, because `normalizeExerciseName` is idempotent
+ *   (measured: identical output on a second pass for 200,003 inputs, being 200k
+ *   fuzzed strings plus every catalogue name, alias and rule token). An earlier
+ *   revision compared both tokens explicitly; the verbatim half could not be
+ *   falsified by any input, because idempotence means it can never differ.
+ * - an INPUT holds the raw name, so it goes through `storedAliasToken` —
+ *   the token `aliasRepo` will actually store it under. On plain normalized text
+ *   this check missed a collision with an annotated name, and the miss is not
+ *   harmless: `saveMany` then rejects the whole batch instead of one name.
  */
 export function rememberedAliasConflicts(
   inputs: AliasSaveInput[],
@@ -340,7 +367,7 @@ export function rememberedAliasConflicts(
   }
   const conflicts: RememberedAliasConflict[] = [];
   for (const input of inputs) {
-    const occupiedBy = byToken.get(normalizeExerciseName(input.alias));
+    const occupiedBy = byToken.get(storedAliasToken(input.alias));
     if (occupiedBy !== undefined && occupiedBy !== input.canonicalExerciseId) {
       conflicts.push({ input, existingCanonicalExerciseId: occupiedBy });
     }
