@@ -148,11 +148,31 @@ function identityCacheKey(entry: WorkoutLogEntry): string {
   return JSON.stringify([entry.canonicalExerciseId ?? null, entry.exerciseId, entry.exerciseName ?? null]);
 }
 
+/**
+ * Newest first, as a genuine total order.
+ *
+ * A hand-edited or foreign backup can carry a `performedAt` that does not parse.
+ * Switching to a string comparison only when one side is unparseable made this
+ * comparator intransitive across a mix of readable and unreadable timestamps,
+ * and `Array.prototype.sort` over an intransitive comparator has
+ * implementation-defined output. Unparseable now sorts as the oldest possible
+ * instant and the string comparison is the tiebreak on every path, so the order
+ * is consistent and reproducible whatever the input order.
+ */
+function instantOf(value: string): number {
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? -Infinity : time;
+}
+
 function performedAtOrder(left: string, right: string): number {
-  const leftTime = Date.parse(left);
-  const rightTime = Date.parse(right);
-  if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return right.localeCompare(left);
-  return rightTime - leftTime;
+  const leftTime = instantOf(left);
+  const rightTime = instantOf(right);
+  // Compared as an ordering rather than a subtraction, because two unparseable
+  // timestamps are both -Infinity and the difference would be NaN.
+  if (leftTime !== rightTime) return leftTime < rightTime ? 1 : -1;
+  // `String(...)` because a corrupt log can hold a non-string here, and a
+  // record we cannot read must not take readable records down with it.
+  return String(right).localeCompare(String(left));
 }
 
 /** Newest first, then logId, then entry order within the workout. */
@@ -162,7 +182,18 @@ function compareRows(left: ExerciseHistoryRow, right: ExerciseHistoryRow): numbe
     || left.entryIndex - right.entryIndex;
 }
 
-/** Oldest first, keeping entry order within a workout so sets read forward. */
+/**
+ * Oldest first, keeping entry order within a workout so sets read forward.
+ *
+ * The `logId` tiebreak is what makes same-workout rows adjacent, which the
+ * session-bucketing loop below depends on. It is load-bearing, not redundant
+ * with the `compareRows` sort that precedes it: when two workouts share one
+ * `performedAt` instant, the first two keys tie for rows from *different* logs,
+ * so without this key `entryIndex` interleaves them (`l-x#0, l-y#0, l-x#1,
+ * l-y#1`) and one workout is bucketed as several sessions. Measured — deleting
+ * this line fails `keeps same-workout rows adjacent so one workout is one
+ * session`.
+ */
 function compareRowsChronologically(left: ExerciseHistoryRow, right: ExerciseHistoryRow): number {
   return -performedAtOrder(left.performedAt, right.performedAt)
     || left.logId.localeCompare(right.logId)

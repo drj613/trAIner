@@ -546,3 +546,64 @@ describe("best set ordering", () => {
     ])).toBe("100kg");
   });
 });
+
+// ─── Ordering is a total order ───────────────────────────────────────────────
+
+describe("deterministic ordering with unreadable timestamps", () => {
+  // A hand-edited or foreign backup can carry a `performedAt` that does not
+  // parse. Falling back to a string comparison only when one side is
+  // unparseable makes the comparator intransitive, and `Array.prototype.sort`
+  // over an intransitive comparator has implementation-defined output.
+  const entry = (name: string) => ({
+    exerciseId: "slot", exerciseName: name, canonicalExerciseId: highBar.id,
+    sets: [{ setNumber: 1, weight: 100, reps: 5 }],
+  });
+  const logs: WorkoutLogDocument[] = [
+    { id: "l-mid", programId: "p1", dayId: "d1", performedAt: "2026-06-01T14:00:00.000Z", performedDate: "2026-06-01", entries: [entry("mid")] },
+    { id: "l-bad", programId: "p1", dayId: "d1", performedAt: "not a date", performedDate: "2026-06-02", entries: [entry("bad")] },
+    { id: "l-new", programId: "p1", dayId: "d1", performedAt: "2026-07-01T14:00:00.000Z", performedDate: "2026-07-01", entries: [entry("new")] },
+  ];
+
+  it("sorts rows with an unparseable timestamp oldest", () => {
+    expect(projectExerciseHistory(logs, context).rows.map((r) => r.performedName))
+      .toEqual(["new", "mid", "bad"]);
+  });
+
+  it("returns the same order for every input permutation", () => {
+    const permutations = [
+      [0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0],
+    ].map((order) => order.map((i) => logs[i]));
+    const orders = permutations.map((permutation) =>
+      projectExerciseHistory(permutation, context).rows.map((r) => r.performedName).join(","),
+    );
+    expect(new Set(orders).size).toBe(1);
+    expect(orders[0]).toBe("new,mid,bad");
+  });
+
+  it("keeps rows whose performedAt is not even a string", () => {
+    // `Date.parse` coerces, so 42 and "42" are the same instant and the string
+    // tiebreak runs on a number. Comparing them must not throw and take the
+    // whole projection down.
+    const corrupt = [
+      { id: "l-num", programId: "p1", dayId: "d1", performedAt: 42, performedDate: "2042-01-01", entries: [entry("num")] },
+      { id: "l-str", programId: "p1", dayId: "d1", performedAt: "42", performedDate: "2042-01-01", entries: [entry("str")] },
+    ] as unknown as WorkoutLogDocument[];
+    expect(projectExerciseHistory(corrupt, context).rows.map((r) => r.performedName).sort())
+      .toEqual(["num", "str"]);
+  });
+
+  it("keeps same-workout rows adjacent so one workout is one session", () => {
+    // Two workouts recorded at the identical instant, each logging the version
+    // twice. If the two logs' entries interleave, the session-bucketing loop
+    // splits one workout into several sessions.
+    const sameInstant = "2026-08-01T14:00:00.000Z";
+    const twoLogs: WorkoutLogDocument[] = ["l-x", "l-y"].map((id) => ({
+      id, programId: "p1", dayId: "d1", performedAt: sameInstant, performedDate: "2026-08-01",
+      entries: [entry(`${id}-0`), entry(`${id}-1`)],
+    }));
+    const summary = projectExerciseHistory(twoLogs, context).versionSummaries.get(highBar.id);
+    expect(summary).toMatchObject({
+      entryCount: 4, sessionCount: 2, sessionVolumesLb: [1000, 1000],
+    });
+  });
+});
