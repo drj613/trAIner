@@ -62,12 +62,15 @@ const DERIVED_INDEX =
 const CATALOG_REFERENCE = /\bexerciseCatalog\b|\bcatalogIndex\b/;
 
 /**
- * Evidence that a file lets the shared resolver decide identity. Any one of
- * these is enough: components resolve through the provider, pure modules call
- * the resolver directly, migration and restore share one context builder, and
- * the import path shares the resolver's own name preparation.
+ * The shared entry points identity may be decided through. A `"resolver"` row
+ * names ONE of these as its `via`, and the test requires that exact symbol.
+ *
+ * Naming the specific one matters. An earlier form of this test accepted "any
+ * marker present", and renaming `projectExerciseHistory` in `HistoryClient` —
+ * a surface that would then be doing its own grouping — left all 26 green,
+ * because the file still imported `useExerciseNormalization` for other reasons.
  */
-const RESOLVER_MARKERS = [
+const RESOLVER_ENTRY_POINTS = [
   "resolveExerciseIdentity",
   "matchExercise",
   "useExerciseNormalization",
@@ -76,7 +79,9 @@ const RESOLVER_MARKERS = [
   "projectExerciseHistory",
   "groupCatalogItems",
   "ExerciseIdentityResolver",
-];
+] as const;
+
+type ResolverEntryPoint = (typeof RESOLVER_ENTRY_POINTS)[number];
 
 /**
  * `"declaration"` is the third verdict, and it exists for exactly one file:
@@ -91,41 +96,47 @@ type Verdict = "resolver" | "exact-only" | "declaration";
  * the plan predates `groupCatalog.ts`, `NestedExerciseList.tsx`, the rewritten
  * history surfaces, and the correction sheet.
  */
-const IDENTITY_CONSUMERS: ReadonlyArray<{ file: string; verdict: Verdict; why: string }> = [
+const IDENTITY_CONSUMERS: ReadonlyArray<{
+  file: string;
+  verdict: Verdict;
+  /** For a `"resolver"` row: the entry point identity must be decided through. */
+  via?: ResolverEntryPoint;
+  why: string;
+}> = [
   // --- the resolver and the data it reads ------------------------------------
-  { file: "src/lib/catalog/identity.ts", verdict: "resolver", why: "the resolver itself" },
+  { file: "src/lib/catalog/identity.ts", verdict: "resolver", via: "ExerciseIdentityResolver", why: "the resolver itself" },
   { file: "src/lib/catalog/exercises.ts", verdict: "declaration", why: "declares the catalogue; reads nothing out of it" },
-  { file: "src/lib/catalog/match.ts", verdict: "resolver", why: "import matching delegates to resolveExerciseIdentity" },
-  { file: "src/lib/catalog/groupCatalog.ts", verdict: "resolver", why: "grouping is keyed on identity.groupKey" },
-  { file: "src/components/app/ExerciseNormalizationProvider.tsx", verdict: "resolver", why: "builds the one shared context" },
+  { file: "src/lib/catalog/match.ts", verdict: "resolver", via: "resolveExerciseIdentity", why: "import matching delegates to resolveExerciseIdentity" },
+  { file: "src/lib/catalog/groupCatalog.ts", verdict: "resolver", via: "ExerciseIdentityResolver", why: "grouping is keyed on identity.groupKey" },
+  { file: "src/components/app/ExerciseNormalizationProvider.tsx", verdict: "resolver", via: "resolveExerciseIdentity", why: "builds the one shared context" },
 
   // --- import ---------------------------------------------------------------
-  { file: "src/lib/import/parser.ts", verdict: "resolver", why: "matches through matchExercise" },
-  { file: "src/lib/import/resolution.ts", verdict: "resolver", why: "shares the resolver's name preparation" },
+  { file: "src/lib/import/parser.ts", verdict: "resolver", via: "matchExercise", why: "matches through matchExercise" },
+  { file: "src/lib/import/resolution.ts", verdict: "resolver", via: "prepareImportName", why: "shares the resolver's name preparation" },
   { file: "src/components/import/ImportClient.tsx", verdict: "exact-only", why: "labels a chosen concrete id" },
   { file: "src/components/import/ResolutionStep.tsx", verdict: "exact-only", why: "labels and searches concrete versions the user picks between" },
 
   // --- storage, migration, backup -------------------------------------------
-  { file: "src/lib/storage/aliasRepo.ts", verdict: "resolver", why: "derives its token with prepareImportName" },
-  { file: "src/lib/storage/appDb.ts", verdict: "resolver", why: "migration runs through createMigrationContext" },
+  { file: "src/lib/storage/aliasRepo.ts", verdict: "resolver", via: "prepareImportName", why: "derives its token with prepareImportName" },
+  { file: "src/lib/storage/appDb.ts", verdict: "resolver", via: "createMigrationContext", why: "migration runs through createMigrationContext" },
   { file: "src/lib/storage/migrations/v10Identity.ts", verdict: "exact-only", why: "rewrites via the resolver; the alias purge gate enumerates exact names" },
   { file: "src/lib/storage/normalizationOverrideRepo.ts", verdict: "exact-only", why: "validates that an exercise-id target exists" },
-  { file: "src/components/catalog/ExerciseCorrectionSheet.tsx", verdict: "resolver", why: "labels through the resolver's own context" },
-  { file: "src/lib/backup/backup.ts", verdict: "resolver", why: "restore normalizes through createMigrationContext" },
+  { file: "src/components/catalog/ExerciseCorrectionSheet.tsx", verdict: "resolver", via: "useExerciseNormalization", why: "labels through the resolver's own context" },
+  { file: "src/lib/backup/backup.ts", verdict: "resolver", via: "createMigrationContext", why: "restore normalizes through createMigrationContext" },
 
   // --- analysis -------------------------------------------------------------
   { file: "src/lib/analysis/muscles.ts", verdict: "exact-only", why: "reads muscles/equipment off one concrete record" },
 
   // --- catalogue and selection surfaces --------------------------------------
-  { file: "src/components/catalog/LibraryClient.tsx", verdict: "resolver", why: "nests through groupCatalogItems" },
-  { file: "src/components/catalog/NestedExerciseList.tsx", verdict: "resolver", why: "nests through groupCatalogItems" },
+  { file: "src/components/catalog/LibraryClient.tsx", verdict: "resolver", via: "groupCatalogItems", why: "nests through groupCatalogItems" },
+  { file: "src/components/catalog/NestedExerciseList.tsx", verdict: "resolver", via: "groupCatalogItems", why: "nests through groupCatalogItems" },
   { file: "src/components/workout/ExercisePickerSheet.tsx", verdict: "exact-only", why: "muscle filter options only; nesting is NestedExerciseList's" },
   { file: "src/components/workout/ExerciseReplaceSheet.tsx", verdict: "exact-only", why: "muscle filter options only; nesting is NestedExerciseList's" },
 
   // --- history --------------------------------------------------------------
-  { file: "src/lib/workout/historyProjection.ts", verdict: "resolver", why: "one resolver call per log entry" },
-  { file: "src/components/workout/HistoryClient.tsx", verdict: "resolver", why: "projects through projectExerciseHistory" },
-  { file: "src/components/workout/WorkoutDayClient.tsx", verdict: "resolver", why: "drawer resolves the slot then projects" },
+  { file: "src/lib/workout/historyProjection.ts", verdict: "resolver", via: "resolveExerciseIdentity", why: "one resolver call per log entry" },
+  { file: "src/components/workout/HistoryClient.tsx", verdict: "resolver", via: "projectExerciseHistory", why: "projects through projectExerciseHistory" },
+  { file: "src/components/workout/WorkoutDayClient.tsx", verdict: "resolver", via: "projectExerciseHistory", why: "drawer resolves the slot then projects" },
 ];
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -179,9 +190,9 @@ function listSourceFiles(directory: string, found: string[] = []): string[] {
 }
 
 describe("exercise identity consumer audit", () => {
-  it.each(IDENTITY_CONSUMERS.map((row) => [row.file, row.verdict, row.why] as const))(
+  it.each(IDENTITY_CONSUMERS.map((row) => [row.file, row.verdict, row.why, row.via] as const))(
     "%s — %s (%s)",
-    (file, verdict) => {
+    (file, verdict, _why, via) => {
       const source = readSource(file);
       const sites = lookupSites(source);
 
@@ -195,7 +206,11 @@ describe("exercise identity consumer audit", () => {
         // Not merely "has no bypass": it must positively route through the
         // resolver, or a file that stopped resolving identity altogether would
         // pass by doing nothing.
-        expect(RESOLVER_MARKERS.filter((marker) => source.includes(marker))).not.toHaveLength(0);
+        // Word-boundary, not `includes`: `projectExerciseHistoryX` contains
+        // `projectExerciseHistory`, so a substring test would accept a renamed
+        // — i.e. removed — call.
+        expect(via).toBeDefined();
+        expect(new RegExp(`\\b${via!}\\b`).test(source)).toBe(true);
         expect(sites.map((site) => `${file}:${site.line}`)).toEqual([]);
         return;
       }
