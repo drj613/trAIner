@@ -1712,6 +1712,58 @@ describe("restoreBackup — version-2 documents", () => {
     });
   });
 
+  // The two-generation case, end to end over a real (fake-indexeddb) database
+  // rather than over the pure classifier — so it exercises the schema's only
+  // unique index as well as the transform. One display name, two rows: a legacy
+  // one keyed on the plain-normalized token, and a correction keyed on the
+  // phrase-stripped token `resolveName` reads. Before the key preference was
+  // flipped, both re-derived to the same token, the dedupe collapsed them, one
+  // remembered mapping was silently discarded, and the survivor did not resolve.
+  //
+  // Both must come back with their own tokens, and the restore must not be
+  // REJECTED by `by-normalized-alias` on the way.
+  it("keeps both generations of key for one display name, and the correction still resolves", async () => {
+    await restoreBackup({
+      version: 2,
+      exportedAt: "2026-08-19T00:00:00.000Z",
+      programs: [],
+      logs: [],
+      aliases: [
+        {
+          id: "alias-legacy",
+          alias: "3 second paused Hatfield Squat",
+          normalizedAlias: "3 second paused hatfield squat",
+          canonicalExerciseId: "barbell-high-bar-squat",
+          provenance: "remembered",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "alias-corrected",
+          alias: "3 second paused Hatfield Squat",
+          normalizedAlias: "paused hatfield squat",
+          canonicalExerciseId: "goblet-squat",
+          provenance: "remembered",
+          createdAt: "2026-08-18T00:00:00.000Z",
+        },
+      ],
+      normalizationOverrides: [],
+    } as never);
+
+    const stored = (await aliasRepo.list())
+      .map((alias) => [alias.id, alias.normalizedAlias])
+      .sort();
+    expect(stored).toEqual([
+      ["alias-corrected", "paused hatfield squat"],
+      ["alias-legacy", "3 second paused hatfield squat"],
+    ]);
+
+    // The lookup the app actually performs, on the name the user typed.
+    await expect(aliasRepo.find("3 second paused Hatfield Squat")).resolves.toMatchObject({
+      id: "alias-corrected",
+      canonicalExerciseId: "goblet-squat",
+    });
+  });
+
   // Normalize-and-dedupe is integrity, not classification, so it stays
   // unconditional: a version-2 file is hand-editable JSON and
   // `by-normalized-alias` is the only unique index. What is *not* unconditional

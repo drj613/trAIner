@@ -332,21 +332,28 @@ export type AliasClassificationScope = "all" | "unclassified";
  * read is not ours to re-key — applied to the one path that rewrites key sets.
  *
  * The `normalizeExerciseName` pass over the stored token stays. For a token any
- * writer produced it is a no-op (both rules emit normalized output), so it costs
- * nothing; for a hand-edited file it repairs case and spacing, which is what
- * keeps two rows differing only in whitespace from restoring as two rows
- * fighting over one unique-index key.
+ * writer produced it is a no-op — both rules emit normalized output, and
+ * `shippedDisambiguations.test.ts` pins that the phrase-stripped one is a fixed
+ * point — so it costs nothing. For a hand-edited file it is what makes the row
+ * reachable at all: every lookup goes through `prepareImportName`, whose output
+ * is always normalized, so a token carrying stray case or spacing could never be
+ * matched. Two hand-edited rows differing only in whitespace therefore land on
+ * one token here rather than on two — which is the collision `classifyAliases`
+ * dedupes, before anything is written.
  *
  * What this deliberately no longer does is *replace* a readable stored token
  * that disagrees with the display text. Such a token is indistinguishable from a
  * deliberate one, it was already the key the row lived under in the database
  * that exported it, and restoring it unchanged is fidelity rather than damage —
  * an alias is a resolution shortcut, so the worst case is a shortcut that was
- * already dead staying dead. The write set stays legal because `classifyAliases`
- * dedupes on the final token before anything is written.
+ * already dead staying dead. One consequence, stated because it is a real cost:
+ * an unclassified legacy row is still judged by the outcome gate below on that
+ * token, so a hand-edited one naming no exercise is purged rather than repaired.
  *
  * Shared by the migration/restore classifier and by `aliasRepo.putRaw`, so the
- * two cannot disagree about which rows are usable.
+ * two cannot disagree about which rows are usable. Only the classifier dedupes,
+ * so only the classifier can promise a legal write set; `putRaw` puts one row
+ * and has no production callers.
  */
 export function aliasLookupToken(
   alias: { alias?: unknown; normalizedAlias?: unknown },
@@ -419,9 +426,10 @@ export function classifyAliases(
       continue;
     }
 
-    // Prefer the display text, so a row that only has a token is still checked
-    // for "or"-style alternatives and underspecified names rather than skipping
-    // the rules by accident. Independent of which field the *key* came from.
+    // The raw name where there is one, so "or"-style alternatives and
+    // underspecified names are still detected; the token where there is not, so
+    // a row with no display text is still checked rather than skipping the
+    // rules by accident. Independent of which field the *key* came from.
     const textForRules = aliasRuleText(alias, normalizedAlias);
     const prepared = prepareImportName(textForRules, disambiguationsByNormalizedName);
     const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);

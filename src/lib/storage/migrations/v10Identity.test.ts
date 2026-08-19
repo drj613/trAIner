@@ -1,5 +1,10 @@
 import { resolveExerciseIdentity } from "@/lib/catalog/identity";
-import type { AliasDocument, ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
+import type {
+  AliasDocument,
+  ProgramDocument,
+  UserExerciseDocument,
+  WorkoutLogDocument,
+} from "@/lib/programs/types";
 import {
   classifyAliases,
   createMigrationContext,
@@ -343,17 +348,53 @@ describe("classifyAliases — a restore keeps the key its writer chose", () => {
   // the rule text off it, the rules see the already-stripped token, an "or"
   // name stops reading as an alternative, and the migration silently starts
   // RETAINING rows it is specified to purge.
+  //
+  // The token has to name exactly one real exercise, or the outcome gate
+  // further down drops the row on its own and the test passes whether the
+  // rules ran on the right text or not. Measured: with a token that names
+  // nothing, recoupling the rule text to the key left this suite 266/266.
   it("runs the disambiguation rules over the display text even when the token is already stripped", () => {
+    const custom: UserExerciseDocument = {
+      id: "user-exercise-1",
+      name: "Hatfield Squat Lunge",
+      createdAt: "2026-08-18T00:00:00.000Z",
+    } as UserExerciseDocument;
     const alternative: AliasDocument = {
       id: "alias-or",
       alias: "Hatfield Squat or Lunge",
       // What `prepareImportName` makes of that name: no "or" left in it.
       normalizedAlias: "hatfield squat lunge",
-      canonicalExerciseId: "goblet-squat",
+      canonicalExerciseId: custom.id,
       createdAt: "2026-08-18T00:00:00.000Z",
     } as AliasDocument;
 
-    expect(classifyAliases([alternative], [], "all")).toEqual([]);
+    // Canary: the outcome gate would keep this row, so the only thing that can
+    // drop it is the alternative check reading the display text.
+    expect(classifyAliases([{ ...alternative, alias: "Hatfield Squat Lunge" }], [custom], "all"))
+      .toHaveLength(1);
+
+    expect(classifyAliases([alternative], [custom], "all")).toEqual([]);
+  });
+
+  // The new collision path, and the reason the write set stays legal.
+  // `by-normalized-alias` is the schema's only unique index, and preferring
+  // the stored token means two rows with different display texts can now claim
+  // one key where re-deriving would have given them two. The dedupe absorbs it;
+  // without it a restore would issue a colliding put and be REJECTED outright,
+  // which is worse than either token choice.
+  it("collapses two rows that claim one stored token, rather than issuing a colliding write", () => {
+    const older = rememberedRow({ id: "alias-a", alias: "3 second paused Hatfield Squat" });
+    const newer = rememberedRow({
+      id: "alias-b",
+      alias: "5 second paused Hatfield Squat",
+      createdAt: "2026-08-19T00:00:00.000Z",
+    });
+
+    const classified = classifyAliases([older, newer], [], "unclassified");
+
+    expect(classified.map((alias) => [alias.id, alias.normalizedAlias])).toEqual([
+      ["alias-b", strippedToken],
+    ]);
   });
 
   it("normalizes a stored token that was never normalized", () => {
