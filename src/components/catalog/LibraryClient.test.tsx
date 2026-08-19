@@ -444,3 +444,98 @@ describe("deriveNeedsReview — unreadable log entries", () => {
     expect(items.find((item) => item.label === "Wobble Board Thing")?.occurrences).toBe(2);
   });
 });
+
+// ─── Nested versions ─────────────────────────────────────────────────────────
+
+describe("LibraryClient — versions nested under their movement", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+    await (await getDb()).put("userExercises", customExercise);
+  });
+
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  // Muscle sections mount collapsed and keep their own open state, so a query
+  // narrows them without opening them — pre-existing behaviour the Task 10
+  // tests already rely on. Each test opens the section a user would click.
+  async function catalogueAfterSearch(
+    user: ReturnType<typeof userEvent.setup>,
+    query: string,
+    muscle: RegExp,
+  ) {
+    renderLibrary();
+    await screen.findByRole("region", { name: "Needs review" });
+    await user.type(screen.getByPlaceholderText(/search exercises/i), query);
+    const catalogue = screen.getByRole("region", { name: "Catalogue" });
+    await user.click(within(catalogue).getByRole("button", { name: muscle }));
+    return catalogue;
+  }
+
+  it("reveals and highlights the matching version beneath its family, siblings included", async () => {
+    const user = userEvent.setup();
+    const catalogue = await catalogueAfterSearch(user, "high bar back squat", /^quads/);
+
+    // One family row, not three loose squat rows.
+    expect(within(catalogue).getByRole("button", { name: /^Squat movement, \d+ versions$/ })).toBeInTheDocument();
+
+    const matched = within(catalogue).getByRole("button", { name: /High Bar Back Squat/ });
+    expect(matched).toHaveAttribute("data-matched", "true");
+    // The siblings the user is choosing between stay on screen, unhighlighted.
+    const sibling = within(catalogue).getByRole("button", { name: /Low Bar Back Squat/ });
+    expect(sibling).toHaveAttribute("data-matched", "false");
+  });
+
+  it("keeps a family collapsed until the user opens it", async () => {
+    const user = userEvent.setup();
+    renderLibrary();
+    await screen.findByRole("region", { name: "Needs review" });
+    const catalogue = screen.getByRole("region", { name: "Catalogue" });
+
+    await user.click(within(catalogue).getByRole("button", { name: /^quads/ }));
+    const family = within(catalogue).getByRole("button", { name: /^Squat movement, \d+ versions$/ });
+    expect(within(catalogue).queryByRole("button", { name: /High Bar Back Squat/ })).toBeNull();
+
+    await user.click(family);
+    expect(within(catalogue).getByRole("button", { name: /High Bar Back Squat/ })).toBeInTheDocument();
+  });
+
+  it("offers no correction on the family row — only its concrete versions have an identity", async () => {
+    const user = userEvent.setup();
+    const catalogue = await catalogueAfterSearch(user, "high bar back squat", /^quads/);
+
+    const family = within(catalogue).getByRole("button", { name: /^Squat movement, \d+ versions$/ });
+    // The family row navigates. It exposes no detail panel of its own, so there
+    // is nothing on it to correct or to mistake for a concrete exercise.
+    expect(family).toHaveAttribute("aria-expanded");
+    expect(within(catalogue).queryByRole("button", { name: "Change movement" })).toBeNull();
+
+    await user.click(within(catalogue).getByRole("button", { name: /High Bar Back Squat/ }));
+    expect(within(catalogue).getByRole("button", { name: "Change movement" })).toBeInTheDocument();
+  });
+
+  it("lists the user's own exercises alongside the bundled catalogue", async () => {
+    const user = userEvent.setup();
+    const catalogue = await catalogueAfterSearch(user, "my squat", /^custom/);
+
+    const row = await within(catalogue).findByRole("button", { name: /My Squat/i });
+    await user.click(row);
+    await user.click(within(catalogue).getByRole("button", { name: "Change movement" }));
+
+    expect(within(catalogue).getByRole("region", { name: "Correct My squat" })).toBeInTheDocument();
+  });
+
+  it("keeps an unassigned entry out of the family it is named after", async () => {
+    const user = userEvent.setup();
+    const catalogue = await catalogueAfterSearch(user, "barbell back squat", /^quads/);
+
+    // `barbell-back-squat` carries `movementId: null`, so it is its own row at
+    // the top level rather than a version of Squat.
+    expect(within(catalogue).queryByRole("button", { name: /Squat movement/ })).toBeNull();
+    const row = within(catalogue).getByRole("button", { name: /Barbell Back Squat/ });
+    expect(row).toHaveAttribute("data-standalone", "true");
+  });
+});
