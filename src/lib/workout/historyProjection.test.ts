@@ -485,3 +485,64 @@ describe("unresolvable exercises sharing a slot id", () => {
     });
   });
 });
+
+// ─── Best set: the total order ───────────────────────────────────────────────
+
+describe("best set ordering", () => {
+  const logWithSets = (sets: WorkoutLogDocument["entries"][number]["sets"]): WorkoutLogDocument => ({
+    id: "log-best", programId: "p1", dayId: "d1",
+    performedAt: "2026-10-01T14:00:00.000Z", performedDate: "2026-10-01",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      sets,
+    }],
+  });
+  const bestOf = (sets: WorkoutLogDocument["entries"][number]["sets"]) =>
+    projectExerciseHistory([logWithSets(sets)], context).versionSummaries.get(highBar.id)?.bestSetLabel;
+
+  it("ranks by set volume first", () => {
+    // 200x8 = 1600 beats 240x3 = 720 and 180x4 = 720.
+    expect(bestOf([
+      { setNumber: 1, weight: 240, reps: 3 },
+      { setNumber: 2, weight: 200, reps: 8 },
+      { setNumber: 3, weight: 180, reps: 4 },
+    ])).toBe("200x8");
+  });
+
+  it("breaks an equal-volume tie by the heavier load", () => {
+    // Both 1000 lb of work; 200 is the heavier set, and it is logged second, so
+    // this cannot pass on position.
+    expect(bestOf([
+      { setNumber: 1, weight: 100, reps: 10 },
+      { setNumber: 2, weight: 200, reps: 5 },
+    ])).toBe("200x5");
+  });
+
+  it("breaks a no-load tie by reps, so bodyweight work ranks sensibly", () => {
+    // Every bodyweight set has volume 0 and no load, and 8 reps is plainly the
+    // better set than 5.
+    expect(bestOf([
+      { setNumber: 1, reps: 5 },
+      { setNumber: 2, reps: 8 },
+    ])).toBe("BWx8");
+  });
+
+  it("keeps the earliest set when volume, load and reps are all equal", () => {
+    // Identical work, distinguishable only by their raw cells.
+    expect(bestOf([
+      { setNumber: 1, weight: 100, reps: 5, rawCell: "first" },
+      { setNumber: 2, weight: 100, reps: 5, rawCell: "second" },
+    ])).toBe("first");
+  });
+
+  it("compares the load tiebreak in pounds, not raw numbers", () => {
+    // Neither set recorded reps, so both have volume 0 and the load tiebreak
+    // decides. 100kg is 220 lb, so it is the heavier set even though 150 is the
+    // larger raw number — and it is logged second, so neither a raw-number
+    // comparison nor the earliest-set fallback can produce this answer.
+    expect(bestOf([
+      { setNumber: 1, weight: 150 },
+      { setNumber: 2, weight: 100, unit: "kg" },
+    ])).toBe("100kg");
+  });
+});

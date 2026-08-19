@@ -20,7 +20,7 @@ import {
   type ExerciseIdentityResult,
 } from "@/lib/catalog/identity";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
-import type { WorkoutLogDocument, WorkoutLogEntry } from "@/lib/programs/types";
+import type { WorkoutLogDocument, WorkoutLogEntry, WorkoutSetLog } from "@/lib/programs/types";
 import {
   deriveVolumeTrend,
   entryHasHistoryData,
@@ -28,6 +28,7 @@ import {
   entryVolumeLb,
   formatSetLabel,
   setVolume,
+  setWeightInLb,
 } from "./historyUtils";
 import { logLocalDate } from "./localDate";
 
@@ -168,6 +169,24 @@ function compareRowsChronologically(left: ExerciseHistoryRow, right: ExerciseHis
     || left.entryIndex - right.entryIndex;
 }
 
+/**
+ * Total order for "best set", strongest first: volume descending, then load
+ * descending, then reps descending, then the earliest set.
+ *
+ * Volume stays the headline metric. Load breaks a volume tie the conventional
+ * strength way — of `100x10` and `200x5`, both 1,000 lb, the 200 is the heavier
+ * set. Reps then rescue bodyweight work, where every set has volume 0 and no
+ * load, so ranking by volume alone always returned the *first* set and reported
+ * `BWx5` as better than `BWx8`. Load is compared in pounds so a kg set is not
+ * read as lighter than its raw number suggests. Falling through to the earliest
+ * set keeps the result deterministic for genuinely identical sets.
+ */
+function compareSetsByStrength(left: WorkoutSetLog, right: WorkoutSetLog): number {
+  return setVolume(right) - setVolume(left)
+    || setWeightInLb(right) - setWeightInLb(left)
+    || (right.reps ?? 0) - (left.reps ?? 0);
+}
+
 function pushInto<K, V>(map: Map<K, V[]>, key: K, value: V): void {
   const existing = map.get(key);
   if (existing) existing.push(value);
@@ -283,8 +302,10 @@ export function projectExerciseHistory(
     }
 
     const allSets = chronological.flatMap((item) => item.entry.sets);
+    // Keeping the incumbent unless the candidate is strictly stronger is what
+    // resolves a full tie to the earliest set.
     const bestSet = allSets.reduce<typeof allSets[number] | undefined>(
-      (best, candidate) => (best && setVolume(best) >= setVolume(candidate) ? best : candidate),
+      (best, candidate) => (best && compareSetsByStrength(best, candidate) <= 0 ? best : candidate),
       undefined,
     );
     const lastSession = sessions[sessions.length - 1];
