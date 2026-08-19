@@ -1,33 +1,27 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import { exerciseCatalog } from "@/lib/catalog/exercises";
-import {
-  prepareImportName,
-  resolveExerciseIdentity,
-  type ExerciseIdentityContext,
-  type NormalizationOverrideDocument,
-} from "@/lib/catalog/identity";
+import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
 import { dispatchExerciseIdentityChanged } from "@/lib/catalog/identityEvents";
-import { normalizeExerciseName } from "@/lib/catalog/normalize";
-import {
-  disambiguationsByNormalizedName,
-  legacyExerciseIdRedirects,
-  modifiersById,
-  movementsById,
-} from "@/lib/catalog/registries";
 import { localDateOf } from "@/lib/workout/localDate";
 import type {
   AliasDocument,
   BackupDocument,
   BodyweightEntry,
   ProfileDocument,
-  ProgramDay,
   ProgramDocument,
-  ProgramExercise,
   PromptPresetDocument,
   UserExerciseDocument,
   WorkoutLogDocument,
-  WorkoutLogEntry,
 } from "@/lib/programs/types";
+import {
+  classifyAliases,
+  createMigrationContext,
+  isReadableText,
+  isRecord,
+  mapArrayOrKeep,
+  migrateLog,
+  migrateProgram,
+  unreadableValue,
+} from "./migrations/v10Identity";
 
 export const DB_NAME = "trainer-local-first";
 export const DB_VERSION = 10;
@@ -78,275 +72,6 @@ interface LegacyMetricsDb extends DBSchema {
     key: string;
     value: { exerciseId: string } & Record<string, unknown>;
   };
-}
-
-const catalogById = new Map(exerciseCatalog.map((exercise) => [exercise.id, exercise]));
-
-export function createMigrationContext(
-  aliases: readonly AliasDocument[],
-  userExercises: readonly UserExerciseDocument[],
-): ExerciseIdentityContext {
-  return {
-    catalogById,
-    movementsById,
-    modifiersById,
-    redirects: legacyExerciseIdRedirects,
-    disambiguations: disambiguationsByNormalizedName,
-    aliases,
-    // The resolver name-matches custom exercises (the unique-custom-name
-    // fallback in identity.ts), so a record whose name is not a string would
-    // throw there. Such a record cannot be matched by name under any input,
-    // so it is left out of the resolution context. The stored user-exercise
-    // record itself is never read again and never rewritten.
-    userExercises: userExercises.filter((exercise) => isReadableText(exercise.name)),
-    normalizationOverrides: [],
-  };
-}
-
-// Leaf string fields are as untrustworthy as the containers around them.
-// normalizeExerciseName does `value.toLowerCase()`, so a missing or
-// non-string id/name throws. The v10 block now catches and aborts, so such a
-// throw rolls the upgrade back and the next load retries it — but that leaves
-// the user stuck at version 9 with a broken record they cannot see or fix, so
-// these guards remain the layer that lets the migration actually succeed.
-// restoreBackup checks aliases with hasIds only and defers deep validation,
-// so a truncated or hand-edited backup can plant these shapes on a pre-v10
-// client. Every read that reaches normalizeExerciseName, prepareImportName,
-// or the resolver is typeof-checked first.
-function isReadableText(value: unknown): value is string {
-  return typeof value === "string";
-}
-
-function canonicalizeExplicitExerciseId(
-  canonicalExerciseId: string,
-  context: ExerciseIdentityContext,
-): string {
-  if (!isReadableText(canonicalExerciseId)) return canonicalExerciseId;
-  return resolveExerciseIdentity(
-    { kind: "catalog-reference", canonicalExerciseId },
-    context,
-  ).concreteExerciseId ?? canonicalExerciseId;
-}
-
-// Legacy documents are not guaranteed to have every array this traversal
-// walks: the v7/v8 blocks in the upgrade below read `(log.entries ?? [])`
-// because logs predating that field exist, and backup.ts validates null
-// override replacements because those exist too. An unguarded `.map` on one of
-// those shapes throws, and the upgrade's catch then aborts — so the user's data
-// is safe, but their database never reaches the current version and every load
-// pays a failed migration. Tolerate the malformed shape and pass the record
-// through untouched instead; a record we cannot read is one we must not
-// rewrite.
-function mapArray<T>(value: T[], mapper: (item: T) => T): T[] {
-  return Array.isArray(value) ? value.map(mapper) : value;
-}
-
-// Arrays are excluded deliberately: `{ ...[1, 2] }` is `{ 0: 1, 1: 2 }`, so
-// treating an array-shaped day/section/group/entry as a record would silently
-// rewrite it into an index-keyed object instead of passing it through.
-function isRecord<T>(value: T): value is T & object {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-// The line here is *absent* versus *present-but-unreadable*, not null versus
-// non-null. `undefined`/`null` read as absent — the legitimate shape of logs
-// predating `entries`, and exactly what the v7 phantom rule was written to
-// delete — so they stay deletable. Anything else that is present but is not
-// the array we expected is unreadable, and unreadable content is never
-// grounds for deletion.
-function unreadableValue(value: unknown): boolean {
-  return value !== undefined && value !== null && !Array.isArray(value);
-}
-
-function migrateProgramExercise(
-  exercise: ProgramExercise,
-  context: ExerciseIdentityContext,
-): ProgramExercise {
-  if (!isRecord(exercise)) return exercise;
-  if (exercise.canonicalExerciseId) {
-    return {
-      ...exercise,
-      canonicalExerciseId: canonicalizeExplicitExerciseId(exercise.canonicalExerciseId, context),
-    };
-  }
-  // `id` reaches the resolver as `slotId`. It only lands in a template string
-  // today, so a non-string survives by luck; guard it at the boundary rather
-  // than depend on that.
-  if (!isReadableText(exercise.name) || !isReadableText(exercise.id)) return exercise;
-  const resolved = resolveExerciseIdentity({
-    kind: "stored-exercise",
-    slotId: exercise.id,
-    performedName: exercise.name,
-  }, context);
-  return resolved.specificity === "exact" && resolved.concreteExerciseId
-    ? { ...exercise, canonicalExerciseId: resolved.concreteExerciseId }
-    : exercise;
-}
-
-function migrateProgramDay(day: ProgramDay, context: ExerciseIdentityContext): ProgramDay {
-  if (!isRecord(day)) return day;
-  return {
-    ...day,
-    sections: mapArray(day.sections, (section) => (isRecord(section) ? {
-      ...section,
-      groups: mapArray(section.groups, (group) => (isRecord(group) ? {
-        ...group,
-        exercises: mapArray(group.exercises, (exercise) => migrateProgramExercise(exercise, context)),
-      } : group)),
-    } : section)),
-  };
-}
-
-function migrateProgramReplacement(
-  replacement: ProgramDocument["overrides"][number]["replacement"],
-  context: ExerciseIdentityContext,
-): ProgramDocument["overrides"][number]["replacement"] {
-  if (Array.isArray(replacement)) {
-    return replacement.map((day) => migrateProgramDay(day, context));
-  }
-  return migrateProgramDay(replacement, context);
-}
-
-export function migrateProgram(
-  program: ProgramDocument,
-  context: ExerciseIdentityContext,
-): ProgramDocument {
-  return {
-    ...program,
-    days: mapArray(program.days, (day) => migrateProgramDay(day, context)),
-    overrides: mapArray(program.overrides, (override) => (isRecord(override) ? {
-      ...override,
-      replacement: migrateProgramReplacement(override.replacement, context),
-    } : override)),
-    ...(isRecord(program.import) ? {
-      import: {
-        ...program.import,
-        warnings: mapArray(program.import.warnings, (warning) => (isRecord(warning) ? {
-          ...warning,
-          ...(warning.suggestions ? {
-            suggestions: mapArray(warning.suggestions, (suggestion) => (isRecord(suggestion) ? {
-              ...suggestion,
-              exerciseId: canonicalizeExplicitExerciseId(suggestion.exerciseId, context),
-            } : suggestion)),
-          } : {}),
-        } : warning)),
-      },
-    } : {}),
-  };
-}
-
-function migrateLogEntry(
-  entry: WorkoutLogEntry,
-  context: ExerciseIdentityContext,
-): WorkoutLogEntry {
-  if (!isRecord(entry)) return entry;
-  if (entry.canonicalExerciseId) {
-    return {
-      ...entry,
-      canonicalExerciseId: canonicalizeExplicitExerciseId(entry.canonicalExerciseId, context),
-    };
-  }
-  if (!isReadableText(entry.exerciseName) || !isReadableText(entry.exerciseId)) return entry;
-  const resolved = resolveExerciseIdentity({
-    kind: "stored-exercise",
-    slotId: entry.exerciseId,
-    performedName: entry.exerciseName,
-  }, context);
-  return resolved.specificity === "exact" && resolved.concreteExerciseId
-    ? { ...entry, canonicalExerciseId: resolved.concreteExerciseId }
-    : entry;
-}
-
-export function migrateLog(
-  log: WorkoutLogDocument,
-  context: ExerciseIdentityContext,
-): WorkoutLogDocument {
-  return {
-    ...log,
-    entries: mapArray(log.entries, (entry) => migrateLogEntry(entry, context)),
-  };
-}
-
-function concreteOutcomesForToken(
-  normalizedAlias: string,
-  userExercises: readonly UserExerciseDocument[],
-): Set<string> {
-  const outcomes = new Set<string>();
-  for (const exercise of exerciseCatalog) {
-    if (
-      normalizeExerciseName(exercise.name) === normalizedAlias ||
-      exercise.aliases.some((alias) => normalizeExerciseName(alias) === normalizedAlias)
-    ) {
-      outcomes.add(exercise.id);
-    }
-  }
-  for (const exercise of userExercises) {
-    if (!isReadableText(exercise.name)) continue;
-    if (normalizeExerciseName(exercise.name) === normalizedAlias) outcomes.add(exercise.id);
-  }
-  return outcomes;
-}
-
-export function classifyAliases(
-  aliases: readonly AliasDocument[],
-  userExercises: readonly UserExerciseDocument[],
-): AliasDocument[] {
-  const context = createMigrationContext([], userExercises);
-  // Keyed by recomputed token, not by row: `by-normalized-alias` is
-  // `{ unique: true }`, and recomputing tokens can collapse two rows that v9
-  // stored happily onto one key. A colliding re-put is *rejected* by the
-  // index rather than throwing on a read, so none of the read guards above
-  // catch it — and the retry would be deterministic, bricking the database
-  // with no way for the user to see or fix the offending alias. Deduping here
-  // is what keeps the write set legal.
-  const byToken = new Map<string, AliasDocument>();
-  const claim = (token: string, document: AliasDocument) => {
-    const existing = byToken.get(token);
-    // A user's own correction outranks a legacy guess, whichever order the
-    // rows arrive in. Otherwise first writer wins, which keeps the pass
-    // deterministic and idempotent.
-    if (existing && !(document.provenance === "remembered" && existing.provenance !== "remembered")) {
-      return;
-    }
-    byToken.set(token, document);
-  };
-  for (const alias of aliases) {
-    // An alias we cannot read cannot be classified, and an unclassifiable
-    // alias left in the store would keep short-circuiting the new
-    // disambiguation flow forever. Drop it rather than retain it.
-    if (!isReadableText(alias.alias) || !isReadableText(alias.canonicalExerciseId)) continue;
-    const canonicalExerciseId = canonicalizeExplicitExerciseId(alias.canonicalExerciseId, context);
-    const normalizedAlias = normalizeExerciseName(alias.alias);
-    if (alias.provenance === "remembered") {
-      claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "remembered" });
-      continue;
-    }
-
-    const prepared = prepareImportName(alias.alias, disambiguationsByNormalizedName);
-    const disambiguation = disambiguationsByNormalizedName.get(prepared.normalizedName);
-    if (
-      !normalizedAlias ||
-      prepared.hasAlternative ||
-      disambiguation?.kind === "underspecified-name"
-    ) {
-      continue;
-    }
-
-    // Spec: retain and redirect only legacy aliases whose token still has one
-    // unique concrete outcome. That single check is what deletes collisions
-    // and removed noise (a prescription like "3x8 @ RPE 7" has zero
-    // outcomes); no separate noise heuristic is needed. Measured against the
-    // 3,175 shipped catalogue entries, the digit/word predicate that used to
-    // live here matched 71 canonical names — 70 containing a digit or degree
-    // sign ("90/90 Hamstring", "45° Side Bend", ...) plus "front lever reps"
-    // — and 6 further entries through their aliases ("Farmer Carry with
-    // 2-Second March Pauses", ...), so 77 entries in all it would have
-    // wrongly unlinked.
-    const outcomes = concreteOutcomesForToken(normalizedAlias, userExercises);
-    if (outcomes.size !== 1 || !outcomes.has(canonicalExerciseId)) continue;
-    claim(normalizedAlias, { ...alias, normalizedAlias, canonicalExerciseId, provenance: "legacy-auto" });
-  }
-  return [...byToken.values()];
 }
 
 let dbPromise: Promise<IDBPDatabase<TrainerDb>> | undefined;
@@ -484,9 +209,9 @@ export function getDb() {
               // returns its input untouched when it is not an array, so an
               // unreadable log is passed through instead of aborting the
               // upgrade for every load.
-              const entries = mapArray(log.entries ?? [], (entry) => (isRecord(entry) ? {
+              const entries = mapArrayOrKeep(log.entries ?? [], (entry) => (isRecord(entry) ? {
                 ...entry,
-                sets: mapArray(entry.sets ?? [], (set) => {
+                sets: mapArrayOrKeep(entry.sets ?? [], (set) => {
                   if (!isRecord(set)) return set;
                   if (set.weight !== undefined || !isReadableText(set.rawCell)) return set;
                   const m = kgCell.exec(set.rawCell.trim());
@@ -532,7 +257,13 @@ export function getDb() {
               userExercisesStore.getAll(),
             ]);
             const classifiedAliases = classifyAliases(aliases, userExercises);
-            const context = createMigrationContext(classifiedAliases, userExercises);
+            const context = createMigrationContext(
+              classifiedAliases,
+              userExercises,
+              // The store was created empty a few lines above, and stored
+              // records must not bake in override-derived identity anyway.
+              [],
+            );
 
             await aliasesStore.clear();
             await Promise.all([
@@ -591,8 +322,13 @@ export function getDb() {
       },
       terminated() {
         // Browser killed the connection (e.g. storage pressure); allow reopen.
+        // Both globals are cleared only when they still describe *this* open,
+        // for the same reason as the failure path below: resetDbConnection()
+        // may already have installed a newer connection, and clearing
+        // unconditionally would discard it and leave two live opens racing.
+        if (dbPromise !== attempt) return;
         dbInstance = undefined;
-        if (dbPromise === attempt) dbPromise = undefined;
+        dbPromise = undefined;
       },
     }).then((db) => {
       dbInstance = db;

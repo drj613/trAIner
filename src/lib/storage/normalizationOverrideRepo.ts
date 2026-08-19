@@ -1,8 +1,5 @@
 import { exerciseCatalog } from "@/lib/catalog/exercises";
-import {
-  dispatchExerciseIdentityChanged,
-  type IdentityWriteOptions,
-} from "@/lib/catalog/identityEvents";
+import { dispatchAfterWrite, type IdentityWriteOptions } from "@/lib/catalog/identityEvents";
 import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import { modifiersById, movementsById } from "@/lib/catalog/registries";
@@ -52,48 +49,53 @@ export function normalizationOverrideKey(
   return overrideKeyFor(targetKind, normalizeTargetValue(targetKind, targetValue));
 }
 
-export function validateNormalizationOverrideInput(
+type MovementDefinition = NonNullable<ReturnType<typeof movementsById.get>>;
+type ModifierDefinition = NonNullable<ReturnType<typeof modifiersById.get>>;
+
+// Split by *kind* of rule rather than by line count: what the override points
+// at, whether each modifier exists, whether the list is in canonical order, and
+// whether the set is compatible with the movement. The order the four run in is
+// the order the errors were specified in, and the tests pin one message per
+// rule, so keep them in this sequence when adding a fifth.
+
+function validateOverrideTarget(
   input: NormalizationOverrideSaveInput,
-  userExerciseIds: ReadonlySet<string> = new Set(),
+  normalizedTargetValue: string,
+  userExerciseIds: ReadonlySet<string>,
 ): void {
-  const targetValue = normalizeTargetValue(input.targetKind, input.targetValue);
-  if (!targetValue) throw new Error("Normalization override target cannot be empty");
-  if (
-    input.targetKind === "exercise-id" &&
-    !catalogExerciseIds.has(targetValue) &&
-    !userExerciseIds.has(targetValue)
-  ) {
-    throw new Error(`Unknown exercise target: ${targetValue}`);
-  }
+  if (!normalizedTargetValue) throw new Error("Normalization override target cannot be empty");
+  if (input.targetKind !== "exercise-id") return;
+  if (catalogExerciseIds.has(normalizedTargetValue)) return;
+  if (userExerciseIds.has(normalizedTargetValue)) return;
+  throw new Error(`Unknown exercise target: ${normalizedTargetValue}`);
+}
 
-  if (input.movementId === null) {
-    if (input.movementModifierIds.length > 0) {
-      throw new Error("A standalone override cannot have movement modifiers");
-    }
-    return;
-  }
-
-  const movement = movementsById.get(input.movementId);
-  if (!movement) throw new Error(`Unknown movement: ${input.movementId}`);
-
-  const modifiers = input.movementModifierIds.map((modifierId) => {
+// Resolves once and hands the definitions on, so no later rule has to reach
+// back into the registry with a non-null assertion.
+function resolveModifiers(movementModifierIds: readonly string[]): ModifierDefinition[] {
+  const modifiers = movementModifierIds.map((modifierId) => {
     const modifier = modifiersById.get(modifierId);
     if (!modifier) throw new Error(`Unknown modifier: ${modifierId}`);
     return modifier;
   });
-  if (new Set(input.movementModifierIds).size !== input.movementModifierIds.length) {
+  if (new Set(movementModifierIds).size !== movementModifierIds.length) {
     throw new Error("Duplicate movement modifier");
   }
+  return modifiers;
+}
 
-  const canonicalOrder = [...input.movementModifierIds].sort((left, right) => {
-    const leftOrder = modifiersById.get(left)!.sortOrder;
-    const rightOrder = modifiersById.get(right)!.sortOrder;
-    return leftOrder - rightOrder || left.localeCompare(right);
-  });
-  if (canonicalOrder.some((modifierId, index) => modifierId !== input.movementModifierIds[index])) {
+function validateModifierOrder(modifiers: readonly ModifierDefinition[]): void {
+  const canonicalOrder = [...modifiers].sort((left, right) =>
+    left.sortOrder - right.sortOrder || left.id.localeCompare(right.id));
+  if (canonicalOrder.some((modifier, index) => modifier.id !== modifiers[index].id)) {
     throw new Error("Modifier order is not canonical");
   }
+}
 
+function validateModifierCompatibility(
+  movement: MovementDefinition,
+  modifiers: readonly ModifierDefinition[],
+): void {
   for (const modifier of modifiers) {
     if (!movement.allowedModifierIds.includes(modifier.id)) {
       throw new Error(`Modifier not allowed for movement: ${modifier.id}`);
@@ -103,7 +105,7 @@ export function validateNormalizationOverrideInput(
     throw new Error(`Too many identity modifiers: ${movement.id}`);
   }
 
-  const selectedIds = new Set(input.movementModifierIds);
+  const selectedIds = new Set(modifiers.map((modifier) => modifier.id));
   for (const modifier of modifiers) {
     for (const impliedId of modifier.implies ?? []) {
       if (!selectedIds.has(impliedId)) {
@@ -129,8 +131,29 @@ export function validateNormalizationOverrideInput(
   }
 }
 
-function dispatchAfterWrite(options?: IdentityWriteOptions): void {
-  if (options?.dispatch !== false) dispatchExerciseIdentityChanged();
+export function validateNormalizationOverrideInput(
+  input: NormalizationOverrideSaveInput,
+  userExerciseIds: ReadonlySet<string> = new Set(),
+): void {
+  validateOverrideTarget(
+    input,
+    normalizeTargetValue(input.targetKind, input.targetValue),
+    userExerciseIds,
+  );
+
+  if (input.movementId === null) {
+    if (input.movementModifierIds.length > 0) {
+      throw new Error("A standalone override cannot have movement modifiers");
+    }
+    return;
+  }
+
+  const movement = movementsById.get(input.movementId);
+  if (!movement) throw new Error(`Unknown movement: ${input.movementId}`);
+
+  const modifiers = resolveModifiers(input.movementModifierIds);
+  validateModifierOrder(modifiers);
+  validateModifierCompatibility(movement, modifiers);
 }
 
 export const normalizationOverrideRepo: NormalizationOverrideRepository = {

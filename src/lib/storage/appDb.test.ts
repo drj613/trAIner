@@ -7,7 +7,12 @@ import { programRepo } from "./programRepo";
 import { userExerciseRepo } from "./userExerciseRepo";
 import { bodyweightRepo } from "./bodyweightRepo";
 import { promptPresetRepo } from "./promptPresetRepo";
-import { classifyAliases, createMigrationContext, migrateLog, migrateProgram } from "./appDb";
+import {
+  classifyAliases,
+  createMigrationContext,
+  migrateLog,
+  migrateProgram,
+} from "./migrations/v10Identity";
 import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import { demoProgram, defaultProfile } from "@/lib/programs/sample";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
@@ -1179,7 +1184,7 @@ describe("v10 migration idempotency (pure helpers)", () => {
       db.getAll("aliases"),
       db.getAll("userExercises"),
     ]);
-    const context = createMigrationContext(aliases, userExercises);
+    const context = createMigrationContext(aliases, userExercises, []);
 
     for (const program of programs) {
       expect(migrateProgram(program, context)).toEqual(program);
@@ -1203,7 +1208,7 @@ describe("v10 migration idempotency (pure helpers)", () => {
 
     const onceAliases = classifyAliases(rawAliases, []);
     expect(classifyAliases(onceAliases, [])).toEqual(onceAliases);
-    const context = createMigrationContext(onceAliases, []);
+    const context = createMigrationContext(onceAliases, [], []);
     for (const program of rawPrograms) {
       const once = migrateProgram(program, context);
       expect(migrateProgram(once, context)).toEqual(once);

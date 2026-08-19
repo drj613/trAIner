@@ -1,7 +1,4 @@
-import {
-  dispatchExerciseIdentityChanged,
-  type IdentityWriteOptions,
-} from "@/lib/catalog/identityEvents";
+import { dispatchAfterWrite, type IdentityWriteOptions } from "@/lib/catalog/identityEvents";
 import type { UserExerciseDocument } from "@/lib/programs/types";
 import { getDb } from "./appDb";
 
@@ -11,10 +8,6 @@ export type UserExerciseRepository = {
   save(name: string, options?: IdentityWriteOptions): Promise<UserExerciseDocument>;
   remove(id: string, options?: IdentityWriteOptions): Promise<void>;
 };
-
-function dispatchAfterWrite(options?: IdentityWriteOptions): void {
-  if (options?.dispatch !== false) dispatchExerciseIdentityChanged();
-}
 
 export const userExerciseRepo: UserExerciseRepository = {
   async list() {

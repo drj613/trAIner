@@ -1,8 +1,5 @@
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
-import {
-  dispatchExerciseIdentityChanged,
-  type IdentityWriteOptions,
-} from "@/lib/catalog/identityEvents";
+import { dispatchAfterWrite, type IdentityWriteOptions } from "@/lib/catalog/identityEvents";
 import type { AliasDocument } from "@/lib/programs/types";
 import { getDb } from "./appDb";
 
@@ -34,10 +31,6 @@ function assertRememberedInput(input: RememberedAliasInput): string {
   if (!normalizedAlias) throw new Error("Alias cannot be empty");
   if (!input.canonicalExerciseId.trim()) throw new Error("Alias target cannot be empty");
   return normalizedAlias;
-}
-
-function dispatchAfterWrite(options?: IdentityWriteOptions): void {
-  if (options?.dispatch !== false) dispatchExerciseIdentityChanged();
 }
 
 export const aliasRepo: AliasRepository = {
