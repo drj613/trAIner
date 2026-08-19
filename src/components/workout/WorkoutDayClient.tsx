@@ -74,7 +74,14 @@ function mergePreservedEntries<T>(built: T[], preserved: Map<number, unknown>): 
  *
  * So: park it, and write the new entries alongside. An already-parked value
  * wins, so a record that has been through this once is never re-parked with the
- * normalised array the previous save wrote. Absent and `null` are not
+ * normalised array the previous save wrote. Known gap, stated rather than
+ * silently accepted: a record that is corrupted a *second* time after it has
+ * already been parked keeps the first value and loses the second. Nothing in
+ * the app can produce that — `restoreBackup` rejects a non-array `entries`
+ * outright, so it takes two separate hand-edits of the raw database — and a
+ * list of parked values would make the field ambiguous (an array park would be
+ * indistinguishable from two parks) for a path with no realistic reader.
+ * Absent and `null` are not
  * unreadable (`unreadableValue`,
  * `src/lib/storage/migrations/v10Identity.ts:158`) and hold nothing to recover,
  * so neither is parked — see the "absent is not unreadable" test.
