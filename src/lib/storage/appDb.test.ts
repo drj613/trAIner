@@ -1969,9 +1969,14 @@ describe("restoreBackup — version-2 documents", () => {
       // reported cause.
       await expect(restoreBackup({
         ...exported,
-        // Written *after* the aliases, so the abort rejects it too. That makes
-        // "keep the first cause" load-bearing: a last-one-wins capture would
-        // report this request's AbortError instead of the constraint violation.
+        // Written *after* the aliases, so the abort rejects it too — the shape a
+        // first-cause-wins capture exists for. It does not make that capture
+        // observable here, and the comment used to claim it did: measured, this
+        // request's AbortError arrives a tick *after* `tx.done` rejects, which is
+        // why `writeError ??=` → `=` leaves the whole lane green. See
+        // backup.ts's `issueTransactionWrite` for the measurement; the guard is
+        // kept for an ordering the IndexedDB spec does not pin and this harness
+        // cannot reproduce.
         bodyweight: [{
           id: "2026-08-18", value: 80, unit: "kg", recordedAt: "2026-08-18T00:00:00.000Z",
         }],

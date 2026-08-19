@@ -235,6 +235,16 @@ describe("classifyAliases — classification scope", () => {
     expect(classifyAliases([legacyAutoRow], [], "unclassified")).toEqual([legacyAutoRow]);
   });
 
+  // The branch tests for the *known* value, not for truthiness. Rewriting it to
+  // `!!alias.provenance` — the obvious simplification — would let any string at
+  // all stand in for "already classified", reopening the smuggle path the scope
+  // rule closed. The v1 `it.each` case cannot reach this: under scope "all" the
+  // branch never fires.
+  it("re-runs the rules over a row whose provenance is unrecognized", () => {
+    const bogus = { ...legacyAutoRow, provenance: "nope" } as unknown as AliasDocument;
+    expect(classifyAliases([bogus], [], "unclassified")).toEqual([]);
+  });
+
   it.each(["all", "unclassified"] as const)(
     "keeps a remembered row under scope %s",
     (scope) => {

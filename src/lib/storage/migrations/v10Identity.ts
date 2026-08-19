@@ -405,8 +405,9 @@ export function classifyAliases(
     // resolves without the alias. Two things break that afterwards. The resolver
     // consults `context.aliases` (identity.ts) *before* the underspecified
     // disambiguation check and before catalogue name matching, so a row that is
-    // never re-classified — every row in a version-2 file, by the scope rule
-    // above — can override an ambiguity the catalogue has since acquired; and
+    // never re-classified — every version-2 row that carries a provenance, by the
+    // scope rule above — can override an ambiguity the catalogue has since
+    // acquired; and
     // this plan regenerates the catalogue, so growth alone can turn a retained
     // row into the only reason a name resolves. Measured: restoring a v2 file
     // with one legacy-auto row for "Back Squat" resolves that slot to
