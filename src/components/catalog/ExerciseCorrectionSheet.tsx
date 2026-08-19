@@ -8,6 +8,7 @@ import { normalizeExerciseName } from "@/lib/catalog/normalize";
 import type { MovementModifierDefinition } from "@/lib/catalog/registries";
 import { aliasRepo } from "@/lib/storage/aliasRepo";
 import {
+  normalizationOverrideKey,
   normalizationOverrideRepo,
   validateNormalizationOverrideInput,
   type NormalizationOverrideSaveInput,
@@ -134,9 +135,16 @@ export function ExerciseCorrectionSheet({
   const { context, resolve, loaded } = useExerciseNormalization();
   const targetKey = correctionTargetKey(target);
   // Two sheets can be open at once — one under a `Needs review` row, one inside
-  // an expanded catalogue row. Shared literal ids would cross their labels, and
-  // a shared radio `name` would make selecting an action in one silently clear
-  // the other's.
+  // an expanded catalogue row, and the history drawer opens a third.
+  //
+  // Two distinct reasons, only one of which is about state. Shared literal ids
+  // would make both labels resolve to the FIRST matching control, so clicking a
+  // label in the second sheet drives the first one. The radio `name` is not a
+  // state hazard: React re-syncs controlled radios that share a name
+  // (`updateNamedCousins`), so the other sheet's selection survives. What a
+  // shared name breaks is the keyboard: it merges both sheets into one radio
+  // group, so arrow keys jump between sheets. jsdom implements no radio-group
+  // arrow traversal, so that half is correct but unfalsifiable in this harness.
   const fieldId = useId();
 
   const [mode, setMode] = useState<CorrectionMode>("assign");
@@ -177,13 +185,15 @@ export function ExerciseCorrectionSheet({
   // versions matched.
   const versionMatches = useMemo(() => {
     const query = normalizeExerciseName(versionQuery);
-    const entries = [...context.catalogById.values()];
-    const matches = query
-      ? entries.filter((item) =>
+    // Filter-first, deliberately. With no query there is no honest short list to
+    // show: the 40 alphabetically-first of 3,000+ entries would read as a menu
+    // rather than as the arbitrary slice it is.
+    if (!query) return [];
+    return [...context.catalogById.values()]
+      .filter((item) =>
         normalizeExerciseName(item.name).includes(query) ||
         item.aliases.some((alias) => normalizeExerciseName(alias).includes(query)))
-      : entries;
-    return matches.sort((left, right) => left.name.localeCompare(right.name));
+      .sort((left, right) => left.name.localeCompare(right.name));
   }, [context.catalogById, versionQuery]);
   const versionOptions = versionMatches.slice(0, VERSION_OPTION_LIMIT);
 
@@ -219,18 +229,23 @@ export function ExerciseCorrectionSheet({
 
   const draftError = validationErrorFor(overrideInput);
 
-  const existingAlias = target.kind === "normalized-name"
-    ? context.aliases.find((alias) =>
+  // Every stored alias holding this name's normalized token. The unique index
+  // allows only one, but a list costs nothing and means a duplicate arriving
+  // from a hand-edited backup cannot survive a deliberate correction.
+  const governingAliases = target.kind === "normalized-name"
+    ? context.aliases.filter((alias) =>
       normalizeExerciseName(alias.normalizedAlias || alias.alias) === normalizeExerciseName(target.value))
-    : undefined;
+    : [];
+  const existingAlias = governingAliases[0];
   const occupiedAlias = existingAlias && existingAlias.canonicalExerciseId !== mappedExerciseId
     ? existingAlias
     : undefined;
-  const occupiedByLabel = occupiedAlias
-    ? context.catalogById.get(occupiedAlias.canonicalExerciseId)?.name
-      ?? context.userExercises.find((exercise) => exercise.id === occupiedAlias.canonicalExerciseId)?.name
-      ?? occupiedAlias.canonicalExerciseId
-    : undefined;
+  function aliasTargetLabel(canonicalExerciseId: string): string {
+    return context.catalogById.get(canonicalExerciseId)?.name
+      ?? context.userExercises.find((exercise) => exercise.id === canonicalExerciseId)?.name
+      ?? canonicalExerciseId;
+  }
+  const occupiedByLabel = occupiedAlias ? aliasTargetLabel(occupiedAlias.canonicalExerciseId) : undefined;
 
   const alert = mode === "map"
     ? writeError
@@ -258,8 +273,41 @@ export function ExerciseCorrectionSheet({
       setWriteError(error);
       return;
     }
+
+    // A saved alias outranks a `normalized-name` override: `resolveName`
+    // returns from the alias branch (identity.ts:283-298) long before it looks
+    // at one (identity.ts:338-340). So for an alias-governed name an override
+    // is dead weight, and reporting success would be a lie.
+    //
+    // Clearing the name is the one intent that can still be honoured, because
+    // the alias IS the identity being cleared — so clearing removes it.
+    // Assigning a movement cannot be honoured silently, because the only way
+    // to make it take effect is to destroy a mapping the user did not offer up.
+    if (governingAliases.length > 0 && input.movementId !== null) {
+      setWriteError(
+        `“${correctionTargetLabel(target)}” is mapped to ${aliasTargetLabel(governingAliases[0].canonicalExerciseId)}.`
+        + " Return it to standalone, or replace the mapping, before assigning a movement.",
+      );
+      return;
+    }
+
     try {
+      if (governingAliases.length > 0) {
+        await aliasRepo.removeMany(governingAliases.map((alias) => alias.id), { dispatch: false });
+      }
       await normalizationOverrideRepo.save(input);
+
+      // Verified against storage, not against this sheet's snapshot — the
+      // provider reload has not landed yet, and a concurrent writer could have
+      // re-occupied the token. Success is only claimed when the name is
+      // genuinely no longer governed by an alias.
+      if (target.kind === "normalized-name" && (await aliasRepo.find(target.value))) {
+        setWriteError(
+          `“${target.value}” is still mapped to another exercise, so the correction did not take effect.`,
+        );
+        return;
+      }
+
       // Show what was written, not what was on screen: the provider reload is
       // in flight, so following the stored identity here would flash the old
       // classification for a frame.
@@ -289,8 +337,14 @@ export function ExerciseCorrectionSheet({
     try {
       // The one sanctioned overwrite in the app: one transaction that drops the
       // row holding the token and inserts the new remembered target.
-      if (occupiedAlias) await aliasRepo.replaceRemembered(input);
-      else await aliasRepo.save(input);
+      // Suppressed so the override cleanup below fires the single event.
+      if (occupiedAlias) await aliasRepo.replaceRemembered(input, { dispatch: false });
+      else await aliasRepo.save(input, { dispatch: false });
+      // The alias now outranks any `normalized-name` override for this token
+      // permanently, so leaving one stored would keep shipping unreachable
+      // identity in every backup export. Ordered after the alias write, so a
+      // rejected mapping deletes nothing. A missing key is a no-op delete.
+      await normalizationOverrideRepo.remove(normalizationOverrideKey("normalized-name", input.alias));
       setWriteError(null);
       setReplaceConfirmed(false);
       setSaved(`Saved — “${input.alias}” now means ${context.catalogById.get(mappedExerciseId)?.name ?? mappedExerciseId}.`);
@@ -317,7 +371,7 @@ export function ExerciseCorrectionSheet({
       // so it reads correctly on both the panel it opens inside (--bg-2) and the
       // expanded catalogue row it opens inside (--bg-3).
       style={{
-        border: "1px solid var(--line-strong)",
+        border: "1px solid var(--line-2)",
         borderRadius: "var(--r)",
         overflow: "hidden",
       }}
@@ -440,7 +494,7 @@ export function ExerciseCorrectionSheet({
                   }}
                   style={fieldStyle}
                 >
-                  <option value="">choose a version…</option>
+                  <option value="">{versionQuery.trim() ? "choose a version…" : "filter to choose a version…"}</option>
                   {versionOptions.map((option) => (
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}

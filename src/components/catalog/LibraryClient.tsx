@@ -11,7 +11,7 @@ import type {
   ExerciseIdentityResolver,
   ExerciseIdentityResult,
 } from "@/lib/catalog/identity";
-import { toTitleCase } from "@/lib/catalog/normalize";
+import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
 import type { ProgramDay, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
 import {
@@ -115,6 +115,27 @@ function targetFor(
   return name ? { kind: "normalized-name", value: name } : undefined;
 }
 
+/**
+ * Cache key for one candidate's resolution outcome.
+ *
+ * Deliberately excludes `slotId`: nothing this function reads from the result
+ * (`movementId`, `source`, `concreteExerciseId`) depends on it — only `groupKey`
+ * and `displayLabel` do, and the label shown here comes from `rawName`. A custom
+ * exercise resolves by id, not by name, so it keys on the id: two custom
+ * exercises sharing a name are two different targets and must not collapse.
+ *
+ * This matters because the entries with no `canonicalExerciseId` are exactly the
+ * population this list targets — `v10Identity.ts` backfills that field only for
+ * exact matches — and re-resolving each one by name is a full catalogue scan.
+ */
+function resolutionCacheKey(candidate: Candidate): string {
+  if (candidate.input.kind === "custom-exercise") return `custom:${candidate.input.exerciseId}`;
+  const canonicalExerciseId = candidate.input.kind === "stored-exercise"
+    ? candidate.input.canonicalExerciseId ?? ""
+    : "";
+  return `${candidate.input.kind}:${canonicalExerciseId}:${normalizeExerciseName(candidate.rawName)}`;
+}
+
 export function deriveNeedsReview(
   context: ExerciseIdentityContext,
   resolve: ExerciseIdentityResolver,
@@ -128,15 +149,25 @@ export function deriveNeedsReview(
     ...customCandidates(context.userExercises),
   ];
 
-  for (const candidate of candidates) {
-    const identity = resolve(candidate.input);
-    // Two exclusions, for two different reasons: a target that already nests
-    // under a movement has nothing left to decide, and one whose classification
-    // came from an override has already been decided by the user — including a
-    // deliberate `movementId: null`, which must not be nagged about forever.
-    if (identity.movementId || identity.source === "user-override") continue;
+  // `undefined` is a cached "nothing to review here", so a repeated candidate
+  // costs one map lookup instead of one catalogue scan.
+  const outcomes = new Map<string, CorrectionTarget | undefined>();
 
-    const target = targetFor(identity, candidate, context);
+  for (const candidate of candidates) {
+    const cacheKey = resolutionCacheKey(candidate);
+    let target = outcomes.get(cacheKey);
+    if (!outcomes.has(cacheKey)) {
+      const identity = resolve(candidate.input);
+      // Two exclusions, for two different reasons: a target that already nests
+      // under a movement has nothing left to decide, and one whose
+      // classification came from an override has already been decided by the
+      // user — including a deliberate `movementId: null`, which must not be
+      // nagged about forever.
+      target = identity.movementId || identity.source === "user-override"
+        ? undefined
+        : targetFor(identity, candidate, context);
+      outcomes.set(cacheKey, target);
+    }
     if (!target) continue;
 
     const key = correctionTargetKey(target);
@@ -160,10 +191,23 @@ export function deriveNeedsReview(
   );
 }
 
+// Only 142 of 3,175 catalogue entries carry a movement, so a long-standing
+// user's list is tens of rows. Rendering all of them above the whole catalogue
+// on every Library visit would read as a report on the catalogue's
+// incompleteness rather than as a review queue — hence collapsed behind its
+// count, and capped when open. The count is the instrument; the rows are the
+// detail you ask for.
+const NEEDS_REVIEW_PREVIEW = 10;
+
 function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
+  const [open, setOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   if (items.length === 0) return null;
+
+  const shown = showAll ? items : items.slice(0, NEEDS_REVIEW_PREVIEW);
+  const hidden = items.length - shown.length;
 
   return (
     <section
@@ -176,11 +220,30 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
         overflow: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px" }}>
-        <span className="tx-up" style={{ flex: 1 }}>needs review</span>
+      <button
+        type="button"
+        className="tap-target"
+        onClick={() => setOpen((current) => !current)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "9px 12px",
+          background: "var(--bg-2)",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--fg)",
+          fontFamily: "inherit",
+        }}
+      >
+        <span className="tx-up" style={{ flex: 1, textAlign: "left" }}>needs review</span>
         <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>{items.length}</span>
-      </div>
-      {items.map((item) => (
+        <span style={{ color: "var(--fg-4)" }}>
+          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </span>
+      </button>
+      {open && shown.map((item) => (
         <div key={item.key} style={{ borderTop: "1px solid var(--line)" }}>
           <button
             type="button"
@@ -226,6 +289,27 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
           )}
         </div>
       ))}
+      {open && hidden > 0 && (
+        <button
+          type="button"
+          className="tap-target"
+          onClick={() => setShowAll(true)}
+          style={{
+            width: "100%",
+            padding: "7px 12px",
+            border: "none",
+            borderTop: "1px solid var(--line)",
+            background: "transparent",
+            color: "var(--fg-3)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            textAlign: "left",
+          }}
+        >
+          +{hidden} more
+        </button>
+      )}
     </section>
   );
 }
