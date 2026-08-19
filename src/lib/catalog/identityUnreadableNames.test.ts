@@ -1,7 +1,7 @@
 import { deriveNeedsReview } from "@/components/catalog/LibraryClient";
 import { resolveExerciseIdentity, type ExerciseIdentityInput } from "@/lib/catalog/identity";
 import { createMigrationContext } from "@/lib/storage/migrations/v10Identity";
-import type { WorkoutLogDocument } from "@/lib/programs/types";
+import type { ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
 
 /**
  * The resolver is typed as if every name it receives is a string. Nothing
@@ -97,6 +97,43 @@ describe("deriveNeedsReview — a log entry whose name is unreadable", () => {
       { exerciseId: "e2", exerciseName: "Wobble Board Thing", sets: [{ setNumber: 1, weight: 10, reps: 5 }] },
     ],
   } as unknown as WorkoutLogDocument;
+
+  // The routine side of the same field. Mutation found it unpinned: reverting
+  // `programCandidates` to `?? ""` alone left every other test green, because
+  // no fixture passed a program at all.
+  const programWithUnreadableName = {
+    id: "p1",
+    title: "Block",
+    source: "manual",
+    active: true,
+    days: [{
+      id: "d1",
+      dayNumber: 1,
+      title: "Day",
+      sections: [{
+        id: "s1",
+        name: "Main",
+        type: "strength",
+        groups: [{
+          id: "g1",
+          type: "single",
+          exercises: [
+            { id: "slot-1", name: 7, tags: { primary: [], secondary: [], incidental: [], modifiers: [] } },
+            { id: "slot-2", name: "Wobble Board Thing", tags: { primary: [], secondary: [], incidental: [], modifiers: [] } },
+          ],
+        }],
+      }],
+    }],
+    overrides: [],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+  } as unknown as ProgramDocument;
+
+  it("keeps the rest of the page working when a ROUTINE slot's name is unreadable", () => {
+    const review = deriveNeedsReview(context, resolve, [programWithUnreadableName], []);
+    expect(review.map((item) => item.label)).toContain("Wobble Board Thing");
+    for (const item of review) expect(typeof item.label).toBe("string");
+  });
 
   it("keeps the rest of the page working instead of blanking it", () => {
     const review = deriveNeedsReview(context, resolve, [], [log]);
