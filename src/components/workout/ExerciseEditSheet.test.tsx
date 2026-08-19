@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { deleteDB } from "idb";
 import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
@@ -75,13 +75,24 @@ describe("ExerciseEditSheet — identity correction", () => {
   // something is ABSENT never waits for those reads, so without this flush the
   // next `deleteDB` races a live connection and fake-indexeddb throws
   // `InvalidStateError` after the suite has already reported green.
-  // The provider reads three stores on mount. Every test below waits for the
-  // correction sheet, so those reads have landed by the time the connection is
-  // closed — a test that asserted only an absence would race the close and make
-  // fake-indexeddb throw `InvalidStateError` after the suite reported green.
   afterEach(() => {
     resetDbConnection();
   });
+
+  /**
+   * Waits for the sheet to be READ, not merely mounted.
+   *
+   * The provider reads three stores when it mounts and the sheet renders
+   * "Reading stored corrections…" until they land. A test that stopped at the
+   * region left those reads in flight, so the next `beforeEach` closed the
+   * connection under them and fake-indexeddb threw `InvalidStateError` — every
+   * run under `--maxWorkers=24`, and none under `--runInBand`.
+   */
+  async function loadedSheet(name: string) {
+    const sheet = await screen.findByRole("region", { name });
+    await waitFor(() => expect(within(sheet).queryByText("Reading stored corrections…")).toBeNull());
+    return sheet;
+  }
 
   function renderInApp(exercise: ProgramExercise) {
     render(
@@ -101,7 +112,7 @@ describe("ExerciseEditSheet — identity correction", () => {
 
     await user.click(screen.getByRole("button", { name: /change movement/i }));
 
-    const sheet = await screen.findByRole("region", { name: "Correct High Bar Back Squat" });
+    const sheet = await loadedSheet("Correct High Bar Back Squat");
     // The bundled entry, not the text: a name-only target would carry the same
     // label, so the kind tag is what tells the two apart.
     expect(within(sheet).getByText("bundled")).toBeInTheDocument();
@@ -113,7 +124,7 @@ describe("ExerciseEditSheet — identity correction", () => {
 
     await user.click(screen.getByRole("button", { name: /change movement/i }));
 
-    const sheet = await screen.findByRole("region", { name: "Correct Wobble Board Thing" });
+    const sheet = await loadedSheet("Correct Wobble Board Thing");
     expect(within(sheet).getByText("name only")).toBeInTheDocument();
   });
 });
