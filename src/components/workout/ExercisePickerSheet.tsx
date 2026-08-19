@@ -1,9 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, X, Check } from "lucide-react";
+import { Search, X } from "lucide-react";
+import {
+  NestedExerciseList,
+  catalogItemForVersion,
+  usePickerGroups,
+} from "@/components/catalog/NestedExerciseList";
 import { exerciseCatalog, type ExerciseCatalogItem } from "@/lib/catalog/exercises";
-import { toTitleCase } from "@/lib/catalog/normalize";
 import { useVisualViewport } from "@/lib/ui/useVisualViewport";
 
 type Props = {
@@ -14,7 +18,7 @@ type Props = {
 export function ExercisePickerSheet({ onAdd, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Map<string, ExerciseCatalogItem>>(new Map());
 
   const { height: vvHeight, ready: vvReady } = useVisualViewport();
   const sheetMaxHeight = vvReady && vvHeight !== undefined
@@ -22,36 +26,27 @@ export function ExercisePickerSheet({ onAdd, onClose }: Props) {
     : undefined;
 
   const muscles = useMemo(() => {
+    // Exact concrete metadata lookup; grouping is intentionally not performed here.
     const all = exerciseCatalog.flatMap((e) => e.muscles.primary);
     return [...new Set(all)].sort();
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return exerciseCatalog.filter((e) => {
-      if (muscleFilter && !e.muscles.primary.includes(muscleFilter)) return false;
-      if (q) {
-        const inName = e.name.toLowerCase().includes(q);
-        const inAlias = e.aliases.some((a) => a.toLowerCase().includes(q));
-        const inMuscle = e.muscles.primary.some((m) => m.toLowerCase().includes(q));
-        if (!inName && !inAlias && !inMuscle) return false;
-      }
-      return true;
-    });
-  }, [query, muscleFilter]);
+  const groups = usePickerGroups(query, muscleFilter);
+  const selectedIds = useMemo(() => new Set(selected.keys()), [selected]);
 
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
+  function toggle(id: string, item: ExerciseCatalogItem) {
+    setSelected((previous) => {
+      const next = new Map(previous);
       if (next.has(id)) next.delete(id);
-      else next.add(id);
+      else next.set(id, item);
       return next;
     });
   }
 
+  // The selection carries its own concrete items, so what is added is exactly
+  // what was ticked — never re-derived from a name or a family.
   function handleAdd() {
-    const items = exerciseCatalog.filter((e) => selected.has(e.id));
-    onAdd(items);
+    onAdd([...selected.values()]);
   }
 
   return (
@@ -117,43 +112,12 @@ export function ExercisePickerSheet({ onAdd, onClose }: Props) {
 
         {/* Exercise list */}
         <div className="flex-1 overflow-y-auto px-4 pb-2">
-          {filtered.length === 0 && (
-            <p className="muted text-sm text-center py-8">No exercises match</p>
-          )}
-          {filtered.map((item) => {
-            const sel = selected.has(item.id);
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => toggle(item.id)}
-                className="w-full flex items-center gap-3 py-2 border-b text-left"
-                style={{ borderColor: "var(--line)" }}
-              >
-                <div
-                  className="flex items-center justify-center rounded shrink-0"
-                  style={{
-                    width: 22,
-                    height: 22,
-                    background: sel ? "var(--accent)" : "var(--bg-3)",
-                    border: `1px solid ${sel ? "var(--accent)" : "var(--line)"}`,
-                  }}
-                >
-                  {sel && <Check size={12} style={{ color: "var(--bg-1)" }} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{toTitleCase(item.name)}</p>
-                  <p
-                    className="text-[10px] truncate"
-                    style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}
-                  >
-                    {item.muscles.primary.slice(0, 2).join(" · ")}
-                    {item.equipment[0] ? ` · ${item.equipment[0]}` : ""}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+          <NestedExerciseList
+            groups={groups}
+            selectedIds={selectedIds}
+            mark="check"
+            onSelectVersion={(version) => toggle(version.id, catalogItemForVersion(version))}
+          />
         </div>
 
         {/* Footer */}

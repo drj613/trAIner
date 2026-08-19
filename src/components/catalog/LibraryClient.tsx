@@ -581,15 +581,26 @@ function ExerciseRow({
  * exercise, so this row only opens and closes — there is no version behind it
  * to log, and no identity behind it to correct.
  */
-function FamilyRow({ group, defaultOpen }: { group: CatalogGroup; defaultOpen: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
+function FamilyRow({ group }: { group: CatalogGroup }) {
+  // Open only when the query reached inside the family, and re-derived on every
+  // query rather than seeded once: the row stays mounted while the user types,
+  // so a `useState` seed would freeze whatever a half-typed query matched. A
+  // click wins until the automatic answer itself changes.
+  const autoOpen = group.matchedVersionIds.length > 0;
+  const [clicked, setClicked] = useState<boolean | null>(null);
+  const [lastAutoOpen, setLastAutoOpen] = useState(autoOpen);
+  if (lastAutoOpen !== autoOpen) {
+    setLastAutoOpen(autoOpen);
+    setClicked(null);
+  }
+  const open = clicked ?? autoOpen;
   const count = group.versions.length;
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setClicked(!open)}
         aria-expanded={open}
         aria-label={`${group.name} movement, ${count} version${count === 1 ? "" : "s"}`}
         style={{
@@ -630,8 +641,8 @@ function FamilyRow({ group, defaultOpen }: { group: CatalogGroup; defaultOpen: b
   );
 }
 
-function GroupRows({ group, defaultOpen }: { group: CatalogGroup; defaultOpen: boolean }) {
-  if (!group.standalone) return <FamilyRow group={group} defaultOpen={defaultOpen} />;
+function GroupRows({ group }: { group: CatalogGroup }) {
+  if (!group.standalone) return <FamilyRow group={group} />;
   // A standalone group is one entry with no family, which is the common case:
   // it renders as an ordinary row with no disclosure to click through.
   return (
@@ -701,7 +712,7 @@ function CategorySection({
       {open && (
         <div style={{ borderTop: "1px solid var(--line)" }}>
           {groups.map((group) => (
-            <GroupRows key={group.id} group={group} defaultOpen={defaultOpen} />
+            <GroupRows key={group.id} group={group} />
           ))}
         </div>
       )}
