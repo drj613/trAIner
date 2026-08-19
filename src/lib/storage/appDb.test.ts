@@ -1790,13 +1790,24 @@ describe("restoreBackup — version-2 documents", () => {
     { name: "a profile whose id is not a string", profile: { id: 7 } },
   ])("rejects $name without destroying the workspace", async ({ profile }) => {
     await programRepo.save(demoProgram);
-    const before = await programRepo.list();
+    // A second store, seeded rather than merely empty: asserting that an empty
+    // store is still empty holds under every mutation, including the one where
+    // all eight stores are cleared and nothing is written back.
+    await logRepo.save({
+      id: "log-1",
+      programId: demoProgram.id,
+      dayId: demoProgram.days[0].id,
+      performedAt: "2026-08-18T00:00:00.000Z",
+      entries: [],
+    });
+    const beforePrograms = await programRepo.list();
+    const beforeLogs = await logRepo.list();
     const exported = await exportBackup();
 
     await expect(restoreBackup({ ...exported, profile })).rejects.toThrow(/profile/);
 
-    await expect(programRepo.list()).resolves.toEqual(before);
-    await expect(logRepo.list()).resolves.toEqual([]);
+    await expect(programRepo.list()).resolves.toEqual(beforePrograms);
+    await expect(logRepo.list()).resolves.toEqual(beforeLogs);
   });
 
   it("accepts an absent or null profile", async () => {
