@@ -197,8 +197,50 @@ tree before my fix — and `diff` of the two outputs is empty:
 IDENTICAL: legacy retention decisions unchanged
 ```
 
-Byte-identical retained set, both scopes. The `or`-retention trap is closed by
-measurement, not by reading.
+Byte-identical retained set, both scopes.
+
+> ~~The `or`-retention trap is closed by measurement, not by reading.~~
+>
+> **CORRECTED in Task 10b (review finding F3). This sentence was wrong, and it
+> credited the wrong evidence.**
+>
+> **What the digest DOES establish:** legacy retention is unchanged. 3,749
+> retained under both scopes, byte-identical against the pre-fix control at
+> `1fe3b0d`. The reviewer rebuilt the corpus independently (24,415 rows) and
+> matched `retained 3749` to the unit. That half stands.
+>
+> **What it does NOT establish: anything at all about the `or` trap.** The
+> reviewer re-ran the same digest under the trap mutation itself — `aliasRuleText`
+> body replaced with `return token;` — and under a drop-the-normalize-pass
+> mutation, and got `retained 3749`, digest `c8923047…`, **identical every
+> time**. A measurement that cannot move under the mutation it is offered against
+> is not evidence about that mutation.
+>
+> And it is vacuous **by construction**, not by luck. Every row in this corpus is
+> legacy-shaped, so `normalizedAlias === normalizeExerciseName(alias)`; and
+> `prepareImportName`'s first act is `normalizeExerciseName`. So
+> `prepareImportName(alias.alias)` and `prepareImportName(token)` are the *same
+> call*. **No legacy-shaped corpus of any size can distinguish the two rules.**
+> Only a MISMATCHED row can — `{alias: "Hatfield Squat or Lunge", token:
+> "hatfield squat lunge"}`, which the reviewer isolated: purged at HEAD,
+> **retained** under the trap mutation.
+>
+> **What actually closes the trap**, and what this section should have cited:
+>
+> 1. The shipped test `runs the disambiguation rules over the display text even
+>    when the token is already stripped` — the mismatched shape above, with its
+>    own canary. Killed by the trap mutation, 1 failed / 267.
+> 2. The total equivalence argument in the section below: `aliasRuleText` uses
+>    the *same predicate* and returns the *same value* as the old `textForRules`
+>    for **every** input, so the `or` path could not have moved. That is stronger
+>    than any sample — it is a proof, not a measurement.
+>
+> **The lesson, because this is the SECOND time in one round** (after this
+> report's own diagnosis of NEW-B's prefix-only corpus, written one section
+> later and not applied here): *a corpus built from rows the defect cannot
+> inhabit is not evidence about the defect, however many rows it has.* Check
+> corpus **shape** against the failure mode before reporting corpus **size**. A
+> five-figure row count reads as thoroughness and can be worth nothing.
 
 ### The two-generation case, verified explicitly
 
@@ -447,7 +489,10 @@ raised no timeout anywhere. Not cleared — disclosed.
    have kept the row.
 4. **My claim that legacy retention is unchanged.** The evidence is a digest
    diff against a control worktree at `1fe3b0d`; re-run it if you want it
-   independently.
+   independently. *(Reviewer did, independently, and it reproduced to the unit.
+   But see the corrected block above: the same digest was also — wrongly —
+   credited with closing the `or` trap, which it is structurally incapable of
+   expressing.)*
 5. **Whether trusting the stored token can be rejected by the unique index** on
    any path I have not thought of. I checked `classifyAliases` (dedupes) and
    `putRaw` (single row, no production callers).
