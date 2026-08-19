@@ -223,11 +223,13 @@ export function ExerciseCorrectionSheet({
    * such a name as standalone before either store is read, so nothing this
    * sheet could write would ever be consulted — it has to say so instead.
    */
+  // Memoised on the name STRING rather than on the target object: a parent that
+  // builds the target inline would otherwise rebuild ten regexes on every
+  // keystroke in the version filter.
+  const targetName = target.kind === "normalized-name" ? target.value : null;
   const prepared = useMemo(
-    () => (target.kind === "normalized-name"
-      ? prepareImportName(target.value, context.disambiguations)
-      : undefined),
-    [target, context.disambiguations],
+    () => (targetName === null ? undefined : prepareImportName(targetName, context.disambiguations)),
+    [targetName, context.disambiguations],
   );
   const lookupToken = prepared?.normalizedName ?? "";
   /**
