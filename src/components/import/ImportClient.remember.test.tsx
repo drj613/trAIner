@@ -122,6 +122,24 @@ const alternativeNameJson = JSON.stringify({
   ],
 });
 
+// Two base days both declared as day 1: `applyResolutions` refuses to patch a
+// structurally ambiguous day, so every decision about it reaches zero stored
+// exercises.
+const ambiguousDayJson = JSON.stringify({
+  program_name: "Ambiguous",
+  days: ["A", "B"].map((title) => ({
+    day: 1,
+    title,
+    sections: [
+      {
+        name: "Main",
+        type: "strength",
+        groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 3, reps: "5" }] }],
+      },
+    ],
+  })),
+});
+
 async function pasteAndValidate(
   user: ReturnType<typeof userEvent.setup>,
   json = JSON.stringify(fixture),
@@ -371,6 +389,23 @@ describe("ImportClient: what a failed or repeated save must not do", () => {
     await user.click(screen.getByRole("button", { name: /review import/i }));
     expect(screen.getByText(/4 exercises imported as custom/i)).toBeInTheDocument();
     expect(screen.queryByText(/1 exercise imported as custom/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/mapped to catalog/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("ImportClient: a decision that reaches no exercise", () => {
+  it("claims nothing was mapped when the routine's structure is ambiguous", async () => {
+    // Both halves of this are pinned separately — `storedExerciseCount`
+    // returning 0 at unit level, and the resolve row's "won't apply" copy —
+    // but nothing asserted the composition: that the confirm step then makes
+    // no claim at all rather than claiming "0 exercises mapped".
+    const user = await chooseVersion("barbell-high-bar-squat", ambiguousDayJson);
+    expect(screen.getByText(/won't apply/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /review import/i }));
+    // Completion canary: we really are on the confirm step, so the absence
+    // below is an absence and not a step that never rendered.
+    expect(screen.getByText(/2 days · 2 exercises/)).toBeInTheDocument();
     expect(screen.queryByText(/mapped to catalog/i)).not.toBeInTheDocument();
   });
 });
