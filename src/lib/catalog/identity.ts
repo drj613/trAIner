@@ -1,4 +1,11 @@
 import { normalizeExerciseName } from "./normalize";
+// The one existing rendered-as-text rule, imported rather than reimplemented.
+// It keeps a last-resort label showing `7` instead of nothing — the settled
+// choice at `historyUtils.ts:153` — where a blanking variant here would have
+// silently emptied the standalone family and version labels the projection
+// takes straight off `displayLabel`. (`historyUtils` imports only types, so
+// there is no cycle.)
+import { textOf } from "@/lib/workout/historyUtils";
 import type { ExerciseCatalogItem } from "./exercises";
 import type {
   DisambiguationRule,
@@ -75,6 +82,32 @@ function customExerciseAsCatalogItem(exercise: UserExerciseDocument): ExerciseCa
     tags: [],
     movementModifierIds: [],
   };
+}
+
+/**
+ * A name we can read, or nothing.
+ *
+ * Every text field on this module's inputs is TYPED `string`, and nothing
+ * enforces it on the way in: `appDb`'s v7 rule deliberately keeps a log whose
+ * `entries` it cannot read, and `restoreBackup` no longer validates
+ * `logs[].entries` at all (see the boundary note in `backup.ts`). A hand-edited
+ * or foreign backup therefore reaches the resolver with a number or an object
+ * where a name should be, and `normalizeExerciseName` threw
+ * `value.toLowerCase is not a function` on it — inside `deriveNeedsReview`'s
+ * `useMemo`, with no error boundary above it, which blanked `/library`.
+ *
+ * Guarded HERE rather than at each caller for the reason `logLocalDate` gives:
+ * every consumer funnels through `resolveExerciseIdentity`, so one guard covers
+ * the history projection, the library, the pickers, the importer, the migration
+ * and restore at once, and there is no second variant to drift.
+ *
+ * Absent is the settled meaning of unreadable (`v10Identity.isReadableText`,
+ * `historyUtils.entryPerformedName`). It is a shape the resolver already
+ * handles: an entry with no name falls back to its slot, which is exactly what
+ * an unnamed entry has always done.
+ */
+function readableName(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 function escapeRegExp(value: string): string {
@@ -154,7 +187,7 @@ function resultForConcrete(
     movementModifierIds,
     movementModifierNames: movementModifierIds.map((id) => context.modifiersById.get(id)?.name ?? id),
     displayLabel: resolved.item.name,
-    ...(input.kind === "stored-exercise" && input.performedName
+    ...(input.kind === "stored-exercise" && readableName(input.performedName)
       ? { performedName: input.performedName }
       : {}),
     currentVersionLabel: resolved.item.name,
@@ -167,13 +200,15 @@ function standaloneResult(
   input: ExerciseIdentityInput,
   normalizedName: string,
 ): ExerciseIdentityResult {
-  const displayLabel = input.kind === "stored-exercise"
-    ? input.performedName ?? input.canonicalExerciseId ?? input.slotId
-    : input.kind === "import-name"
-      ? input.name
-      : input.kind === "custom-exercise"
+  const displayLabel = textOf(
+    input.kind === "stored-exercise"
+      ? input.performedName ?? input.canonicalExerciseId ?? input.slotId
+      : input.kind === "import-name"
         ? input.name
-        : input.canonicalExerciseId;
+        : input.kind === "custom-exercise"
+          ? input.name
+          : input.canonicalExerciseId,
+  );
   const groupKey = input.kind === "stored-exercise"
     ? `slot:${input.slotId}`
     : input.kind === "custom-exercise"
@@ -188,7 +223,7 @@ function standaloneResult(
     movementModifierIds: [],
     movementModifierNames: [],
     displayLabel,
-    ...(input.kind === "stored-exercise" && input.performedName
+    ...(input.kind === "stored-exercise" && readableName(input.performedName)
       ? { performedName: input.performedName }
       : {}),
     source: "standalone",
@@ -217,7 +252,7 @@ function resultForUnderspecified(
     movementModifierIds,
     movementModifierNames: movementModifierIds.map((id) => context.modifiersById.get(id)?.name ?? id),
     displayLabel,
-    ...(input.kind === "stored-exercise" && input.performedName
+    ...(input.kind === "stored-exercise" && readableName(input.performedName)
       ? { performedName: input.performedName }
       : {}),
     source: "standalone",
@@ -246,7 +281,7 @@ function resultForNormalizedNameOverride(
     movementModifierIds,
     movementModifierNames: movementModifierIds.map((id) => context.modifiersById.get(id)?.name ?? id),
     displayLabel,
-    ...(input.kind === "stored-exercise" && input.performedName
+    ...(input.kind === "stored-exercise" && readableName(input.performedName)
       ? { performedName: input.performedName }
       : {}),
     source: "user-override",
@@ -347,26 +382,29 @@ export function resolveExerciseIdentity(
   context: ExerciseIdentityContext,
 ): ExerciseIdentityResult {
   if (input.kind === "catalog-reference") {
-    return resolveCanonicalId(input.canonicalExerciseId, input, context)
-      ?? standaloneResult(input, normalizeExerciseName(input.canonicalExerciseId));
+    const canonicalExerciseId = readableName(input.canonicalExerciseId);
+    return (canonicalExerciseId ? resolveCanonicalId(canonicalExerciseId, input, context) : undefined)
+      ?? standaloneResult(input, normalizeExerciseName(canonicalExerciseId ?? ""));
   }
 
   if (input.kind === "custom-exercise") {
     const customExercise = context.userExercises.find((exercise) => exercise.id === input.exerciseId);
     return customExercise
       ? resultForConcrete({ item: customExerciseAsCatalogItem(customExercise), source: "catalog-id" }, input, context)
-      : standaloneResult(input, normalizeExerciseName(input.name));
+      : standaloneResult(input, normalizeExerciseName(readableName(input.name) ?? ""));
   }
 
   if (input.kind === "stored-exercise") {
-    if (input.canonicalExerciseId) {
-      const byCanonicalId = resolveCanonicalId(input.canonicalExerciseId, input, context);
+    const canonicalExerciseId = readableName(input.canonicalExerciseId);
+    if (canonicalExerciseId) {
+      const byCanonicalId = resolveCanonicalId(canonicalExerciseId, input, context);
       if (byCanonicalId) return byCanonicalId;
     }
-    return input.performedName
-      ? resolveName(input, input.performedName, context)
+    const performedName = readableName(input.performedName);
+    return performedName
+      ? resolveName(input, performedName, context)
       : standaloneResult(input, "");
   }
 
-  return resolveName(input, input.name, context);
+  return resolveName(input, readableName(input.name) ?? "", context);
 }

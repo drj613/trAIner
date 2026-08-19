@@ -21,7 +21,7 @@ import type {
 import { normalizeExerciseName, toTitleCase } from "@/lib/catalog/normalize";
 import type { ProgramDay, ProgramDocument, UserExerciseDocument, WorkoutLogDocument } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
-import { readableEntries } from "@/lib/workout/historyUtils";
+import { readableEntries, textOf } from "@/lib/workout/historyUtils";
 import {
   ExerciseCorrectionSheet,
   correctionTargetKey,
@@ -65,7 +65,10 @@ function programCandidates(programs: readonly ProgramDocument[]): Candidate[] {
           for (const exercise of group.exercises ?? []) {
             candidates.push({
               origin: "routine",
-              rawName: exercise.name ?? "",
+              // Same class as the `?? []` below, and the same fix: `?? ""` does
+              // not fire for a non-nullish unreadable value, and `rawName` is
+              // both trimmed and normalized downstream.
+              rawName: textOf(exercise.name),
               input: {
                 kind: "stored-exercise",
                 canonicalExerciseId: exercise.canonicalExerciseId,
@@ -90,7 +93,12 @@ function logCandidates(logs: readonly WorkoutLogDocument[]): Candidate[] {
   return logs.flatMap((log) =>
     readableEntries(log).map(({ entry }) => ({
       origin: "log" as const,
-      rawName: entry.exerciseName ?? "",
+      // `?? ""` did not fire for a non-string `exerciseName`, which
+      // `resolutionCacheKey` then handed to `normalizeExerciseName` — the same
+      // blank-page throw the `entries` guard below was added to stop. Nothing
+      // validates this field: `appDb`'s v7 rule keeps an unreadable log and
+      // `restoreBackup` no longer validates `logs[].entries` at all.
+      rawName: textOf(entry.exerciseName),
       input: {
         kind: "stored-exercise" as const,
         canonicalExerciseId: entry.canonicalExerciseId,
