@@ -40,7 +40,10 @@ export function formatSessionDate(localYmd: unknown): string {
 }
 
 export type WorkoutGroup = {
-  logId: string;
+  /** The stored log id, compared as-is. Typed `string`; not always one. */
+  logId: unknown;
+  /** A React key that is unique whatever the stored ids turn out to be. */
+  key: string;
   performedDate: unknown;
   volumeLb: number;
   rows: ExerciseHistoryRow[];
@@ -52,21 +55,37 @@ export type WorkoutGroup = {
  * Rows arrive sorted by `performedAt`, then `logId`, then `entryIndex`, so rows
  * from one workout are already adjacent and a single pass is enough — the same
  * property the projection's own session bucketing relies on
- * (`compareRowsChronologically`). `String(...)` on the id because a corrupt log
- * can hold a non-string there and the grouping must not depend on `===`
- * comparing two unreadable values.
+ * (`compareRowsChronologically`).
+ *
+ * The id is compared AS STORED, deliberately not coerced. `logId` is typed
+ * `string` but a hand-edited or foreign backup can hold anything, and every row
+ * of one log carries the same value read from the same record — so `===`
+ * answers "same workout" correctly even for a value we cannot read, while
+ * `String(...)` would collapse two different unreadable logs into one block and
+ * undercount the user's workouts. (The projection coerces in `logIdOrder` for a
+ * different reason: `localeCompare` throws on a non-string receiver. `===`
+ * cannot throw.)
+ *
+ * The React key carries the group's position rather than the id alone, because
+ * two distinct logs sharing an id is out of contract but not prevented
+ * anywhere, and a duplicate key silently drops a workout from the list.
  */
 export function groupByWorkout(rows: readonly ExerciseHistoryRow[]): WorkoutGroup[] {
   const groups: WorkoutGroup[] = [];
   for (const row of rows) {
-    const logId = String(row.logId);
     const current = groups[groups.length - 1];
-    if (current && current.logId === logId) {
+    if (current && current.logId === row.logId) {
       current.rows.push(row);
       current.volumeLb += row.volumeLb;
       continue;
     }
-    groups.push({ logId, performedDate: row.performedDate, volumeLb: row.volumeLb, rows: [row] });
+    groups.push({
+      logId: row.logId,
+      key: `${groups.length}#${textOf(row.logId)}`,
+      performedDate: row.performedDate,
+      volumeLb: row.volumeLb,
+      rows: [row],
+    });
   }
   return groups;
 }
@@ -115,7 +134,7 @@ export function HistoryWorkoutList({
     <>
       {groups.map((group, groupIndex) => (
         <div
-          key={group.logId}
+          key={group.key}
           data-testid="history-workout"
           style={{
             padding: "8px 16px",
@@ -152,7 +171,7 @@ export function HistoryWorkoutList({
             const needsReview = onCorrect && rowNeedsReview(row);
             return (
               <div
-                key={`${group.logId}#${row.entryIndex}`}
+                key={`${group.key}#${row.entryIndex}`}
                 data-testid="history-row"
                 data-version-key={row.versionKey}
                 data-active-version={isActive ? "true" : "false"}

@@ -123,12 +123,21 @@ describe("HistoryDrawer — family-wide Today history", () => {
   // Item 4: the old `limit = 8` sliced entries, so "last 8" could show three
   // workouts. The cap is on workouts now, and the label says so.
   it("caps the list at eight workouts, not eight entries", () => {
+    // TWO entries per workout, so the two rules give different answers:
+    // slicing entries would show 8 entries across 4 workouts.
     const rows = makeHistoryDrawerRows(
-      Array.from({ length: 10 }, (_, i) => ({ performedName: "Back Squat", logId: `log-${i}` })),
+      Array.from({ length: 20 }, (_, i) => ({
+        performedName: "Back Squat",
+        logId: `log-${String(Math.floor(i / 2)).padStart(2, "0")}`,
+        entryIndex: i % 2,
+        performedAt: `2026-04-${String(20 - Math.floor(i / 2)).padStart(2, "0")}T14:00:00.000Z`,
+        performedDate: `2026-04-${String(20 - Math.floor(i / 2)).padStart(2, "0")}`,
+      })),
     );
     renderDrawer({ rows });
-    expect(screen.getAllByTestId("history-row")).toHaveLength(8);
-    expect(screen.getByText(/8 workouts · 8 entries · last 8/)).toBeInTheDocument();
+    expect(screen.getAllByTestId("history-workout")).toHaveLength(8);
+    expect(screen.getAllByTestId("history-row")).toHaveLength(16);
+    expect(screen.getByText(/8 workouts · 16 entries · last 8/)).toBeInTheDocument();
   });
 
   // The invariant. A saved correction changes the current badge and the
@@ -278,5 +287,40 @@ describe("HistoryDrawer — family-wide Today history", () => {
   it("offers no correction affordance for a resolved row", () => {
     renderDrawer({ onCorrect: jest.fn() });
     expect(screen.queryByRole("button", { name: /^fix /i })).not.toBeInTheDocument();
+  });
+  // Item 11: two distinct logs sharing an id is out of contract and still open,
+  // and two logs whose ids we cannot read at all are preserved by `appDb`
+  // deliberately. Neither may collapse two workouts into one block — coercing
+  // the id to text would make every unreadable id `"[object Object]"` and
+  // undercount what the user actually did.
+  it("keeps two workouts apart when neither log id is readable", () => {
+    const rows = [
+      { performedName: "Back Squat", logId: {}, sets: ["225x5"], performedDate: "2026-04-20", performedAt: "2026-04-20T14:00:00.000Z" },
+      { performedName: "Back Squat", logId: {}, sets: ["215x5"], performedDate: "2026-04-13", performedAt: "2026-04-13T14:00:00.000Z" },
+    ] as unknown as Array<Partial<ExerciseHistoryRow> & Pick<ExerciseHistoryRow, "performedName">>;
+    renderDrawer({ rows: makeHistoryDrawerRows(rows) });
+    expect(screen.getAllByTestId("history-workout")).toHaveLength(2);
+    expect(screen.getByText("2 workouts · 2 entries")).toBeInTheDocument();
+  });
+
+  // The correction is about the token the log actually holds. Using the current
+  // label instead would key the override on a name the user never typed, so the
+  // correction would not resolve the row it was made from.
+  it("corrects an unresolved row on what was logged, not on the current label", async () => {
+    const user = userEvent.setup();
+    const onCorrect = jest.fn();
+    const rows = makeHistoryDrawerRows([
+      {
+        performedName: "Sled Push Ladder Thing",
+        versionKey: "name:sled push ladder thing#sled push ladder thing",
+        currentVersionLabel: "Sled Push",
+      },
+    ]);
+    renderDrawer({ rows, onCorrect });
+    await user.click(screen.getByRole("button", { name: /fix identity for Sled Push Ladder Thing/i }));
+    expect(onCorrect).toHaveBeenCalledWith({
+      kind: "normalized-name",
+      value: "Sled Push Ladder Thing",
+    });
   });
 });

@@ -92,11 +92,25 @@ afterEach(() => {
 });
 
 describe("HistoryClient — all-time family history", () => {
-  it("shows one index row per movement family", async () => {
-    makeHistoryClientFixture([...squatLogs, benchLog]).install();
+  it("shows one index row per movement family, counting workouts not entries", async () => {
+    // `l-low` logs the squat TWICE, so the family has 3 workouts and 4 entries.
+    // A fixture with one entry per workout cannot tell the two counts apart.
+    const twice = {
+      ...squatLogs[1],
+      entries: [...squatLogs[1].entries, { ...squatLogs[1].entries[0] }],
+    } as WorkoutLogDocument;
+    const third = log("l-third", daysAgo(20), [
+      {
+        exerciseId: "e1", exerciseName: "High Bar Back Squat",
+        canonicalExerciseId: "barbell-high-bar-squat",
+        sets: [{ setNumber: 1, weight: 205, reps: 5 }],
+      },
+    ]);
+    makeHistoryClientFixture([squatLogs[0], twice, third, benchLog]).install();
     renderHistory();
     const squat = await screen.findByRole("button", { name: /^Squat\b/ });
-    expect(within(squat).getByText("2 workouts")).toBeInTheDocument();
+    expect(within(squat).getByText("3 workouts")).toBeInTheDocument();
+    expect(within(squat).getByText("2 versions")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Bench Press\b/ })).toBeInTheDocument();
   });
 
