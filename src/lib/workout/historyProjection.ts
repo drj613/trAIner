@@ -201,10 +201,22 @@ function performedAtOrder(left: string, right: string): number {
   return String(right).localeCompare(String(left));
 }
 
+/**
+ * A log id compared as text. `String(...)` on both sides for the same reason
+ * `performedAtOrder` coerces its own tiebreak: a hand-edited or foreign backup
+ * can hold a non-string `id`, and `left.logId.localeCompare(...)` threw out of
+ * the whole projection whenever two logs shared one `performedAt` instant, which
+ * is the only time this tiebreak runs. Coercing the argument alone is not enough
+ * — `localeCompare` coerces what it is given, so only the receiver throws.
+ */
+function logIdOrder(left: ExerciseHistoryRow, right: ExerciseHistoryRow): number {
+  return String(left.logId).localeCompare(String(right.logId));
+}
+
 /** Newest first, then logId, then entry order within the workout. */
 function compareRows(left: ExerciseHistoryRow, right: ExerciseHistoryRow): number {
   return performedAtOrder(left.performedAt, right.performedAt)
-    || left.logId.localeCompare(right.logId)
+    || logIdOrder(left, right)
     || left.entryIndex - right.entryIndex;
 }
 
@@ -222,7 +234,7 @@ function compareRows(left: ExerciseHistoryRow, right: ExerciseHistoryRow): numbe
  */
 function compareRowsChronologically(left: ExerciseHistoryRow, right: ExerciseHistoryRow): number {
   return -performedAtOrder(left.performedAt, right.performedAt)
-    || left.logId.localeCompare(right.logId)
+    || logIdOrder(left, right)
     || left.entryIndex - right.entryIndex;
 }
 

@@ -598,6 +598,45 @@ describe("deterministic ordering with unreadable timestamps", () => {
       .toEqual(["num", "str"]);
   });
 
+  it("keeps rows whose log id is not a string", () => {
+    // The `logId` tiebreak only runs when the `performedAt` key ties, which is
+    // why the test above passes with a raw `localeCompare`: its fixture's ids
+    // happen to be strings. Two logs at one instant with a numeric id are the
+    // shape that reaches it, and `performedAtOrder` already coerces its own
+    // tiebreak with `String(...)` two lines away for exactly this reason.
+    // BOTH input orders, because `localeCompare` coerces its *argument*: with the
+    // numeric id on the right the raw call survives, so a single-order fixture
+    // would pass without the fix.
+    const sameInstant = "2026-08-02T14:00:00.000Z";
+    for (const ids of [[1, "l-two"], ["l-two", 1]]) {
+      const corrupt = ids.map((id) => ({
+        id, programId: "p1", dayId: "d1", performedAt: sameInstant, performedDate: "2026-08-02",
+        entries: [entry(`log-${String(id)}`)],
+      })) as unknown as WorkoutLogDocument[];
+      const projection = projectExerciseHistory(corrupt, context);
+      expect(projection.rows.map((r) => r.performedName).sort()).toEqual(["log-1", "log-l-two"]);
+      // Each log is still its own session, so the numeric id did not merge them.
+      expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+        entryCount: 2, sessionCount: 2, sessionVolumesLb: [500, 500],
+      });
+    }
+  });
+
+  it("keeps two same-instant workouts apart when both log ids are numbers", () => {
+    // Reaches the chronological comparator's tiebreak as well as the newest-first
+    // one: without coercion the bucketing sort throws before it can run.
+    const sameInstant = "2026-08-03T14:00:00.000Z";
+    const corrupt = [1, 2].map((id) => ({
+      id, programId: "p1", dayId: "d1", performedAt: sameInstant, performedDate: "2026-08-03",
+      entries: [entry(`log-${id}-a`), entry(`log-${id}-b`)],
+    })) as unknown as WorkoutLogDocument[];
+    const projection = projectExerciseHistory(corrupt, context);
+    expect(projection.rows).toHaveLength(4);
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      entryCount: 4, sessionCount: 2, sessionVolumesLb: [1000, 1000],
+    });
+  });
+
   it("keeps same-workout rows adjacent so one workout is one session", () => {
     // Two workouts recorded at the identical instant, each logging the version
     // twice. If the two logs' entries interleave, the session-bucketing loop
