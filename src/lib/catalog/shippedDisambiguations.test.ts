@@ -72,7 +72,17 @@ test("a saved user alias outranks the reviewed back squat rule", () => {
 // Every shipped rule pinned in full: token -> movement family + exact ordered
 // candidate list. `toContain`-style spot checks let truncation and wrong-family
 // mutations survive, so each rule is asserted with `toEqual`.
-const squatCandidates = ["barbell-squat", "squat--barbell--front-rack", "bodyweight-squat", "dumbbell-squat"];
+// `squat--kettlebell` ("Kettlebell Squat") is assigned to the squat family with
+// the `kettlebell` modifier, so it belongs here on exactly the footing
+// `dumbbell-squat` and `bodyweight-squat` already stand on. Appended last so the
+// generic barbell option keeps the leading position.
+const squatCandidates = [
+  "barbell-squat",
+  "squat--barbell--front-rack",
+  "bodyweight-squat",
+  "dumbbell-squat",
+  "squat--kettlebell",
+];
 const backSquatCandidates = ["barbell-squat", "barbell-high-bar-squat", "barbell-low-bar-squat"];
 const lateralRaiseCandidates = [
   "lateral-raise-dumbbell",

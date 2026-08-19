@@ -29,7 +29,7 @@
     "scripts/catalog-normalization/alias-classifications.json": "54cf2ed460f3bc4ef21e17bcda20541e5c05664039a7a334cc66ac1cf075d302",
     "scripts/catalog-normalization/assignments.json": "78e3047ceb831a4cc474846f7857299ac01d4d8dc548f77a917e0c9afc4cec94",
     "scripts/catalog-normalization/catalog-v1.snapshot.json": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
-    "scripts/catalog-normalization/disambiguations.json": "d1c1c9f349d0f96ee9d0b8c6d42aed10921fdf51992326525cfb0b8018d282fb",
+    "scripts/catalog-normalization/disambiguations.json": "7b7e219d68b6ff90d75b46f87e81361fba6cef1e7569306d4de318b56b765bc8",
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/modifiers.json": "d83d88069012ebf7f4d858430aed5327efe57997b46fd35b4495f66870b34cb2",
     "scripts/catalog-normalization/movements.json": "fa928dadeb0490a27505ff4531fc4aeb1734943993641019f271ec2889f73293",
@@ -41,7 +41,7 @@
   },
   "outputHashes": {
     "exercises.generated.json": "151d3a50582f406017de76de5964e76d7c6c486b6f7fd5f89f23327e244dabef",
-    "importDisambiguations.generated.json": "d1c1c9f349d0f96ee9d0b8c6d42aed10921fdf51992326525cfb0b8018d282fb",
+    "importDisambiguations.generated.json": "7b7e219d68b6ff90d75b46f87e81361fba6cef1e7569306d4de318b56b765bc8",
     "legacyRedirects.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "modifiers.generated.json": "8b02d1d1194336b56514130ba9edb27ddf0f3fd8f5a18dc54582de6850f87b26",
     "movements.generated.json": "49d772ed3d7029dd2d465f12683731471f877834a1bc9e0231a6afff090dbfde"

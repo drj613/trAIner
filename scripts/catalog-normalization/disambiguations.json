@@ -40,7 +40,8 @@
         "barbell-squat",
         "squat--barbell--front-rack",
         "bodyweight-squat",
-        "dumbbell-squat"
+        "dumbbell-squat",
+        "squat--kettlebell"
       ],
       "matchedModifierIds": []
     },
@@ -53,7 +54,8 @@
         "barbell-squat",
         "squat--barbell--front-rack",
         "bodyweight-squat",
-        "dumbbell-squat"
+        "dumbbell-squat",
+        "squat--kettlebell"
       ],
       "matchedModifierIds": []
     },
