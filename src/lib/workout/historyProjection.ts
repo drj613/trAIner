@@ -25,8 +25,12 @@ import {
   deriveVolumeTrend,
   entryHasHistoryData,
   entrySetLabels,
+  entryNote,
+  entryPerformedName,
   entryVolumeLb,
   formatSetLabel,
+  readableSets,
+  textOf,
   readableEntries,
   setVolume,
   setWeightInLb,
@@ -146,7 +150,11 @@ type ProjectedEntry = {
 };
 
 function identityCacheKey(entry: WorkoutLogEntry): string {
-  return JSON.stringify([entry.canonicalExerciseId ?? null, entry.exerciseId, entry.exerciseName ?? null]);
+  return JSON.stringify([
+    entry.canonicalExerciseId ?? null,
+    entry.exerciseId,
+    entryPerformedName(entry) ?? null,
+  ]);
 }
 
 /**
@@ -239,7 +247,7 @@ export function projectExerciseHistory(
         kind: "stored-exercise",
         canonicalExerciseId: entry.canonicalExerciseId,
         slotId: entry.exerciseId,
-        performedName: entry.exerciseName,
+        performedName: entryPerformedName(entry),
       },
       context,
     );
@@ -267,12 +275,17 @@ export function projectExerciseHistory(
           performedAt: log.performedAt,
           performedDate,
           // The stored name is what the user logged; corrections never rewrite it.
-          performedName: entry.exerciseName?.trim() || identity.displayLabel || entry.exerciseId,
+          // `textOf` on the fallbacks because a corrupt log can hold a
+          // non-string slot id or display label, and the row type promises a
+          // string.
+          performedName: entryPerformedName(entry)?.trim()
+            || textOf(identity.displayLabel)
+            || textOf(entry.exerciseId),
           concreteExerciseId: identity.concreteExerciseId,
           movementId: identity.movementId,
           currentVersionLabel: identity.currentVersionLabel,
           sets: entrySetLabels(entry),
-          note: entry.notes,
+          note: entryNote(entry),
           volumeLb: entryVolumeLb(entry),
         },
       });
@@ -333,7 +346,7 @@ export function projectExerciseHistory(
       });
     }
 
-    const allSets = chronological.flatMap((item) => item.entry.sets);
+    const allSets = chronological.flatMap((item) => readableSets(item.entry));
     // Keeping the incumbent unless the candidate is strictly stronger is what
     // resolves a full tie to the earliest set.
     const bestSet = allSets.reduce<typeof allSets[number] | undefined>(

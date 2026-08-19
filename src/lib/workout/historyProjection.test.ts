@@ -667,3 +667,79 @@ describe("unreadable entries", () => {
     expect(rows).toEqual([{ date: "2026-11-01", sets: ["405x1"], note: undefined, volume: 405 }]);
   });
 });
+
+// ─── Unreadable fields inside an entry ───────────────────────────────────────
+
+describe("unreadable entry fields", () => {
+  // Found while self-reviewing the unreadable-sets fix: three more shapes threw
+  // out of the whole projection, on the same reasoning as `sets` — a value we
+  // cannot read must not remove readable history from view.
+  const goodLog: WorkoutLogDocument = {
+    id: "l-good", programId: "p1", dayId: "d1",
+    performedAt: "2026-12-01T14:00:00.000Z", performedDate: "2026-12-01",
+    entries: [{
+      exerciseId: "slot", exerciseName: "High Bar Back Squat", canonicalExerciseId: highBar.id,
+      sets: [{ setNumber: 1, weight: 500, reps: 1 }],
+    }],
+  };
+  const logWithEntry = (entry: unknown): WorkoutLogDocument => ({
+    id: "l-bad", programId: "p1", dayId: "d1",
+    performedAt: "2026-12-02T14:00:00.000Z", performedDate: "2026-12-02", entries: [entry],
+  } as unknown as WorkoutLogDocument);
+
+  it.each([
+    ["a set element is null", { exerciseId: "s", exerciseName: "Mystery", sets: [null] }],
+    ["a set element is a string", { exerciseId: "s", exerciseName: "Mystery", sets: ["corrupt"] }],
+    ["the exercise name is a number", { exerciseId: "s", exerciseName: 7, sets: [{ setNumber: 1, weight: 60, reps: 5 }] }],
+    ["the note is a number", { exerciseId: "s", exerciseName: "Mystery", sets: [], notes: 7 }],
+  ])("keeps the other workout's history when %s", (_label, entry) => {
+    const projection = projectExerciseHistory([logWithEntry(entry), goodLog], context);
+    expect(projection.rows.map((r) => r.logId)).toContain("l-good");
+    expect(projection.versionSummaries.get(highBar.id)).toMatchObject({
+      sessionCount: 1, bestSetLabel: "500x1", sessionVolumesLb: [500],
+    });
+  });
+
+  it("rows an entry whose only set element is unreadable, with no fabricated set", () => {
+    const projection = projectExerciseHistory([logWithEntry({
+      exerciseId: "s", exerciseName: "Mystery", sets: [null],
+    })], context);
+    expect(projection.rows).toHaveLength(1);
+    expect(projection.rows[0]).toMatchObject({
+      performedName: "Mystery", sets: [], volumeLb: 0,
+    });
+    expect(projection.versionSummaries.get("slot:s#mystery")?.bestSetLabel).toBeUndefined();
+  });
+
+  it("keeps a readable set that sits beside an unreadable one", () => {
+    const projection = projectExerciseHistory([logWithEntry({
+      exerciseId: "s", exerciseName: "Mystery",
+      sets: [{ setNumber: 1, weight: 100, reps: 5 }, null],
+    })], context);
+    expect(projection.rows).toHaveLength(1);
+    expect(projection.rows[0]).toMatchObject({ sets: ["100x5"], volumeLb: 500 });
+    expect(projection.versionSummaries.get("slot:s#mystery")?.bestSetLabel).toBe("100x5");
+  });
+
+  it("labels a row from an unreadable slot id as text", () => {
+    // Nothing readable names this entry, so the slot id is the only label left
+    // and the row type promises a string.
+    const projection = projectExerciseHistory([logWithEntry({
+      exerciseId: 7, sets: [{ setNumber: 1, weight: 60, reps: 5 }],
+    })], context);
+    expect(projection.rows).toHaveLength(1);
+    expect(projection.rows[0].performedName).toBe("7");
+    expect(typeof projection.rows[0].performedName).toBe("string");
+  });
+
+  it("does not pass an unreadable note or name through to a row", () => {
+    const projection = projectExerciseHistory([logWithEntry({
+      exerciseId: "slot-x", exerciseName: 7, notes: 9,
+      sets: [{ setNumber: 1, weight: 60, reps: 5 }],
+    })], context);
+    expect(projection.rows).toHaveLength(1);
+    expect(projection.rows[0].note).toBeUndefined();
+    expect(typeof projection.rows[0].performedName).toBe("string");
+    expect(projection.rows[0].performedName).toBe("slot-x");
+  });
+});

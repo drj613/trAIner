@@ -47,27 +47,62 @@ export function setHasData(s: WorkoutSetLog): boolean {
 }
 
 /**
- * A log entry's readable sets. `sets` that is present but not an array is data
- * we cannot render and must not drop: `src/lib/storage/appDb.ts:186-195` keeps
- * such a log on purpose, because it "may be standing in for real sets we have no
- * way to recover", so those entries reach this module and one of them must never
- * remove another exercise's readable history from view.
+ * Whether a stored value is a record whose fields we can inspect at all. Same
+ * rule as `isRecord` in `src/lib/storage/migrations/v10Identity.ts:148`, arrays
+ * excluded for the same reason. The duplication is forced by this lane's
+ * no-storage-import seam (pinned by `historyProjection.test.ts`'s import scan),
+ * not an oversight — the two definitions encode one rule.
  */
-function readableSets(entry: WorkoutLogEntry): readonly WorkoutSetLog[] {
-  return Array.isArray(entry.sets) ? entry.sets : [];
+function isRecordLike(value: unknown): boolean {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 /**
- * Whether `sets` is present but unreadable. Same rule as `unreadableValue` in
- * `src/lib/storage/migrations/v10Identity.ts:158` — absent (`undefined`/`null`)
- * is the legitimate shape of an entry with nothing logged, while anything else
- * that is not our array is unreadable and therefore counts as data-bearing. The
- * two definitions encode one rule; the duplication is forced by this module's
- * no-storage-import seam (pinned by `historyProjection.test.ts`'s import scan),
- * not an oversight.
+ * A log entry's readable sets. `sets` that is present but not an array, or an
+ * array holding something that is not a set record, is data we cannot render and
+ * must not drop: `src/lib/storage/appDb.ts:186-195` keeps such a log on purpose,
+ * because it "may be standing in for real sets we have no way to recover", so
+ * those entries reach this module and one of them must never remove another
+ * exercise's readable history from view.
+ */
+export function readableSets(entry: WorkoutLogEntry): readonly WorkoutSetLog[] {
+  if (!Array.isArray(entry.sets)) return [];
+  return (entry.sets as unknown[]).filter((s): s is WorkoutSetLog => isRecordLike(s));
+}
+
+/**
+ * Whether `sets` holds anything we cannot read. Absent (`undefined`/`null`) is
+ * the legitimate shape of an entry with nothing logged, so it is not unreadable
+ * — that is the settled line (`unreadableValue`,
+ * `src/lib/storage/migrations/v10Identity.ts:158`). Anything else that is not
+ * our array of records is unreadable, and therefore counts as data-bearing.
  */
 function setsUnreadable(entry: WorkoutLogEntry): boolean {
-  return entry.sets !== undefined && entry.sets !== null && !Array.isArray(entry.sets);
+  if (entry.sets === undefined || entry.sets === null) return false;
+  if (!Array.isArray(entry.sets)) return true;
+  return (entry.sets as unknown[]).some((s) => !isRecordLike(s));
+}
+
+/** The entry's note, when what is stored there is text we can read. */
+export function entryNote(entry: WorkoutLogEntry): string | undefined {
+  return typeof entry.notes === "string" ? entry.notes : undefined;
+}
+
+/**
+ * A stored value rendered as text. Used for the last-resort row label, where the
+ * row type promises a string but a corrupt log can hold anything: showing "7" is
+ * a worse label than a real name and a better one than nothing.
+ */
+export function textOf(value: unknown): string {
+  return typeof value === "string" ? value : value == null ? "" : String(value);
+}
+
+/**
+ * The name the user logged, when it is text we can read. A non-string reaches
+ * `normalizeExerciseName` in the resolver otherwise, which throws.
+ */
+export function entryPerformedName(entry: WorkoutLogEntry): string | undefined {
+  return typeof entry.exerciseName === "string" ? entry.exerciseName : undefined;
 }
 
 /**
@@ -80,7 +115,7 @@ function setsUnreadable(entry: WorkoutLogEntry): boolean {
 export function entryHasHistoryData(entry: WorkoutLogEntry): boolean {
   return setsUnreadable(entry)
     || readableSets(entry).some(setHasData)
-    || Boolean(entry.notes?.trim());
+    || Boolean(entryNote(entry)?.trim());
 }
 
 /** Display labels for an entry's sets, dropping labels with nothing in them. */
@@ -114,9 +149,7 @@ export function readableEntries(log: WorkoutLogDocument): IndexedLogEntry[] {
   if (!Array.isArray(log.entries)) return [];
   const readable: IndexedLogEntry[] = [];
   log.entries.forEach((entry, entryIndex) => {
-    // Same shape rule as `isRecord` in `v10Identity.ts:148`: an array-shaped
-    // entry is not a record either.
-    if (entry !== null && typeof entry === "object" && !Array.isArray(entry)) {
+    if (isRecordLike(entry)) {
       readable.push({ entry, entryIndex });
     }
   });
@@ -164,7 +197,7 @@ export function aggregateExerciseHistory(
       rows.push({
         date: logLocalDate(log),
         sets: entrySetLabels(entry),
-        note: entry.notes,
+        note: entryNote(entry),
         volume: entryVolumeLb(entry),
       });
     }
