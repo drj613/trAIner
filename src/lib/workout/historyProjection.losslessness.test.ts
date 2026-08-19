@@ -10,10 +10,13 @@
  *
  * The seed is fixed, so this cannot flake.
  *
- * Proven non-vacuous — it fails under each of:
+ * Proven non-vacuous — it fails under each of six single mutations:
  *   - deleting `logIdOrder` from `compareRowsChronologically` (sessionCount 4 vs 2)
  *   - `logIdOrder` calling `localeCompare` on a raw `logId` (throws)
  *   - `setNumberField` returning the stored value unguarded (a NaN volume total)
+ *   - `setsUnreadable` returning `false` (unreadable-sets rows disappear)
+ *   - `readableText` returning the stored value unguarded (throws)
+ *   - `readableEntries` renumbering indices after filtering (row identities move)
  *
  * Log ids are unique per corpus on purpose. Two DISTINCT logs sharing one id is
  * out of contract: `logId#entryIndex` stops identifying a row, and if their
@@ -23,7 +26,6 @@
 import { projectExerciseHistory } from "./historyProjection";
 import { makeHistoryProjectionFixture, bench, lowBar } from "./historyProjection.testFixtures";
 import { highBar } from "@/lib/catalog/identity.testFixtures";
-import { readableEntries, readableSets, setHasData, entryNote } from "./historyUtils";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 
 const { context } = makeHistoryProjectionFixture();
@@ -48,20 +50,35 @@ const entryShapes = (): unknown => pick<unknown>([
   { exerciseId: 7, sets: [{ setNumber: 1, weight: 100, reps: 5, notes: {} }] },
 ]);
 
-// Expected data-bearing set, computed independently of the module under test.
+// Expected data-bearing set, spelled out here rather than borrowed from
+// `historyUtils`. Calling the module's own helpers would move both sides of the
+// comparison under the same mutation and the check would prove nothing.
+const isRecord = (v: unknown) => v !== null && typeof v === "object" && !Array.isArray(v);
+const hasText = (v: unknown) => (typeof v === "string" ? v.trim().length > 0 : v !== undefined && v !== null);
+
 const expectedIdentities = (logs: WorkoutLogDocument[]): string[] => {
   const out: string[] = [];
   for (const log of logs) {
-    for (const { entry, entryIndex } of readableEntries(log)) {
-      const sets = entry.sets as unknown;
+    const entries: unknown = (log as { entries?: unknown }).entries;
+    if (!Array.isArray(entries)) continue;
+    entries.forEach((entry: unknown, entryIndex: number) => {
+      if (!isRecord(entry)) return;
+      const record = entry as Record<string, unknown>;
+      const sets = record.sets;
       const setsUnreadable = sets === undefined || sets === null
         ? false
-        : !Array.isArray(sets) || (sets as unknown[]).some((s) => s === null || typeof s !== "object" || Array.isArray(s));
-      const bearing = setsUnreadable
-        || readableSets(entry).some(setHasData)
-        || Boolean(entryNote(entry)?.trim());
-      if (bearing) out.push(`${String(log.id)}#${entryIndex}`);
-    }
+        : !Array.isArray(sets) || (sets as unknown[]).some((s) => !isRecord(s));
+      const readable = Array.isArray(sets) ? (sets as unknown[]).filter(isRecord) : [];
+      const someSetHasData = readable.some((s) => {
+        const set = s as Record<string, unknown>;
+        return hasText(set.rawCell) || hasText(set.notes)
+          || set.weight != null || set.reps != null || set.rpe != null;
+      });
+      const noteHasText = typeof record.notes === "string" && record.notes.trim().length > 0;
+      if (setsUnreadable || someSetHasData || noteHasText) {
+        out.push(`${String(log.id)}#${entryIndex}`);
+      }
+    });
   }
   return out.sort();
 };
