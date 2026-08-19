@@ -191,8 +191,13 @@ export function dedupeAliasResolutions(
 ): AliasSaveInput[] {
   const byNormalizedAlias = new Map<string, { input: AliasSaveInput; conflict: boolean }>();
   for (const item of resolvedItems) {
-    const normalized = normalizeExerciseName(item.rawName);
     const canonicalExerciseId = resolutions[item.path];
+    // An undecided occurrence and a "keep as custom" one are not catalogue
+    // identities, so neither can be remembered. Callers used to pre-filter
+    // these; the skip lives here so the contract this function advertises
+    // ("resolved items") is enforced where it is relied on.
+    if (!canonicalExerciseId || canonicalExerciseId === CUSTOM_ID) continue;
+    const normalized = normalizeExerciseName(item.rawName);
     const existing = byNormalizedAlias.get(normalized);
     if (!existing) {
       byNormalizedAlias.set(normalized, {
@@ -249,8 +254,10 @@ export function rememberedAliasInputs(
   return dedupeAliasResolutions(occurrences, resolutions);
 }
 
-// Not a real exercise id, and deliberately not CUSTOM_ID: applyResolutions
-// skips CUSTOM_ID, so probing with it would count nothing.
+// A placeholder target for the counting pass: `applyResolutions` only patches
+// (and therefore only counts) an id that is non-empty and not CUSTOM_ID. The
+// patched program is discarded — only the counts leave this function — so the
+// value never reaches storage or the UI.
 const STORED_COUNT_PROBE = "__stored-count-probe__";
 
 /**
@@ -261,13 +268,13 @@ const STORED_COUNT_PROBE = "__stored-count-probe__";
  * base-day path expands into one stored exercise per week-clone, so a 4-week
  * routine with a single `Back Squat` has ONE path and FOUR stored exercises.
  *
- * It is derived by running the real `applyResolutions` with a probe id, rather
- * than by re-deriving the addressing rules here. That is the point: the count
- * is a promise about the routine, so it must be whatever the patch actually
- * does — including the name guards, the refusal to touch a structurally
- * ambiguous day (which yields 0), single-addressing of override replacement
- * paths, and the exclusion of variants nested inside an override replacement.
- * A second implementation of those rules would drift from the first.
+ * The count comes from `applyResolutionsWithStats` — the real patch reporting
+ * what it did — rather than from re-deriving the addressing rules or walking
+ * the patched tree a second time. That is the point: the count is a promise
+ * about the routine, so it has to be whatever the patch actually does,
+ * including the name guards, the refusal to touch a structurally ambiguous day
+ * (which yields 0), single-addressing of override replacement paths, and the
+ * exclusion of variants nested inside an override replacement.
  */
 export function storedOccurrenceCounts(
   program: ProgramDocument,
@@ -275,30 +282,26 @@ export function storedOccurrenceCounts(
 ): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const group of groups) {
-    const probed = applyResolutions(
+    counts[group.groupKey] = storedExerciseCount(
       program,
-      group.occurrences.map(({ path }) => ({ path, canonicalId: STORED_COUNT_PROBE })),
+      group.occurrences.map(({ path }) => path),
     );
-    counts[group.groupKey] = countProbedExercises(probed);
   }
   return counts;
 }
 
-function countProbedExercises(program: ProgramDocument): number {
-  const days = [
-    ...program.days,
-    ...program.overrides.flatMap((override) => getOverrideReplacementDays(override)),
-  ];
+/**
+ * How many stored exercises this set of resolution paths addresses. Also what
+ * the confirm step counts, so "N exercises mapped to catalog" and "used N
+ * times" can never disagree about the same routine.
+ */
+export function storedExerciseCount(program: ProgramDocument, paths: string[]): number {
+  const { patchedByPath } = applyResolutionsWithStats(
+    program,
+    paths.map((path) => ({ path, canonicalId: STORED_COUNT_PROBE })),
+  );
   let total = 0;
-  for (const day of days) {
-    for (const section of day.sections) {
-      for (const group of section.groups) {
-        for (const exercise of group.exercises) {
-          if (exercise.canonicalExerciseId === STORED_COUNT_PROBE) total += 1;
-        }
-      }
-    }
-  }
+  for (const count of patchedByPath.values()) total += count;
   return total;
 }
 
@@ -321,9 +324,12 @@ export function rememberedAliasConflicts(
   inputs: AliasSaveInput[],
   existing: { normalizedAlias: string; canonicalExerciseId: string }[],
 ): RememberedAliasConflict[] {
-  const byToken = new Map(
-    existing.map((row) => [normalizeExerciseName(row.normalizedAlias), row.canonicalExerciseId]),
-  );
+  const byToken = new Map<string, string>();
+  for (const row of existing) {
+    for (const token of occupiedAliasTokens(row)) {
+      if (!byToken.has(token)) byToken.set(token, row.canonicalExerciseId);
+    }
+  }
   const conflicts: RememberedAliasConflict[] = [];
   for (const input of inputs) {
     const occupiedBy = byToken.get(normalizeExerciseName(input.alias));
@@ -332,6 +338,28 @@ export function rememberedAliasConflicts(
     }
   }
   return conflicts;
+}
+
+/**
+ * Every token a stored alias row occupies, for conflict purposes. Deliberately
+ * a SUPERSET of the one rule `aliasRepo.saveMany` applies, because two
+ * different consumers key on two different things and both are harmful:
+ *
+ * - the unique index (and `saveMany`'s conflict map) key on the stored
+ *   `normalizedAlias` VERBATIM, so a row holding that exact token would make
+ *   the write reject;
+ * - the runtime resolver RE-NORMALIZES the stored token before matching, so a
+ *   row whose token only matches after normalizing would still answer this
+ *   name — and adding a second row for the same normalized name makes the
+ *   resolver's uniqueness check fail and the name stop resolving entirely.
+ *
+ * Withholding one Remember tick is recoverable; silently shadowing a mapping
+ * the user already made is not.
+ */
+function occupiedAliasTokens(row: { normalizedAlias: string }): string[] {
+  const verbatim = row.normalizedAlias;
+  const renormalized = normalizeExerciseName(verbatim);
+  return [verbatim, renormalized].filter((token) => Boolean(token));
 }
 
 // A day number is ambiguous within its week when two or more base days
@@ -359,12 +387,35 @@ export function applyResolutions(
   program: ProgramDocument,
   resolutions: Resolution[],
 ): ProgramDocument {
+  return applyResolutionsWithStats(program, resolutions).program;
+}
+
+/**
+ * `applyResolutions` plus a count, per resolution path, of how many STORED
+ * exercises it actually patched.
+ *
+ * One base-day path addresses one exercise per week-clone, an override path
+ * addresses exactly one, and a path inside a structurally ambiguous day
+ * addresses none — so this count is the only honest answer to "how many
+ * exercises does this decision change", and it comes from the patch itself
+ * rather than from a second traversal that could disagree with it.
+ */
+export function applyResolutionsWithStats(
+  program: ProgramDocument,
+  resolutions: Resolution[],
+): { program: ProgramDocument; patchedByPath: Map<string, number> } {
   const resMap = new Map(resolutions.map((r) => [r.path, r.canonicalId]));
   // Populated ONLY when an exercise is successfully patched (a resolution
   // existed for its path and it didn't already have a canonicalExerciseId).
   // Used below to drop exactly those warnings — a failed/absent resolution
   // must leave its warning in place.
   const resolvedPaths = new Set<string>();
+  // Same population rule, but counting: one entry per patched stored exercise.
+  const patchedByPath = new Map<string, number>();
+  const recordPatch = (path: string) => {
+    resolvedPaths.add(path);
+    patchedByPath.set(path, (patchedByPath.get(path) ?? 0) + 1);
+  };
 
   // path -> rawName, built from the pre-filter warning set (warnings are only
   // filtered at the very end, so this map is complete during patching). This
@@ -393,7 +444,7 @@ export function applyResolutions(
       if (rawName !== undefined && rawName === ex.name) {
         const id = resMap.get(p);
         if (id && id !== CUSTOM_ID) {
-          resolvedPaths.add(p);
+          recordPatch(p);
           return { ...ex, canonicalExerciseId: id };
         }
         return ex; // matched the guard but no usable resolution; stop
@@ -407,7 +458,7 @@ export function applyResolutions(
     if (warningRawNames.get(basePath) === undefined) {
       const id = resMap.get(basePath);
       if (id && id !== CUSTOM_ID) {
-        resolvedPaths.add(basePath);
+        recordPatch(basePath);
         return { ...ex, canonicalExerciseId: id };
       }
     }
@@ -487,5 +538,8 @@ export function applyResolutions(
     ? { import: { ...program.import, warnings: program.import.warnings.filter((w) => !resolvedPaths.has(w.path)) } }
     : {};
 
-  return { ...program, days, overrides, ...importSection };
+  return {
+    program: { ...program, days, overrides, ...importSection },
+    patchedByPath,
+  };
 }

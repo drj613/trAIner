@@ -7,6 +7,8 @@ import {
   rememberedAliasInputs,
   rememberedAliasConflicts,
   storedOccurrenceCounts,
+  applyResolutionsWithStats,
+  dedupeAliasResolutions,
   CUSTOM_ID,
 } from "./resolution";
 import type { ResolutionGroup } from "./resolution";
@@ -1418,5 +1420,133 @@ describe("storedOccurrenceCounts", () => {
     // applyResolutions refuses to patch a duplicated day number, so promising
     // the user a count here would be a lie.
     expect(storedOccurrenceCounts(ambiguous.program, groups)[groups[0].groupKey]).toBe(0);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// Fix round 1
+// ---------------------------------------------------------------------------
+
+describe("applyResolutionsWithStats", () => {
+  const fourWeekPayload = {
+    program_name: "Four weeks, one squat",
+    weeks: 4,
+    days: [
+      {
+        day: 1,
+        title: "Lower",
+        sections: [
+          {
+            name: "Main",
+            type: "strength",
+            groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 5, reps: "5" }] }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("reports how many stored exercises each path patched", () => {
+    const review = normalizePayload(
+      fourWeekPayload,
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+    const path = "days.1.sections.0.groups.0.exercises.0";
+    const { program, patchedByPath } = applyResolutionsWithStats(review.program, [
+      { path, canonicalId: "barbell-high-bar-squat" },
+    ]);
+    // One path, four week-clones patched.
+    expect(patchedByPath.get(path)).toBe(4);
+    expect(
+      collectNamed(program, "Back Squat").map((e) => e.canonicalExerciseId),
+    ).toEqual(Array(4).fill("barbell-high-bar-squat"));
+  });
+
+  it("reports nothing for a path that patched nothing", () => {
+    const review = normalizePayload(
+      fourWeekPayload,
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+    const { patchedByPath } = applyResolutionsWithStats(review.program, [
+      { path: "days.9.sections.0.groups.0.exercises.0", canonicalId: "barbell-high-bar-squat" },
+    ]);
+    expect(patchedByPath.get("days.9.sections.0.groups.0.exercises.0")).toBeUndefined();
+  });
+
+  it("is what applyResolutions returns", () => {
+    const { review } = makeEightBackSquatReview();
+    const groups = groupResolutionOccurrences(review.warnings);
+    const resolutions = resolutionsForGroup(groups[0], "barbell-low-bar-squat");
+    expect(applyResolutionsWithStats(review.program, resolutions).program).toEqual(
+      applyResolutions(review.program, resolutions),
+    );
+  });
+});
+
+describe("dedupeAliasResolutions skips answers that are not a catalogue identity", () => {
+  const item = (path: string, rawName: string) => ({ path, rawName });
+
+  it("skips an occurrence kept as custom instead of remembering it", () => {
+    const out = dedupeAliasResolutions([item("a", "Sled Drag")], { a: CUSTOM_ID });
+    expect(out).toEqual([]);
+  });
+
+  it("skips an undecided occurrence instead of remembering an empty target", () => {
+    const out = dedupeAliasResolutions([item("a", "Sled Drag")], {});
+    expect(out).toEqual([]);
+  });
+
+  it("still remembers the concrete answers alongside a skipped one", () => {
+    const out = dedupeAliasResolutions(
+      [item("a", "Sled Drag"), item("b", "Back Squat")],
+      { a: CUSTOM_ID, b: "barbell-low-bar-squat" },
+    );
+    expect(out).toEqual([
+      { alias: "Back Squat", canonicalExerciseId: "barbell-low-bar-squat", provenance: "remembered" },
+    ]);
+  });
+});
+
+describe("rememberedAliasConflicts token rules", () => {
+  const input = {
+    alias: "Back Squat",
+    canonicalExerciseId: "barbell-low-bar-squat",
+    provenance: "remembered" as const,
+  };
+
+  it("treats a stored token that only matches after normalizing as occupied", () => {
+    // `aliasRepo.saveMany` keys its conflict map on the stored `normalizedAlias`
+    // verbatim, so it would let this write through — but the runtime resolver
+    // re-normalizes stored tokens (identity.ts), so writing "back squat" would
+    // leave TWO rows matching the same name and the resolver would stop
+    // resolving it at all. Withholding is the safe answer.
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "back  SQUAT ", canonicalExerciseId: "barbell-high-bar-squat" },
+      ]),
+    ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
+  });
+
+  it("treats the verbatim stored token as occupied even if it does not renormalize", () => {
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "back squat", canonicalExerciseId: "barbell-high-bar-squat" },
+      ]),
+    ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
+  });
+
+  it("still reports nothing when a differently named row is stored", () => {
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "front  SQUAT ", canonicalExerciseId: "barbell-front-squat" },
+      ]),
+    ).toEqual([]);
   });
 });
