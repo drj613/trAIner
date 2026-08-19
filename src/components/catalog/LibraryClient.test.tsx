@@ -283,7 +283,7 @@ describe("deriveNeedsReview", () => {
     return { context, resolve, inputs };
   }
 
-  function programOf(names: string[]): ProgramDocument {
+  function programOfExercises(exercises: ReturnType<typeof programExercise>[]): ProgramDocument {
     return {
       ...program,
       days: [
@@ -296,12 +296,16 @@ describe("deriveNeedsReview", () => {
               id: "section-x",
               type: "strength",
               name: "Strength",
-              groups: [{ id: "group-x", type: "single", exercises: names.map(programExercise) }],
+              groups: [{ id: "group-x", type: "single", exercises }],
             },
           ],
         },
       ],
     };
+  }
+
+  function programOf(names: string[]): ProgramDocument {
+    return programOfExercises(names.map(programExercise));
   }
 
   it("resolves each distinct identity once, however often it recurs", () => {
@@ -321,6 +325,28 @@ describe("deriveNeedsReview", () => {
     expect(items.map((item) => [item.label, item.occurrences])).toEqual([
       ["Zzz Unmatched Lift", 3],
       ["Zzz Other Lift", 1],
+    ]);
+  });
+
+  it("does not collapse two entries that share a name but not a canonical id", () => {
+    const { context, resolve, inputs } = countingContext();
+    const backfilled = {
+      ...programExercise("Zzz Unmatched Lift"),
+      id: "slot-backfilled",
+      canonicalExerciseId: "barbell-high-bar-squat",
+    };
+    const notBackfilled = { ...programExercise("Zzz Unmatched Lift"), id: "slot-bare" };
+
+    const items = deriveNeedsReview(context, resolve, [programOfExercises([backfilled, notBackfilled])], []);
+
+    // `v10Identity` backfills `canonicalExerciseId` only for exact matches, so
+    // one spelling of a name can be backfilled and another not. Keying on the
+    // name alone would let the backfilled one — which resolves to a movement and
+    // needs no review — answer for the bare one, silently dropping a row the
+    // user has to act on.
+    expect(inputs).toHaveLength(2);
+    expect(items.map((item) => item.target)).toEqual([
+      { kind: "normalized-name", value: "Zzz Unmatched Lift" },
     ]);
   });
 
