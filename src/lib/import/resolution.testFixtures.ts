@@ -156,6 +156,13 @@ export function makeImportMatchContext(
  *
  * `expectedEightPaths` is written out literally rather than derived from the
  * warnings under test, so the assertion cannot agree with a buggy grouper.
+ *
+ * CAUTION: warning paths and stored exercises both come to 8 here only BY
+ * FIXTURE CONSTRUCTION — every base slot is a Back Squat in exactly one of the
+ * two weeks. The two numbers are not the same thing in general (a base-day
+ * path expands into one stored exercise per week-clone), so this fixture
+ * cannot detect a count that confuses them. `storedOccurrenceCounts` is
+ * pinned against a separate `weeks: 4` case for that reason.
  */
 export function makeEightBackSquatReview(
   options: { aliases?: Parameters<typeof normalizePayload>[2] } = {},

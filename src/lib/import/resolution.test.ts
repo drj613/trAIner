@@ -3,8 +3,13 @@ import {
   applyResolutions,
   buildInitialResolutions,
   groupResolutionOccurrences,
+  rememberableTarget,
+  rememberedAliasInputs,
+  rememberedAliasConflicts,
+  storedOccurrenceCounts,
   CUSTOM_ID,
 } from "./resolution";
+import type { ResolutionGroup } from "./resolution";
 import {
   collectNamed,
   makeEightBackSquatReview,
@@ -1138,5 +1143,280 @@ describe("groupResolutionOccurrences: what may and may not be grouped", () => {
         { path: "days.1.sections.0", message: "Unknown section type: power_endurance." },
       ]),
     ).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Remembered aliases: a grouped or occurrence-level choice is LOCAL to this
+// import unless the user explicitly marked the group. These tests pin the pure
+// rule; ImportClient.remember.test.tsx pins it through the real UI.
+// ---------------------------------------------------------------------------
+
+function makeGroup(
+  rawNames: string[],
+  options: { kind?: ResolutionGroup["kind"]; remember?: boolean; pathPrefix?: string } = {},
+): ResolutionGroup {
+  const kind = options.kind ?? "underspecified";
+  const prefix = options.pathPrefix ?? "days.1";
+  const normalizedRawName = rawNames[0].trim().toLowerCase().replace(/\s+/g, " ");
+  return {
+    groupKey: `${kind}:${normalizedRawName}`,
+    normalizedRawName,
+    kind,
+    occurrences: rawNames.map((rawName, index) => ({
+      path: `${prefix}.sections.0.groups.0.exercises.${index}`,
+      rawName,
+      kind,
+      candidates: [],
+    })),
+    occurrenceCount: rawNames.length,
+    remember: options.remember ?? false,
+  };
+}
+
+function resolveAll(group: ResolutionGroup, ids: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  group.occurrences.forEach((occurrence, index) => {
+    const id = ids[index];
+    if (id !== undefined) out[occurrence.path] = id;
+  });
+  return out;
+}
+
+describe("rememberableTarget", () => {
+  it("returns the single concrete id every occurrence agreed on", () => {
+    const group = makeGroup(["Back Squat", "back  squat"]);
+    const resolutions = resolveAll(group, ["barbell-low-bar-squat", "barbell-low-bar-squat"]);
+    expect(rememberableTarget(group, resolutions)).toBe("barbell-low-bar-squat");
+  });
+
+  it("returns undefined when occurrences resolved to different ids", () => {
+    const group = makeGroup(["Back Squat", "Back Squat"]);
+    const resolutions = resolveAll(group, ["barbell-low-bar-squat", "barbell-high-bar-squat"]);
+    expect(rememberableTarget(group, resolutions)).toBeUndefined();
+  });
+
+  it("returns undefined when the agreed choice is 'keep as custom'", () => {
+    const group = makeGroup(["Back Squat", "Back Squat"]);
+    expect(rememberableTarget(group, resolveAll(group, [CUSTOM_ID, CUSTOM_ID]))).toBeUndefined();
+  });
+
+  it("returns undefined while an occurrence is still undecided", () => {
+    const group = makeGroup(["Back Squat", "Back Squat"]);
+    expect(rememberableTarget(group, resolveAll(group, ["barbell-low-bar-squat"]))).toBeUndefined();
+  });
+});
+
+describe("rememberedAliasInputs", () => {
+  it("returns nothing for a fully resolved group nobody asked to remember", () => {
+    const group = makeGroup(["Back Squat", "Back Squat"]);
+    const resolutions = resolveAll(group, ["barbell-low-bar-squat", "barbell-low-bar-squat"]);
+    // The completion canary: the same group WITH remember does produce an
+    // input, so the empty result above cannot be an unrelated bail-out.
+    expect(rememberedAliasInputs([{ ...group, remember: true }], resolutions)).toHaveLength(1);
+    expect(rememberedAliasInputs([group], resolutions)).toEqual([]);
+  });
+
+  it("emits one input per marked group, using the first occurrence's display text", () => {
+    const group = makeGroup(["Back Squat", "back  squat", "BACK SQUAT"], { remember: true });
+    const resolutions = resolveAll(group, [
+      "barbell-low-bar-squat",
+      "barbell-low-bar-squat",
+      "barbell-low-bar-squat",
+    ]);
+    expect(rememberedAliasInputs([group], resolutions)).toEqual([
+      { alias: "Back Squat", canonicalExerciseId: "barbell-low-bar-squat", provenance: "remembered" },
+    ]);
+  });
+
+  it("drops a marked group whose occurrences were resolved separately to different ids", () => {
+    const group = makeGroup(["Press", "Press"], { remember: true });
+    const resolutions = resolveAll(group, ["bench-press", "overhead-press"]);
+    expect(rememberedAliasInputs([group], resolutions)).toEqual([]);
+  });
+
+  it("drops a marked group kept as custom, and one still undecided", () => {
+    const custom = makeGroup(["Sled Drag"], { remember: true });
+    const undecided = makeGroup(["Jefferson Curl"], { remember: true, pathPrefix: "days.2" });
+    const resolutions = { ...resolveAll(custom, [CUSTOM_ID]) };
+    expect(rememberedAliasInputs([custom, undecided], resolutions)).toEqual([]);
+  });
+
+  it("drops both marked groups when one normalized token disagrees across kinds", () => {
+    const underspecified = makeGroup(["Press", "Press"], { remember: true });
+    const unmatched = makeGroup(["press"], {
+      kind: "unmatched",
+      remember: true,
+      pathPrefix: "days.2",
+    });
+    const squat = makeGroup(["Back Squat"], { remember: true, pathPrefix: "days.3" });
+    const resolutions = {
+      ...resolveAll(underspecified, ["bench-press", "bench-press"]),
+      ...resolveAll(unmatched, ["overhead-press"]),
+      ...resolveAll(squat, ["barbell-low-bar-squat"]),
+    };
+    expect(rememberedAliasInputs([underspecified, unmatched, squat], resolutions)).toEqual([
+      { alias: "Back Squat", canonicalExerciseId: "barbell-low-bar-squat", provenance: "remembered" },
+    ]);
+  });
+});
+
+describe("rememberedAliasConflicts", () => {
+  const input = {
+    alias: "Back Squat",
+    canonicalExerciseId: "barbell-low-bar-squat",
+    provenance: "remembered" as const,
+  };
+
+  it("reports an occupied token pointing at a different exercise", () => {
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "back squat", canonicalExerciseId: "barbell-high-bar-squat" },
+      ]),
+    ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
+  });
+
+  it("reports nothing when the token already points at the same exercise", () => {
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "back squat", canonicalExerciseId: "barbell-low-bar-squat" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("reports nothing when the token is free", () => {
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "front squat", canonicalExerciseId: "barbell-front-squat" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("compares normalized tokens, not display text", () => {
+    // The unique index keys on the normalized token, so a stored row whose
+    // display text differs in case/spacing still occupies "back squat".
+    expect(
+      rememberedAliasConflicts([input], [
+        { normalizedAlias: "back  SQUAT ", canonicalExerciseId: "barbell-high-bar-squat" },
+      ]),
+    ).toEqual([{ input, existingCanonicalExerciseId: "barbell-high-bar-squat" }]);
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// The headline number the user reads. It must be a promise about THEIR
+// routine — how many stored exercises this one decision will change — not a
+// count of our internal warning list. A base-day path expands into one stored
+// exercise per week-clone, so the two diverge as soon as `weeks > 1`.
+// ---------------------------------------------------------------------------
+
+describe("storedOccurrenceCounts", () => {
+  function reviewFor(payload: Record<string, unknown>) {
+    return normalizePayload(payload, undefined, [], [], makeImportMatchContext());
+  }
+
+  const fourWeekPayload = {
+    program_name: "Four weeks, one squat",
+    weeks: 4,
+    days: [
+      {
+        day: 1,
+        title: "Lower",
+        sections: [
+          {
+            name: "Main",
+            type: "strength",
+            groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 5, reps: "5" }] }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("counts every week-clone one base-day path expands into", () => {
+    const review = reviewFor(fourWeekPayload);
+    const groups = groupResolutionOccurrences(review.warnings);
+    // One warning, one occurrence path — but FOUR stored exercises.
+    expect(review.warnings).toHaveLength(1);
+    expect(groups[0].occurrenceCount).toBe(1);
+    expect(collectNamed(review.program, "Back Squat")).toHaveLength(4);
+    expect(storedOccurrenceCounts(review.program, groups)).toEqual({
+      [groups[0].groupKey]: 4,
+    });
+  });
+
+  it("agrees with what one grouped choice actually patches", () => {
+    const review = reviewFor(fourWeekPayload);
+    const groups = groupResolutionOccurrences(review.warnings);
+    const patched = applyResolutions(review.program, resolutionsForGroup(groups[0], "probe"));
+    const reallyPatched = collectNamed(patched, "Back Squat").filter(
+      (e) => e.canonicalExerciseId === "probe",
+    ).length;
+    expect(storedOccurrenceCounts(review.program, groups)[groups[0].groupKey]).toBe(
+      reallyPatched,
+    );
+    expect(reallyPatched).toBe(4);
+  });
+
+  it("counts the worked example's eight fan-out targets", () => {
+    const { review, expectedEightPaths } = makeEightBackSquatReview();
+    const groups = groupResolutionOccurrences(review.warnings);
+    // Here — and ONLY here, by fixture construction — paths and stored
+    // exercises both come to 8, because each base slot is a Back Squat in
+    // exactly one of the two weeks.
+    expect(expectedEightPaths).toHaveLength(8);
+    expect(storedOccurrenceCounts(review.program, groups)).toEqual({
+      [groups[0].groupKey]: 8,
+    });
+  });
+
+  it("does not resurrect an override-nested variant under week expansion", () => {
+    const { review } = makeEightBackSquatReview();
+    const groups = groupResolutionOccurrences(review.warnings);
+    // The fixture's ninth raw `Back Squat` sits inside an override-replacement
+    // variant: unsupported, structurally warned about, and never a fan-out
+    // target. Week expansion must not turn it into one.
+    expect(
+      review.warnings.some((w) =>
+        w.message.includes("inside an override day are not supported"),
+      ),
+    ).toBe(true);
+    expect(storedOccurrenceCounts(review.program, groups)[groups[0].groupKey]).toBe(8);
+  });
+
+  it("counts zero for a structurally ambiguous day nothing can be patched in", () => {
+    const ambiguous = reviewFor({
+      program_name: "Two day threes",
+      days: [
+        {
+          day: 3,
+          title: "A",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 3, reps: "5" }] }],
+            },
+          ],
+        },
+        {
+          day: 3,
+          title: "B",
+          sections: [
+            {
+              name: "Main",
+              type: "strength",
+              groups: [{ type: "single", exercises: [{ name: "Back Squat", sets: 3, reps: "5" }] }],
+            },
+          ],
+        },
+      ],
+    });
+    const groups = groupResolutionOccurrences(ambiguous.warnings);
+    expect(groups[0].occurrenceCount).toBeGreaterThan(0);
+    // applyResolutions refuses to patch a duplicated day number, so promising
+    // the user a count here would be a lie.
+    expect(storedOccurrenceCounts(ambiguous.program, groups)[groups[0].groupKey]).toBe(0);
   });
 });

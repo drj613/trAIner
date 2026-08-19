@@ -186,7 +186,7 @@ export type AliasSaveInput = {
  * the global alias write is skipped for the conflicting name.
  */
 export function dedupeAliasResolutions(
-  resolvedItems: ResolutionItem[],
+  resolvedItems: { path: string; rawName: string }[],
   resolutions: Record<string, string>,
 ): AliasSaveInput[] {
   const byNormalizedAlias = new Map<string, { input: AliasSaveInput; conflict: boolean }>();
@@ -204,6 +204,134 @@ export function dedupeAliasResolutions(
     }
   }
   return [...byNormalizedAlias.values()].filter((e) => !e.conflict).map((e) => e.input);
+}
+
+/**
+ * The one concrete exercise this group could be remembered as, or `undefined`
+ * if it cannot be remembered at all.
+ *
+ * Spec: a remembered alias cannot be ambiguous. `undefined` therefore covers
+ * three cases the UI treats identically (Remember is disabled):
+ *  - the occurrences were resolved separately to DIFFERENT ids,
+ *  - at least one occurrence is still undecided,
+ *  - the agreed answer is "keep as custom", which is not a catalogue identity.
+ */
+export function rememberableTarget(
+  group: ResolutionGroup,
+  resolutions: Record<string, string>,
+): string | undefined {
+  const chosen = new Set(group.occurrences.map((occurrence) => resolutions[occurrence.path]));
+  if (chosen.size !== 1) return undefined;
+  const [only] = [...chosen];
+  if (!only || only === CUSTOM_ID) return undefined;
+  return only;
+}
+
+/**
+ * The aliases an import should persist: ONLY groups the user explicitly marked
+ * `Remember this interpretation`. An ordinary grouped or occurrence-level
+ * choice is local to this import and produces nothing here — which is why an
+ * import that remembers nothing performs no alias write and dispatches no
+ * identity event at all.
+ *
+ * Marked groups still run through `dedupeAliasResolutions`, so the existing
+ * conflict-dropping behaviour is preserved when two marked groups (e.g. an
+ * underspecified and an unmatched `press`) share one normalized token but
+ * disagree about the target.
+ */
+export function rememberedAliasInputs(
+  groups: ResolutionGroup[],
+  resolutions: Record<string, string>,
+): AliasSaveInput[] {
+  const occurrences = groups
+    .filter((group) => group.remember && rememberableTarget(group, resolutions) !== undefined)
+    .flatMap((group) => group.occurrences);
+  return dedupeAliasResolutions(occurrences, resolutions);
+}
+
+// Not a real exercise id, and deliberately not CUSTOM_ID: applyResolutions
+// skips CUSTOM_ID, so probing with it would count nothing.
+const STORED_COUNT_PROBE = "__stored-count-probe__";
+
+/**
+ * How many STORED exercises each group's one decision will actually change —
+ * the number the user is shown ("used 8 times").
+ *
+ * This is not `occurrenceCount`. `occurrenceCount` counts warning paths, and a
+ * base-day path expands into one stored exercise per week-clone, so a 4-week
+ * routine with a single `Back Squat` has ONE path and FOUR stored exercises.
+ *
+ * It is derived by running the real `applyResolutions` with a probe id, rather
+ * than by re-deriving the addressing rules here. That is the point: the count
+ * is a promise about the routine, so it must be whatever the patch actually
+ * does — including the name guards, the refusal to touch a structurally
+ * ambiguous day (which yields 0), single-addressing of override replacement
+ * paths, and the exclusion of variants nested inside an override replacement.
+ * A second implementation of those rules would drift from the first.
+ */
+export function storedOccurrenceCounts(
+  program: ProgramDocument,
+  groups: ResolutionGroup[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const group of groups) {
+    const probed = applyResolutions(
+      program,
+      group.occurrences.map(({ path }) => ({ path, canonicalId: STORED_COUNT_PROBE })),
+    );
+    counts[group.groupKey] = countProbedExercises(probed);
+  }
+  return counts;
+}
+
+function countProbedExercises(program: ProgramDocument): number {
+  const days = [
+    ...program.days,
+    ...program.overrides.flatMap((override) => getOverrideReplacementDays(override)),
+  ];
+  let total = 0;
+  for (const day of days) {
+    for (const section of day.sections) {
+      for (const group of section.groups) {
+        for (const exercise of group.exercises) {
+          if (exercise.canonicalExerciseId === STORED_COUNT_PROBE) total += 1;
+        }
+      }
+    }
+  }
+  return total;
+}
+
+export type RememberedAliasConflict = {
+  input: AliasSaveInput;
+  existingCanonicalExerciseId: string;
+};
+
+/**
+ * Which remembered aliases would try to repoint a token that already means
+ * something else. `aliasRepo.saveMany` rejects the whole batch in that case
+ * (spec: it never silently changes an existing token to a different target),
+ * so import save checks first and leaves the offending ones out — the routine
+ * is saved either way and the user is told which name is already taken.
+ *
+ * `by-normalized-alias` is the index the store enforces, so comparison is on
+ * the normalized token, never the display text.
+ */
+export function rememberedAliasConflicts(
+  inputs: AliasSaveInput[],
+  existing: { normalizedAlias: string; canonicalExerciseId: string }[],
+): RememberedAliasConflict[] {
+  const byToken = new Map(
+    existing.map((row) => [normalizeExerciseName(row.normalizedAlias), row.canonicalExerciseId]),
+  );
+  const conflicts: RememberedAliasConflict[] = [];
+  for (const input of inputs) {
+    const occupiedBy = byToken.get(normalizeExerciseName(input.alias));
+    if (occupiedBy !== undefined && occupiedBy !== input.canonicalExerciseId) {
+      conflicts.push({ input, existingCanonicalExerciseId: occupiedBy });
+    }
+  }
+  return conflicts;
 }
 
 // A day number is ambiguous within its week when two or more base days
