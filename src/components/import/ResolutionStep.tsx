@@ -289,6 +289,11 @@ function GroupCard({
           {storedCount !== undefined && storedCount > 1 && (
             <span className="text-xs muted tx-mono">used {storedCount} times</span>
           )}
+          {storedCount === 0 && (
+            <span className="text-xs tx-mono" style={{ color: "var(--warn, #e6b664)" }}>
+              won't apply — the routine's structure is ambiguous here
+            </span>
+          )}
           <button
             type="button"
             className="button secondary shrink-0"
@@ -348,7 +353,10 @@ function GroupCard({
                 disabled={target === undefined}
                 onChange={(e) => onRememberChange(group.groupKey, e.target.checked)}
               />
-              Remember this interpretation
+              {/* The name is in the label, not just the row heading: two
+                  ambiguous names on one screen are otherwise indistinguishable
+                  to a screen reader and to a test. */}
+              {rememberLabel(displayName, target === undefined ? undefined : resolvedName(paths[0]))}
             </label>
             <div className="flex items-center gap-2 shrink-0">
               {decided && !isVersionChoice && (
@@ -424,6 +432,11 @@ function GroupCard({
       )}
     </div>
   );
+}
+
+function rememberLabel(displayName: string, targetName: string | undefined): string {
+  const quoted = `Remember "${displayName}"`;
+  return targetName ? `${quoted} as ${toTitleCase(targetName)}` : quoted;
 }
 
 function VersionSelect({

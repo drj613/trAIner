@@ -85,9 +85,7 @@ describe("ResolutionStep grouped choices", () => {
     const { onRememberChange } = renderStep({
       resolutions: uniform("barbell-low-bar-squat"),
     });
-    const remember = screen.getByRole("checkbox", {
-      name: "Remember this interpretation",
-    });
+    const remember = screen.getByRole("checkbox", { name: /^Remember "Back Squat"/ });
     expect(remember).not.toBeChecked();
     await user.click(remember);
     expect(onRememberChange).toHaveBeenCalledWith(groups[0].groupKey, true);
@@ -96,7 +94,7 @@ describe("ResolutionStep grouped choices", () => {
   it("cannot remember an ambiguous name, but can remember an agreed one", () => {
     const agreed = renderStep({ resolutions: uniform("barbell-low-bar-squat") });
     expect(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
+      screen.getByRole("checkbox", { name: /^Remember "Back Squat"/ }),
     ).toBeEnabled();
     agreed.unmount();
 
@@ -104,10 +102,34 @@ describe("ResolutionStep grouped choices", () => {
     split[expectedEightPaths[3]] = "barbell-high-bar-squat";
     renderStep({ resolutions: split });
     expect(
-      screen.getByRole("checkbox", { name: "Remember this interpretation" }),
+      screen.getByRole("checkbox", { name: /^Remember "Back Squat"/ }),
     ).toBeDisabled();
     expect(
       screen.getByText(/different versions .* can't be remembered/i),
+    ).toBeInTheDocument();
+  });
+
+  it("says so when a decision would not reach any exercise", () => {
+    // storedOccurrenceCounts returns 0 for a structurally ambiguous day:
+    // applyResolutions refuses to patch it, so the choice is a silent no-op
+    // unless the row says so.
+    renderStep({ storedCounts: { [groups[0].groupKey]: 0 } });
+    expect(screen.getByText(/won't apply/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^used \d+ times$/)).not.toBeInTheDocument();
+  });
+
+  it("names the exercise and the chosen version in the Remember label", () => {
+    const agreed = renderStep({ resolutions: uniform("barbell-low-bar-squat") });
+    expect(
+      screen.getByRole("checkbox", { name: 'Remember "Back Squat" as Low Bar Back Squat' }),
+    ).toBeInTheDocument();
+    agreed.unmount();
+
+    // Nothing chosen yet: the label still names which exercise it is about,
+    // because two ambiguous names would otherwise be indistinguishable.
+    renderStep();
+    expect(
+      screen.getByRole("checkbox", { name: 'Remember "Back Squat"' }),
     ).toBeInTheDocument();
   });
 
