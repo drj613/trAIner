@@ -5,6 +5,7 @@
 import { matchExercise } from "./match";
 import { prepareImportName } from "./identity";
 import { disambiguationsByNormalizedName, disambiguationRules } from "./registries";
+import { normalizeExerciseName } from "./normalize";
 import { exerciseCatalog } from "./exercises";
 import type { AliasDocument } from "@/lib/programs/types";
 
@@ -227,4 +228,113 @@ test("alternative prescriptions with 'or' stay unresolved", () => {
 
   const result = matchExercise("Assisted or bodyweight neutral-grip pull-up");
   expect(result.kind).toBe("unmatched");
+});
+
+// The property everything downstream of the re-keying rests on:
+// `prepareImportName(x).normalizedName` is *already normalized* and is a *fixed
+// point* — preparing it a second time returns it unchanged.
+//
+// Four separate places rely on it, and none of them can see it break:
+//   - `resolveName`'s override match compares
+//     `normalizeExerciseName(override.targetValue)` with a prepared name;
+//   - the correction sheet's `governingAliases` compares
+//     `normalizeExerciseName(alias.normalizedAlias)` with a prepared name;
+//   - `aliasLookupToken` runs `normalizeExerciseName` over a stored token that a
+//     writer produced with `prepareImportName`, and must not change it;
+//   - the post-write `aliasRepo.find(target.value)` was dropped as redundant
+//     only because a prepared name prepares to itself.
+//
+// A curation record whose output still contained a strippable phrase, or whose
+// annotation reintroduced punctuation, would break all four silently: a saved
+// correction would be written to one key and looked up under another, which is
+// precisely the class of defect this catalogue work exists to remove. The
+// compiler rejects an unnormalized `normalizedName` at build time; this is the
+// runtime complement, and it is the *prepared output* it pins, not the manifest
+// tokens.
+//
+// Run against the real shipped artifact, over the whole catalogue and over
+// every rule token applied to every catalogue name — the shape an annotated
+// name actually takes when a user types one.
+describe("the shipped rules produce a stable prepared name", () => {
+  const prepared = (name: string) => prepareImportName(name, disambiguationsByNormalizedName).normalizedName;
+
+  const ruleTokens = disambiguationRules.map((rule) =>
+    rule.kind === "underspecified-name" ? rule.normalizedName : rule.normalizedPhrase,
+  );
+
+  function expectStable(inputs: Iterable<string>, label: string) {
+    const unnormalized: string[] = [];
+    const unstable: string[] = [];
+    for (const input of inputs) {
+      const once = prepared(input);
+      if (normalizeExerciseName(once) !== once) unnormalized.push(input);
+      if (prepared(once) !== once) unstable.push(input);
+    }
+    expect({ label, unnormalized, unstable }).toEqual({ label, unnormalized: [], unstable: [] });
+  }
+
+  it("over every catalogue name and alias", () => {
+    const names = exerciseCatalog.flatMap((item) => [item.name, ...item.aliases]);
+    // Guards against an empty or broken artifact making this vacuous.
+    expect(names.length).toBeGreaterThan(1000);
+    expectStable(names, "catalogue");
+  });
+
+  it("over every shipped rule token", () => {
+    expect(ruleTokens.length).toBeGreaterThan(0);
+    expectStable(ruleTokens, "rule tokens");
+  });
+
+  // The composite case: a rule token in front of a real name is what a
+  // phrase-stripping rule is *for*, and it is the only shape whose prepared
+  // output differs from plain normalization.
+  it("over every rule token applied to every catalogue name", () => {
+    const composites: string[] = [];
+    for (const token of ruleTokens) {
+      for (const item of exerciseCatalog) composites.push(`${token} ${item.name}`);
+    }
+    expect(composites.length).toBeGreaterThan(10_000);
+    expectStable(composites, "composites");
+  });
+
+  // A phrase in the *middle* or at the *end* of a name, which is how users
+  // actually write them ("Back squat to a pain-free depth"). This is the shape
+  // that can break the property, and a prefix-only corpus cannot see it: the
+  // rules run once, longest phrase first, so a strip that JOINS the text either
+  // side of it can hand a later pass a longer phrase the first pass had no way
+  // to match. Removing this case leaves the whole property untested against the
+  // one failure mode it has.
+  const phraseTokens = disambiguationRules
+    .filter((rule) => rule.kind === "non-identity-phrase")
+    .map((rule) => rule.normalizedPhrase);
+
+  it("over every phrase token embedded in and appended to every catalogue name", () => {
+    expect(phraseTokens.length).toBeGreaterThan(0);
+    const embedded: string[] = [];
+    for (const token of phraseTokens) {
+      for (const item of exerciseCatalog) {
+        const words = item.name.split(" ");
+        embedded.push(`${item.name} ${token}`);
+        if (words.length > 1) embedded.push([words[0], token, ...words.slice(1)].join(" "));
+      }
+    }
+    expect(embedded.length).toBeGreaterThan(10_000);
+    expectStable(embedded, "embedded");
+  });
+
+  // Punctuation, casing and whitespace are where a normalization pass and a
+  // preparation pass are most likely to disagree. Deterministic rather than
+  // random, so a failure is reproducible.
+  it("over punctuation-heavy variants of the rule tokens", () => {
+    const decorations = ["  ", "-", "'", "\u2019", "/", ".", "(", ")", "#", "\t", "%", "2"];
+    const variants: string[] = [];
+    for (const token of ruleTokens) {
+      for (const decoration of decorations) {
+        variants.push(`${decoration}${token}${decoration}`);
+        variants.push(`${token}${decoration}Squat`);
+        variants.push(`${token.toUpperCase()}${decoration} Back Squat`);
+      }
+    }
+    expectStable(variants, "decorated");
+  });
 });
