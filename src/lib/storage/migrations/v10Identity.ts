@@ -273,7 +273,7 @@ function concreteOutcomesForToken(
   userExercises: readonly UserExerciseDocument[],
 ): Set<string> {
   const outcomes = new Set<string>();
-  for (const exercise of exerciseCatalog) {
+  for (const exercise of exerciseCatalog) { // Exact concrete metadata lookup; grouping is intentionally not performed here.
     if (
       normalizeExerciseName(exercise.name) === normalizedAlias ||
       exercise.aliases.some((alias) => normalizeExerciseName(alias) === normalizedAlias)

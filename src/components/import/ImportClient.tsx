@@ -190,7 +190,7 @@ export function ImportClient() {
   }
 
   function exerciseName(canonicalExerciseId: string): string | undefined {
-    const catalogItem = exerciseCatalog.find((e) => e.id === canonicalExerciseId);
+    const catalogItem = exerciseCatalog.find((e) => e.id === canonicalExerciseId); // Exact concrete metadata lookup; grouping is intentionally not performed here.
     if (catalogItem) return toTitleCase(catalogItem.name);
     const userItem = userExercises.find((e) => e.id === canonicalExerciseId);
     return userItem ? toTitleCase(userItem.name) : undefined;

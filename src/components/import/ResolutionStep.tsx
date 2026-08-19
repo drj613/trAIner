@@ -87,7 +87,7 @@ export function ResolutionStep({
   function getResolvedName(path: string): string {
     const id = resolutions[path];
     if (!id || id === CUSTOM_ID) return "";
-    const catalogItem = exerciseCatalog.find((e) => e.id === id);
+    const catalogItem = exerciseCatalog.find((e) => e.id === id); // Exact concrete metadata lookup; grouping is intentionally not performed here.
     if (catalogItem) return catalogItem.name;
     const userItem = userExercises.find((e) => e.id === id);
     return userItem?.name ?? id;
@@ -96,7 +96,7 @@ export function ResolutionStep({
   function getSearchResults(query: string): SearchResult[] {
     if (!query.trim()) return [];
     const q = normalizeExerciseName(query);
-    const catalogResults = exerciseCatalog
+    const catalogResults = exerciseCatalog // Exact concrete metadata lookup; grouping is intentionally not performed here.
       .filter(
         (e) =>
           normalizeExerciseName(e.name).includes(q) ||

@@ -82,7 +82,7 @@ function validateOverrideTarget(
 ): void {
   if (!normalizedTargetValue) throw new Error("Normalization override target cannot be empty");
   if (input.targetKind !== "exercise-id") return;
-  if (catalogExerciseIds.has(normalizedTargetValue)) return;
+  if (catalogExerciseIds.has(normalizedTargetValue)) return; // Exact concrete metadata lookup; grouping is intentionally not performed here.
   if (userExerciseIds.has(normalizedTargetValue)) return;
   throw new Error(`Unknown exercise target: ${normalizedTargetValue}`);
 }
