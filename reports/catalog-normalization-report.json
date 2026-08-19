@@ -4,13 +4,13 @@
   "snapshotSha256": "c9a4395f7dff16570d6756ed0ca7d31335b4539fc9c95b52d30511414bbb0c2a",
   "inputCount": 3072,
   "survivingCount": 3072,
-  "generatedVariantCount": 54,
+  "generatedVariantCount": 130,
   "stageCounts": {
     "existing": 3072,
-    "complete": 3126,
+    "complete": 3202,
     "variantsProposed": 161,
-    "variantsApproved": 149,
-    "variantsRejected": 12
+    "variantsApproved": 142,
+    "variantsRejected": 19
   },
   "inputSchemaVersions": {
     "scripts/catalog-normalization/alias-classifications.json": 1,
@@ -33,14 +33,14 @@
     "scripts/catalog-normalization/merges.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "scripts/catalog-normalization/modifiers.json": "d83d88069012ebf7f4d858430aed5327efe57997b46fd35b4495f66870b34cb2",
     "scripts/catalog-normalization/movements.json": "fa928dadeb0490a27505ff4531fc4aeb1734943993641019f271ec2889f73293",
-    "scripts/catalog-normalization/reviews/variant-adversarial-review.json": "f5b588bf314e4c14eeb6d92adfe0b7baeadf3d171815beb7712c1df7890c8822",
-    "scripts/catalog-normalization/reviews/variant-candidates.json": "0eb9f3bfa1e5fd773ee9a33cb718a87cd84a7eb181e06f3542baff957524cccf",
-    "scripts/catalog-normalization/variant-rules.json": "ee965f30d724dc40420f3e20c8356c2a95d2457a1c018f88a901228cc8767f21",
-    "variantAdversarialReview": "f5b588bf314e4c14eeb6d92adfe0b7baeadf3d171815beb7712c1df7890c8822",
-    "variantCandidates": "0eb9f3bfa1e5fd773ee9a33cb718a87cd84a7eb181e06f3542baff957524cccf"
+    "scripts/catalog-normalization/reviews/variant-adversarial-review.json": "5b4c553a863c77bb6ccd721bfbfe2a09f38e5da6b135949d33567fb66236bacb",
+    "scripts/catalog-normalization/reviews/variant-candidates.json": "e5f3ce6cf1eee8804988928afc605510ff296b5afc2a5cb3f7d17648aa857946",
+    "scripts/catalog-normalization/variant-rules.json": "3e3ccf3714019c786f85d227b517093e03b0b13eab046206685d2196259797bf",
+    "variantAdversarialReview": "5b4c553a863c77bb6ccd721bfbfe2a09f38e5da6b135949d33567fb66236bacb",
+    "variantCandidates": "e5f3ce6cf1eee8804988928afc605510ff296b5afc2a5cb3f7d17648aa857946"
   },
   "outputHashes": {
-    "exercises.generated.json": "c1f7d3032668c1f7d34fac1e68a978f391c14dad0d0c2eb7116a705f67ce68d4",
+    "exercises.generated.json": "cd7976e6495bc4a987e9425a63babf7e9440bef3b6ba23f15535da9ff9824a18",
     "importDisambiguations.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "legacyRedirects.generated.json": "cbd65b60bbea3094e0cedf1a2a21040f9c1343972922d36348b2481bc6f9da98",
     "modifiers.generated.json": "8b02d1d1194336b56514130ba9edb27ddf0f3fd8f5a18dc54582de6850f87b26",
@@ -607,9 +607,9 @@
     },
     "pull-up-pulldown": {
       "proposed": 15,
-      "approved": 13,
-      "rejected": 2,
-      "revised": 6,
+      "approved": 12,
+      "rejected": 3,
+      "revised": 5,
       "colliding": 0,
       "unresolved": 0
     },
@@ -623,32 +623,32 @@
     },
     "lunge-split-squat": {
       "proposed": 12,
-      "approved": 11,
-      "rejected": 1,
+      "approved": 10,
+      "rejected": 2,
       "revised": 0,
       "colliding": 0,
       "unresolved": 0
     },
     "push-up": {
       "proposed": 10,
-      "approved": 10,
-      "rejected": 0,
+      "approved": 9,
+      "rejected": 1,
       "revised": 0,
       "colliding": 0,
       "unresolved": 0
     },
     "curl": {
       "proposed": 14,
-      "approved": 12,
-      "rejected": 2,
+      "approved": 11,
+      "rejected": 3,
       "revised": 1,
       "colliding": 0,
       "unresolved": 0
     },
     "triceps-extension-pushdown": {
       "proposed": 12,
-      "approved": 12,
-      "rejected": 0,
+      "approved": 11,
+      "rejected": 1,
       "revised": 1,
       "colliding": 0,
       "unresolved": 0
@@ -663,8 +663,8 @@
     },
     "loaded-carry": {
       "proposed": 10,
-      "approved": 9,
-      "rejected": 1,
+      "approved": 7,
+      "rejected": 3,
       "revised": 2,
       "colliding": 0,
       "unresolved": 0

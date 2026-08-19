@@ -21,8 +21,9 @@ import type {
   VariantCoverageCount,
 } from "./types";
 import {
+  aliasCandidates,
+  countUnclassifiedAliasCollisions,
   findNearDuplicateCandidates,
-  normalizeToken,
   validateNormalizedCatalogue,
 } from "./normalize";
 import {
@@ -32,6 +33,7 @@ import {
   loadVariantReviews,
   materializeVariant,
   canonicalModifierIds,
+  validateAliasOutcomes,
   validateVariantCandidates,
   validateVariantRule,
 } from "./validate";
@@ -439,90 +441,6 @@ function renderVariantName(
   return titleCase(rendered);
 }
 
-const IMPLEMENT_EQUIPMENT: ReadonlyMap<string, readonly string[]> = new Map([
-  ["barbell", ["barbell"]],
-  ["dumbbell", ["dumbbell"]],
-  ["kettlebell", ["kettlebell", "kettlebells"]],
-  ["cable", ["cable"]],
-  ["machine", ["machine"]],
-  ["band", ["band", "resistance band"]],
-  ["bodyweight", ["bodyweight", "body weight"]],
-  ["trap-bar", ["trap bar", "trap-bar"]],
-  ["landmine", ["landmine", "barbell"]],
-]);
-
-const MODIFIER_MARKERS: ReadonlyMap<string, readonly string[]> = new Map([
-  ["back-rack", ["back rack", "back squat"]],
-  ["front-rack", ["front rack", "front squat", "clean grip"]],
-  ["high-bar", ["high bar", "high-bar"]],
-  ["low-bar", ["low bar", "low-bar"]],
-  ["single-arm", ["single arm", "one arm", "one-arm"]],
-  ["single-leg", ["single leg", "one leg", "one-leg"]],
-  ["split-stance", ["split stance", "split squat", "side split"]],
-  ["staggered-stance", ["staggered stance", "staggered"]],
-  ["neutral-grip", ["neutral grip", "parallel grip", "hammer grip", "hammer"]],
-  ["supinated-grip", ["supinated grip", "underhand", "chin up", "chin-up"]],
-  ["pronated-grip", ["pronated grip", "overhand"]],
-  ["mixed-grip", ["mixed grip"]],
-  ["hook-grip", ["hook grip"]],
-  ["overhead", ["overhead", "shoulder press", "military press"]],
-  ["paused", ["paused", "pause"]],
-  ["deficit", ["deficit"]],
-  ["partial", ["partial"]],
-  ["strict", ["strict"]],
-  ["romanian", ["romanian", "rdl"]],
-  ["hinge", ["hinge"]],
-  ["sumo", ["sumo"]],
-  ["seated", ["seated"]],
-  ["incline", ["incline"]],
-  ["decline", ["decline"]],
-  ["chest-supported", ["chest supported", "chest-supported"]],
-  ["bench-supported", ["bench supported", "bench-supported"]],
-  ["rope", ["rope"]],
-  ["straight-bar", ["straight bar", "straight-bar"]],
-  ["ez-bar", ["ez bar", "ez-bar", "curl bar", "sz bar"]],
-  ["fly", ["fly"]],
-  ["landmine", ["landmine"]],
-]);
-
-function hasMarker(text: string, marker: string): boolean {
-  const normalizedText = normalizeToken(text);
-  const normalizedMarker = normalizeToken(marker);
-  return normalizedMarker.length > 0 && normalizedText.includes(normalizedMarker);
-}
-
-function sourceRepresentsRule(
-  base: CatalogExercise,
-  rule: VariantRule,
-  modifierIds: readonly string[],
-): boolean {
-  const baseText = [base.id, base.name, ...base.aliases].join(" ");
-  const baseEquipment = new Set(base.equipment.map(normalizeToken));
-  const overrideEquipment = rule.metadataOverrides?.equipment;
-  if (overrideEquipment) {
-    const effectiveEquipment = new Set(overrideEquipment.map(normalizeToken));
-    if (effectiveEquipment.size !== baseEquipment.size || [...effectiveEquipment].some((item) => !baseEquipment.has(item))) {
-      return false;
-    }
-  }
-  for (const modifierId of modifierIds) {
-    const expectedEquipment = IMPLEMENT_EQUIPMENT.get(modifierId);
-    if (expectedEquipment) {
-      if (!expectedEquipment.some((equipment) => baseEquipment.has(normalizeToken(equipment)))) return false;
-      continue;
-    }
-    const markers = MODIFIER_MARKERS.get(modifierId);
-    if (!markers || !markers.some((marker) => hasMarker(baseText, marker))) {
-      // High/low-bar identities imply the back-rack position; Romanian
-      // identities imply the generic hinge category in the modifier registry.
-      if (modifierId === "back-rack" && (modifierIds.includes("high-bar") || modifierIds.includes("low-bar"))) continue;
-      if (modifierId === "hinge" && modifierIds.includes("romanian")) continue;
-      return false;
-    }
-  }
-  return true;
-}
-
 type ReviewedVariantResult = {
   exercises: NormalizedCatalogExercise[];
   approvedRules: VariantRule[];
@@ -563,6 +481,12 @@ function reviewedVariants(
 ): ReviewedVariantResult {
   const coverage = emptyCoverage();
   if (curation.candidates.length === 0) {
+    if (curation.reviews.records.length > 0) {
+      throw new Error("empty candidate artifact requires empty review artifact");
+    }
+    if (curation.variantRules.length > 0) {
+      throw new Error("empty candidate artifact requires empty variant-rules manifest");
+    }
     return { exercises: normalized.exercises.map((exercise) => ({
       ...exercise,
       aliases: [...exercise.aliases],
@@ -595,12 +519,10 @@ function reviewedVariants(
   const approvedRules: VariantRule[] = [];
   const seenSignatures = new Set<string>();
   const existingSignatures = new Map<string, string>();
-  const sourceOwners = new Map<string, string>();
   for (const signature of normalized.registries.signatures) {
     const canonical = signatureForRegistry(signature, normalized.registries);
     if (signature.exerciseId) {
       existingSignatures.set(canonical, signature.exerciseId);
-      sourceOwners.set(signature.exerciseId, canonical);
     }
   }
 
@@ -649,19 +571,6 @@ function reviewedVariants(
   }
 
   const byId = new Map(normalized.exercises.map((exercise) => [exercise.id, exercise]));
-  for (const rule of approvedRules) {
-    const signature = signatureForRegistry(
-      { movementId: rule.movementId, modifierIds: rule.movementModifierIds },
-      normalized.registries,
-    );
-    if (existingSignatures.has(signature)) continue;
-    const base = byId.get(rule.metadataFromExerciseId);
-    if (!base || !sourceRepresentsRule(base, rule, rule.movementModifierIds)) continue;
-    const owner = sourceOwners.get(base.id);
-    if (owner && owner !== signature) continue;
-    existingSignatures.set(signature, base.id);
-    sourceOwners.set(base.id, signature);
-  }
   const materialized = normalized.exercises.map((exercise) => ({
     ...exercise,
     aliases: [...exercise.aliases],
@@ -748,6 +657,12 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   const normalized = validateNormalizedCatalogue(records as CatalogExercise[], manifests);
   const nearDuplicateCandidates = findNearDuplicateCandidates(normalized.exercises);
   const reviewed = reviewedVariants(normalized, manifests, options.stage);
+  const finalAliasCandidates = aliasCandidates(reviewed.exercises);
+  const unclassifiedAliasCollisionCount = countUnclassifiedAliasCollisions(
+    finalAliasCandidates,
+    normalized.aliasOutcomes,
+  );
+  validateAliasOutcomes(finalAliasCandidates, normalized.aliasOutcomes);
   const candidateBytes = await readFile(
     join(options.rootDir, "scripts/catalog-normalization/reviews/variant-candidates.json"),
   );
@@ -813,7 +728,7 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     inputHashes: stableRecord(inputHashes) as Record<string, string>,
     outputHashes: stableRecord(outputHashes) as Record<string, string>,
     blockingErrors: [],
-    unclassifiedAliasCollisionCount: 0,
+    unclassifiedAliasCollisionCount,
     redirectChainCount: 0,
     automaticFuzzyMergeCount: nearDuplicateCandidates.filter(
       (candidate) => candidate.disposition === "merged",

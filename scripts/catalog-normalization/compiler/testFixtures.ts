@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { OUTPUT_FILES } from "./core";
+import { compileCatalog, OUTPUT_FILES } from "./core";
 import { buildRegistries } from "./normalize";
 import {
   canonicalModifierIds,
@@ -237,6 +237,12 @@ export async function createCompilerFixtureRoot(options: { snapshotRecords: numb
       writeFile(join(outputDir, fileName), fileName === "exercises.generated.json" ? snapshot : EMPTY_ARTIFACT),
     ),
   );
+  await compileCatalog({
+    rootDir: root,
+    catalogOutputDir: outputDir,
+    reportOutputPath: join(root, "reports/catalog-normalization-report.json"),
+    stage: "complete",
+  });
   return root;
 }
 

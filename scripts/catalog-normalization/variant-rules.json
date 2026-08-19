@@ -317,19 +317,6 @@
       "status": "approved"
     },
     {
-      "id": "curl--machine",
-      "movementId": "curl",
-      "movementModifierIds": [
-        "machine"
-      ],
-      "metadataFromExerciseId": "lever-preacher-curl",
-      "approvedAliases": [
-        "machine curl"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
       "id": "deadlift-hinge--barbell",
       "movementId": "deadlift-hinge",
       "movementModifierIds": [
@@ -620,34 +607,6 @@
       }
     },
     {
-      "id": "loaded-carry--dumbbell--neutral-grip",
-      "movementId": "loaded-carry",
-      "movementModifierIds": [
-        "dumbbell",
-        "neutral-grip"
-      ],
-      "metadataFromExerciseId": "farmer-carry",
-      "approvedAliases": [
-        "neutral grip dumbbell carry"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
-      "id": "loaded-carry--dumbbell--pronated-grip",
-      "movementId": "loaded-carry",
-      "movementModifierIds": [
-        "dumbbell",
-        "pronated-grip"
-      ],
-      "metadataFromExerciseId": "farmer-carry",
-      "approvedAliases": [
-        "pronated grip dumbbell carry"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
       "id": "loaded-carry--dumbbell--single-arm",
       "movementId": "loaded-carry",
       "movementModifierIds": [
@@ -655,6 +614,11 @@
         "single-arm"
       ],
       "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "dumbbell"
+        ]
+      },
       "approvedAliases": [
         "single arm dumbbell carry"
       ],
@@ -687,6 +651,11 @@
         "single-arm"
       ],
       "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "kettlebell"
+        ]
+      },
       "approvedAliases": [
         "single arm kettlebell carry"
       ],
@@ -844,19 +813,6 @@
       "status": "approved"
     },
     {
-      "id": "lunge-split-squat--kettlebell",
-      "movementId": "lunge-split-squat",
-      "movementModifierIds": [
-        "kettlebell"
-      ],
-      "metadataFromExerciseId": "kettlebell-lunge-pass-through",
-      "approvedAliases": [
-        "kettlebell lunge"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
       "id": "overhead-landmine-press--barbell--overhead",
       "movementId": "overhead-landmine-press",
       "movementModifierIds": [
@@ -1005,19 +961,6 @@
       "metadataFromExerciseId": "lever-shoulder-press",
       "approvedAliases": [
         "machine overhead press"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
-      "id": "pull-up-pulldown--band",
-      "movementId": "pull-up-pulldown",
-      "movementModifierIds": [
-        "band"
-      ],
-      "metadataFromExerciseId": "band-close-grip-pulldown",
-      "approvedAliases": [
-        "band pulldown"
       ],
       "coverageTier": 1,
       "status": "approved"
@@ -1280,20 +1223,6 @@
       "metadataFromExerciseId": "incline-push-up",
       "approvedAliases": [
         "incline bodyweight push-up"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
-      "id": "push-up--bodyweight--neutral-grip",
-      "movementId": "push-up",
-      "movementModifierIds": [
-        "bodyweight",
-        "neutral-grip"
-      ],
-      "metadataFromExerciseId": "push-up",
-      "approvedAliases": [
-        "neutral grip bodyweight push-up"
       ],
       "coverageTier": 1,
       "status": "approved"
@@ -1973,19 +1902,6 @@
       "metadataFromExerciseId": "kettlebell-front-squat",
       "approvedAliases": [
         "kettlebell front rack squat"
-      ],
-      "coverageTier": 1,
-      "status": "approved"
-    },
-    {
-      "id": "triceps-extension-pushdown--band",
-      "movementId": "triceps-extension-pushdown",
-      "movementModifierIds": [
-        "band"
-      ],
-      "metadataFromExerciseId": "band-side-triceps-extension",
-      "approvedAliases": [
-        "band triceps extension"
       ],
       "coverageTier": 1,
       "status": "approved"

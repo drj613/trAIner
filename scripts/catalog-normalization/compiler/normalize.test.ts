@@ -557,6 +557,54 @@ test("materializes only reviewed metadata overrides from a populated base", () =
   });
 });
 
+test("materialized variants do not inherit generic or prescription aliases", () => {
+  const baseExercise: CatalogExercise = {
+    id: "barbell-deadlift",
+    name: "Barbell Deadlift",
+    aliases: ["BB Deadlift", "Farmer Carry with 2-Second March Pauses"],
+    equipment: ["barbell"],
+    movementPatterns: ["strength"],
+    muscles: { primary: ["glutes"], secondary: ["hamstrings"] },
+    tags: ["strength"],
+  };
+  const rule: VariantRule = {
+    id: "deadlift-hinge--barbell--paused",
+    movementId: "deadlift-hinge",
+    movementModifierIds: ["barbell", "paused"],
+    metadataFromExerciseId: baseExercise.id,
+    approvedAliases: ["paused barbell deadlift"],
+    coverageTier: 1,
+    status: "approved",
+  };
+
+  expect(materializeVariant(baseExercise, rule).aliases).toEqual(["paused barbell deadlift"]);
+});
+
+test("materialization rejects undeclared extra implement equipment", () => {
+  const baseExercise: CatalogExercise = {
+    id: "farmer-carry",
+    name: "Farmer Carry",
+    aliases: [],
+    equipment: ["kettlebell", "dumbbell"],
+    movementPatterns: ["loaded carry"],
+    muscles: { primary: ["traps"], secondary: ["forearms"] },
+    tags: ["loaded-carry"],
+  };
+  const rule: VariantRule = {
+    id: "loaded-carry--dumbbell--neutral-grip",
+    movementId: "loaded-carry",
+    movementModifierIds: ["dumbbell", "neutral-grip"],
+    metadataFromExerciseId: baseExercise.id,
+    approvedAliases: ["neutral grip dumbbell carry"],
+    coverageTier: 1,
+    status: "approved",
+  };
+
+  expect(() => materializeVariant(baseExercise, rule)).toThrow(
+    "Variant metadata base has conflicting implement equipment: loaded-carry--dumbbell--neutral-grip",
+  );
+});
+
 test("review artifact loader rejects field-level schema violations", async () => {
   const artifact = await loadVariantReviews();
   expect(artifact.schemaVersion).toBe(1);

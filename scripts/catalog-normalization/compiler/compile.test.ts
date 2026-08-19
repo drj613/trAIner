@@ -115,6 +115,105 @@ test("checker accepts the checked-in catalogue output", async () => {
   expect((await runProcess(["bun", "scripts/catalog-normalization/compiler/check.ts"])).exitCode).toBe(0);
 });
 
+test("checker rejects a stale checked-in normalization report", async () => {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  const reportPath = join(rootDir, "reports/catalog-normalization-report.json");
+  await mkdir(join(rootDir, "reports"), { recursive: true });
+  await writeFile(reportPath, `${JSON.stringify({ stale: true })}\n`);
+
+  const result = await runProcess([
+    "bun",
+    "scripts/catalog-normalization/compiler/check.ts",
+    "--fixture-root",
+    rootDir,
+  ]);
+  expect(result.exitCode).not.toBe(0);
+  expect(`${result.stdout}\n${result.stderr}`).toContain("catalog normalization report differs");
+});
+
+test("empty candidate artifacts require empty reviews and rules", async () => {
+  const reviewRoot = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  await writeFile(
+    join(reviewRoot, "scripts/catalog-normalization/reviews/variant-adversarial-review.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      records: [{ candidateId: "orphan", decision: "reject", reason: "No candidate exists." }],
+    })}\n`,
+  );
+  await expect(compileCatalog({
+    rootDir: reviewRoot,
+    catalogOutputDir: join(reviewRoot, "tmp-catalog"),
+    reportOutputPath: join(reviewRoot, "tmp-report.json"),
+    stage: "complete",
+  })).rejects.toThrow("empty candidate artifact requires empty review artifact");
+
+  const ruleRoot = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  await writeFile(
+    join(ruleRoot, "scripts/catalog-normalization/variant-rules.json"),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      records: [{
+        id: "orphan-rule",
+        movementId: "squat",
+        movementModifierIds: ["barbell"],
+        metadataFromExerciseId: "fixture-0",
+        approvedAliases: [],
+        coverageTier: 1,
+        status: "approved",
+      }],
+    })}\n`,
+  );
+  await expect(compileCatalog({
+    rootDir: ruleRoot,
+    catalogOutputDir: join(ruleRoot, "tmp-catalog"),
+    reportOutputPath: join(ruleRoot, "tmp-report.json"),
+    stage: "complete",
+  })).rejects.toThrow("empty candidate artifact requires empty variant-rules manifest");
+});
+
+test("metadata bases do not promote narrower identities into generic variant IDs", async () => {
+  const outputDir = await mkdtemp(join(tmpdir(), "catalog-exact-signatures-"));
+  await compileCatalog({
+    rootDir: process.cwd(),
+    catalogOutputDir: outputDir,
+    reportOutputPath: join(outputDir, "report.json"),
+    stage: "complete",
+  });
+  const exercises = JSON.parse(
+    await readFile(join(outputDir, "exercises.generated.json"), "utf8"),
+  ) as Array<{ id: string; name: string; aliases: string[]; movementId: string | null; movementModifierIds: string[] }>;
+  const byId = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+
+  expect(byId.get("pull-up-pulldown--machine")?.movementModifierIds).toEqual(["machine"]);
+  expect(byId.get("overhead-landmine-press--dumbbell--neutral-grip")?.movementModifierIds).toEqual([
+    "dumbbell",
+    "neutral-grip",
+  ]);
+  expect(byId.get("row--band")?.movementModifierIds).toEqual(["band"]);
+  expect(byId.get("triceps-extension-pushdown--band--overhead")?.movementModifierIds).toEqual([
+    "band",
+    "overhead",
+  ]);
+  expect(byId.get("reverse-grip-machine-lat-pulldown")?.movementId).toBeNull();
+  expect(byId.get("dumbbell-seated-shoulder-press-parallel-grip")?.movementId).toBeNull();
+  expect(byId.get("resistance-band-seated-straight-back-row")?.movementId).toBeNull();
+  expect(byId.get("speed-band-overhead-triceps")?.movementId).toBeNull();
+  expect(byId.get("deadlift-hinge--barbell--paused")?.aliases).toEqual(["paused barbell deadlift"]);
+  expect(byId.get("loaded-carry--dumbbell--neutral-grip")).toBeUndefined();
+  expect(byId.get("farmer-carry")?.aliases).toEqual([
+    "farmers carry",
+    "farmers walk",
+    "farmer walk",
+    "farmer's carry",
+    "farmer's walk",
+    "Farmer Carry with 2-Second March Pauses",
+  ]);
+  const report = JSON.parse(await readFile(join(outputDir, "report.json"), "utf8")) as {
+    unclassifiedAliasCollisionCount: number;
+  };
+  expect(report.unclassifiedAliasCollisionCount).toBe(0);
+});
+
 test.each([
   {
     name: "an alias classification with an unknown outcome",

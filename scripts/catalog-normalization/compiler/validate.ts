@@ -564,6 +564,36 @@ const IMPLEMENT_METADATA_EQUIPMENT: ReadonlyMap<string, readonly string[]> = new
   ["landmine", ["landmine", "barbell"]],
 ]);
 
+function assertImplementEquipmentCompatibility(
+  equipment: readonly string[],
+  modifierIds: readonly string[],
+  ruleId: string,
+  context: "candidate" | "variant",
+): void {
+  const implementIds = modifierIds.filter((modifierId) => IMPLEMENT_METADATA_EQUIPMENT.has(modifierId));
+  if (implementIds.length === 0) return;
+  const expectedEquipment = new Set(
+    implementIds.flatMap((modifierId) => IMPLEMENT_METADATA_EQUIPMENT.get(modifierId) ?? []),
+  );
+  const normalizedExpected = new Set([...expectedEquipment].map(normalizeCandidateText));
+  const knownImplementEquipment = new Set(
+    [...IMPLEMENT_METADATA_EQUIPMENT.values()].flatMap((values) => values.map(normalizeCandidateText)),
+  );
+  const actualEquipment = new Set(equipment.map(normalizeCandidateText));
+  if (![...actualEquipment].some((value) => normalizedExpected.has(value))) {
+    throw new Error(
+      `${context === "candidate" ? "Candidate metadata base incompatible with implement" : "Variant metadata base incompatible with implement"}: ${ruleId}`,
+    );
+  }
+  const conflicting = [...actualEquipment]
+    .filter((value) => knownImplementEquipment.has(value) && !normalizedExpected.has(value));
+  if (conflicting.length > 0) {
+    throw new Error(
+      `${context === "candidate" ? "Candidate metadata base has conflicting implement equipment" : "Variant metadata base has conflicting implement equipment"}: ${ruleId}`,
+    );
+  }
+}
+
 function candidateMetadata(
   candidate: VariantCandidate,
   metadataById: ReadonlyMap<string, CatalogExercise>,
@@ -603,13 +633,8 @@ function assertCandidateMetadata(
     );
   }
 
-  const implementId = modifierIds.find((modifierId) => modifiersById.get(modifierId)?.category === "implement");
-  if (!implementId) return;
-  const expectedEquipment = IMPLEMENT_METADATA_EQUIPMENT.get(implementId) ?? [implementId];
-  const actualEquipment = new Set(metadata.equipment.map(normalizeCandidateText));
-  if (!expectedEquipment.some((equipment) => actualEquipment.has(normalizeCandidateText(equipment)))) {
-    throw new Error(`Candidate metadata base incompatible with implement: ${candidate.id}`);
-  }
+  const implementIds = modifierIds.filter((modifierId) => modifiersById.get(modifierId)?.category === "implement");
+  assertImplementEquipmentCompatibility(metadata.equipment, implementIds, candidate.id, "candidate");
 }
 
 export function validateVariantCandidates(
@@ -695,7 +720,10 @@ export function materializeVariant(
   const materialized: NormalizedCatalogExercise = {
     id: rule.id,
     name: base.name,
-    aliases: [...new Set([...base.aliases, ...rule.approvedAliases])],
+    // A generated variant may only expose aliases explicitly approved for its
+    // identity. Generic source aliases (including prescription language) are
+    // not safe to inherit across a narrower signature.
+    aliases: [...new Set(rule.approvedAliases)],
     equipment: [...(overrides?.equipment ?? base.equipment)],
     movementPatterns: [...(overrides?.movementPatterns ?? base.movementPatterns)],
     muscles: {
@@ -706,16 +734,7 @@ export function materializeVariant(
     movementId: rule.movementId,
     movementModifierIds: [...rule.movementModifierIds],
   };
-  const implementId = rule.movementModifierIds.find((modifierId) =>
-    IMPLEMENT_METADATA_EQUIPMENT.has(modifierId),
-  );
-  if (implementId) {
-    const expectedEquipment = IMPLEMENT_METADATA_EQUIPMENT.get(implementId)!;
-    const actualEquipment = new Set(materialized.equipment.map(normalizeCandidateText));
-    if (!expectedEquipment.some((equipment) => actualEquipment.has(normalizeCandidateText(equipment)))) {
-      throw new Error(`Variant metadata base incompatible with implement: ${rule.id}`);
-    }
-  }
+  assertImplementEquipmentCompatibility(materialized.equipment, rule.movementModifierIds, rule.id, "variant");
   assertNonEmptyMetadata(materialized, rule.id);
   return materialized;
 }

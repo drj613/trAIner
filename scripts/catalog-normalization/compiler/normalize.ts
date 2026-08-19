@@ -272,7 +272,7 @@ function validateClassifications(
   }
 }
 
-function aliasCandidates(exercises: readonly CatalogExercise[]): ReadonlyMap<string, string[]> {
+export function aliasCandidates(exercises: readonly CatalogExercise[]): ReadonlyMap<string, string[]> {
   const candidates = new Map<string, Set<string>>();
   for (const exercise of exercises) {
     for (const label of [exercise.name, ...exercise.aliases]) {
@@ -288,6 +288,17 @@ function aliasCandidates(exercises: readonly CatalogExercise[]): ReadonlyMap<str
       .sort(([a], [b]) => compareText(a, b))
       .map(([token, ids]) => [token, uniqueStrings(ids)]),
   );
+}
+
+export function countUnclassifiedAliasCollisions(
+  candidates: ReadonlyMap<string, readonly string[]>,
+  classifications: ReadonlyMap<string, AliasClassification>,
+): number {
+  let count = 0;
+  for (const [token, ids] of candidates) {
+    if (ids.length > 1 && !classifications.has(token)) count += 1;
+  }
+  return count;
 }
 
 function completeAliasOutcomes(

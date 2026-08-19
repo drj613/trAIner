@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { compileCatalog, OUTPUT_FILES } from "./core";
+import { compileCatalog, OUTPUT_FILES, REPORT_FILE } from "./core";
 
 function sha256(value: Buffer): string {
   return createHash("sha256").update(value).digest("hex");
@@ -34,6 +34,17 @@ export async function runCatalogCheck(argv: string[]): Promise<void> {
     if (report.outputHashes[fileName] !== sha256(expected)) {
       throw new Error(`catalog output hash differs: ${fileName}`);
     }
+  }
+
+  const [expectedReport, generatedReport] = await Promise.all([
+    readFile(join(rootDir, REPORT_FILE)),
+    readFile(join(temporaryRoot, "report.json")),
+  ]);
+  if (!expectedReport.equals(generatedReport)) {
+    throw new Error("catalog normalization report differs");
+  }
+  if (sha256(expectedReport) !== sha256(generatedReport)) {
+    throw new Error("catalog normalization report hash differs");
   }
 }
 
