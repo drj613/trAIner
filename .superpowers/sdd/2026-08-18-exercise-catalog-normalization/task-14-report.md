@@ -664,3 +664,153 @@ typecheck 0 · lint 0 · build 0 · `git diff --check` 0 ·
 **Concerns:** finding (a), the stale `LocalDataProvider` after a restore, which
 needs a decision before delivery; and finding (b), a catalogue whose nesting
 mechanism is complete over content that is 4.5% assigned.
+
+---
+
+# Addendum — N1: the sweep's blind spot to direct generated-artifact imports
+
+Filed by the final review (`task-15-final-review.md`, finding N1) and fixed
+after the branch was otherwise approved for push. Test-infrastructure only; no
+production module changed.
+
+## The blind spot
+
+`CATALOG_REFERENCE` — the pattern the `covers every runtime catalogue reader in
+src/` sweep uses to decide which modules need an audit row — keyed only on the
+identifiers `exerciseCatalog` and `catalogIndex`. A module can `import catalog
+from "./exercises.generated.json"` and bind it to any local name it likes, so
+the sweep could not see it. The audit table's whole purpose is to force a human
+verdict onto every new catalogue reader, and this shape of reader walked past it.
+
+Latent at the time it was found: only `exercises.ts` imported that artifact.
+
+## RED evidence
+
+With a probe module added at `src/lib/catalog/mutationBProbe.ts` —
+
+```ts
+import rawCatalog from "./exercises.generated.json";
+
+export function probeLookup(id: string): unknown {
+  return rawCatalog.find((item) => item.id === id);
+}
+```
+
+— unlisted in the audit table, doing exactly the `.find` bypass the audit
+exists to catch, the suite reported:
+
+```
+Test Suites: 1 passed, 1 total
+Tests:       26 passed, 26 total
+```
+
+The sweep was silent. After adding the artifact filenames to the detector, the
+same probe produced the failure it should always have produced:
+
+```
+  ● exercise identity consumer audit › covers every runtime catalogue reader in src/
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 4
+
+    - Array []
+    + Array [
+    +   "src/lib/catalog/mutationBProbe.ts",
+    +   "src/lib/catalog/registries.ts",
+    + ]
+
+    > 248 |     expect(readers.filter((file) => !listed.has(file))).toEqual([]);
+```
+
+The probe file was deleted; `git status --porcelain` is clean and the audit test
+file contains 0 NUL bytes.
+
+## The fix
+
+`CATALOG_REFERENCE` now also matches the five generated artifact filenames:
+
+```ts
+const CATALOG_REFERENCE =
+  /\bexerciseCatalog\b|\bcatalogIndex\b|\b(?:exercises|movements|modifiers|importDisambiguations|legacyRedirects)\.generated\.json\b/;
+```
+
+All four registry artifacts are included, not just `exercises.generated.json`.
+The disambiguation, movement, modifier and legacy-redirect artifacts are
+identity *inputs*: a module that read the raw disambiguation rules and resolved
+a name off them itself would be the same bypass in a different file, and an
+`exercises`-only detector would have left that hole open. Comments are already
+masked before this pattern runs, so the prose mentions of these filenames in
+`muscles.ts` and `historyProjection.ts` do not trip it. The one non-comment
+mention outside the catalogue directory is the footer string in
+`LibraryClient.tsx:957`, which already has a row.
+
+## The `registries.ts` decision
+
+Widening the detector immediately revealed the missing row the reviewer
+predicted. **`registries.ts` gets a real row with the verdict `declaration`** —
+not an exemption.
+
+Justification: `declaration` already existed for the module that *builds* data
+other modules read, rather than reading anything out of it. `registries.ts` is
+exactly that for the four registry artifacts — it validates them with
+`assertGeneratedArtifact` and exports the definitions and by-id maps. It
+performs no exercise-catalogue lookup, so `exact-only` would require a false
+marker comment, and it routes nothing through the resolver, so `resolver` would
+be a false claim. An exemption was rejected on the brief's own reasoning: an
+exemption keyed on a path or a filename is the same blind spot wearing a
+different name, and worse for looking closed.
+
+Because `declaration` now covers two files, the verdict was strengthened so it
+cannot be earned by doing nothing. A `declaration` row must name the symbols it
+declares (`declares: readonly string[]`), and the test asserts `export const
+<symbol>` for each — the same positive-claim discipline the `via` field applies
+to `resolver` rows. Previously the check was a hardcoded `expect(source)
+.toContain("export const exerciseCatalog")`, which no second file could satisfy.
+
+## Count change
+
+This file goes from **26 to 27 tests**, and the suite total from **1,659 to
+1,660**. The single new test is the `it.each` row for `registries.ts`. No
+existing test was modified to accommodate anything, and no existing count fell.
+
+## Mutation evidence
+
+Each mutation run alone against the audit file; the total is stated beside every
+count, because a mutant that fails to load reports a clean pass with tests
+silently missing.
+
+| Mutation | Result |
+|---|---|
+| **A** — new unlisted `src/lib/catalog/mutantA.ts` importing `exerciseCatalog` from `./exercises` and calling `.find` | `covers every runtime catalogue reader in src/` ✕ — **1 failed, 26 passed, 27 total** |
+| **B** — new unlisted `src/lib/catalog/mutantB.ts` importing `./exercises.generated.json` directly and calling `.find` | `covers every runtime catalogue reader in src/` ✕ — **1 failed, 26 passed, 27 total** (was silent at 26/26 before the fix) |
+| **C** — `canonicalExerciseId ?? exerciseId` helper added to `src/lib/workout/historyProjection.ts` | `finds no history or analysis surface grouping by canonicalExerciseId ?? exerciseId` ✕ — **1 failed, 26 passed, 27 total** |
+| **D** — `projectExerciseHistory` renamed to `projectExerciseHistoryRenamed` in `HistoryClient.tsx` (3 occurrences) | `src/components/workout/HistoryClient.tsx — resolver` ✕ — **1 failed, 26 passed, 27 total** |
+| **E** — `export const disambiguationRules` renamed in `registries.ts` (new `declares` assertion) | `src/lib/catalog/registries.ts — declaration` ✕ — **1 failed, 26 passed, 27 total** |
+| **F** — the `registries.ts` row deleted from the audit table | `covers every runtime catalogue reader in src/` ✕ — **1 failed, 25 passed, 26 total** (26 is correct here: the deleted row is one fewer `it.each` case) |
+
+B now dies; A, C and D still die. Every mutant was restored with `git checkout
+--` after the commit that introduced the fix, and `git status --porcelain` is
+empty.
+
+## Gates
+
+```
+bun run catalog:check   exit=0
+bun run typecheck       exit=0
+bun run lint            exit=0
+bun run test -- --runInBand
+    Test Suites: 111 passed, 111 total
+    Tests:       1660 passed, 1660 total
+bun run build           ✓ built in 1.23s (Vite large-chunk advisory only)
+git diff --check        exit=0
+```
+
+**e2e not run — controller instruction.** This change is test-infrastructure
+only — a static-text audit over `src/` — and touches no runtime code path, so
+nothing here needs a browser.
+
+## Status
+
+**DONE** — commit `0dca2d2`.
