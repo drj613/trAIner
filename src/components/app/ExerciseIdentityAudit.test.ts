@@ -58,8 +58,22 @@ const CATALOG_LOOKUP =
 const DERIVED_INDEX =
   /\bconst\s+(\w+)\s*(?::[^=]+)?=\s*new\s+(?:Map|Set)\b[^;]{0,160}?\bexerciseCatalog\b/g;
 
-/** Any mention at all of the runtime catalogue, used only by the completeness sweep. */
-const CATALOG_REFERENCE = /\bexerciseCatalog\b|\bcatalogIndex\b/;
+/**
+ * Any mention at all of the runtime catalogue, used only by the completeness
+ * sweep.
+ *
+ * The generated artifact filenames are here, not just the `exerciseCatalog`
+ * identifier, because a module can import `exercises.generated.json` directly
+ * and bind it to any local name it likes. An identifier-only detector cannot
+ * see that, and the final reviewer proved it: a new unlisted module importing
+ * the artifact directly left this suite green with the sweep silent. The other
+ * four artifacts are listed for the same reason — the disambiguation, movement,
+ * modifier and legacy-redirect registries are identity inputs too, and a module
+ * resolving a name off the raw rules would be the same bypass in a different
+ * file.
+ */
+const CATALOG_REFERENCE =
+  /\bexerciseCatalog\b|\bcatalogIndex\b|\b(?:exercises|movements|modifiers|importDisambiguations|legacyRedirects)\.generated\.json\b/;
 
 /**
  * The shared entry points identity may be decided through. A `"resolver"` row
@@ -84,10 +98,13 @@ const RESOLVER_ENTRY_POINTS = [
 type ResolverEntryPoint = (typeof RESOLVER_ENTRY_POINTS)[number];
 
 /**
- * `"declaration"` is the third verdict, and it exists for exactly one file:
- * the module that BUILDS the catalogue array. It neither resolves nor looks
- * anything up, and forcing it into either of the other two would mean writing
- * a false comment or a false claim.
+ * `"declaration"` is the third verdict, and it exists for the two modules that
+ * BUILD the generated data other files read: the catalogue array itself, and
+ * the movement / modifier / disambiguation / legacy-redirect registries. Such a
+ * module neither resolves nor looks anything up, and forcing it into either of
+ * the other two verdicts would mean writing a false comment or a false claim.
+ * A `"declaration"` row names the symbols it declares, so a module that stopped
+ * declaring them could not keep the row by merely doing nothing.
  */
 type Verdict = "resolver" | "exact-only" | "declaration";
 
@@ -101,11 +118,19 @@ const IDENTITY_CONSUMERS: ReadonlyArray<{
   verdict: Verdict;
   /** For a `"resolver"` row: the entry point identity must be decided through. */
   via?: ResolverEntryPoint;
+  /** For a `"declaration"` row: the exported symbols this module must declare. */
+  declares?: readonly string[];
   why: string;
 }> = [
   // --- the resolver and the data it reads ------------------------------------
   { file: "src/lib/catalog/identity.ts", verdict: "resolver", via: "ExerciseIdentityResolver", why: "the resolver itself" },
-  { file: "src/lib/catalog/exercises.ts", verdict: "declaration", why: "declares the catalogue; reads nothing out of it" },
+  { file: "src/lib/catalog/exercises.ts", verdict: "declaration", declares: ["exerciseCatalog"], why: "declares the catalogue; reads nothing out of it" },
+  {
+    file: "src/lib/catalog/registries.ts",
+    verdict: "declaration",
+    declares: ["movementDefinitions", "movementModifierDefinitions", "disambiguationRules", "legacyExerciseIdRedirects"],
+    why: "declares the movement, modifier, disambiguation and legacy-redirect registries from their generated artifacts; reads nothing out of the exercise catalogue",
+  },
   { file: "src/lib/catalog/match.ts", verdict: "resolver", via: "resolveExerciseIdentity", why: "import matching delegates to resolveExerciseIdentity" },
   { file: "src/lib/catalog/groupCatalog.ts", verdict: "resolver", via: "ExerciseIdentityResolver", why: "grouping is keyed on identity.groupKey" },
   { file: "src/components/app/ExerciseNormalizationProvider.tsx", verdict: "resolver", via: "resolveExerciseIdentity", why: "builds the one shared context" },
@@ -190,15 +215,20 @@ function listSourceFiles(directory: string, found: string[] = []): string[] {
 }
 
 describe("exercise identity consumer audit", () => {
-  it.each(IDENTITY_CONSUMERS.map((row) => [row.file, row.verdict, row.why, row.via] as const))(
+  it.each(IDENTITY_CONSUMERS.map((row) => [row.file, row.verdict, row.why, row.via, row.declares] as const))(
     "%s — %s (%s)",
-    (file, verdict, _why, via) => {
+    (file, verdict, _why, via, declares) => {
       const source = readSource(file);
       const sites = lookupSites(source);
 
       if (verdict === "declaration") {
         expect(sites).toEqual([]);
-        expect(source).toContain("export const exerciseCatalog");
+        // Positive claim, same reasoning as the `via` check below: without it a
+        // module that stopped declaring anything would still pass this row.
+        expect(declares?.length ?? 0).toBeGreaterThan(0);
+        for (const symbol of declares!) {
+          expect(new RegExp(`export const ${symbol}\\b`).test(source)).toBe(true);
+        }
         return;
       }
 
