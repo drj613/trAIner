@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -109,23 +108,9 @@ const logs: WorkoutLogDocument[] = [1, 2, 3].map((n) => ({
  * read `programs` out of context, and hand one back to `saveProgram` with a
  * field changed. `active: false` is the edit; every other field rides along
  * from whatever copy the provider is holding, which is the whole defect.
- *
- * `publishes.count` records how many times the provider republished
- * `programs`. `refresh()` always calls `programRepo.list()`, which returns a
- * fresh array, so one refresh is exactly one increment: zero refreshes and
- * three refreshes are different, readable numbers rather than "something
- * happened". The counter is a plain object rather than component state
- * deliberately — state would lag the effect that sets it by one commit, and
- * the test would then be measuring React's scheduling instead of refreshes.
  */
-const publishes = { count: 0 };
-
 function LocalDataProbe() {
   const { programs, saveProgram } = useLocalData();
-
-  useEffect(() => {
-    publishes.count += 1;
-  }, [programs]);
 
   return (
     <>
@@ -165,7 +150,6 @@ describe("a backup restore refreshes LocalDataProvider", () => {
   let backupFile: File;
 
   beforeEach(async () => {
-    publishes.count = 0;
     resetDbConnection();
     await deleteDB(DB_NAME);
     resetDbConnection();
@@ -230,22 +214,36 @@ describe("a backup restore refreshes LocalDataProvider", () => {
   }, 30_000);
 
   it("refreshes the provider exactly once for one restore", async () => {
+    // Counting refreshes by watching the provider republish `programs` does
+    // NOT work: two adjacent `await refresh()` calls settle in one React
+    // commit, so a probe counting commits reports 1 for both one refresh and
+    // two. That mutation (M2) survived such a probe. `programRepo.list()` is
+    // called once per refresh and cannot be batched away.
+    const listSpy = jest.spyOn(programRepo, "list");
     const { container } = renderHarness();
     await waitFor(() => expect(screen.getByTestId("probe-title")).toHaveTextContent(STALE_TITLE));
-    // Two on mount: the first commit publishes the empty initial array, the
-    // mount-time refresh publishes the stale program. Pinning the absolute
-    // number here means a stray extra publish before the restore cannot be
-    // absorbed into the delta below.
-    expect(publishes.count).toBe(2);
-    const before = publishes.count;
 
+    // Calibrate the reads that a Settings action makes *without* refreshing
+    // the provider, instead of asserting a hand-reasoned constant. Snapshot
+    // runs the same tail as the import handler — export the workspace, then
+    // reload the stats panel — and touches the provider not at all. Whatever
+    // that costs in `programRepo.list` calls is the floor the restore has to
+    // beat by exactly one.
+    listSpy.mockClear();
+    await userEvent.click(screen.getByRole("button", { name: /snapshot \(undo point\)/i }));
+    await waitFor(() => expect(statValue("snapshots")).toHaveTextContent("1"));
+    const withoutARefresh = listSpy.mock.calls.length;
+    expect(withoutARefresh).toBeGreaterThan(0);
+
+    listSpy.mockClear();
     await importTheBackup(container);
 
     await waitFor(() => expect(screen.getByTestId("probe-title")).toHaveTextContent(RESTORED_TITLE));
     expect(screen.getByTestId("probe-days")).toHaveTextContent("2");
-    // Exactly one. Zero would leave this at `before`; a refresh per store, or
-    // one from the handler plus one from an identity-event listener, would
-    // overshoot. The number is pinned, not the direction.
-    expect(publishes.count).toBe(before + 1);
+    // Exactly one more read than the no-refresh baseline. Zero refreshes lands
+    // on `withoutARefresh`; two — one from this handler plus one from a
+    // listener on the identity event `restoreBackup` already fires — lands on
+    // `withoutARefresh + 2`. Neither can pass.
+    expect(listSpy.mock.calls.length).toBe(withoutARefresh + 1);
   }, 30_000);
 });
