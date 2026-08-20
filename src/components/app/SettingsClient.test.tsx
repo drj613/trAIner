@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { SettingsClient } from "./SettingsClient";
+import { LocalDataProvider } from "./LocalDataProvider";
 import { exportBackup, restoreBackup, resetWorkspace } from "@/lib/backup/backup";
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { getPersistenceState } from "@/lib/storage/persistence";
@@ -51,13 +52,13 @@ describe("SettingsClient — reset workspace", () => {
   });
 
   it("shows the reset button but not the confirmation panel by default", () => {
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(screen.getByRole("button", { name: /reset workspace/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /yes, wipe everything/i })).not.toBeInTheDocument();
   });
 
   it("reveals confirmation panel on first click without wiping", () => {
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     expect(screen.getByRole("button", { name: /yes, wipe everything/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
@@ -65,7 +66,7 @@ describe("SettingsClient — reset workspace", () => {
   });
 
   it("collapses the panel when Cancel is clicked", () => {
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(screen.queryByRole("button", { name: /yes, wipe everything/i })).not.toBeInTheDocument();
@@ -75,7 +76,7 @@ describe("SettingsClient — reset workspace", () => {
     const reloadMock = jest.fn();
     Object.defineProperty(window, "location", { value: { reload: reloadMock }, writable: true });
 
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     fireEvent.click(screen.getByRole("button", { name: /yes, wipe everything/i }));
 
@@ -98,7 +99,7 @@ describe("SettingsClient — reset workspace", () => {
       return new Promise<void>(() => {}); // stays pending for this test
     });
 
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     const confirmButton = screen.getByRole("button", { name: /yes, wipe everything/i });
     fireEvent.click(confirmButton);
@@ -126,7 +127,7 @@ describe("SettingsClient — reset workspace", () => {
       return new Promise<void>(() => {}); // stays pending for this test
     });
 
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /reset workspace/i }));
     const cancelButton = screen.getByRole("button", { name: /cancel/i });
     fireEvent.click(screen.getByRole("button", { name: /yes, wipe everything/i }));
@@ -145,20 +146,20 @@ describe("SettingsClient — reset workspace", () => {
 
 describe("SettingsClient — storage persistence", () => {
   it("shows storage protection state", async () => {
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText(/^protected$/)).toBeInTheDocument();
   });
 
   it("shows evictable state with a Request protection button when denied", async () => {
     (getPersistenceState as jest.Mock).mockResolvedValueOnce("denied");
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText(/^evictable$/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /request protection/i })).toBeInTheDocument();
   });
 
   it("shows unprotected state with no button when unsupported", async () => {
     (getPersistenceState as jest.Mock).mockResolvedValueOnce("unsupported");
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText(/^unprotected$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /request protection/i })).not.toBeInTheDocument();
   });
@@ -166,14 +167,14 @@ describe("SettingsClient — storage persistence", () => {
 
 describe("SettingsClient — snapshot labeling and deletion", () => {
   it("labels snapshots as undo points, not backups", async () => {
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText(/undo point/i)).toBeInTheDocument();
     expect(screen.getByText(/not a backup/i)).toBeInTheDocument();
   });
 
   it("a single click arms the delete button but does not delete", async () => {
     (backupRepo.listIds as jest.Mock).mockResolvedValue(["2026-08-01T00:00:00.000Z"]);
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText("2026-08-01 00:00")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /^delete snapshot/i }));
@@ -188,7 +189,7 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
     (backupRepo.listIds as jest.Mock)
       .mockResolvedValueOnce(["2026-08-01T00:00:00.000Z"])
       .mockResolvedValue([]);
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByText("2026-08-01 00:00")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /^delete snapshot/i }));
@@ -207,7 +208,7 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
       "2026-08-01T00:00:00.000Z",
       "2026-08-02T00:00:00.000Z",
     ]);
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     expect(await screen.findByRole("button", { name: "delete snapshot 2026-08-01T00:00:00.000Z" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "delete snapshot 2026-08-02T00:00:00.000Z" })).toBeInTheDocument();
   });
@@ -218,7 +219,7 @@ describe("SettingsClient — snapshot labeling and deletion", () => {
       new Promise((resolve) => { resolveExport = resolve; }),
     );
 
-    render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     const button = await screen.findByRole("button", { name: /snapshot \(undo point\)/i });
     await userEvent.click(button);
 
@@ -248,7 +249,7 @@ describe("import flow", () => {
   afterEach(() => jest.restoreAllMocks());
 
   async function importFile() {
-    const { container } = render(<MemoryRouter><SettingsClient /></MemoryRouter>);
+    const { container } = render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
     const input = container.querySelector('input[type="file"]')!;
     const payload = JSON.stringify({ version: 1, programs: [], logs: [], aliases: [] });
     const file = new File([payload], "b.json", { type: "application/json" });
