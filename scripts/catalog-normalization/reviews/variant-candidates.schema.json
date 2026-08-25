@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainer.local/schemas/catalog-normalization/variant-candidates.schema.json",
+  "title": "Tier-1 exercise variant candidates",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "records": {
+      "type": "array",
+      "maxItems": 300,
+      "items": { "$ref": "#/$defs/variantCandidate" }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "stringArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/nonEmptyString" },
+      "uniqueItems": true
+    },
+    "metadataOverrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "equipment": { "$ref": "#/$defs/stringArray" },
+        "movementPatterns": { "$ref": "#/$defs/stringArray" },
+        "muscles": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primary", "secondary"],
+          "properties": {
+            "primary": { "$ref": "#/$defs/stringArray" },
+            "secondary": { "$ref": "#/$defs/stringArray" }
+          }
+        },
+        "tags": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "variantCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "movementId",
+        "movementModifierIds",
+        "metadataFromExerciseId",
+        "approvedAliases",
+        "coverageTier",
+        "status",
+        "rationale"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "movementId": { "$ref": "#/$defs/nonEmptyString" },
+        "movementModifierIds": {
+          "allOf": [{ "$ref": "#/$defs/stringArray" }],
+          "minItems": 1
+        },
+        "metadataFromExerciseId": { "$ref": "#/$defs/nonEmptyString" },
+        "metadataOverrides": { "$ref": "#/$defs/metadataOverrides" },
+        "approvedAliases": { "$ref": "#/$defs/stringArray" },
+        "coverageTier": { "enum": [1, 2] },
+        "status": { "const": "candidate" },
+        "rationale": { "type": "string", "minLength": 20 }
+      }
+    }
+  }
+}

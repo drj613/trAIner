@@ -10,12 +10,54 @@ import type {
 } from "@/lib/programs/types";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { getOverrideReplacementDays } from "@/lib/programs/overrides";
+import { prepareImportName } from "@/lib/catalog/identity";
 import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { disambiguationsByNormalizedName } from "@/lib/catalog/registries";
 
 export const CUSTOM_ID = "__custom__";
 
+/**
+ * The token a remembered alias for this raw name will be STORED under, which is
+ * the token `resolveName` looks one up by (`identity.ts:280-286`).
+ *
+ * The same rule as `aliasRepo.rememberedAliasToken`, expressed here from the
+ * catalogue primitives rather than imported from it: this module is pure rules
+ * and must not drag IndexedDB into its import graph. The shared rule is
+ * `prepareImportName` itself — there is no second rule to drift from.
+ */
+function storedAliasToken(rawName: string): string {
+  return prepareImportName(rawName, disambiguationsByNormalizedName).normalizedName;
+}
+
+/**
+ * Why a remembered alias for this raw name could never take effect, or
+ * `undefined` when there is no objection.
+ *
+ * Two names in the catalogue's rule set produce a row nothing can ever read:
+ *
+ *  - a `reject-alternative` name ("X or Y"). `resolveName` returns a standalone
+ *    result for it BEFORE it consults the alias table (`identity.ts:281`), so no
+ *    stored alias can govern it, whatever token it is filed under.
+ *  - a name that is nothing but annotations ("Competition", "pain free"), which
+ *    prepares to the empty string. Both stores refuse an empty token before
+ *    opening a transaction, so the tick can only ever produce a thrown error.
+ *
+ * Either way the tick would report success and change nothing, which is the
+ * failure mode this whole effort exists to remove. The refusal is a sentence
+ * rather than a boolean because the user has to be told, and told what to do.
+ */
+export function unrememberableReason(rawName: string): string | undefined {
+  const prepared = prepareImportName(rawName, disambiguationsByNormalizedName);
+  if (prepared.hasAlternative) {
+    return `“${rawName}” names more than one exercise, so nothing could look a mapping for it up again. Used for this import only — change the name in the JSON to the one exercise you did.`;
+  }
+  if (!prepared.normalizedName) {
+    return `“${rawName}” leaves no exercise name once its annotations are set aside, so there is nothing to remember. Used for this import only — change the name in the JSON to the exercise you did.`;
+  }
+  return undefined;
+}
+
 const AUTO_CUSTOM_SECTION_TYPES = new Set(["warmup", "cooldown"]);
-const AUTO_RESOLVE_THRESHOLD = 0.65;
 
 export type ResolutionItem = {
   path: string;
@@ -29,16 +71,55 @@ export type Resolution = {
   canonicalId: string;
 };
 
+// One import occurrence needing a decision. `path` is the AUTHORITATIVE
+// address — grouping is a presentation convenience, and patching always goes
+// back through these paths (see applyResolutions). Two occurrences that share
+// a name are never collapsed into one identity.
+export type ResolutionOccurrence = {
+  path: string;
+  rawName: string;
+  kind: "underspecified" | "unmatched";
+  candidates: ExerciseSuggestion[];
+};
+
+// A derived (never persisted) view: every occurrence sharing a resolution kind
+// and a normalized raw name, so the user makes ONE decision that fans out to
+// all of them. `remember` starts false — an ordinary grouped choice is local
+// to this import, and only an explicit Remember tick (the spec's
+// `Remember this interpretation` action) marks the group for alias
+// persistence.
+export type ResolutionGroup = {
+  groupKey: string;
+  normalizedRawName: string;
+  kind: "underspecified" | "unmatched";
+  occurrences: ResolutionOccurrence[];
+  occurrenceCount: number;
+  remember: boolean;
+};
+
+// Shared by extractUnresolvedExercises and groupResolutionOccurrences so the
+// two surfaces can never disagree about which warnings are exercise
+// resolutions. Structural warnings (duplicate day number, unsupported nested
+// override variant, unknown section type) carry no `rawName` and never match
+// the legacy message shape, so they stay out of both — and, because neither
+// function mutates `warnings`, they survive untouched in the program.
+function exerciseWarningName(warning: ImportWarning): string | undefined {
+  if (warning.rawName !== undefined) return warning.rawName;
+  // Warnings persisted before `rawName` existed: recover the name from the
+  // one message shape the old parser produced.
+  if (/^.+ was imported without a catalog match\.$/.test(warning.message)) {
+    return warning.message.split(" was imported")[0];
+  }
+  return undefined;
+}
+
 export function extractUnresolvedExercises(
   warnings: ImportWarning[],
 ): ResolutionItem[] {
   const items: ResolutionItem[] = [];
   for (const w of warnings) {
-    const rawName = w.rawName ?? w.message.split(" was imported")[0];
-    const isExerciseWarning =
-      w.rawName !== undefined ||
-      /^.+ was imported without a catalog match\.$/.test(w.message);
-    if (!isExerciseWarning) continue;
+    const rawName = exerciseWarningName(w);
+    if (rawName === undefined) continue;
     items.push({
       path: w.path,
       rawName,
@@ -49,6 +130,69 @@ export function extractUnresolvedExercises(
   return items;
 }
 
+/**
+ * Groups the occurrences that still need a decision by
+ * `${kind}:${normalizeExerciseName(rawName)}`.
+ *
+ * Kind is part of the key on purpose: an underspecified `back squat` (a
+ * movement whose concrete version is missing) and an unmatched `back squat`
+ * (no identity at all) offer different choices, so they must not share one
+ * selector even though their normalized text is identical.
+ *
+ * Group order is first-appearance order and occurrence order is warning order,
+ * both of which follow the parse walk (base days, then their variants, then
+ * override replacement days). No path is ever dropped or merged: a repeated
+ * name FANS OUT to every path, and structural safeguards stay authoritative —
+ * `applyResolutions` still refuses to patch a day whose path is ambiguous, so
+ * a grouped choice cannot bypass them.
+ *
+ * A warning with no `resolutionKind` predates the tri-state matcher and counts
+ * as `unmatched`; that is the only kind the old two-state matcher produced.
+ */
+export function groupResolutionOccurrences(warnings: ImportWarning[]): ResolutionGroup[] {
+  const groups = new Map<string, ResolutionGroup>();
+  for (const warning of warnings) {
+    const rawName = exerciseWarningName(warning);
+    if (rawName === undefined) continue;
+    const kind = warning.resolutionKind ?? "unmatched";
+    const normalizedRawName = normalizeExerciseName(rawName);
+    const groupKey = `${kind}:${normalizedRawName}`;
+    const occurrence: ResolutionOccurrence = {
+      path: warning.path,
+      rawName,
+      kind,
+      candidates: warning.suggestions ?? [],
+    };
+    const existing = groups.get(groupKey);
+    if (existing) {
+      existing.occurrences.push(occurrence);
+      existing.occurrenceCount = existing.occurrences.length;
+      continue;
+    }
+    groups.set(groupKey, {
+      groupKey,
+      normalizedRawName,
+      kind,
+      occurrences: [occurrence],
+      occurrenceCount: 1,
+      remember: false,
+    });
+  }
+  return [...groups.values()];
+}
+
+/**
+ * Pre-fills only the decisions that are NOT a catalogue-identity choice:
+ * warmup/cooldown items and items with no suggestion at all become custom
+ * exercises, exactly as before.
+ *
+ * It deliberately does NOT pick a concrete exercise. Fuzzy similarity is
+ * suggestion-only, so an underspecified set is never auto-selected and a fuzzy
+ * suggestion is never finalized just because it scores highly (the old `0.65`
+ * threshold did both, which silently answered the very question the
+ * disambiguation flow exists to ask — and then persisted that guess as a
+ * global alias).
+ */
 export function buildInitialResolutions(
   items: ResolutionItem[],
 ): Record<string, string> {
@@ -56,14 +200,16 @@ export function buildInitialResolutions(
   for (const item of items) {
     if (AUTO_CUSTOM_SECTION_TYPES.has(item.sectionType) || item.suggestions.length === 0) {
       result[item.path] = CUSTOM_ID;
-    } else if (item.suggestions[0].score >= AUTO_RESOLVE_THRESHOLD) {
-      result[item.path] = item.suggestions[0].exerciseId;
     }
   }
   return result;
 }
 
-export type AliasSaveInput = { alias: string; canonicalExerciseId: string };
+export type AliasSaveInput = {
+  alias: string;
+  canonicalExerciseId: string;
+  provenance: "remembered";
+};
 
 /**
  * Collapses resolved items down to one alias-save per normalizedAlias. A
@@ -84,17 +230,31 @@ export type AliasSaveInput = { alias: string; canonicalExerciseId: string };
  * the global alias write is skipped for the conflicting name.
  */
 export function dedupeAliasResolutions(
-  resolvedItems: ResolutionItem[],
+  resolvedItems: { path: string; rawName: string }[],
   resolutions: Record<string, string>,
 ): AliasSaveInput[] {
   const byNormalizedAlias = new Map<string, { input: AliasSaveInput; conflict: boolean }>();
   for (const item of resolvedItems) {
-    const normalized = normalizeExerciseName(item.rawName);
     const canonicalExerciseId = resolutions[item.path];
+    // An undecided occurrence and a "keep as custom" one are not catalogue
+    // identities, so neither can be remembered. Callers used to pre-filter
+    // these; the skip lives here so the contract this function advertises
+    // ("resolved items") is enforced where it is relied on.
+    if (!canonicalExerciseId || canonicalExerciseId === CUSTOM_ID) continue;
+    // A name no stored alias could ever govern. The UI refuses the tick in
+    // words, and this is the second half of the same refusal: nothing reaches
+    // the store that the store could only ignore or reject.
+    if (unrememberableReason(item.rawName) !== undefined) continue;
+    // Keyed on the token the alias will be STORED under, which is the token the
+    // resolver reads (`storedAliasToken`). Two duration variants of one name
+    // share it, so they are one mapping: keying them apart would hand
+    // `saveMany` two answers for one index key, and it rejects the whole batch
+    // rather than one name.
+    const normalized = storedAliasToken(item.rawName);
     const existing = byNormalizedAlias.get(normalized);
     if (!existing) {
       byNormalizedAlias.set(normalized, {
-        input: { alias: item.rawName, canonicalExerciseId },
+        input: { alias: item.rawName, canonicalExerciseId, provenance: "remembered" },
         conflict: false,
       });
     } else if (existing.input.canonicalExerciseId !== canonicalExerciseId) {
@@ -102,6 +262,158 @@ export function dedupeAliasResolutions(
     }
   }
   return [...byNormalizedAlias.values()].filter((e) => !e.conflict).map((e) => e.input);
+}
+
+/**
+ * The one concrete exercise this group could be remembered as, or `undefined`
+ * if it cannot be remembered at all.
+ *
+ * Spec: a remembered alias cannot be ambiguous. `undefined` therefore covers
+ * three cases the UI treats identically (Remember is disabled):
+ *  - the occurrences were resolved separately to DIFFERENT ids,
+ *  - at least one occurrence is still undecided,
+ *  - the agreed answer is "keep as custom", which is not a catalogue identity.
+ *
+ * It deliberately does NOT consider the group's stored count. A group whose
+ * decision reaches zero stored exercises (a structurally ambiguous day) can
+ * still be remembered, and that is correct: an alias is a statement about what
+ * the NAME means, not about what this one routine does with it. The row already
+ * says the decision won't apply here; refusing to remember it as well would
+ * throw away a true statement because of an unrelated structural problem in the
+ * paste. Raised as a possible oversight in review and kept on purpose.
+ */
+export function rememberableTarget(
+  group: ResolutionGroup,
+  resolutions: Record<string, string>,
+): string | undefined {
+  const chosen = new Set(group.occurrences.map((occurrence) => resolutions[occurrence.path]));
+  if (chosen.size !== 1) return undefined;
+  const [only] = [...chosen];
+  if (!only || only === CUSTOM_ID) return undefined;
+  return only;
+}
+
+/**
+ * The aliases an import should persist: ONLY groups the user explicitly marked
+ * with the Remember tick. An ordinary grouped or occurrence-level
+ * choice is local to this import and produces nothing here — which is why an
+ * import that remembers nothing performs no alias write and dispatches no
+ * identity event at all.
+ *
+ * Marked groups still run through `dedupeAliasResolutions`, so the existing
+ * conflict-dropping behaviour is preserved when two marked groups (e.g. an
+ * underspecified and an unmatched `press`) share one normalized token but
+ * disagree about the target.
+ */
+export function rememberedAliasInputs(
+  groups: ResolutionGroup[],
+  resolutions: Record<string, string>,
+): AliasSaveInput[] {
+  const occurrences = groups
+    .filter((group) => group.remember && rememberableTarget(group, resolutions) !== undefined)
+    .flatMap((group) => group.occurrences);
+  return dedupeAliasResolutions(occurrences, resolutions);
+}
+
+// A placeholder target for the counting pass: `applyResolutions` only patches
+// (and therefore only counts) an id that is non-empty and not CUSTOM_ID. The
+// patched program is discarded — only the counts leave this function — so the
+// value never reaches storage or the UI.
+const STORED_COUNT_PROBE = "__stored-count-probe__";
+
+/**
+ * How many STORED exercises each group's one decision will actually change —
+ * the number the user is shown ("used 8 times").
+ *
+ * This is not `occurrenceCount`. `occurrenceCount` counts warning paths, and a
+ * base-day path expands into one stored exercise per week-clone, so a 4-week
+ * routine with a single `Back Squat` has ONE path and FOUR stored exercises.
+ *
+ * The count comes from `applyResolutionsWithStats` — the real patch reporting
+ * what it did — rather than from re-deriving the addressing rules or walking
+ * the patched tree a second time. That is the point: the count is a promise
+ * about the routine, so it has to be whatever the patch actually does,
+ * including the name guards, the refusal to touch a structurally ambiguous day
+ * (which yields 0), single-addressing of override replacement paths, and the
+ * exclusion of variants nested inside an override replacement.
+ */
+export function storedOccurrenceCounts(
+  program: ProgramDocument,
+  groups: ResolutionGroup[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const group of groups) {
+    counts[group.groupKey] = storedExerciseCount(
+      program,
+      group.occurrences.map(({ path }) => path),
+    );
+  }
+  return counts;
+}
+
+/**
+ * How many stored exercises this set of resolution paths addresses. Also what
+ * the confirm step counts, so "N exercises mapped to catalog" and "used N
+ * times" can never disagree about the same routine.
+ */
+export function storedExerciseCount(program: ProgramDocument, paths: string[]): number {
+  const { patchedByPath } = applyResolutionsWithStats(
+    program,
+    paths.map((path) => ({ path, canonicalId: STORED_COUNT_PROBE })),
+  );
+  let total = 0;
+  for (const count of patchedByPath.values()) total += count;
+  return total;
+}
+
+export type RememberedAliasConflict = {
+  input: AliasSaveInput;
+  existingCanonicalExerciseId: string;
+};
+
+/**
+ * Which remembered aliases would try to repoint a token that already means
+ * something else. `aliasRepo.saveMany` rejects the whole batch in that case
+ * (spec: it never silently changes an existing token to a different target),
+ * so import save checks first and leaves the offending ones out — the routine
+ * is saved either way and the user is told which name is already taken.
+ *
+ * `by-normalized-alias` is the index the store enforces, so comparison is on
+ * the normalized token, never the display text.
+ *
+ * The two sides are compared by different rules on purpose, because they hold
+ * different things:
+ *
+ * - a STORED row already holds a token, so it is re-normalized, which is the
+ *   rule the runtime resolver applies (`identity.ts:285`). That is not
+ *   `saveMany`'s rule — it keys the unique index on the stored token verbatim —
+ *   but it is a superset of it, because `normalizeExerciseName` is idempotent
+ *   (measured: identical output on a second pass for 200,003 inputs, being 200k
+ *   fuzzed strings plus every catalogue name, alias and rule token). An earlier
+ *   revision compared both tokens explicitly; the verbatim half could not be
+ *   falsified by any input, because idempotence means it can never differ.
+ * - an INPUT holds the raw name, so it goes through `storedAliasToken` —
+ *   the token `aliasRepo` will actually store it under. On plain normalized text
+ *   this check missed a collision with an annotated name, and the miss is not
+ *   harmless: `saveMany` then rejects the whole batch instead of one name.
+ */
+export function rememberedAliasConflicts(
+  inputs: AliasSaveInput[],
+  existing: { normalizedAlias: string; canonicalExerciseId: string }[],
+): RememberedAliasConflict[] {
+  const byToken = new Map<string, string>();
+  for (const row of existing) {
+    const token = normalizeExerciseName(row.normalizedAlias);
+    if (token && !byToken.has(token)) byToken.set(token, row.canonicalExerciseId);
+  }
+  const conflicts: RememberedAliasConflict[] = [];
+  for (const input of inputs) {
+    const occupiedBy = byToken.get(storedAliasToken(input.alias));
+    if (occupiedBy !== undefined && occupiedBy !== input.canonicalExerciseId) {
+      conflicts.push({ input, existingCanonicalExerciseId: occupiedBy });
+    }
+  }
+  return conflicts;
 }
 
 // A day number is ambiguous within its week when two or more base days
@@ -129,12 +441,35 @@ export function applyResolutions(
   program: ProgramDocument,
   resolutions: Resolution[],
 ): ProgramDocument {
+  return applyResolutionsWithStats(program, resolutions).program;
+}
+
+/**
+ * `applyResolutions` plus a count, per resolution path, of how many STORED
+ * exercises it actually patched.
+ *
+ * One base-day path addresses one exercise per week-clone, an override path
+ * addresses exactly one, and a path inside a structurally ambiguous day
+ * addresses none — so this count is the only honest answer to "how many
+ * exercises does this decision change", and it comes from the patch itself
+ * rather than from a second traversal that could disagree with it.
+ */
+export function applyResolutionsWithStats(
+  program: ProgramDocument,
+  resolutions: Resolution[],
+): { program: ProgramDocument; patchedByPath: Map<string, number> } {
   const resMap = new Map(resolutions.map((r) => [r.path, r.canonicalId]));
   // Populated ONLY when an exercise is successfully patched (a resolution
   // existed for its path and it didn't already have a canonicalExerciseId).
   // Used below to drop exactly those warnings — a failed/absent resolution
   // must leave its warning in place.
   const resolvedPaths = new Set<string>();
+  // Same population rule, but counting: one entry per patched stored exercise.
+  const patchedByPath = new Map<string, number>();
+  const recordPatch = (path: string) => {
+    resolvedPaths.add(path);
+    patchedByPath.set(path, (patchedByPath.get(path) ?? 0) + 1);
+  };
 
   // path -> rawName, built from the pre-filter warning set (warnings are only
   // filtered at the very end, so this map is complete during patching). This
@@ -163,7 +498,7 @@ export function applyResolutions(
       if (rawName !== undefined && rawName === ex.name) {
         const id = resMap.get(p);
         if (id && id !== CUSTOM_ID) {
-          resolvedPaths.add(p);
+          recordPatch(p);
           return { ...ex, canonicalExerciseId: id };
         }
         return ex; // matched the guard but no usable resolution; stop
@@ -177,7 +512,7 @@ export function applyResolutions(
     if (warningRawNames.get(basePath) === undefined) {
       const id = resMap.get(basePath);
       if (id && id !== CUSTOM_ID) {
-        resolvedPaths.add(basePath);
+        recordPatch(basePath);
         return { ...ex, canonicalExerciseId: id };
       }
     }
@@ -257,5 +592,8 @@ export function applyResolutions(
     ? { import: { ...program.import, warnings: program.import.warnings.filter((w) => !resolvedPaths.has(w.path)) } }
     : {};
 
-  return { ...program, days, overrides, ...importSection };
+  return {
+    program: { ...program, days, overrides, ...importSection },
+    patchedByPath,
+  };
 }

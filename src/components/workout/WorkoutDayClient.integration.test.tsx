@@ -13,10 +13,13 @@ import { render, screen, act, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
 import { deleteDB } from "idb";
 import { WorkoutDayClient } from "./WorkoutDayClient";
 import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import { logRepo } from "@/lib/storage/logRepo";
+import { aliasRepo } from "@/lib/storage/aliasRepo";
+import { exportBackup, restoreBackup } from "@/lib/backup/backup";
 import type { ProgramDocument } from "@/lib/programs/types";
 
 const makeExercise = (id: string, name: string, canonicalExerciseId?: string) => ({
@@ -63,13 +66,19 @@ jest.mock("@/lib/analytics/analyticsSeam", () => ({
   trackWorkoutEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// `ExerciseNormalizationProvider` is mounted at the app root
+// (`src/main.tsx`), and `WorkoutBody` resolves the tapped slot's identity
+// through it to load family-wide history. Rendering the component without it is
+// not a shape the app can produce.
 function renderDay(dayId = "day-1") {
   return render(
-    <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
-      <Routes>
-        <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
-      </Routes>
-    </MemoryRouter>
+    <ExerciseNormalizationProvider>
+      <MemoryRouter initialEntries={[`/programs/p1/days/${dayId}`]}>
+        <Routes>
+          <Route path="/programs/:id/days/:dayId" element={<WorkoutDayClient />} />
+        </Routes>
+      </MemoryRouter>
+    </ExerciseNormalizationProvider>
   );
 }
 
@@ -332,5 +341,567 @@ describe("historical sessions", () => {
     expect(logs[0].entries[0].sets).toEqual([{ setNumber: 1, weight: 100, reps: 5 }]);
     expect(logs[1].performedDate).toBe("2026-06-10");
     expect(logs[1].entries[0].sets).toEqual([{ setNumber: 1, weight: 105, reps: 5 }]);
+  });
+});
+
+/**
+ * Reading a stored log must never take a surface down.
+ *
+ * `src/lib/storage/appDb.ts:186-195` deliberately preserves a log whose content
+ * it cannot read, and the plan's v7 ruling deliberately preserves a log whose
+ * only entry is `null`, because the unreadable value "may be standing in for
+ * real sets we have no way to recover". Those logs therefore exist in real
+ * storage, and one of them must never remove another workout from view — nor,
+ * worse, silently discard work the user is entering right now.
+ */
+describe("a log we cannot read must not disable the day screen", () => {
+  it("opens the history drawer when one stored log's performedDate is not a string", async () => {
+    for (const [i, performedDate] of [
+      "2026-06-05", 7, "2026-06-07",
+    ].entries()) {
+      await logRepo.save({
+        id: `h-${i}`,
+        programId: "p1",
+        dayId: "day-1",
+        performedAt: `2026-06-0${5 + i}T22:00:00.000Z`,
+        performedDate,
+        completedAt: `2026-06-0${5 + i}T23:00:00.000Z`,
+        entries: [{
+          exerciseId: "e1",
+          exerciseName: "Bench Press",
+          sets: [{ setNumber: 1, weight: 100 + i, reps: 5 }],
+        }],
+      } as unknown as Parameters<typeof logRepo.save>[0]);
+    }
+
+    const user = userEvent.setup();
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+
+    await user.click(screen.getByRole("button", { name: "History for Bench Press" }));
+
+    const drawer = await screen.findByRole("dialog", { name: "History for Bench Press" });
+    // All three workouts, not just the readable ones.
+    expect(within(drawer).getByText("100x5")).toBeInTheDocument();
+    expect(within(drawer).getByText("101x5")).toBeInTheDocument();
+    expect(within(drawer).getByText("102x5")).toBeInTheDocument();
+  });
+
+  it("records the set being typed when another log's performedAt is not a string", async () => {
+    await logRepo.save({
+      id: "d-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-08T22:00:00.000Z",
+      completedAt: "2026-06-08T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 100, reps: 5 }] }],
+    });
+    await logRepo.save({
+      id: "d-2", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 110, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+    await logRepo.save({
+      id: "d-3", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-09T22:00:00.000Z",
+      completedAt: "2026-06-09T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 120, reps: 5 }] }],
+    });
+
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // The most recent readable session was completed on an earlier date, so the
+    // screen offers a fresh one — the ordinary healthy-data path.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /start new session/i })).toBeInTheDocument()
+    );
+    await user.click(screen.getByRole("button", { name: /start new session/i }));
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    const typed = logs.filter((l) => !["d-1", "d-2", "d-3"].includes(l.id));
+    expect(typed).toHaveLength(1);
+    expect(typed[0].entries[0].sets).toEqual([{ setNumber: 1, weight: 225, reps: 5 }]);
+    // …and the log we could not read is still there, untouched.
+    expect(logs.find((l) => l.id === "d-2")).toMatchObject({ performedAt: 7 });
+  });
+
+  it("records the set being typed when today's log holds a null entry", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "e-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [null],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries.some(
+      (e) => e && e.exerciseId === "e1"
+        && JSON.stringify(e.sets) === JSON.stringify([{ setNumber: 1, weight: 315, reps: 3 }]),
+    )).toBe(true);
+    // …and the entry we could not read is still there, at the index it was
+    // stored at. The grid rebuilds `entries` wholesale, so without this the
+    // rewrite would delete a value the v7 ruling keeps on purpose.
+    expect(logs[0].entries[0]).toBeNull();
+  });
+
+  it("keeps an entry whose sets carry an unplaceable setNumber through a rewrite", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "s-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [
+        { exerciseId: "gone", exerciseName: "Old Lift", sets: [{ setNumber: {}, weight: 95, reps: 5 }] },
+      ],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries[0]).toMatchObject({
+      exerciseId: "gone",
+      sets: [{ setNumber: {}, weight: 95, reps: 5 }],
+    });
+    expect(logs[0].entries.some((e) => e.exerciseId === "e1")).toBe(true);
+  });
+
+  it("writes no phantom entry when today's log has a non-array entries", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "corrupt",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    for (const log of logs) {
+      for (const entry of Array.isArray(log.entries) ? log.entries : []) {
+        expect(entry.exerciseId).not.toBe("undefined");
+      }
+    }
+    // The set the user just typed is recorded.
+    expect(logs.some((l) => JSON.stringify(l.entries).includes('"weight":315'))).toBe(true);
+  });
+
+  // A non-array `entries` is the one shape preserve-by-index cannot cover:
+  // there is no index to merge into, so the autosave rewrite replaced the value
+  // with a proper array and the original was gone. The standing rule is that
+  // unreadable content is never grounds for deletion — a corrupt `entries`
+  // string may literally hold the user's sets as text, and normalising it away
+  // removes the last chance of manual recovery, permanently and silently.
+  it("parks an unreadable entries value on the log instead of overwriting it", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-2", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "bench 225x5, 235x5, 245x3",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // The user kept logging…
+    expect(logs[0].entries.some(
+      (e) => e && e.exerciseId === "e1"
+        && JSON.stringify(e.sets) === JSON.stringify([{ setNumber: 1, weight: 315, reps: 3 }]),
+    )).toBe(true);
+    // …and the only copy of whatever that string held is still on the record.
+    expect(logs[0].unreadableEntries).toBe("bench 225x5, 235x5, 245x3");
+  });
+
+  it("parks the unreadable value once and carries it through later rewrites", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-3", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: { note: "hand-edited" },
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+    // A second write over the now-normalised record must not lose the park, and
+    // must not re-park the array it just wrote over the original.
+    await typeIntoCell(user, cell("e1", 1), "325x2");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].unreadableEntries).toEqual({ note: "hand-edited" });
+    expect(Array.isArray(logs[0].entries)).toBe(true);
+  });
+
+  it("does not park an absent entries — absent is not unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-4", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
+  it("does not park a healthy entries array — the ordinary log is untouched", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-6", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 225, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() => expect(cell("e1", 0)).toHaveValue("225x5"));
+
+    await typeIntoCell(user, cell("e1", 1), "235x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // Parking a readable array would copy every healthy log's entries into a
+    // second field that nothing ever clears — silent duplication of the whole
+    // history, not preservation.
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
+  it("does not park a null entries — null holds nothing to recover", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-7", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: null,
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect("unreadableEntries" in logs[0]).toBe(false);
+  });
+
+  // Parking is only worth anything if the key survives the user's backup.
+  // If export/restore dropped it, the value would *look* preserved and vanish
+  // on the next restore — worse than the loss it prevents.
+  it("carries the parked value through a backup export and restore", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "c-5", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      entries: "bench 225x5",
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const view = renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+    await typeIntoCell(user, cell("e1", 0), "315x3");
+    await drainSaves();
+    view.unmount();
+    await drainSaves();
+
+    // Through the file, not through the object: JSON is what the user's backup
+    // actually is.
+    const file = JSON.parse(JSON.stringify(await exportBackup()));
+    expect(file.logs[0].unreadableEntries).toBe("bench 225x5");
+    await restoreBackup(file);
+
+    const restored = await logRepo.list();
+    expect(restored).toHaveLength(1);
+    expect(restored[0].unreadableEntries).toBe("bench 225x5");
+    expect(restored[0].entries.some((e) => e.exerciseId === "e1")).toBe(true);
+  });
+
+  it("records the set being typed when today's log has an unreadable day note", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "n-1", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      dayNote: {},
+      entries: [],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await typeIntoCell(user, cell("e1", 0), "225x5");
+    await drainSaves();
+
+    // Pulling an unreadable dayNote into state made `dn.trim()` throw inside
+    // `saveCells`, which discarded the set with nothing on screen to say so.
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    expect(logs[0].entries[0].sets).toEqual([{ setNumber: 1, weight: 225, reps: 5 }]);
+    // The note we could not read is left exactly as it was.
+    expect(logs[0].dayNote).toEqual({});
+  });
+
+  it("finishes a day whose stored day note is unreadable", async () => {
+    // `saveCells` short-circuits `dn.trim()` whenever any entry has sets, so the
+    // shape that reaches it is a session with nothing logged — finishing or
+    // skipping an empty day. Pulling the unreadable note into state made that
+    // throw, and the day could never be marked complete.
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "n-2", programId: "p1", dayId: "day-1",
+      performedAt: "2026-06-10T15:00:00.000Z",
+      performedDate: "2026-06-10",
+      dayNote: {},
+      entries: [],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /finish workout/i })).not.toBeDisabled()
+    );
+
+    await user.click(screen.getByRole("button", { name: /finish workout/i }));
+    await user.click(await screen.findByRole("button", { name: /finish anyway/i }));
+    await drainSaves();
+
+    expect(screen.queryByText(/trim is not a function/i)).not.toBeInTheDocument();
+    const logs = await logRepo.list();
+    expect(logs[0].completedAt).toEqual(expect.any(String));
+    expect(logs[0].dayNote).toEqual({});
+  });
+
+  it("dates the rewrite by today when the resumed log's own date is unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "u-1", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 95, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await waitFor(() => expect(cell("e1", 0)).toHaveValue("95x5"));
+
+    await typeIntoCell(user, cell("e1", 1), "100x5");
+    await drainSaves();
+
+    const logs = await logRepo.list();
+    expect(logs).toHaveLength(1);
+    // An empty performedDate would stop `getForDay` ever matching this session
+    // again, minting a duplicate log on the very next visit.
+    expect(logs[0].performedDate).toBe("2026-06-10");
+    // The value we could not read is still stored verbatim.
+    expect(logs[0].performedAt).toBe(7);
+  });
+
+  it("names the session in the read-only banner even when its date is unreadable", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    await logRepo.save({
+      id: "v-1", programId: "p1", dayId: "day-1",
+      performedAt: 7,
+      completedAt: "2026-06-09T23:00:00.000Z",
+      entries: [{ exerciseId: "e1", exerciseName: "Bench Press", sets: [{ setNumber: 1, weight: 95, reps: 5 }] }],
+    } as unknown as Parameters<typeof logRepo.save>[0]);
+
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    // The banner is the only thing explaining a read-only grid, so it must say
+    // something rather than not render at all.
+    expect(await screen.findByText(/Viewing completed session from \S/)).toBeInTheDocument();
+    expect(cell("e1", 0)).toHaveAttribute("readonly");
+  });
+
+  it("tells the user and refuses input when the day's sessions cannot be loaded at all", async () => {
+    useFakeClock("2026-06-10T16:00:00.000Z");
+    const listForDay = jest
+      .spyOn(logRepo, "listForDay")
+      .mockRejectedValue(new Error("IndexedDB unavailable"));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    try {
+      renderDay();
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+
+      // The user is told, rather than shown a live-looking grid.
+      await screen.findByRole("alert");
+      expect(screen.getByRole("alert")).toHaveTextContent(/could not be loaded/i);
+      // …and the grid does not accept input it would silently discard.
+      await waitFor(() => expect(cell("e1", 0)).toHaveAttribute("readonly"));
+
+      // A real user's keystrokes do not land on a read-only input…
+      await user.type(cell("e1", 0), "225x5");
+      await drainSaves();
+      expect(cell("e1", 0)).toHaveValue("");
+      // …so there is no work to be silently discarded.
+      expect(await logRepo.list()).toHaveLength(0);
+    } finally {
+      listForDay.mockRestore();
+    }
+  });
+});
+
+/**
+ * The invariant the whole normalization plan turns on.
+ *
+ * A correction changes how history is GROUPED and what the CURRENT badge says.
+ * It never rewrites the label the user logged: `exerciseName` is what happened,
+ * and the catalogue's opinion of it can change afterwards without editing the
+ * past. These run through the rendered component against fake-indexeddb because
+ * the failure is a wiring failure — a projection unit test cannot tell whether
+ * the drawer recomputes when the identity context changes.
+ */
+describe("a correction regroups history without rewriting what was logged", () => {
+  const misspelled = "Bench Pressss";
+
+  async function seedTwoNamings() {
+    await logRepo.save({
+      id: "l-typo", programId: "p0", dayId: "old-day",
+      performedAt: "2026-05-01T22:00:00.000Z",
+      completedAt: "2026-05-01T23:00:00.000Z",
+      entries: [{
+        exerciseId: "old-slot",
+        exerciseName: misspelled,
+        sets: [{ setNumber: 1, weight: 135, reps: 5 }],
+      }],
+    });
+    await logRepo.save({
+      id: "l-named", programId: "p0", dayId: "old-day",
+      performedAt: "2026-05-08T22:00:00.000Z",
+      completedAt: "2026-05-08T23:00:00.000Z",
+      entries: [{
+        exerciseId: "old-slot",
+        exerciseName: "Bench Press",
+        sets: [{ setNumber: 1, weight: 145, reps: 5 }],
+      }],
+    });
+  }
+
+  async function openDrawer() {
+    const user = userEvent.setup();
+    renderDay();
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await user.click(screen.getByRole("button", { name: "History for Bench Press" }));
+    return { user, drawer: await screen.findByRole("dialog", { name: "History for Bench Press" }) };
+  }
+
+  it("leaves an unrecognised name out of the family until it is corrected", async () => {
+    await seedTwoNamings();
+    const { drawer } = await openDrawer();
+
+    await waitFor(() => expect(within(drawer).getByText("145x5")).toBeInTheDocument());
+    // The misspelling resolves to nothing, so it is its own history, not this one.
+    expect(within(drawer).queryByText("135x5")).not.toBeInTheDocument();
+  });
+
+  it("pulls the corrected name into the family and keeps its performed label", async () => {
+    await seedTwoNamings();
+    const { drawer } = await openDrawer();
+    await waitFor(() => expect(within(drawer).getByText("145x5")).toBeInTheDocument());
+
+    // The correction. `aliasRepo.save` publishes the identity-changed event, so
+    // the provider reloads and the open drawer recomputes from the logs it
+    // already holds — no second read of IndexedDB, no reopening.
+    await act(async () => {
+      await aliasRepo.save({
+        alias: misspelled,
+        // The catalogue version the slot itself resolves to, so the corrected
+        // row joins the very family the drawer is showing.
+        canonicalExerciseId: "bench-press",
+        provenance: "remembered",
+      });
+    });
+
+    await waitFor(() => expect(within(drawer).getByText("135x5")).toBeInTheDocument());
+    // Still both workouts, and the misspelling is still exactly what it was.
+    expect(within(drawer).getByText("145x5")).toBeInTheDocument();
+    expect(within(drawer).getByText(misspelled)).toBeInTheDocument();
+    // The stored log is untouched — a correction is not an edit of history.
+    const stored = await logRepo.list();
+    expect(stored.find((log) => log.id === "l-typo")?.entries[0].exerciseName).toBe(misspelled);
+    // And the badge is where the current catalogue name shows up instead.
+    const correctedRow = within(drawer).getByText(misspelled).closest("[data-testid='history-row']");
+    expect(correctedRow).not.toBeNull();
+    expect(within(correctedRow as HTMLElement).getByTestId("history-row-current-version"))
+      .toHaveTextContent("Bench Press");
   });
 });

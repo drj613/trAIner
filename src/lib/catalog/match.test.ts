@@ -1,21 +1,15 @@
 import { exerciseCatalog } from "./exercises";
 import { matchExercise } from "./match";
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { backRack, barbell, highBar, makeIdentityContext, squat } from "./identity.testFixtures";
 
 describe("exercise catalog", () => {
-  it("keeps generated catalog data in JSON with a small typed wrapper", () => {
-    const generatedPath = path.join(process.cwd(), "src", "lib", "catalog", "exercises.generated.json");
-    const wrapperPath = path.join(process.cwd(), "src", "lib", "catalog", "exercises.ts");
-
-    expect(existsSync(generatedPath)).toBe(true);
-
-    const generatedCatalog = JSON.parse(readFileSync(generatedPath, "utf8")) as unknown[];
-    const wrapperSource = readFileSync(wrapperPath, "utf8");
-
-    expect(generatedCatalog.length).toBeGreaterThan(800);
-    expect(wrapperSource).toContain("./exercises.generated.json");
-    expect(wrapperSource.length).toBeLessThan(1_000);
+  it("exposes generated catalogue records with runtime identity metadata", () => {
+    expect(exerciseCatalog.length).toBeGreaterThan(800);
+    expect(exerciseCatalog.find((item) => item.id === "barbell-high-bar-squat"))
+      .toMatchObject({
+        movementId: "squat",
+        movementModifierIds: ["barbell", "back-rack", "high-bar"],
+      });
   });
 
   it("bundles the free-exercise-db dataset with normalized metadata", () => {
@@ -163,5 +157,139 @@ describe("user exercise matching", () => {
   it("returns unmatched when user exercises are empty and no catalog match", () => {
     const result = matchExercise("Moon Side Plank", [], []);
     expect(result.kind).toBe("unmatched");
+  });
+});
+
+describe("tri-state identity matching", () => {
+  const genericBackSquat = { ...highBar, id: "barbell-back-squat", name: "Back Squat", aliases: [] };
+  const pausedHighBar = {
+    ...highBar,
+    id: "paused-high-bar-squat",
+    name: "Paused High Bar Back Squat",
+    aliases: ["paused high bar back squat"],
+    movementModifierIds: ["barbell", "back-rack", "high-bar", "paused"],
+  };
+
+  test("returns an underspecified result before a generic concrete name", () => {
+    const context = makeIdentityContext({
+      catalogById: new Map([
+        [highBar.id, highBar],
+        [genericBackSquat.id, genericBackSquat],
+      ]),
+      movementsById: new Map([[squat.id, squat]]),
+      modifiersById: new Map([
+        [barbell.id, barbell],
+        [backRack.id, backRack],
+      ]),
+      disambiguations: new Map([["back squat", {
+        id: "back-squat-choice",
+        kind: "underspecified-name" as const,
+        normalizedName: "back squat",
+        movementId: "squat",
+        candidateExerciseIds: [highBar.id],
+        matchedModifierIds: ["barbell", "back-rack"],
+      }]]),
+    });
+
+    expect(matchExercise("Back Squat", [], [], context)).toMatchObject({
+      kind: "underspecified",
+      movementId: "squat",
+      candidates: [{ exerciseId: highBar.id, name: highBar.name }],
+      matchedModifierIds: ["barbell", "back-rack"],
+      nonIdentityAnnotations: [],
+    });
+  });
+
+  test("lets a saved alias intentionally resolve an underspecified name", () => {
+    const context = makeIdentityContext({
+      catalogById: new Map([[highBar.id, highBar]]),
+      movementsById: new Map([[squat.id, squat]]),
+      disambiguations: new Map([["back squat", {
+        id: "back-squat-choice",
+        kind: "underspecified-name" as const,
+        normalizedName: "back squat",
+        movementId: "squat",
+        candidateExerciseIds: [highBar.id],
+        matchedModifierIds: [],
+      }]]),
+    });
+    const aliases = [{
+      id: "a1",
+      alias: "Back Squat",
+      normalizedAlias: "back squat",
+      canonicalExerciseId: highBar.id,
+      provenance: "remembered" as const,
+      createdAt: "2026-08-18T00:00:00.000Z",
+    }];
+
+    expect(matchExercise("Back Squat", aliases, [], context)).toMatchObject({
+      kind: "matched",
+      item: { id: highBar.id },
+      via: "user-alias",
+    });
+  });
+
+  test("reports a canonical-name match as normalized before considering a duplicate alias", () => {
+    const item = { ...highBar, aliases: [highBar.name] };
+    const context = makeIdentityContext({
+      catalogById: new Map([[item.id, item]]),
+      movementsById: new Map([[squat.id, squat]]),
+    });
+
+    expect(matchExercise(highBar.name, [], [], context)).toMatchObject({
+      kind: "matched",
+      item: { id: highBar.id },
+      via: "normalized",
+    });
+  });
+
+  test("canonicalizes a numeric pause while preserving its non-identity annotation", () => {
+    const context = makeIdentityContext({
+      catalogById: new Map([[pausedHighBar.id, pausedHighBar]]),
+      movementsById: new Map([[squat.id, squat]]),
+      disambiguations: new Map([["2 second paused", {
+        id: "two-second-pause",
+        kind: "non-identity-phrase" as const,
+        normalizedPhrase: "2 second paused",
+        annotation: "2-second pause",
+        behavior: "paused-duration" as const,
+      }]]),
+    });
+
+    expect(matchExercise("2-second paused High Bar Back Squat", [], [], context)).toMatchObject({
+      kind: "matched",
+      item: { id: pausedHighBar.id },
+    });
+  });
+
+  test("does not silently match an alternative prescription containing or", () => {
+    const context = makeIdentityContext({
+      catalogById: new Map([[highBar.id, highBar]]),
+      movementsById: new Map([[squat.id, squat]]),
+      disambiguations: new Map([["or", {
+        id: "alternatives",
+        kind: "non-identity-phrase" as const,
+        normalizedPhrase: "or",
+        annotation: "alternative prescription",
+        behavior: "reject-alternative" as const,
+      }]]),
+    });
+
+    expect(matchExercise("High Bar or Back Squat", [], [], context)).toMatchObject({
+      kind: "unmatched",
+      nonIdentityAnnotations: ["alternative prescription"],
+    });
+  });
+
+  test("keeps unrecognized names as standalone unmatched suggestions", () => {
+    const context = makeIdentityContext({
+      catalogById: new Map([[highBar.id, highBar]]),
+      movementsById: new Map([[squat.id, squat]]),
+    });
+
+    expect(matchExercise("Uncharted Squat", [], [], context)).toMatchObject({
+      kind: "unmatched",
+      nonIdentityAnnotations: [],
+    });
   });
 });

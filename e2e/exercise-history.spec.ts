@@ -91,6 +91,16 @@ test.describe("Exercise history", () => {
     const label = `${MONTHS[now.getMonth()]} ${now.getDate()} (${WEEKDAYS[now.getDay()]})`;
     await expect(sharedPage.getByRole("dialog").getByText(label)).toBeVisible({ timeout: 3000 });
 
+    // Workouts and entries are counted separately now. One workout, one entry —
+    // the header used to call one entry "1 session" and a second entry in the
+    // same workout "2 sessions".
+    await expect(sharedPage.getByRole("dialog").getByText("1 workout · 1 entry")).toBeVisible();
+
+    // The performed label is the row's primary text, and this exercise has only
+    // one version in history, so no version filter is offered.
+    await expect(sharedPage.getByTestId("history-row")).toHaveCount(1);
+    await expect(sharedPage.getByLabel("Filter by version")).toHaveCount(0);
+
     // close drawer
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
@@ -130,6 +140,9 @@ test.describe("Exercise history", () => {
     await expect(
       sharedPage.getByRole("dialog").getByText("655", { exact: true })
     ).toBeVisible();
+    // Both sets were logged in ONE workout, so they are one block with one
+    // volume total — not two rows repeating the same date.
+    await expect(sharedPage.getByTestId("history-workout")).toHaveCount(1);
     await sharedPage.keyboard.press("Escape");
     await expect(sharedPage.getByRole("dialog")).not.toBeVisible({ timeout: 2000 });
   });

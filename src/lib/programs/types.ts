@@ -1,3 +1,8 @@
+// Type-only, so no runtime cycle: identity.ts imports the document types from
+// here, and the override document is defined there beside the resolver that
+// consumes it.
+import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
+
 export type ISODate = string;
 export type ID = string;
 
@@ -153,6 +158,19 @@ export type WorkoutLogDocument = {
   skipReason?: string;
   dayNote?: string;
   entries: WorkoutLogEntry[];
+  // Whatever `entries` held when it was not an array, kept verbatim so a
+  // rewrite cannot destroy it. Nothing reads it: it exists so the value is
+  // still in the user's export when someone comes looking for it.
+  //
+  // `entries` is typed `WorkoutLogEntry[]` but nothing enforces that on the way
+  // in — `src/lib/storage/appDb.ts:186-195` preserves a log whose fields it
+  // cannot read on purpose, because the unreadable value "may be standing in
+  // for real sets we have no way to recover". The day screen rebuilds `entries`
+  // wholesale on every autosave, and the element-level preserve-by-index has no
+  // index to merge into when the whole value is a string or an object, so the
+  // next save used to overwrite the user's only copy. Parking it here is what
+  // lets the grid keep taking input without destroying anything.
+  unreadableEntries?: unknown;
   notes?: string;
 };
 
@@ -181,6 +199,7 @@ export type AliasDocument = {
   alias: string;
   normalizedAlias: string;
   canonicalExerciseId: ID;
+  provenance: "legacy-auto" | "remembered";
   createdAt: ISODate;
 };
 
@@ -190,12 +209,24 @@ export type UserExerciseDocument = {
   createdAt: ISODate;
 };
 
+// Persisted with the program, so every added field is OPTIONAL: warnings
+// written by older builds stay valid and must keep resolving. `resolutionKind`
+// is the tri-state matcher's discriminator for THIS occurrence — absent means
+// the warning predates it, and consumers treat it as "unmatched" (the only
+// kind the old two-state matcher could produce). A structural warning
+// (duplicate day number, unsupported nested override variant, unknown section
+// type) carries no `rawName` and no `resolutionKind`; that is what keeps it out
+// of the resolution/grouping surfaces while the warning itself survives.
 export type ImportWarning = {
   path: string;
   rawName?: string;
   message: string;
   suggestions?: ExerciseSuggestion[];
   sectionType?: string;
+  resolutionKind?: "underspecified" | "unmatched";
+  candidateExerciseIds?: string[];
+  matchedModifierIds?: string[];
+  nonIdentityAnnotations?: string[];
 };
 
 export type ExerciseSuggestion = {
@@ -211,17 +242,36 @@ export type BodyweightEntry = {
   recordedAt: ISODate;
 };
 
-export type BackupDocument = {
+/**
+ * Version-1 backups predate alias provenance, so their alias rows are exactly
+ * an AliasDocument minus that field.
+ */
+export type LegacyAliasDocument = Omit<AliasDocument, "provenance">;
+
+export type BackupDocumentV1 = {
   version: 1;
   exportedAt: ISODate;
   profile?: ProfileDocument;
   programs: ProgramDocument[];
   logs: WorkoutLogDocument[];
-  aliases: AliasDocument[];
+  aliases: LegacyAliasDocument[];
   userExercises?: UserExerciseDocument[];
   bodyweight?: BodyweightEntry[];
   promptPresets?: PromptPresetDocument[];
 };
+
+export type BackupDocumentV2 = Omit<BackupDocumentV1, "version" | "aliases"> & {
+  version: 2;
+  aliases: AliasDocument[];
+  normalizationOverrides: NormalizationOverrideDocument[];
+};
+
+/**
+ * Only the versions this build can read. A file from a *newer* build is
+ * rejected rather than parsed as one of these — dropping a field we do not
+ * recognize would silently discard user data.
+ */
+export type BackupDocument = BackupDocumentV1 | BackupDocumentV2;
 
 export type PromptPresetDocument = {
   id: ID;

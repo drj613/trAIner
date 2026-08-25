@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "catalog:build": "bun scripts/build-exercise-catalog.mjs",
+    "catalog:build": "bun scripts/catalog-normalization/compiler/compile.ts --stage complete --write",
+    "catalog:check": "bun scripts/catalog-normalization/compiler/check.ts",
+    "catalog:test": "jest --runInBand scripts/catalog-normalization/compiler",
+    "catalog:ingest-sources": "bun scripts/build-exercise-catalog.mjs --output scripts/catalog-normalization/staging/catalog-candidate.json",
     "catalog:ingest:exercisedb": "bun scripts/ingest/ingest-exercisedb.mjs",
     "catalog:ingest:wger": "bun scripts/ingest/ingest-wger.mjs",
     "preview": "vite preview",

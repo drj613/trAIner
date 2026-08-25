@@ -1,0 +1,2071 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "id": "bench-press--barbell",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "barbell-bench-press",
+      "approvedAliases": [
+        "barbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--barbell--decline",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "barbell",
+        "decline"
+      ],
+      "metadataFromExerciseId": "barbell-decline-bench-press",
+      "approvedAliases": [
+        "decline barbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--barbell--incline",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "barbell",
+        "incline"
+      ],
+      "metadataFromExerciseId": "barbell-incline-bench-press",
+      "approvedAliases": [
+        "incline barbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--barbell--partial",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "barbell",
+        "partial"
+      ],
+      "metadataFromExerciseId": "barbell-bench-press",
+      "approvedAliases": [
+        "partial barbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--barbell--paused",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "barbell",
+        "paused"
+      ],
+      "metadataFromExerciseId": "pause-bench",
+      "approvedAliases": [
+        "paused barbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--cable",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "cable-bench-press",
+      "approvedAliases": [
+        "cable bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--dumbbell",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "dumbbell-bench-press",
+      "approvedAliases": [
+        "dumbbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--dumbbell--decline",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "decline"
+      ],
+      "metadataFromExerciseId": "decline-dumbbell-bench-press",
+      "approvedAliases": [
+        "decline dumbbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--dumbbell--incline",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "incline"
+      ],
+      "metadataFromExerciseId": "incline-dumbbell-bench-press",
+      "approvedAliases": [
+        "incline dumbbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--dumbbell--neutral-grip",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "dumbbell-bench-press-with-neutral-grip",
+      "approvedAliases": [
+        "neutral grip dumbbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--dumbbell--single-arm",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "one-arm-dumbbell-bench-press",
+      "approvedAliases": [
+        "single arm dumbbell bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "bench-press--machine",
+      "movementId": "bench-press",
+      "movementModifierIds": [
+        "machine"
+      ],
+      "metadataFromExerciseId": "machine-bench-press",
+      "approvedAliases": [
+        "machine bench press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--barbell",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "barbell-curl",
+      "approvedAliases": [
+        "barbell curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable--ez-bar",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable",
+        "ez-bar"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "ez bar cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable--neutral-grip",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "neutral grip cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable--rope",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable",
+        "rope"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "rope cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable--straight-bar",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable",
+        "straight-bar"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "straight bar cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--cable--supinated-grip",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "cable",
+        "supinated-grip"
+      ],
+      "metadataFromExerciseId": "cable-curl",
+      "approvedAliases": [
+        "supinated grip cable curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--dumbbell",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "dumbbell-biceps-curl",
+      "approvedAliases": [
+        "dumbbell curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--dumbbell--incline",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "dumbbell",
+        "incline"
+      ],
+      "metadataFromExerciseId": "dumbbell-incline-curl",
+      "approvedAliases": [
+        "incline dumbbell curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--dumbbell--neutral-grip",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "dumbbell",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "hammer-curl",
+      "approvedAliases": [
+        "neutral grip dumbbell curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "curl--dumbbell--single-arm",
+      "movementId": "curl",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "dumbbell-one-arm-standing-curl",
+      "approvedAliases": [
+        "single arm dumbbell curl"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--deficit",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "deficit"
+      ],
+      "metadataFromExerciseId": "deficit-deadlift",
+      "approvedAliases": [
+        "deficit barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--hinge",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "hinge"
+      ],
+      "metadataFromExerciseId": "hip-hinge",
+      "approvedAliases": [
+        "barbell hinge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--hook-grip",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "hook-grip"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "hook grip barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--mixed-grip",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "mixed-grip"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "mixed grip barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--partial",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "partial"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "partial barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--paused",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "paused"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "paused barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--romanian",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "hinge",
+        "romanian"
+      ],
+      "metadataFromExerciseId": "romanian-deadlift-barbell",
+      "approvedAliases": [
+        "romanian barbell deadlift hinge",
+        "barbell rdl hinge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--single-leg",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "barbell-single-leg-deadlift",
+      "approvedAliases": [
+        "single leg barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--staggered-stance",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "staggered-stance"
+      ],
+      "metadataFromExerciseId": "barbell-deadlift",
+      "approvedAliases": [
+        "staggered stance barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--barbell--sumo",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "barbell",
+        "sumo"
+      ],
+      "metadataFromExerciseId": "sumo-deadlift",
+      "approvedAliases": [
+        "sumo barbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--dumbbell",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "deadlift-dumbbell",
+      "approvedAliases": [
+        "dumbbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--dumbbell--romanian",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "dumbbell",
+        "hinge",
+        "romanian"
+      ],
+      "metadataFromExerciseId": "dumbbell-romanian-deadlift",
+      "approvedAliases": [
+        "romanian dumbbell deadlift hinge",
+        "dumbbell rdl hinge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--dumbbell--single-leg",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "single-leg-deadlift-with-dumbbell",
+      "approvedAliases": [
+        "single leg dumbbell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--kettlebell",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "kettlebell"
+      ],
+      "metadataFromExerciseId": "kettlebell-deadlifts",
+      "metadataOverrides": {
+        "muscles": {
+          "primary": [
+            "hamstrings",
+            "glutes"
+          ],
+          "secondary": [
+            "lower back"
+          ]
+        }
+      },
+      "approvedAliases": [
+        "kettlebell deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "deadlift-hinge--trap-bar",
+      "movementId": "deadlift-hinge",
+      "movementModifierIds": [
+        "trap-bar"
+      ],
+      "metadataFromExerciseId": "trap-bar-deadlift",
+      "approvedAliases": [
+        "trap bar deadlift"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "loaded-carry--barbell",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "barbell"
+        ]
+      },
+      "approvedAliases": [
+        "barbell loaded carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "loaded-carry--barbell--single-arm",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "barbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "barbell"
+        ]
+      },
+      "approvedAliases": [
+        "single arm barbell carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "loaded-carry--dumbbell",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "approvedAliases": [
+        "dumbbell farmer carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved",
+      "metadataOverrides": {
+        "equipment": [
+          "dumbbell"
+        ]
+      }
+    },
+    {
+      "id": "loaded-carry--dumbbell--single-arm",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "dumbbell"
+        ]
+      },
+      "approvedAliases": [
+        "single arm dumbbell carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "loaded-carry--kettlebell",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "kettlebell"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "approvedAliases": [
+        "kettlebell loaded carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved",
+      "metadataOverrides": {
+        "equipment": [
+          "kettlebell"
+        ]
+      }
+    },
+    {
+      "id": "loaded-carry--kettlebell--single-arm",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "kettlebell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "farmer-carry",
+      "metadataOverrides": {
+        "equipment": [
+          "kettlebell"
+        ]
+      },
+      "approvedAliases": [
+        "single arm kettlebell carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "loaded-carry--trap-bar",
+      "movementId": "loaded-carry",
+      "movementModifierIds": [
+        "trap-bar"
+      ],
+      "metadataFromExerciseId": "trap-bar-carry",
+      "approvedAliases": [
+        "trap bar loaded carry"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--barbell",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "barbell-lunge",
+      "approvedAliases": [
+        "barbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--barbell--single-leg",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "barbell",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "barbell-single-leg-split-squat",
+      "approvedAliases": [
+        "single leg barbell split squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--bodyweight",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "bodyweight"
+      ],
+      "metadataFromExerciseId": "bodyweight-lunge-hd",
+      "approvedAliases": [
+        "bodyweight lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "dumbbell-lunges",
+      "approvedAliases": [
+        "dumbbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--bench-supported",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "bench-supported"
+      ],
+      "metadataFromExerciseId": "bulgarian-split-squat",
+      "approvedAliases": [
+        "bench supported dumbbell split squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--deficit",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "deficit"
+      ],
+      "metadataFromExerciseId": "dumbbell-lunges",
+      "approvedAliases": [
+        "deficit dumbbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--partial",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "partial"
+      ],
+      "metadataFromExerciseId": "dumbbell-lunges",
+      "approvedAliases": [
+        "partial dumbbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--paused",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "paused"
+      ],
+      "metadataFromExerciseId": "dumbbell-lunges",
+      "approvedAliases": [
+        "paused dumbbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--single-leg",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "dumbbell-single-leg-split-squat",
+      "approvedAliases": [
+        "single leg dumbbell split squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "lunge-split-squat--dumbbell--split-stance",
+      "movementId": "lunge-split-squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "split-stance"
+      ],
+      "metadataFromExerciseId": "dumbbell-lunges",
+      "approvedAliases": [
+        "split stance dumbbell lunge"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--barbell--overhead",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "barbell",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "barbell-shoulder-press",
+      "approvedAliases": [
+        "barbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--barbell--seated",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "barbell",
+        "seated"
+      ],
+      "metadataFromExerciseId": "barbell-seated-overhead-press",
+      "approvedAliases": [
+        "seated barbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--cable--overhead",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "cable",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "cable-shoulder-press",
+      "approvedAliases": [
+        "cable overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--dumbbell--neutral-grip",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "dumbbell-seated-shoulder-press-parallel-grip",
+      "approvedAliases": [
+        "neutral grip dumbbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--dumbbell--overhead",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "dumbbell-standing-overhead-press",
+      "approvedAliases": [
+        "dumbbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--dumbbell--seated",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "seated"
+      ],
+      "metadataFromExerciseId": "seated-dumbbell-press",
+      "approvedAliases": [
+        "seated dumbbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--dumbbell--single-arm",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "dumbbell-one-arm-shoulder-press",
+      "approvedAliases": [
+        "single arm dumbbell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--kettlebell--overhead",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "kettlebell",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "two-arm-kettlebell-military-press",
+      "approvedAliases": [
+        "kettlebell overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--landmine",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "landmine"
+      ],
+      "metadataFromExerciseId": "landmine-press",
+      "approvedAliases": [
+        "landmine press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--landmine--single-arm",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "landmine",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "landmine-press",
+      "approvedAliases": [
+        "single arm landmine press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "overhead-landmine-press--machine--overhead",
+      "movementId": "overhead-landmine-press",
+      "movementModifierIds": [
+        "machine",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "lever-shoulder-press",
+      "approvedAliases": [
+        "machine overhead press"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--bodyweight",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "bodyweight"
+      ],
+      "metadataFromExerciseId": "pull-up",
+      "approvedAliases": [
+        "bodyweight pull-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--bodyweight--neutral-grip",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "bodyweight",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "pull-up",
+      "approvedAliases": [
+        "neutral grip bodyweight pull-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--bodyweight--single-arm",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "bodyweight",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "pull-up",
+      "approvedAliases": [
+        "single arm bodyweight pull-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--bodyweight--supinated-grip",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "bodyweight",
+        "supinated-grip"
+      ],
+      "metadataFromExerciseId": "chin-up",
+      "approvedAliases": [
+        "supinated grip bodyweight pull-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "cable-pulldown",
+      "approvedAliases": [
+        "cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--neutral-grip",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "neutral-grip-lat-pulldown",
+      "approvedAliases": [
+        "neutral grip cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--pronated-grip",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "pronated-grip"
+      ],
+      "metadataFromExerciseId": "cable-pulldown",
+      "approvedAliases": [
+        "pronated grip cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--rope",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "rope"
+      ],
+      "metadataFromExerciseId": "cable-lateral-pulldown-with-rope-attachment",
+      "approvedAliases": [
+        "rope cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--single-arm",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "one-arm-lat-pulldown",
+      "approvedAliases": [
+        "single arm cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--straight-bar",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "straight-bar"
+      ],
+      "metadataFromExerciseId": "cable-bar-lateral-pulldown",
+      "approvedAliases": [
+        "straight bar cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--cable--supinated-grip",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "cable",
+        "supinated-grip"
+      ],
+      "metadataFromExerciseId": "cable-underhand-pulldown",
+      "approvedAliases": [
+        "supinated grip cable pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "pull-up-pulldown--machine",
+      "movementId": "pull-up-pulldown",
+      "movementModifierIds": [
+        "machine"
+      ],
+      "metadataFromExerciseId": "reverse-grip-machine-lat-pulldown",
+      "approvedAliases": [
+        "machine pulldown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--band",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "band"
+      ],
+      "metadataFromExerciseId": "push-up",
+      "metadataOverrides": {
+        "equipment": [
+          "resistance band"
+        ]
+      },
+      "approvedAliases": [
+        "band push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--band--decline",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "band",
+        "decline"
+      ],
+      "metadataFromExerciseId": "decline-push-up",
+      "metadataOverrides": {
+        "equipment": [
+          "resistance band"
+        ]
+      },
+      "approvedAliases": [
+        "decline band push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--band--incline",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "band",
+        "incline"
+      ],
+      "metadataFromExerciseId": "incline-push-up",
+      "metadataOverrides": {
+        "equipment": [
+          "resistance band"
+        ]
+      },
+      "approvedAliases": [
+        "incline band push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight"
+      ],
+      "metadataFromExerciseId": "push-up",
+      "approvedAliases": [
+        "bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight--decline",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight",
+        "decline"
+      ],
+      "metadataFromExerciseId": "decline-push-up",
+      "approvedAliases": [
+        "decline bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight--incline",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight",
+        "incline"
+      ],
+      "metadataFromExerciseId": "incline-push-up",
+      "approvedAliases": [
+        "incline bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight--partial",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight",
+        "partial"
+      ],
+      "metadataFromExerciseId": "push-up",
+      "approvedAliases": [
+        "partial bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight--paused",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight",
+        "paused"
+      ],
+      "metadataFromExerciseId": "push-up",
+      "approvedAliases": [
+        "paused bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "push-up--bodyweight--single-arm",
+      "movementId": "push-up",
+      "movementModifierIds": [
+        "bodyweight",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "single-arm-push-up",
+      "approvedAliases": [
+        "single arm bodyweight push-up"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--band",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "band"
+      ],
+      "metadataFromExerciseId": "cable-lateral-raise",
+      "metadataOverrides": {
+        "equipment": [
+          "resistance band"
+        ]
+      },
+      "approvedAliases": [
+        "band lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--band--fly",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "band",
+        "fly"
+      ],
+      "metadataFromExerciseId": "back-flyes-with-bands",
+      "approvedAliases": [
+        "band fly"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--band--strict",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "band",
+        "strict"
+      ],
+      "metadataFromExerciseId": "cable-lateral-raise",
+      "metadataOverrides": {
+        "equipment": [
+          "resistance band"
+        ]
+      },
+      "approvedAliases": [
+        "strict band lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--cable",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "cable-lateral-raise",
+      "approvedAliases": [
+        "cable lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--cable--fly",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "cable",
+        "fly"
+      ],
+      "metadataFromExerciseId": "cable-fly",
+      "metadataOverrides": {
+        "equipment": [
+          "cable"
+        ],
+        "muscles": {
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "shoulders"
+          ]
+        }
+      },
+      "approvedAliases": [
+        "cable fly"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--cable--single-arm",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "cable",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "cable-lateral-raise",
+      "approvedAliases": [
+        "single arm cable lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--cable--strict",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "cable",
+        "strict"
+      ],
+      "metadataFromExerciseId": "cable-lateral-raise",
+      "approvedAliases": [
+        "strict cable lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--dumbbell",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "lateral-raise-dumbbell",
+      "approvedAliases": [
+        "dumbbell lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--dumbbell--fly",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "dumbbell",
+        "fly"
+      ],
+      "metadataFromExerciseId": "dumbbell-fly",
+      "approvedAliases": [
+        "dumbbell fly"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--dumbbell--incline",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "dumbbell",
+        "incline"
+      ],
+      "metadataFromExerciseId": "dumbbell-incline-shoulder-raise",
+      "approvedAliases": [
+        "incline dumbbell raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--dumbbell--single-arm",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "dumbbell-one-arm-lateral-raise",
+      "approvedAliases": [
+        "single arm dumbbell lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--dumbbell--strict",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "dumbbell",
+        "strict"
+      ],
+      "metadataFromExerciseId": "lateral-raise-dumbbell",
+      "approvedAliases": [
+        "strict dumbbell lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--machine",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "machine"
+      ],
+      "metadataFromExerciseId": "lateral-raise-dumbbell",
+      "metadataOverrides": {
+        "equipment": [
+          "machine"
+        ]
+      },
+      "approvedAliases": [
+        "machine lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--machine--fly",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "machine",
+        "fly"
+      ],
+      "metadataFromExerciseId": "machine-chest-fly",
+      "metadataOverrides": {
+        "muscles": {
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "shoulders"
+          ]
+        }
+      },
+      "approvedAliases": [
+        "machine fly"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "raise-fly--machine--strict",
+      "movementId": "raise-fly",
+      "movementModifierIds": [
+        "machine",
+        "strict"
+      ],
+      "metadataFromExerciseId": "lateral-raise-dumbbell",
+      "metadataOverrides": {
+        "equipment": [
+          "machine"
+        ]
+      },
+      "approvedAliases": [
+        "strict machine lateral raise"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--band",
+      "movementId": "row",
+      "movementModifierIds": [
+        "band"
+      ],
+      "metadataFromExerciseId": "resistance-band-seated-straight-back-row",
+      "approvedAliases": [
+        "band row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--barbell",
+      "movementId": "row",
+      "movementModifierIds": [
+        "barbell"
+      ],
+      "metadataFromExerciseId": "bent-over-barbell-row",
+      "approvedAliases": [
+        "barbell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--cable",
+      "movementId": "row",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "seated-cable-row",
+      "approvedAliases": [
+        "cable row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--cable--ez-bar",
+      "movementId": "row",
+      "movementModifierIds": [
+        "cable",
+        "ez-bar"
+      ],
+      "metadataFromExerciseId": "seated-cable-row",
+      "approvedAliases": [
+        "ez bar cable row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--cable--neutral-grip",
+      "movementId": "row",
+      "movementModifierIds": [
+        "cable",
+        "neutral-grip"
+      ],
+      "metadataFromExerciseId": "seated-cable-row",
+      "approvedAliases": [
+        "neutral grip cable row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--cable--rope",
+      "movementId": "row",
+      "movementModifierIds": [
+        "cable",
+        "rope"
+      ],
+      "metadataFromExerciseId": "seated-cable-row",
+      "approvedAliases": [
+        "rope cable row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--cable--straight-bar",
+      "movementId": "row",
+      "movementModifierIds": [
+        "cable",
+        "straight-bar"
+      ],
+      "metadataFromExerciseId": "seated-cable-row",
+      "approvedAliases": [
+        "straight bar cable row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--dumbbell",
+      "movementId": "row",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "bent-over-two-dumbbell-row",
+      "approvedAliases": [
+        "dumbbell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--dumbbell--chest-supported",
+      "movementId": "row",
+      "movementModifierIds": [
+        "dumbbell",
+        "chest-supported"
+      ],
+      "metadataFromExerciseId": "chest-supported-dumbbell-row",
+      "approvedAliases": [
+        "chest supported dumbbell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--dumbbell--single-arm",
+      "movementId": "row",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "one-arm-dumbbell-row",
+      "approvedAliases": [
+        "single arm dumbbell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--dumbbell--supinated-grip",
+      "movementId": "row",
+      "movementModifierIds": [
+        "dumbbell",
+        "supinated-grip"
+      ],
+      "metadataFromExerciseId": "bent-over-two-dumbbell-row",
+      "approvedAliases": [
+        "supinated grip dumbbell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--kettlebell",
+      "movementId": "row",
+      "movementModifierIds": [
+        "kettlebell"
+      ],
+      "metadataFromExerciseId": "two-arm-kettlebell-row",
+      "approvedAliases": [
+        "kettlebell row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "row--machine",
+      "movementId": "row",
+      "movementModifierIds": [
+        "machine"
+      ],
+      "metadataFromExerciseId": "lever-seated-row",
+      "approvedAliases": [
+        "machine row"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack"
+      ],
+      "metadataFromExerciseId": "barbell-squat",
+      "approvedAliases": [
+        "barbell back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack--deficit",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack",
+        "deficit"
+      ],
+      "metadataFromExerciseId": "barbell-squat",
+      "approvedAliases": [
+        "deficit barbell back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack--high-bar",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack",
+        "high-bar"
+      ],
+      "metadataFromExerciseId": "barbell-high-bar-squat",
+      "approvedAliases": [
+        "barbell high bar back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack--low-bar",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack",
+        "low-bar"
+      ],
+      "metadataFromExerciseId": "barbell-low-bar-squat",
+      "approvedAliases": [
+        "barbell low bar back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack--partial",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack",
+        "partial"
+      ],
+      "metadataFromExerciseId": "barbell-squat",
+      "approvedAliases": [
+        "partial barbell back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--back-rack--paused",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "back-rack",
+        "paused"
+      ],
+      "metadataFromExerciseId": "barbell-squat",
+      "approvedAliases": [
+        "paused barbell back rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--front-rack",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "front-rack"
+      ],
+      "metadataFromExerciseId": "front-squat-clean-grip",
+      "approvedAliases": [
+        "barbell front rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--barbell--split-stance",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "barbell",
+        "split-stance"
+      ],
+      "metadataFromExerciseId": "barbell-side-split-squat",
+      "approvedAliases": [
+        "split stance barbell squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--bodyweight",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "bodyweight"
+      ],
+      "metadataFromExerciseId": "bodyweight-squat",
+      "approvedAliases": [
+        "bodyweight squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--bodyweight--single-leg",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "bodyweight",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "one-leg-squat",
+      "approvedAliases": [
+        "single leg bodyweight squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--dumbbell",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "dumbbell-squat",
+      "approvedAliases": [
+        "dumbbell squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--dumbbell--single-leg",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-leg"
+      ],
+      "metadataFromExerciseId": "dumbbell-single-leg-squat",
+      "approvedAliases": [
+        "single leg dumbbell squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--dumbbell--split-stance",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "dumbbell",
+        "split-stance"
+      ],
+      "metadataFromExerciseId": "split-squat-with-dumbbells",
+      "approvedAliases": [
+        "split stance dumbbell squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--kettlebell",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "kettlebell"
+      ],
+      "metadataFromExerciseId": "kettlebell-goblet-squat",
+      "approvedAliases": [
+        "kettlebell squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "squat--kettlebell--front-rack",
+      "movementId": "squat",
+      "movementModifierIds": [
+        "kettlebell",
+        "front-rack"
+      ],
+      "metadataFromExerciseId": "kettlebell-front-squat",
+      "approvedAliases": [
+        "kettlebell front rack squat"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--band--overhead",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "band",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "speed-band-overhead-triceps",
+      "metadataOverrides": {
+        "muscles": {
+          "primary": [
+            "triceps"
+          ],
+          "secondary": [
+            "shoulders"
+          ]
+        }
+      },
+      "approvedAliases": [
+        "overhead band triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable"
+      ],
+      "metadataFromExerciseId": "cable-pushdown",
+      "approvedAliases": [
+        "cable triceps pushdown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable--ez-bar",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable",
+        "ez-bar"
+      ],
+      "metadataFromExerciseId": "cable-pushdown",
+      "approvedAliases": [
+        "ez bar cable triceps pushdown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable--overhead",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "cable-high-pulley-overhead-tricep-extension",
+      "approvedAliases": [
+        "overhead cable triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable--rope",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable",
+        "rope"
+      ],
+      "metadataFromExerciseId": "cable-pushdown-with-rope-attachment",
+      "approvedAliases": [
+        "rope cable triceps pushdown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable--single-arm",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "cable-pushdown",
+      "approvedAliases": [
+        "single arm cable triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--cable--straight-bar",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "cable",
+        "straight-bar"
+      ],
+      "metadataFromExerciseId": "cable-pushdown",
+      "approvedAliases": [
+        "straight bar cable triceps pushdown"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--dumbbell",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "dumbbell"
+      ],
+      "metadataFromExerciseId": "dumbbell-triceps-extension",
+      "approvedAliases": [
+        "dumbbell triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--dumbbell--overhead",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "dumbbell",
+        "overhead"
+      ],
+      "metadataFromExerciseId": "dumbbell-triceps-extension",
+      "approvedAliases": [
+        "overhead dumbbell triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--dumbbell--single-arm",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "dumbbell",
+        "single-arm"
+      ],
+      "metadataFromExerciseId": "standing-one-arm-dumbbell-triceps-extension",
+      "approvedAliases": [
+        "single arm dumbbell triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    },
+    {
+      "id": "triceps-extension-pushdown--machine",
+      "movementId": "triceps-extension-pushdown",
+      "movementModifierIds": [
+        "machine"
+      ],
+      "metadataFromExerciseId": "lever-triceps-extension",
+      "approvedAliases": [
+        "machine triceps extension"
+      ],
+      "coverageTier": 1,
+      "status": "approved"
+    }
+  ]
+}

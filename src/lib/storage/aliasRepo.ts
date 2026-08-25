@@ -1,38 +1,182 @@
-import { getDb } from "./appDb";
-import { normalizeExerciseName } from "@/lib/catalog/normalize";
+import { prepareImportName } from "@/lib/catalog/identity";
+import { disambiguationsByNormalizedName } from "@/lib/catalog/registries";
+import { aliasLookupToken } from "./migrations/v10Identity";
+import { dispatchAfterWrite, type IdentityWriteOptions } from "@/lib/catalog/identityEvents";
 import type { AliasDocument } from "@/lib/programs/types";
+import { getDb } from "./appDb";
 
-export const aliasRepo = {
+export type RememberedAliasInput = {
+  alias: string;
+  canonicalExerciseId: string;
+  provenance: "remembered";
+};
+
+/**
+ * The token a NEW remembered alias is stored under, which must be the token
+ * `resolveName` looks one up by.
+ *
+ * `resolveName` runs `prepareImportName` first (`identity.ts:280`) and matches
+ * stored rows against its output (`:283-286`), so a row keyed on plain
+ * `normalizeExerciseName(alias)` is invisible to the resolver whenever the name
+ * carries a non-identity annotation: the write succeeds and the mapping never
+ * takes effect. Deriving it here rather than at each call site means a writer
+ * cannot forget — two surfaces keying differently is the defect this replaces.
+ *
+ * Restored and migrated rows deliberately do NOT come through here, and the
+ * reason is the mirror image: `aliasLookupToken` keeps whatever token the row
+ * already carries, so a row keyed by this rule survives a restore keyed by this
+ * rule, and a row keyed by the older plain-`normalizeExerciseName` rule survives
+ * keyed by that one. Neither generation is re-keyed into the other. That
+ * property held for legacy rows from the start but was measurably false for
+ * rows written under this rule until `aliasLookupToken` stopped preferring the
+ * display text — a correction on an annotated name resolved before a backup
+ * restore and not after it.
+ */
+export function rememberedAliasToken(
+  alias: string,
+  disambiguations = disambiguationsByNormalizedName,
+): string {
+  return prepareImportName(alias, disambiguations).normalizedName;
+}
+
+export type LegacyAliasInput = Omit<AliasDocument, "provenance"> & {
+  provenance?: "legacy-auto";
+};
+
+export type AliasRepository = {
+  list(): Promise<AliasDocument[]>;
+  find(alias: string): Promise<AliasDocument | undefined>;
+  save(input: RememberedAliasInput, options?: IdentityWriteOptions): Promise<void>;
+  saveMany(inputs: RememberedAliasInput[], options?: IdentityWriteOptions): Promise<void>;
+  putRaw(input: AliasDocument | LegacyAliasInput, options?: IdentityWriteOptions): Promise<void>;
+  replaceRemembered(input: RememberedAliasInput, options?: IdentityWriteOptions): Promise<void>;
+  removeMany(ids: string[], options?: IdentityWriteOptions): Promise<void>;
+};
+
+function assertRememberedInput(input: RememberedAliasInput): string {
+  if (input.provenance !== "remembered") {
+    throw new Error("New aliases require remembered provenance");
+  }
+  // Derived here rather than at each call site, so a writer cannot forget: two
+  // surfaces keying the same name differently is the defect this replaces.
+  const normalizedAlias = rememberedAliasToken(input.alias);
+  if (!normalizedAlias) throw new Error("Alias cannot be empty");
+  if (!input.canonicalExerciseId.trim()) throw new Error("Alias target cannot be empty");
+  return normalizedAlias;
+}
+
+export const aliasRepo: AliasRepository = {
   async list() {
     return (await getDb()).getAll("aliases");
   },
 
   async find(alias: string) {
-    return (await getDb()).getFromIndex("aliases", "by-normalized-alias", normalizeExerciseName(alias));
+    // Same token the write side uses, so "is this name already mapped?" is
+    // asked of the key a mapping would actually be stored under.
+    return (await getDb()).getFromIndex("aliases", "by-normalized-alias", rememberedAliasToken(alias));
   },
 
-  /**
-   * Upsert by normalizedAlias. `by-normalized-alias` is the store's only
-   * unique index, so saving the same alias twice (within one import or
-   * across a later re-import) must update the existing record in place
-   * rather than mint a new id — otherwise the second insert throws a
-   * ConstraintError.
-   */
-  async save(alias: Omit<AliasDocument, "id" | "normalizedAlias" | "createdAt"> & { createdAt?: string }) {
-    const normalizedAlias = normalizeExerciseName(alias.alias);
+  async save(input, options) {
+    await this.saveMany([input], options);
+  },
+
+  async saveMany(inputs, options) {
+    if (inputs.length === 0) return;
+    // Input shape is checked before the transaction opens, for the reason
+    // normalizationOverrideRepo.save documents: rejecting inside a readwrite
+    // transaction leaves it dangling until it auto-commits.
+    //
+    // The conflict check below stays inside, deliberately. It needs the stored
+    // rows, and read-then-write across two transactions would let a concurrent
+    // tab insert the same token between them — at which point this write takes a
+    // fresh UUID for a token another row already holds, and the unique index
+    // rejects it. That is the write-rejection class this whole effort exists to
+    // avoid, and it is strictly worse than briefly holding a readwrite lock.
+    const normalizedAliases = inputs.map((input) => assertRememberedInput(input));
     const db = await getDb();
-    const existing = await db.getFromIndex("aliases", "by-normalized-alias", normalizedAlias);
-    await db.put("aliases", {
-      ...alias,
-      id: existing?.id ?? crypto.randomUUID(),
-      normalizedAlias,
-      createdAt: existing?.createdAt ?? alias.createdAt ?? new Date().toISOString()
-    });
+    const tx = db.transaction("aliases", "readwrite");
+    const store = tx.objectStore("aliases");
+    const existingAliases = await store.getAll();
+    const staged = new Map(existingAliases.map((alias) => [alias.normalizedAlias, alias]));
+    const changed = new Map<string, AliasDocument>();
+
+    for (const [index, input] of inputs.entries()) {
+      const normalizedAlias = normalizedAliases[index];
+      const existing = staged.get(normalizedAlias);
+      if (existing && existing.canonicalExerciseId !== input.canonicalExerciseId) {
+        throw new Error(
+          `Alias already maps to a different exercise: ${input.alias}. Use the correction flow to replace it.`,
+        );
+      }
+      const document: AliasDocument = {
+        id: existing?.id ?? crypto.randomUUID(),
+        alias: input.alias,
+        normalizedAlias,
+        canonicalExerciseId: input.canonicalExerciseId,
+        provenance: "remembered",
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+      };
+      staged.set(normalizedAlias, document);
+      changed.set(normalizedAlias, document);
+    }
+
+    await Promise.all([...changed.values()].map((document) => store.put(document)));
+    await tx.done;
+    dispatchAfterWrite(options);
   },
 
-  /** Used during backup restore to preserve original ids and normalizedAlias values. */
-  async putRaw(alias: AliasDocument): Promise<void> {
-    if (!alias.id) throw new Error("Cannot restore alias without id");
-    await (await getDb()).put("aliases", alias);
+  async putRaw(input, options) {
+    if (!input.id) throw new Error("Cannot restore alias without id");
+    // One shared rule with the migration/restore classifier, rather than a second
+    // opinion: the row's OWN `normalizedAlias` is kept (put through the
+    // normalize pass, so whitespace and case cannot mint a key nothing looks
+    // up), and the display text is used only as a fallback when the stored token
+    // is unreadable or normalizes to "". Neither usable means the write is
+    // rejected outright. The old `normalizeExerciseName(input.alias)` re-keyed
+    // every row off its display text — silently moving a deliberately-stripped
+    // token — threw on exactly the row `classifyAliases` now recovers, and
+    // accepted a row whose token normalized to "": a key a second such row then
+    // collides with on the unique index.
+    const token = aliasLookupToken(input);
+    if (!token) throw new Error("Cannot restore alias without a usable alias or token");
+    const document: AliasDocument = {
+      ...input,
+      normalizedAlias: token.normalizedAlias,
+      provenance: input.provenance ?? "legacy-auto",
+    };
+    const db = await getDb();
+    const tx = db.transaction("aliases", "readwrite");
+    await tx.objectStore("aliases").put(document);
+    await tx.done;
+    dispatchAfterWrite(options);
+  },
+
+  async replaceRemembered(input, options) {
+    const normalizedAlias = assertRememberedInput(input);
+    const db = await getDb();
+    const tx = db.transaction("aliases", "readwrite");
+    const store = tx.objectStore("aliases");
+    const existing = await store.index("by-normalized-alias").get(normalizedAlias);
+    if (existing) await store.delete(existing.id);
+    await store.put({
+      id: crypto.randomUUID(),
+      alias: input.alias,
+      normalizedAlias,
+      canonicalExerciseId: input.canonicalExerciseId,
+      provenance: "remembered",
+      createdAt: new Date().toISOString(),
+    });
+    await tx.done;
+    dispatchAfterWrite(options);
+  },
+
+  async removeMany(ids, options) {
+    if (ids.length === 0) return;
+    const db = await getDb();
+    const tx = db.transaction("aliases", "readwrite");
+    const store = tx.objectStore("aliases");
+    await Promise.all([...new Set(ids)].map((id) => store.delete(id)));
+    await tx.done;
+    dispatchAfterWrite(options);
   },
 };

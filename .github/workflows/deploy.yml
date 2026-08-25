@@ -23,6 +23,7 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      - run: bun run catalog:check
       - run: bun run build
       - uses: actions/upload-pages-artifact@v3
         with:

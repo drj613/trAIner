@@ -1,0 +1,131 @@
+{
+  "program_name": "Eight Back Squats",
+  "weeks": 2,
+  "days": [
+    {
+      "day": 1,
+      "title": "Lower A",
+      "sections": [
+        {
+          "name": "Main Strength",
+          "type": "strength",
+          "groups": [
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "name": "Back Squat",
+                  "sets": 5,
+                  "reps": "5",
+                  "variants": [{ "weeks": [2], "name": "Front Squat" }]
+                },
+                {
+                  "name": "Front Squat",
+                  "sets": 3,
+                  "reps": "5",
+                  "variants": [{ "weeks": [2], "name": "Back Squat" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "title": "Lower B",
+      "sections": [
+        {
+          "name": "Main Strength",
+          "type": "strength",
+          "groups": [
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "name": "Back Squat",
+                  "sets": 4,
+                  "reps": "6",
+                  "variants": [{ "weeks": [2], "name": "Front Squat" }]
+                },
+                {
+                  "name": "Front Squat",
+                  "sets": 3,
+                  "reps": "6",
+                  "variants": [{ "weeks": [2], "name": "Back Squat" }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "title": "Lower C",
+      "sections": [
+        {
+          "name": "Main Strength",
+          "type": "strength",
+          "groups": [
+            {
+              "type": "single",
+              "exercises": [
+                {
+                  "name": "Back Squat",
+                  "sets": 3,
+                  "reps": "8",
+                  "variants": [{ "weeks": [2], "name": "Front Squat" }]
+                },
+                {
+                  "name": "High Bar Back Squat",
+                  "sets": 3,
+                  "reps": "8"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "overrides": [
+    {
+      "scope": "week",
+      "weekNumber": 2,
+      "reason": "Deload — reduced volume, same lifts",
+      "days": [
+        {
+          "day": 1,
+          "title": "Lower A Deload",
+          "sections": [
+            {
+              "name": "Main Strength",
+              "type": "strength",
+              "groups": [
+                {
+                  "type": "single",
+                  "exercises": [
+                    { "name": "Back Squat", "sets": 2, "reps": "5" },
+                    { "name": "Back Squat", "sets": 1, "reps": "3" }
+                  ]
+                },
+                {
+                  "type": "single",
+                  "exercises": [
+                    {
+                      "name": "Back Squat",
+                      "sets": 1,
+                      "reps": "2",
+                      "variants": [{ "weeks": [2], "name": "Back Squat" }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

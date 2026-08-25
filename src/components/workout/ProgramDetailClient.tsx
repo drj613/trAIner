@@ -16,6 +16,7 @@ import { GroupRail } from "./GroupRail";
 import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection, TrainingGoal } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
+import { sortableStamp } from "@/lib/workout/localDate";
 
 // ── WeekTabStrip ──────────────────────────────────────────────────────────────
 
@@ -131,6 +132,12 @@ function SectionHeader({ section }: { section: ProgramSection }) {
   );
 }
 
+/** Sort key for the badge: the completion stamp when readable, else the
+ * performed stamp. Both go through the one shared guard. */
+function badgeStamp(log: WorkoutLogDocument): string {
+  return sortableStamp(log.completedAt) || sortableStamp(log.performedAt);
+}
+
 // ── getDayBadge ───────────────────────────────────────────────────────────────
 
 function getDayBadge(
@@ -139,11 +146,21 @@ function getDayBadge(
 ): { symbol: string; color: string } | null {
   const dayLogs = logs.filter((l) => l.dayId === dayId);
   if (dayLogs.length === 0) return null;
-  const latest = [...dayLogs].sort((a, b) =>
-    (b.completedAt ?? b.performedAt).localeCompare(a.completedAt ?? a.performedAt)
+  // `sortableStamp`, not the raw field: an unreadable `completedAt` used to
+  // throw out of this comparator, and this badge is rendered unconditionally in
+  // the week grid with no error boundary above it, so the throw took the whole
+  // program page down. `||`, not `??`: an unreadable `completedAt` falls back to
+  // `performedAt` the same way an unreadable `performedDate` does in
+  // `logLocalDate`, because `performedAt` is the authoritative timestamp.
+  const latest = [...dayLogs].sort(
+    (a, b) => badgeStamp(b).localeCompare(badgeStamp(a)),
   )[0];
-  if (latest.skippedAt) return { symbol: "~", color: "var(--warn)" };
-  if (latest.completedAt) return { symbol: "●", color: "var(--good)" };
+  // Read through the same guard the sort uses. A non-string `skippedAt` /
+  // `completedAt` is truthy, so the raw reads reported a day as skipped or
+  // completed on the strength of a value we cannot read — the badge is the only
+  // signal on this page for whether a day is done.
+  if (sortableStamp(latest.skippedAt)) return { symbol: "~", color: "var(--warn)" };
+  if (sortableStamp(latest.completedAt)) return { symbol: "●", color: "var(--good)" };
   return { symbol: "·", color: "var(--fg-4)" };
 }
 

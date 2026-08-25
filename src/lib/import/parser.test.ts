@@ -4,11 +4,16 @@ import { normalizePayload, parseProgramJson, ImportError } from "./parser";
 import { applyResolutions, extractUnresolvedExercises } from "./resolution";
 import { baseExercisePath } from "./paths";
 import { getRenderableDays } from "@/lib/programs/overrides";
+import { matchExercise } from "@/lib/catalog/match";
+import { highBarBackSquat, makeImportMatchContext } from "./resolution.testFixtures";
 
+// "Barbell Squat" is an exact concrete catalogue name; the bare "Squat" now
+// carries a reviewed underspecified-name rule, and these fixtures need a name
+// that resolves without a warning.
 const minimalDay = (day: number, title: string) => ({
   day,
   title,
-  sections: [{ type: "strength", groups: [{ exercises: [{ name: "Squat" }] }] }],
+  sections: [{ type: "strength", groups: [{ exercises: [{ name: "Barbell Squat" }] }] }],
 });
 
 describe("import parser", () => {
@@ -1286,5 +1291,240 @@ describe("variants inside override replacement days (defect: overrides leak)", (
     const { warnings } = build();
     const items = extractUnresolvedExercises(warnings);
     expect(items.some((i) => i.path.includes("overrides.") && i.path.includes(".variants."))).toBe(false);
+  });
+});
+
+// Typed tri-state resolution metadata on the persisted warning. Every case
+// injects its own catalogue + disambiguation table through the parser's
+// `matchContext` seam, so nothing here depends on the shipped curation
+// content (which is pinned separately in shippedDisambiguations.test.ts).
+describe("typed resolution warnings", () => {
+  const singleExercise = (name: string) => ({
+    program_name: "Metadata probe",
+    days: [{ day: 1, title: "Day 1", sections: [{ type: "strength", groups: [{ exercises: [{ name }] }] }] }],
+  });
+  const path = "days.1.sections.0.groups.0.exercises.0";
+  const exerciseAt = (review: ReturnType<typeof normalizePayload>) =>
+    review.program.days[0].sections[0].groups[0].exercises[0];
+
+  it("emits an underspecified warning, leaves canonicalExerciseId unset, and keeps the stored name", () => {
+    const review = normalizePayload(
+      singleExercise("Back Squat"),
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+
+    expect(review.warnings).toEqual([
+      {
+        path,
+        message: "Back Squat needs a specific version chosen.",
+        rawName: "Back Squat",
+        suggestions: [
+          { exerciseId: "barbell-back-squat", name: "Back Squat", score: expect.any(Number) },
+          { exerciseId: "barbell-high-bar-squat", name: "High Bar Back Squat", score: expect.any(Number) },
+          { exerciseId: "barbell-low-bar-squat", name: "Low Bar Back Squat", score: expect.any(Number) },
+        ],
+        resolutionKind: "underspecified",
+        candidateExerciseIds: ["barbell-back-squat", "barbell-high-bar-squat", "barbell-low-bar-squat"],
+        matchedModifierIds: ["barbell", "back-rack"],
+        nonIdentityAnnotations: [],
+        sectionType: "strength",
+      },
+    ]);
+    // The generic concrete `Back Squat` entry EXISTS in this catalogue: the
+    // underspecified rule must still win, or the choice is unreachable.
+    expect(exerciseAt(review).canonicalExerciseId).toBeUndefined();
+    expect(exerciseAt(review).name).toBe("Back Squat");
+  });
+
+  it("marks an unmatched occurrence as unmatched, not underspecified", () => {
+    const review = normalizePayload(
+      singleExercise("Jefferson Curl"),
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+
+    expect(review.warnings[0]).toMatchObject({
+      message: "Jefferson Curl was imported without a catalog match.",
+      rawName: "Jefferson Curl",
+      resolutionKind: "unmatched",
+      nonIdentityAnnotations: [],
+    });
+    expect(review.warnings[0].candidateExerciseIds).toBeUndefined();
+    expect(review.warnings[0].matchedModifierIds).toBeUndefined();
+  });
+
+  it("bypasses the choice for an exact concrete name", () => {
+    const review = normalizePayload(
+      singleExercise("High Bar Back Squat"),
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+
+    expect(review.warnings).toEqual([]);
+    expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-high-bar-squat");
+  });
+
+  it("lets a saved alias resolve an underspecified name before the reviewed rule runs", () => {
+    const review = normalizePayload(
+      singleExercise("Back Squat"),
+      undefined,
+      [{
+        id: "alias-1",
+        alias: "Back Squat",
+        normalizedAlias: "back squat",
+        canonicalExerciseId: "barbell-low-bar-squat",
+        provenance: "remembered",
+        createdAt: "2026-08-18T00:00:00.000Z",
+      }],
+      [],
+      makeImportMatchContext(),
+    );
+
+    expect(review.warnings).toEqual([]);
+    expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-low-bar-squat");
+  });
+
+  it("strips a reviewed prescription phrase for matching while preserving the stored name", () => {
+    const review = normalizePayload(
+      singleExercise("Weighted High Bar Back Squat"),
+      undefined,
+      [],
+      [],
+      makeImportMatchContext({
+        extraRules: [{
+          id: "weighted-phrase",
+          kind: "non-identity-phrase",
+          normalizedPhrase: "weighted",
+          annotation: "weighted",
+          behavior: "strip",
+        }],
+      }),
+    );
+
+    expect(review.warnings).toEqual([]);
+    expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-high-bar-squat");
+    // Prescription text is stripped for MATCHING only — the program keeps the
+    // name the user's routine actually used.
+    expect(exerciseAt(review).name).toBe("Weighted High Bar Back Squat");
+  });
+
+  it("canonicalizes a numeric pause to the one coarse paused identity", () => {
+    const pausedHighBar = {
+      ...highBarBackSquat,
+      id: "barbell-paused-high-bar-squat",
+      name: "Paused High Bar Back Squat",
+      movementModifierIds: ["barbell", "back-rack", "high-bar", "paused"],
+    };
+    const review = normalizePayload(
+      singleExercise("2-second paused High Bar Back Squat"),
+      undefined,
+      [],
+      [],
+      makeImportMatchContext({
+        extraCatalog: [pausedHighBar],
+        extraRules: [{
+          id: "two-second-pause",
+          kind: "non-identity-phrase",
+          normalizedPhrase: "2 second paused",
+          annotation: "2-second pause",
+          behavior: "paused-duration",
+        }],
+      }),
+    );
+
+    expect(review.warnings).toEqual([]);
+    expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-paused-high-bar-squat");
+    expect(exerciseAt(review).name).toBe("2-second paused High Bar Back Squat");
+  });
+
+  it("keeps an `or` alternative unresolved instead of silently picking one side", () => {
+    // Deliberately discriminating: with the phrase stripped, the remaining
+    // text is EXACTLY the assisted entry's name, so a parser that treated
+    // `or bodyweight` as ordinary non-identity text would silently finalize
+    // the assisted version and never ask. Only the reject-alternative
+    // behaviour keeps it unresolved.
+    const assisted = {
+      ...highBarBackSquat,
+      id: "assisted-neutral-grip-pull-up",
+      name: "Assisted Neutral-Grip Pull-Up",
+      movementId: undefined,
+      movementModifierIds: [],
+    };
+    const context = makeImportMatchContext({
+      extraCatalog: [assisted],
+      extraRules: [{
+        id: "alternatives",
+        kind: "non-identity-phrase",
+        normalizedPhrase: "or bodyweight",
+        annotation: "alternative prescription",
+        behavior: "reject-alternative",
+      }],
+    });
+    expect(matchExercise("Assisted Neutral-Grip Pull-Up", [], [], context)).toMatchObject({
+      kind: "matched",
+      item: { id: "assisted-neutral-grip-pull-up" },
+    });
+
+    const review = normalizePayload(
+      singleExercise("Assisted or Bodyweight Neutral-Grip Pull-Up"),
+      undefined,
+      [],
+      [],
+      context,
+    );
+
+    expect(review.warnings[0]).toMatchObject({
+      rawName: "Assisted or Bodyweight Neutral-Grip Pull-Up",
+      resolutionKind: "unmatched",
+      nonIdentityAnnotations: ["alternative prescription"],
+    });
+    expect(exerciseAt(review).canonicalExerciseId).toBeUndefined();
+  });
+
+  it("carries the same typed metadata onto a variant-path warning", () => {
+    const review = normalizePayload(
+      {
+        program_name: "Variant metadata probe",
+        weeks: 2,
+        days: [{
+          day: 1,
+          title: "Day 1",
+          sections: [{
+            type: "strength",
+            groups: [{
+              exercises: [{
+                name: "High Bar Back Squat",
+                variants: [{ weeks: [2], name: "Back Squat" }],
+              }],
+            }],
+          }],
+        }],
+      },
+      undefined,
+      [],
+      [],
+      makeImportMatchContext(),
+    );
+
+    expect(review.warnings).toEqual([
+      {
+        path: `${path}.variants.0`,
+        message: "Back Squat needs a specific version chosen.",
+        rawName: "Back Squat",
+        suggestions: expect.any(Array),
+        resolutionKind: "underspecified",
+        candidateExerciseIds: ["barbell-back-squat", "barbell-high-bar-squat", "barbell-low-bar-squat"],
+        matchedModifierIds: ["barbell", "back-rack"],
+        nonIdentityAnnotations: [],
+        sectionType: "strength",
+      },
+    ]);
   });
 });

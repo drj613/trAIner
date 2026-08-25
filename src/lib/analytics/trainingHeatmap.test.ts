@@ -113,3 +113,42 @@ describe("computeHeatmapStats", () => {
     expect(computeHeatmapStats(cells).weeklyAvg).toBeGreaterThan(0);
   });
 });
+
+// `appDb.ts:181-191` deliberately KEEPS a log whose `entries` is not an array,
+// or whose element is not a record, because the unreadable value "may be
+// standing in for real sets we have no way to recover". Logs predating the
+// `entries` field also exist, with no `entries` key at all. This function read
+// `log.entries` and `entry.sets` with no guard, so any one of those logs threw
+// out of `ProfileClient`'s un-caught `logRepo.list().then(...)` and the whole
+// 26-week heatmap silently never rendered for the rest of the visit.
+describe("buildHeatmapCells — logs the database keeps but cannot read", () => {
+  const healthy = makeLog("2026-04-28");
+  const loggedCell = (cells: ReturnType<typeof buildHeatmapCells>) =>
+    cells[cells.length - 1][1];
+
+  it.each([
+    ["a non-array entries", "corrupt"],
+    ["an entries array whose element is null", [null]],
+    ["an entry whose sets is not an array", [{ exerciseId: "ex1", sets: "corrupt" }]],
+    ["no entries key at all", undefined],
+  ])("still charts the readable sessions when one log has %s", (_label, entries) => {
+    const badLog = {
+      ...makeLog("2026-04-27"),
+      entries,
+    } as unknown as WorkoutLogDocument;
+
+    const cells = buildHeatmapCells([badLog, healthy], "2026-04-29");
+
+    // The healthy session is still charted — the unreadable log neither threw
+    // nor removed another workout's history from view.
+    expect(loggedCell(cells).intensity).toBeGreaterThan(0);
+    // The unreadable log's own cell contributes ZERO volume rather than an
+    // invented number. Without this the `sets: "corrupt"` row would be vacuous:
+    // `for (const s of "corrupt")` does not throw, it iterates seven characters
+    // and charges the session 7 x the 70kg bodyweight default.
+    expect(cells[cells.length - 1][0].intensity).toBe(0);
+    // Completion canary — the full grid was built, not a short-circuited one.
+    expect(cells).toHaveLength(26);
+    expect(cells[cells.length - 1]).toHaveLength(7);
+  });
+});

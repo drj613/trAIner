@@ -176,3 +176,66 @@ describe("extractEntryNotes / applyEntryNotes", () => {
     expect(applyEntryNotes(entry, "")).toEqual({ exerciseId: "e1", sets: [] });
   });
 });
+
+describe("hydrateFromLog on a log we cannot fully read", () => {
+  // `src/lib/storage/appDb.ts:186-195` never inspects the fields of an entry or
+  // a set, so a hand-edited or foreign backup reaches this function verbatim,
+  // and the plan's v7 ruling keeps such a log on purpose. Throwing here left
+  // `sessionMode` at "loading", which disabled autosave for the whole day while
+  // the grid still rendered editable — the user logged a session into a
+  // live-looking screen and it was never written. Absent is not unreadable
+  // (`unreadableValue`, `src/lib/storage/migrations/v10Identity.ts:158`): an
+  // entry with no sets is the ordinary shape of a day nobody has logged yet.
+  const unreadableSets: [string, unknown][] = [
+    ["a number", 7],
+    ["an object", {}],
+    ["a string", "corrupt"],
+    ["a boolean", true],
+    ["an array holding null", [null]],
+    ["an array holding a number", [7]],
+  ];
+
+  it.each(unreadableSets)("returns a grid of empty cells when sets is %s", (_label, sets) => {
+    expect(hydrateFromLog({ exerciseId: "e1", sets } as unknown as WorkoutLogEntry, 3))
+      .toEqual(["", "", ""]);
+  });
+
+  const unreadableSetNumbers: [string, unknown][] = [
+    ["an object", {}],
+    ["a string", "corrupt"],
+    ["undefined", undefined],
+    ["zero", 0],
+    ["a fraction", 1.5],
+    ["absurdly large", 1e9],
+  ];
+
+  it.each(unreadableSetNumbers)(
+    "keeps the readable set beside one whose setNumber is %s",
+    (_label, setNumber) => {
+      const entry = {
+        exerciseId: "e1",
+        sets: [{ setNumber, weight: 200, reps: 5 }, { setNumber: 2, weight: 100, reps: 5 }],
+      } as unknown as WorkoutLogEntry;
+      const cells = hydrateFromLog(entry);
+      expect(cells).toContain("100x5");
+      // Every cell is a string the grid can render and re-serialise.
+      for (const c of cells) expect(typeof c).toBe("string");
+      // No runaway allocation from a stored set number nobody can honour.
+      expect(cells.length).toBeLessThanOrEqual(500);
+    },
+  );
+
+  it("renders an unreadable rawCell as text rather than handing the grid a non-string", () => {
+    const entry = {
+      exerciseId: "e1",
+      sets: [{ setNumber: 1, rawCell: {} }, { setNumber: 2, rawCell: null }],
+    } as unknown as WorkoutLogEntry;
+    for (const c of hydrateFromLog(entry)) expect(typeof c).toBe("string");
+  });
+
+  // Absent stays absent: the healthy empty-entry shape is unchanged.
+  it("still returns one empty cell for an entry with no sets", () => {
+    expect(hydrateFromLog({ exerciseId: "e1" } as WorkoutLogEntry)).toEqual([""]);
+    expect(hydrateFromLog({ exerciseId: "e1", sets: [] } as unknown as WorkoutLogEntry)).toEqual([""]);
+  });
+});

@@ -47,6 +47,7 @@ const catalogItem: ExerciseCatalogItem = {
   movementPatterns: ["push"],
   muscles: { primary: ["quads"], secondary: ["glutes"] },
   tags: [],
+  movementModifierIds: [],
 };
 
 describe("swapExercise", () => {

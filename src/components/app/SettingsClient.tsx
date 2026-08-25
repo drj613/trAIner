@@ -7,6 +7,7 @@ import { backupRepo } from "@/lib/storage/backupRepo";
 import { loadWorkspaceStats, type WorkspaceStats } from "@/lib/workspace/stats";
 import { getPersistenceState, requestPersistence, type PersistenceState } from "@/lib/storage/persistence";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 
 type Density = "comfy" | "default" | "dense";
 type Mono = "jetbrains" | "system";
@@ -69,6 +70,7 @@ function ActionRow({
 }
 
 export function SettingsClient() {
+  const { refresh: refreshLocalData } = useLocalData();
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [theme, setThemeState] = useState(() => readAttr("data-theme", "linen"));
   const [density, setDensityState] = useState<Density>(
@@ -178,6 +180,19 @@ export function SettingsClient() {
     try {
       const data = JSON.parse(await file.text());
       await restoreBackup(data);
+      // A restore replaces every document in IndexedDB, but LocalDataProvider
+      // loads programs and profile once in a mount-time effect and App mounts
+      // it above the router, so it survives the trip to Settings holding the
+      // PRE-restore documents. That is not just a stale screen: saveProgram
+      // writes back whatever document the provider is holding, so the next
+      // edit would put the pre-restore program over the restored one under the
+      // same id — data loss at the moment the user is recovering data.
+      //
+      // Exactly one refresh, called here rather than from a listener inside
+      // the provider: restoreBackup already dispatches the identity-changed
+      // event, and refreshing on that would both double up here and reload
+      // programs on every alias write.
+      await refreshLocalData();
       setStats(await loadWorkspaceStats());
     } catch (e) {
       console.error("[settings] restore failed", e);

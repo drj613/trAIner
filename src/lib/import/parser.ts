@@ -1,4 +1,4 @@
-import { matchExercise } from "@/lib/catalog/match";
+import { matchExercise, type MatchExerciseContext, type MatchResult } from "@/lib/catalog/match";
 import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, ProgressionRule, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
@@ -31,6 +31,53 @@ export class ImportError extends Error {
 
 type ImportPayload = Record<string, unknown>;
 
+// Everything the exercise matcher needs, bundled so it can be threaded through
+// normalizeDay -> normalizeSection -> normalizeGroup -> normalizeExercise
+// without four more positional parameters at every level. `matchContext` is
+// optional at the public entry points: production omits it and gets the
+// generated registries, while tests (and, later, the runtime identity
+// provider) can inject a catalogue + disambiguation table.
+type MatchInputs = {
+  aliases: AliasDocument[];
+  userExercises: UserExerciseDocument[];
+  matchContext?: MatchExerciseContext;
+};
+
+function runMatch(name: string, inputs: MatchInputs): MatchResult {
+  return inputs.matchContext
+    ? matchExercise(name, inputs.aliases, inputs.userExercises, inputs.matchContext)
+    : matchExercise(name, inputs.aliases, inputs.userExercises);
+}
+
+// The typed resolution metadata a non-matched occurrence contributes to its
+// ImportWarning. `underspecified` means the name resolved to a movement but
+// omits a concrete choice, so parsing leaves `canonicalExerciseId` unset and
+// the choice stays reachable; `unmatched` means no concrete identity at all.
+// Both are grouped by (kind, normalized raw name) in resolution.ts.
+function resolutionWarningFields(
+  name: string,
+  match: Exclude<MatchResult, { kind: "matched" }>,
+): Omit<ImportWarning, "path" | "sectionType"> {
+  if (match.kind === "underspecified") {
+    return {
+      message: `${name} needs a specific version chosen.`,
+      rawName: name,
+      suggestions: match.candidates,
+      resolutionKind: "underspecified",
+      candidateExerciseIds: match.candidates.map((candidate) => candidate.exerciseId),
+      matchedModifierIds: match.matchedModifierIds,
+      nonIdentityAnnotations: match.nonIdentityAnnotations,
+    };
+  }
+  return {
+    message: `${name} was imported without a catalog match.`,
+    rawName: name,
+    suggestions: match.suggestions,
+    resolutionKind: "unmatched",
+    nonIdentityAnnotations: match.nonIdentityAnnotations,
+  };
+}
+
 // Parser-local carrier for exercise variants. `__variants` is attached to the
 // normalized base exercise pre-expansion and is ALWAYS stripped before any
 // exercise is stored — it must never appear on the exported ProgramExercise
@@ -54,7 +101,7 @@ export type ImportReview = {
   warnings: ImportWarning[];
 };
 
-export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
+export function parseProgramJson(input: string, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = [], matchContext?: MatchExerciseContext): ImportReview {
   const result = parseLooseJson(input);
   if (!result.ok) {
     const message =
@@ -68,15 +115,16 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
   if (!isRecord(result.value)) {
     throw new ImportError("not-object", "The pasted JSON must be an object.");
   }
-  return normalizePayload(result.value, profileSnapshot, aliases, userExercises);
+  return normalizePayload(result.value, profileSnapshot, aliases, userExercises, matchContext);
 }
 
-export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = []): ImportReview {
+export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = [], matchContext?: MatchExerciseContext): ImportReview {
+  const matchInputs: MatchInputs = { aliases, userExercises, matchContext };
   const warnings: ImportWarning[] = [];
   const now = new Date().toISOString();
   const programId = newId("program");
 
-  const baseDays = parseBaseDays(payload, warnings, aliases, userExercises);
+  const baseDays = parseBaseDays(payload, warnings, matchInputs);
 
   if (baseDays.length === 0) {
     throw new ImportError(
@@ -99,7 +147,7 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
   // base template or the scalar `weeks` field — expansion is what actually
   // determines which weeks exist to be overridden. See diagnoseImportOverrides.
   const days = expandDays(baseDays, lengthWeeks);
-  const overrides = parseOverrides(payload, programId, warnings, aliases, userExercises);
+  const overrides = parseOverrides(payload, programId, warnings, matchInputs);
   diagnoseImportOverrides(overrides, days, warnings);
   const progression = normalizeProgression(payload.progression);
 
@@ -129,10 +177,9 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
 function parseBaseDays(
   payload: ImportPayload,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[]
+  matchInputs: MatchInputs
 ): ProgramDay[] {
-  return detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, aliases, userExercises));
+  return detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, matchInputs));
 }
 
 // Structural warning only (no rawName), so extractUnresolvedExercises never
@@ -324,8 +371,7 @@ function parseOverrides(
   payload: ImportPayload,
   programId: ID,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[]
+  matchInputs: MatchInputs
 ): ProgramOverride[] {
   if (!Array.isArray(payload.overrides)) return [];
   const now = new Date().toISOString();
@@ -337,7 +383,7 @@ function parseOverrides(
     const days = arrayOfRecords(raw.days).map((day, index) =>
       // allowVariants:false — override days never pass through expandDays, so
       // variants there would leak the __variants carrier and orphan a warning.
-      normalizeDay(day, index + 1, warnings, aliases, userExercises, pathBuilder, false)
+      normalizeDay(day, index + 1, warnings, matchInputs, pathBuilder, false)
     );
     const scope: "week" | "day" = stringFrom(raw.scope, "week") === "day" ? "day" : "week";
     return {
@@ -379,8 +425,7 @@ function normalizeDay(
   day: ImportPayload,
   fallbackDayNumber: number,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[],
+  matchInputs: MatchInputs,
   pathBuilder: ExercisePathBuilder = baseExercisePath,
   // Variants are import-schema sugar desugared by expandDays, which ONLY runs
   // on base days. Override replacement days never pass through expandDays, so
@@ -396,7 +441,7 @@ function normalizeDay(
   // and paths.ts.
   const templateWeek = optionalNumber(day.week ?? day.weekNumber);
   const sections = arrayOfRecords(day.sections).map((section, index) =>
-    normalizeSection(section, dayNumber, templateWeek, index, warnings, aliases, userExercises, pathBuilder, allowVariants)
+    normalizeSection(section, dayNumber, templateWeek, index, warnings, matchInputs, pathBuilder, allowVariants)
   );
 
   return {
@@ -415,14 +460,13 @@ function normalizeSection(
   templateWeek: number | undefined,
   sectionIndex: number,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[],
+  matchInputs: MatchInputs,
   pathBuilder: ExercisePathBuilder,
   allowVariants: boolean
 ): ProgramSection {
   const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
-    normalizeGroup(group, dayNumber, templateWeek, sectionIndex, index, warnings, aliases, userExercises, sectionType, pathBuilder, allowVariants)
+    normalizeGroup(group, dayNumber, templateWeek, sectionIndex, index, warnings, matchInputs, sectionType, pathBuilder, allowVariants)
   );
 
   return {
@@ -440,14 +484,13 @@ function normalizeGroup(
   sectionIndex: number,
   groupIndex: number,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[],
+  matchInputs: MatchInputs,
   sectionType: string,
   pathBuilder: ExercisePathBuilder,
   allowVariants: boolean
 ): ProgramGroup {
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
-    normalizeExercise(exercise, pathBuilder(dayNumber, templateWeek, sectionIndex, groupIndex, index), warnings, aliases, userExercises, sectionType, allowVariants)
+    normalizeExercise(exercise, pathBuilder(dayNumber, templateWeek, sectionIndex, groupIndex, index), warnings, matchInputs, sectionType, allowVariants)
   );
 
   return {
@@ -458,9 +501,9 @@ function normalizeGroup(
   };
 }
 
-function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], aliases: AliasDocument[], userExercises: UserExerciseDocument[], sectionType: string, allowVariants: boolean = true): ProgramExercise {
+function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], matchInputs: MatchInputs, sectionType: string, allowVariants: boolean = true): ProgramExercise {
   const name = stringFrom(exercise.name, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
-  const match = matchExercise(name, aliases, userExercises);
+  const match = runMatch(name, matchInputs);
   const tags = isRecord(exercise.tags)
     ? {
         primary: stringArray(exercise.tags.primary),
@@ -470,12 +513,10 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
       }
     : emptyTags();
 
-  if (match.kind === "unmatched") {
+  if (match.kind !== "matched") {
     warnings.push({
       path,
-      message: `${name} was imported without a catalog match.`,
-      rawName: name,
-      suggestions: match.suggestions,
+      ...resolutionWarningFields(name, match),
       sectionType,
     });
   }
@@ -497,7 +538,7 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
   };
 
   if (allowVariants) {
-    const variants = parseVariants(exercise.variants, path, warnings, aliases, userExercises, sectionType);
+    const variants = parseVariants(exercise.variants, path, warnings, matchInputs, sectionType);
     if (variants.length > 0) result.__variants = variants;
   } else if (Array.isArray(exercise.variants) && exercise.variants.length > 0) {
     // Variants inside an override replacement day are out of scope: they are
@@ -523,8 +564,7 @@ function parseVariants(
   raw: unknown,
   basePath: string,
   warnings: ImportWarning[],
-  aliases: AliasDocument[],
-  userExercises: UserExerciseDocument[],
+  matchInputs: MatchInputs,
   sectionType: string,
 ): NormalizedVariant[] {
   if (!Array.isArray(raw)) return [];
@@ -560,15 +600,13 @@ function parseVariants(
     let canonicalExerciseId: ID | undefined;
     const hasName = fields.name !== undefined;
     if (hasName) {
-      const match = matchExercise(fields.name!, aliases, userExercises);
+      const match = runMatch(fields.name!, matchInputs);
       if (match.kind === "matched") {
         canonicalExerciseId = match.item.id;
       } else {
         warnings.push({
           path: `${basePath}.variants.${variantIndex}`,
-          message: `${fields.name} was imported without a catalog match.`,
-          rawName: fields.name,
-          suggestions: match.suggestions,
+          ...resolutionWarningFields(fields.name!, match),
           sectionType,
         });
       }

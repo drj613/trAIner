@@ -1,0 +1,971 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "candidateId": "squat--barbell--back-rack",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack: the squat signature [barbell, back-rack] is a stable identity; source barbell-squat supplies populated metadata, and only the reviewed aliases (barbell back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--high-bar",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack--high-bar: the squat signature [barbell, high-bar] is a stable identity; source barbell-high-bar-squat supplies populated metadata, and only the reviewed aliases (barbell high bar back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--low-bar",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack--low-bar: the squat signature [barbell, low-bar] is a stable identity; source barbell-low-bar-squat supplies populated metadata, and only the reviewed aliases (barbell low bar back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--front-rack",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--front-rack: the squat signature [barbell, front-rack] is a stable identity; source front-squat-clean-grip supplies populated metadata, and only the reviewed aliases (barbell front rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves squat--dumbbell: the squat signature [dumbbell] is a stable identity; source dumbbell-squat supplies populated metadata, and only the reviewed aliases (dumbbell squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Independent review approves squat--dumbbell--single-leg: the squat signature [dumbbell, single-leg] is a stable identity; source dumbbell-single-leg-squat supplies populated metadata, and only the reviewed aliases (single leg dumbbell squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--kettlebell",
+      "decision": "approve",
+      "reason": "Independent review approves squat--kettlebell: the squat signature [kettlebell] is a stable identity; source kettlebell-goblet-squat supplies populated metadata, and only the reviewed aliases (kettlebell squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--kettlebell--front-rack",
+      "decision": "approve",
+      "reason": "Independent review approves squat--kettlebell--front-rack: the squat signature [kettlebell, front-rack] is a stable identity; source kettlebell-front-squat supplies populated metadata, and only the reviewed aliases (kettlebell front rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--bodyweight",
+      "decision": "approve",
+      "reason": "Independent review approves squat--bodyweight: the squat signature [bodyweight] is a stable identity; source bodyweight-squat supplies populated metadata, and only the reviewed aliases (bodyweight squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--bodyweight--single-leg",
+      "decision": "revise",
+      "reason": "Independent review revises squat--bodyweight--single-leg: source bodyweight-squat does not safely support the full [bodyweight, single-leg] identity; use reviewed base one-leg-squat and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "squat--bodyweight--single-leg",
+        "movementId": "squat",
+        "movementModifierIds": [
+          "bodyweight",
+          "single-leg"
+        ],
+        "metadataFromExerciseId": "one-leg-squat",
+        "approvedAliases": [
+          "single leg bodyweight squat"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--paused",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack--paused: the squat signature [barbell, back-rack, paused] is a stable identity; source barbell-squat supplies populated metadata, and only the reviewed aliases (paused barbell back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--deficit",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack--deficit: the squat signature [barbell, back-rack, deficit] is a stable identity; source barbell-squat supplies populated metadata, and only the reviewed aliases (deficit barbell back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--back-rack--partial",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--back-rack--partial: the squat signature [barbell, back-rack, partial] is a stable identity; source barbell-squat supplies populated metadata, and only the reviewed aliases (partial barbell back rack squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--barbell--split-stance",
+      "decision": "approve",
+      "reason": "Independent review approves squat--barbell--split-stance: the squat signature [barbell, split-stance] is a stable identity; source barbell-side-split-squat supplies populated metadata, and only the reviewed aliases (split stance barbell squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "squat--dumbbell--split-stance",
+      "decision": "approve",
+      "reason": "Independent review approves squat--dumbbell--split-stance: the squat signature [dumbbell, split-stance] is a stable identity; source split-squat-with-dumbbells supplies populated metadata, and only the reviewed aliases (split stance dumbbell squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--barbell: the bench-press signature [barbell] is a stable identity; source barbell-bench-press supplies populated metadata, and only the reviewed aliases (barbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--dumbbell: the bench-press signature [dumbbell] is a stable identity; source dumbbell-bench-press supplies populated metadata, and only the reviewed aliases (dumbbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--cable",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--cable: the bench-press signature [cable] is a stable identity; source cable-bench-press supplies populated metadata, and only the reviewed aliases (cable bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--machine",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--machine: the bench-press signature [machine] is a stable identity; source machine-bench-press supplies populated metadata, and only the reviewed aliases (machine bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--barbell--incline",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--barbell--incline: the bench-press signature [barbell, incline] is a stable identity; source barbell-incline-bench-press supplies populated metadata, and only the reviewed aliases (incline barbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--barbell--decline",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--barbell--decline: the bench-press signature [barbell, decline] is a stable identity; source barbell-decline-bench-press supplies populated metadata, and only the reviewed aliases (decline barbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--dumbbell--incline: the bench-press signature [dumbbell, incline] is a stable identity; source incline-dumbbell-bench-press supplies populated metadata, and only the reviewed aliases (incline dumbbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--decline",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--dumbbell--decline: the bench-press signature [dumbbell, decline] is a stable identity; source decline-dumbbell-bench-press supplies populated metadata, and only the reviewed aliases (decline dumbbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--dumbbell--neutral-grip: the bench-press signature [dumbbell, neutral-grip] is a stable identity; source dumbbell-bench-press-with-neutral-grip supplies populated metadata, and only the reviewed aliases (neutral grip dumbbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--dumbbell--single-arm: the bench-press signature [dumbbell, single-arm] is a stable identity; source one-arm-dumbbell-bench-press supplies populated metadata, and only the reviewed aliases (single arm dumbbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects bench-press--barbell--pronated-grip: Rejected: pronated grip is the ordinary barbell bench default and creates no independently represented mechanical version. Source barbell-bench-press is not used to emit this signature."
+    },
+    {
+      "candidateId": "bench-press--barbell--paused",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--barbell--paused: the bench-press signature [barbell, paused] is a stable identity; source pause-bench supplies populated metadata, and only the reviewed aliases (paused barbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "bench-press--barbell--partial",
+      "decision": "approve",
+      "reason": "Independent review approves bench-press--barbell--partial: the bench-press signature [barbell, partial] is a stable identity; source barbell-bench-press supplies populated metadata, and only the reviewed aliases (partial barbell bench press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell: the deadlift-hinge signature [barbell] is a stable identity; source barbell-deadlift supplies populated metadata, and only the reviewed aliases (barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--dumbbell: the deadlift-hinge signature [dumbbell] is a stable identity; source deadlift-dumbbell supplies populated metadata, and only the reviewed aliases (dumbbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--kettlebell",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--kettlebell: the deadlift-hinge signature [kettlebell] is a stable identity; source kettlebell-deadlifts supplies populated metadata, and only the reviewed aliases (kettlebell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--trap-bar",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--trap-bar: the deadlift-hinge signature [trap-bar] is a stable identity; source trap-bar-deadlift supplies populated metadata, and only the reviewed aliases (trap bar deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects deadlift-hinge--barbell--pronated-grip: Rejected: a standard barbell deadlift already uses the ordinary pronated grip; this duplicates the existing barbell signature. Source barbell-deadlift is not used to emit this signature."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--mixed-grip",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--mixed-grip: the deadlift-hinge signature [barbell, mixed-grip] is a stable identity; source barbell-deadlift supplies populated metadata, and only the reviewed aliases (mixed grip barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--hook-grip",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--hook-grip: the deadlift-hinge signature [barbell, hook-grip] is a stable identity; source barbell-deadlift supplies populated metadata, and only the reviewed aliases (hook grip barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--sumo",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--sumo: the deadlift-hinge signature [barbell, sumo] is a stable identity; source sumo-deadlift supplies populated metadata, and only the reviewed aliases (sumo barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--staggered-stance",
+      "decision": "revise",
+      "reason": "Independent review revises deadlift-hinge--barbell--staggered-stance: source barbell-single-leg-deadlift does not safely support the full [barbell, staggered-stance] identity; use reviewed base barbell-deadlift and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "deadlift-hinge--barbell--staggered-stance",
+        "movementId": "deadlift-hinge",
+        "movementModifierIds": [
+          "barbell",
+          "staggered-stance"
+        ],
+        "metadataFromExerciseId": "barbell-deadlift",
+        "approvedAliases": [
+          "staggered stance barbell deadlift"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--paused",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--paused: the deadlift-hinge signature [barbell, paused] is a stable identity; source barbell-deadlift supplies populated metadata, and only the reviewed aliases (paused barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--deficit",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--deficit: the deadlift-hinge signature [barbell, deficit] is a stable identity; source deficit-deadlift supplies populated metadata, and only the reviewed aliases (deficit barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--partial",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--partial: the deadlift-hinge signature [barbell, partial] is a stable identity; source barbell-deadlift supplies populated metadata, and only the reviewed aliases (partial barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--single-leg",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--single-leg: the deadlift-hinge signature [barbell, single-leg] is a stable identity; source barbell-single-leg-deadlift supplies populated metadata, and only the reviewed aliases (single leg barbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--dumbbell--single-leg: the deadlift-hinge signature [dumbbell, single-leg] is a stable identity; source single-leg-deadlift-with-dumbbell supplies populated metadata, and only the reviewed aliases (single leg dumbbell deadlift) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--hinge",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--hinge: the deadlift-hinge signature [barbell, hinge] is a stable identity; source hip-hinge supplies populated metadata, and only the reviewed aliases (barbell hinge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--barbell--romanian",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--barbell--romanian: the deadlift-hinge signature [barbell, romanian] is a stable identity; source romanian-deadlift-barbell supplies populated metadata, and only the reviewed aliases (romanian barbell deadlift hinge, barbell rdl hinge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "deadlift-hinge--dumbbell--romanian",
+      "decision": "approve",
+      "reason": "Independent review approves deadlift-hinge--dumbbell--romanian: the deadlift-hinge signature [dumbbell, romanian] is a stable identity; source dumbbell-romanian-deadlift supplies populated metadata, and only the reviewed aliases (romanian dumbbell deadlift hinge, dumbbell rdl hinge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves row--barbell: the row signature [barbell] is a stable identity; source bent-over-barbell-row supplies populated metadata, and only the reviewed aliases (barbell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves row--dumbbell: the row signature [dumbbell] is a stable identity; source bent-over-two-dumbbell-row supplies populated metadata, and only the reviewed aliases (dumbbell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--kettlebell",
+      "decision": "approve",
+      "reason": "Independent review approves row--kettlebell: the row signature [kettlebell] is a stable identity; source two-arm-kettlebell-row supplies populated metadata, and only the reviewed aliases (kettlebell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--cable",
+      "decision": "approve",
+      "reason": "Independent review approves row--cable: the row signature [cable] is a stable identity; source seated-cable-row supplies populated metadata, and only the reviewed aliases (cable row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--machine",
+      "decision": "approve",
+      "reason": "Independent review approves row--machine: the row signature [machine] is a stable identity; source lever-seated-row supplies populated metadata, and only the reviewed aliases (machine row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--band",
+      "decision": "approve",
+      "reason": "Independent review approves row--band: the row signature [band] is a stable identity; source resistance-band-seated-straight-back-row supplies populated metadata, and only the reviewed aliases (band row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--barbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects row--barbell--pronated-grip: Rejected: the proposed pronated barbell row is the ordinary base execution and is redundant without a distinct source identity. Source bent-over-barbell-row is not used to emit this signature."
+    },
+    {
+      "candidateId": "row--dumbbell--supinated-grip",
+      "decision": "approve",
+      "reason": "Independent review approves row--dumbbell--supinated-grip: the row signature [dumbbell, supinated-grip] is a stable identity; source bent-over-two-dumbbell-row supplies populated metadata, and only the reviewed aliases (supinated grip dumbbell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves row--cable--neutral-grip: the row signature [cable, neutral-grip] is a stable identity; source seated-cable-row supplies populated metadata, and only the reviewed aliases (neutral grip cable row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--dumbbell--chest-supported",
+      "decision": "approve",
+      "reason": "Independent review approves row--dumbbell--chest-supported: the row signature [dumbbell, chest-supported] is a stable identity; source chest-supported-dumbbell-row supplies populated metadata, and only the reviewed aliases (chest supported dumbbell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--dumbbell--bench-supported",
+      "decision": "reject",
+      "reason": "Independent review rejects row--dumbbell--bench-supported: Rejected: bench-supported is ambiguous and overlaps the explicit chest-supported row; the candidate base does not establish a distinct support posture. Source bent-over-dumbbell-rows is not used to emit this signature."
+    },
+    {
+      "candidateId": "row--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves row--dumbbell--single-arm: the row signature [dumbbell, single-arm] is a stable identity; source one-arm-dumbbell-row supplies populated metadata, and only the reviewed aliases (single arm dumbbell row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--cable--rope",
+      "decision": "approve",
+      "reason": "Independent review approves row--cable--rope: the row signature [cable, rope] is a stable identity; source seated-cable-row supplies populated metadata, and only the reviewed aliases (rope cable row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Independent review approves row--cable--straight-bar: the row signature [cable, straight-bar] is a stable identity; source seated-cable-row supplies populated metadata, and only the reviewed aliases (straight bar cable row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "row--cable--ez-bar",
+      "decision": "approve",
+      "reason": "Independent review approves row--cable--ez-bar: the row signature [cable, ez-bar] is a stable identity; source seated-cable-row supplies populated metadata, and only the reviewed aliases (ez bar cable row) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--bodyweight: the pull-up-pulldown signature [bodyweight] is a stable identity; source pull-up supplies populated metadata, and only the reviewed aliases (bodyweight pull-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable",
+      "decision": "revise",
+      "reason": "Independent review revises pull-up-pulldown--cable: source neutral-grip-lat-pulldown does not safely support the full [cable] identity; use reviewed base cable-pulldown and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable"
+        ],
+        "metadataFromExerciseId": "cable-pulldown",
+        "approvedAliases": [
+          "cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--machine",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--machine: the pull-up-pulldown signature [machine] is a stable identity; source reverse-grip-machine-lat-pulldown supplies populated metadata, and only the reviewed aliases (machine pulldown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--band",
+      "decision": "reject",
+      "reason": "Independent review rejects pull-up-pulldown--band: No generic band pulldown source is populated: the available band candidates are close-grip, fixed-back, underhand, or kneeling one-arm, so approving this generic signature would erase a concrete grip or support identity."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--pronated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects pull-up-pulldown--bodyweight--pronated-grip: Rejected: pronated bodyweight pull-up is already the represented pull-up anchor, so this adds a redundant signature. Source pull-up is not used to emit this signature."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--supinated-grip",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--bodyweight--supinated-grip: the pull-up-pulldown signature [bodyweight, supinated-grip] is a stable identity; source chin-up supplies populated metadata, and only the reviewed aliases (supinated grip bodyweight pull-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--bodyweight--neutral-grip: the pull-up-pulldown signature [bodyweight, neutral-grip] is a stable identity; source pull-up supplies populated metadata, and only the reviewed aliases (neutral grip bodyweight pull-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--pronated-grip",
+      "decision": "revise",
+      "reason": "Independent review revises pull-up-pulldown--cable--pronated-grip: source neutral-grip-lat-pulldown does not safely support the full [cable, pronated-grip] identity; use reviewed base cable-pulldown and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--pronated-grip",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "pronated-grip"
+        ],
+        "metadataFromExerciseId": "cable-pulldown",
+        "approvedAliases": [
+          "pronated grip cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--supinated-grip",
+      "decision": "revise",
+      "reason": "Independent review revises pull-up-pulldown--cable--supinated-grip: source neutral-grip-lat-pulldown does not safely support the full [cable, supinated-grip] identity; use reviewed base cable-underhand-pulldown and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--supinated-grip",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "supinated-grip"
+        ],
+        "metadataFromExerciseId": "cable-underhand-pulldown",
+        "approvedAliases": [
+          "supinated grip cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--cable--neutral-grip: the pull-up-pulldown signature [cable, neutral-grip] is a stable identity; source neutral-grip-lat-pulldown supplies populated metadata, and only the reviewed aliases (neutral grip cable pulldown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--bodyweight--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--bodyweight--single-arm: the pull-up-pulldown signature [bodyweight, single-arm] is a stable identity; source pull-up supplies populated metadata, and only the reviewed aliases (single arm bodyweight pull-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves pull-up-pulldown--cable--single-arm: the pull-up-pulldown signature [cable, single-arm] is a stable identity; source one-arm-lat-pulldown supplies populated metadata, and only the reviewed aliases (single arm cable pulldown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--rope",
+      "decision": "revise",
+      "reason": "Independent review revises pull-up-pulldown--cable--rope: source neutral-grip-lat-pulldown does not safely support the full [cable, rope] identity; use reviewed base cable-lateral-pulldown-with-rope-attachment and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--rope",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "rope"
+        ],
+        "metadataFromExerciseId": "cable-lateral-pulldown-with-rope-attachment",
+        "approvedAliases": [
+          "rope cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--straight-bar",
+      "decision": "revise",
+      "reason": "Independent review revises pull-up-pulldown--cable--straight-bar: source wide-grip-lat-pulldown does not safely support the full [cable, straight-bar] identity; use reviewed base cable-bar-lateral-pulldown and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "pull-up-pulldown--cable--straight-bar",
+        "movementId": "pull-up-pulldown",
+        "movementModifierIds": [
+          "cable",
+          "straight-bar"
+        ],
+        "metadataFromExerciseId": "cable-bar-lateral-pulldown",
+        "approvedAliases": [
+          "straight bar cable pulldown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "pull-up-pulldown--cable--ez-bar",
+      "decision": "reject",
+      "reason": "Independent review rejects pull-up-pulldown--cable--ez-bar: Rejected: the frozen catalogue has no populated cable EZ-bar pulldown base; a V-bar or generic cable source would misstate the attachment. Source neutral-grip-lat-pulldown is not used to emit this signature."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--barbell--overhead: the overhead-landmine-press signature [barbell, overhead] is a stable identity; source barbell-shoulder-press supplies populated metadata, and only the reviewed aliases (barbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--dumbbell--overhead: the overhead-landmine-press signature [dumbbell, overhead] is a stable identity; source dumbbell-standing-overhead-press supplies populated metadata, and only the reviewed aliases (dumbbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--kettlebell--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--kettlebell--overhead: the overhead-landmine-press signature [kettlebell, overhead] is a stable identity; source two-arm-kettlebell-military-press supplies populated metadata, and only the reviewed aliases (kettlebell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--cable--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--cable--overhead: the overhead-landmine-press signature [cable, overhead] is a stable identity; source cable-shoulder-press supplies populated metadata, and only the reviewed aliases (cable overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--machine--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--machine--overhead: the overhead-landmine-press signature [machine, overhead] is a stable identity; source lever-shoulder-press supplies populated metadata, and only the reviewed aliases (machine overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--landmine: the overhead-landmine-press signature [landmine] is a stable identity; source landmine-press supplies populated metadata, and only the reviewed aliases (landmine press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--seated",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--barbell--seated: the overhead-landmine-press signature [barbell, seated] is a stable identity; source barbell-seated-overhead-press supplies populated metadata, and only the reviewed aliases (seated barbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--seated",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--dumbbell--seated: the overhead-landmine-press signature [dumbbell, seated] is a stable identity; source seated-dumbbell-press supplies populated metadata, and only the reviewed aliases (seated dumbbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--dumbbell--neutral-grip: the overhead-landmine-press signature [dumbbell, neutral-grip] is a stable identity; source dumbbell-seated-shoulder-press-parallel-grip supplies populated metadata, and only the reviewed aliases (neutral grip dumbbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--dumbbell--single-arm: the overhead-landmine-press signature [dumbbell, single-arm] is a stable identity; source dumbbell-one-arm-shoulder-press supplies populated metadata, and only the reviewed aliases (single arm dumbbell overhead press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine--neutral-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects overhead-landmine-press--landmine--neutral-grip: Rejected: neutral grip is the ordinary landmine handle orientation and is redundant without a separate source distinction. Source landmine-press is not used to emit this signature."
+    },
+    {
+      "candidateId": "overhead-landmine-press--landmine--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves overhead-landmine-press--landmine--single-arm: the overhead-landmine-press signature [landmine, single-arm] is a stable identity; source landmine-press supplies populated metadata, and only the reviewed aliases (single arm landmine press) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "overhead-landmine-press--barbell--overhead--neutral-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects overhead-landmine-press--barbell--overhead--neutral-grip: Rejected: a plain barbell overhead press does not provide a stable neutral-grip identity; the combination is mechanically misleading. Source barbell-shoulder-press is not used to emit this signature."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell: the lunge-split-squat signature [dumbbell] is a stable identity; source dumbbell-lunges supplies populated metadata, and only the reviewed aliases (dumbbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--barbell: the lunge-split-squat signature [barbell] is a stable identity; source barbell-lunge supplies populated metadata, and only the reviewed aliases (barbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--kettlebell",
+      "decision": "reject",
+      "reason": "Independent review rejects lunge-split-squat--kettlebell: The only populated kettlebell lunge source is kettlebell-lunge-pass-through, whose pass-through identity cannot support a generic kettlebell lunge rule."
+    },
+    {
+      "candidateId": "lunge-split-squat--bodyweight",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--bodyweight: the lunge-split-squat signature [bodyweight] is a stable identity; source bodyweight-lunge-hd supplies populated metadata, and only the reviewed aliases (bodyweight lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--split-stance",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--split-stance: the lunge-split-squat signature [dumbbell, split-stance] is a stable identity; source dumbbell-lunges supplies populated metadata, and only the reviewed aliases (split stance dumbbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--staggered-stance",
+      "decision": "reject",
+      "reason": "Independent review rejects lunge-split-squat--dumbbell--staggered-stance: Rejected: staggered stance is not independently distinguishable from the lunge/split-stance family here and would duplicate a weakly specified setup. Source dumbbell-lunges is not used to emit this signature."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--bench-supported",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--bench-supported: the lunge-split-squat signature [dumbbell, bench-supported] is a stable identity; source bulgarian-split-squat supplies populated metadata, and only the reviewed aliases (bench supported dumbbell split squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--barbell--single-leg",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--barbell--single-leg: the lunge-split-squat signature [barbell, single-leg] is a stable identity; source barbell-single-leg-split-squat supplies populated metadata, and only the reviewed aliases (single leg barbell split squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--single-leg",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--single-leg: the lunge-split-squat signature [dumbbell, single-leg] is a stable identity; source dumbbell-single-leg-split-squat supplies populated metadata, and only the reviewed aliases (single leg dumbbell split squat) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--paused",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--paused: the lunge-split-squat signature [dumbbell, paused] is a stable identity; source dumbbell-lunges supplies populated metadata, and only the reviewed aliases (paused dumbbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--deficit",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--deficit: the lunge-split-squat signature [dumbbell, deficit] is a stable identity; source dumbbell-lunges supplies populated metadata, and only the reviewed aliases (deficit dumbbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "lunge-split-squat--dumbbell--partial",
+      "decision": "approve",
+      "reason": "Independent review approves lunge-split-squat--dumbbell--partial: the lunge-split-squat signature [dumbbell, partial] is a stable identity; source dumbbell-lunges supplies populated metadata, and only the reviewed aliases (partial dumbbell lunge) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight: the push-up signature [bodyweight] is a stable identity; source push-up supplies populated metadata, and only the reviewed aliases (bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--band",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--band: the push-up signature [band] is a stable identity; source push-up supplies populated metadata, and only the reviewed aliases (band push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight--neutral-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects push-up--bodyweight--neutral-grip: Close-handle and close-grip push-up vocabulary does not establish neutral grip; the generic push-up base has no neutral-handle evidence and the closest close-grip records are distinct identities."
+    },
+    {
+      "candidateId": "push-up--bodyweight--incline",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight--incline: the push-up signature [bodyweight, incline] is a stable identity; source incline-push-up supplies populated metadata, and only the reviewed aliases (incline bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight--decline",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight--decline: the push-up signature [bodyweight, decline] is a stable identity; source decline-push-up supplies populated metadata, and only the reviewed aliases (decline bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight--paused",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight--paused: the push-up signature [bodyweight, paused] is a stable identity; source push-up supplies populated metadata, and only the reviewed aliases (paused bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight--partial",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight--partial: the push-up signature [bodyweight, partial] is a stable identity; source push-up supplies populated metadata, and only the reviewed aliases (partial bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--bodyweight--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--bodyweight--single-arm: the push-up signature [bodyweight, single-arm] is a stable identity; source single-arm-push-up supplies populated metadata, and only the reviewed aliases (single arm bodyweight push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--band--incline",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--band--incline: the push-up signature [band, incline] is a stable identity; source incline-push-up supplies populated metadata, and only the reviewed aliases (incline band push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "push-up--band--decline",
+      "decision": "approve",
+      "reason": "Independent review approves push-up--band--decline: the push-up signature [band, decline] is a stable identity; source decline-push-up supplies populated metadata, and only the reviewed aliases (decline band push-up) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves curl--dumbbell: the curl signature [dumbbell] is a stable identity; source dumbbell-biceps-curl supplies populated metadata, and only the reviewed aliases (dumbbell curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves curl--barbell: the curl signature [barbell] is a stable identity; source barbell-curl supplies populated metadata, and only the reviewed aliases (barbell curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--cable",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable: the curl signature [cable] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--machine",
+      "decision": "reject",
+      "reason": "Independent review rejects curl--machine: The populated machine curl sources are preacher or hammer variants; using lever-preacher-curl would erase preacher support, while the generic curl-machine record is empty and cannot supply metadata."
+    },
+    {
+      "candidateId": "curl--dumbbell--supinated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects curl--dumbbell--supinated-grip: Rejected: ordinary dumbbell curls are already supinated; no separate source-backed version justifies another identity. Source dumbbell-biceps-curl is not used to emit this signature."
+    },
+    {
+      "candidateId": "curl--dumbbell--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves curl--dumbbell--neutral-grip: the curl signature [dumbbell, neutral-grip] is a stable identity; source hammer-curl supplies populated metadata, and only the reviewed aliases (neutral grip dumbbell curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Independent review approves curl--dumbbell--incline: the curl signature [dumbbell, incline] is a stable identity; source dumbbell-incline-curl supplies populated metadata, and only the reviewed aliases (incline dumbbell curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--dumbbell--single-arm",
+      "decision": "revise",
+      "reason": "Independent review revises curl--dumbbell--single-arm: source standing-one-arm-dumbbell-curl-over-incline-bench does not safely support the full [dumbbell, single-arm] identity; use reviewed base dumbbell-one-arm-standing-curl and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "curl--dumbbell--single-arm",
+        "movementId": "curl",
+        "movementModifierIds": [
+          "dumbbell",
+          "single-arm"
+        ],
+        "metadataFromExerciseId": "dumbbell-one-arm-standing-curl",
+        "approvedAliases": [
+          "single arm dumbbell curl"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "curl--cable--supinated-grip",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable--supinated-grip: the curl signature [cable, supinated-grip] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (supinated grip cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--cable--neutral-grip",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable--neutral-grip: the curl signature [cable, neutral-grip] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (neutral grip cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--cable--rope",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable--rope: the curl signature [cable, rope] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (rope cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable--straight-bar: the curl signature [cable, straight-bar] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (straight bar cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--cable--ez-bar",
+      "decision": "approve",
+      "reason": "Independent review approves curl--cable--ez-bar: the curl signature [cable, ez-bar] is a stable identity; source cable-curl supplies populated metadata, and only the reviewed aliases (ez bar cable curl) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "curl--barbell--supinated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects curl--barbell--supinated-grip: Rejected: ordinary barbell curls are inherently supinated, making this signature redundant with the barbell curl anchor. Source barbell-curl is not used to emit this signature."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--cable: the triceps-extension-pushdown signature [cable] is a stable identity; source cable-pushdown supplies populated metadata, and only the reviewed aliases (cable triceps pushdown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--dumbbell: the triceps-extension-pushdown signature [dumbbell] is a stable identity; source dumbbell-triceps-extension supplies populated metadata, and only the reviewed aliases (dumbbell triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--machine",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--machine: the triceps-extension-pushdown signature [machine] is a stable identity; source lever-triceps-extension supplies populated metadata, and only the reviewed aliases (machine triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--band",
+      "decision": "reject",
+      "reason": "Independent review rejects triceps-extension-pushdown--band: The populated band-side-triceps-extension source carries a side-extension identity, while the other band source is overhead and speed-labelled; neither supports a generic band extension signature."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--cable--overhead: the triceps-extension-pushdown signature [cable, overhead] is a stable identity; source cable-high-pulley-overhead-tricep-extension supplies populated metadata, and only the reviewed aliases (overhead cable triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--dumbbell--overhead: the triceps-extension-pushdown signature [dumbbell, overhead] is a stable identity; source dumbbell-triceps-extension supplies populated metadata, and only the reviewed aliases (overhead dumbbell triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--dumbbell--single-arm: the triceps-extension-pushdown signature [dumbbell, single-arm] is a stable identity; source standing-one-arm-dumbbell-triceps-extension supplies populated metadata, and only the reviewed aliases (single arm dumbbell triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--cable--single-arm: the triceps-extension-pushdown signature [cable, single-arm] is a stable identity; source cable-pushdown supplies populated metadata, and only the reviewed aliases (single arm cable triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--rope",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--cable--rope: the triceps-extension-pushdown signature [cable, rope] is a stable identity; source cable-pushdown-with-rope-attachment supplies populated metadata, and only the reviewed aliases (rope cable triceps pushdown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--straight-bar",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--cable--straight-bar: the triceps-extension-pushdown signature [cable, straight-bar] is a stable identity; source cable-pushdown supplies populated metadata, and only the reviewed aliases (straight bar cable triceps pushdown) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--cable--ez-bar",
+      "decision": "revise",
+      "reason": "Independent review revises triceps-extension-pushdown--cable--ez-bar: source cable-triceps-pushdown-v-bar does not safely support the full [cable, ez-bar] identity; use reviewed base cable-pushdown and retain only aliases carrying the declared markers.",
+      "revisedRule": {
+        "id": "triceps-extension-pushdown--cable--ez-bar",
+        "movementId": "triceps-extension-pushdown",
+        "movementModifierIds": [
+          "cable",
+          "ez-bar"
+        ],
+        "metadataFromExerciseId": "cable-pushdown",
+        "approvedAliases": [
+          "ez bar cable triceps pushdown"
+        ],
+        "coverageTier": 1,
+        "status": "approved"
+      }
+    },
+    {
+      "candidateId": "triceps-extension-pushdown--band--overhead",
+      "decision": "approve",
+      "reason": "Independent review approves triceps-extension-pushdown--band--overhead: the triceps-extension-pushdown signature [band, overhead] is a stable identity; source speed-band-overhead-triceps supplies populated metadata, and only the reviewed aliases (overhead band triceps extension) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--dumbbell: the raise-fly signature [dumbbell] is a stable identity; source lateral-raise-dumbbell supplies populated metadata, and only the reviewed aliases (dumbbell lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--cable",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--cable: the raise-fly signature [cable] is a stable identity; source cable-lateral-raise supplies populated metadata, and only the reviewed aliases (cable lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--machine",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--machine: the raise-fly signature [machine] is a stable identity; source lateral-raise-dumbbell supplies populated metadata, and only the reviewed aliases (machine lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--band",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--band: the raise-fly signature [band] is a stable identity; source cable-lateral-raise supplies populated metadata, and only the reviewed aliases (band lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--incline",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--dumbbell--incline: the raise-fly signature [dumbbell, incline] is a stable identity; source dumbbell-incline-shoulder-raise supplies populated metadata, and only the reviewed aliases (incline dumbbell raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--dumbbell--single-arm: the raise-fly signature [dumbbell, single-arm] is a stable identity; source dumbbell-one-arm-lateral-raise supplies populated metadata, and only the reviewed aliases (single arm dumbbell lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--cable--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--cable--single-arm: the raise-fly signature [cable, single-arm] is a stable identity; source cable-lateral-raise supplies populated metadata, and only the reviewed aliases (single arm cable lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--strict",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--dumbbell--strict: the raise-fly signature [dumbbell, strict] is a stable identity; source lateral-raise-dumbbell supplies populated metadata, and only the reviewed aliases (strict dumbbell lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--cable--strict",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--cable--strict: the raise-fly signature [cable, strict] is a stable identity; source cable-lateral-raise supplies populated metadata, and only the reviewed aliases (strict cable lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--band--strict",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--band--strict: the raise-fly signature [band, strict] is a stable identity; source cable-lateral-raise supplies populated metadata, and only the reviewed aliases (strict band lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--machine--strict",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--machine--strict: the raise-fly signature [machine, strict] is a stable identity; source lateral-raise-dumbbell supplies populated metadata, and only the reviewed aliases (strict machine lateral raise) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--dumbbell--fly",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--dumbbell--fly: the raise-fly signature [dumbbell, fly] is a stable identity; source dumbbell-fly supplies populated metadata, and only the reviewed aliases (dumbbell fly) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--cable--fly",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--cable--fly: the raise-fly signature [cable, fly] is a stable identity; source cable-fly supplies populated metadata, and only the reviewed aliases (cable fly) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--machine--fly",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--machine--fly: the raise-fly signature [machine, fly] is a stable identity; source machine-chest-fly supplies populated metadata, and only the reviewed aliases (machine fly) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "raise-fly--band--fly",
+      "decision": "approve",
+      "reason": "Independent review approves raise-fly--band--fly: the raise-fly signature [band, fly] is a stable identity; source back-flyes-with-bands supplies populated metadata, and only the reviewed aliases (band fly) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell",
+      "decision": "revise",
+      "reason": "Independent review revises loaded-carry--dumbbell: source farmer-carry does not safely support the full [dumbbell] identity; use reviewed base farmer-carry and retain only aliases carrying the declared markers. Equipment is explicitly narrowed to dumbbell.",
+      "revisedRule": {
+        "id": "loaded-carry--dumbbell",
+        "movementId": "loaded-carry",
+        "movementModifierIds": [
+          "dumbbell"
+        ],
+        "metadataFromExerciseId": "farmer-carry",
+        "approvedAliases": [
+          "dumbbell farmer carry"
+        ],
+        "coverageTier": 1,
+        "status": "approved",
+        "metadataOverrides": {
+          "equipment": [
+            "dumbbell"
+          ]
+        }
+      }
+    },
+    {
+      "candidateId": "loaded-carry--barbell",
+      "decision": "approve",
+      "reason": "Independent review approves loaded-carry--barbell: the loaded-carry signature [barbell] is a stable identity; source farmer-carry supplies populated metadata, and only the reviewed aliases (barbell loaded carry) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--kettlebell",
+      "decision": "revise",
+      "reason": "Independent review revises loaded-carry--kettlebell: source farmer-carry does not safely support the full [kettlebell] identity; use reviewed base farmer-carry and retain only aliases carrying the declared markers. Equipment is explicitly narrowed to kettlebell.",
+      "revisedRule": {
+        "id": "loaded-carry--kettlebell",
+        "movementId": "loaded-carry",
+        "movementModifierIds": [
+          "kettlebell"
+        ],
+        "metadataFromExerciseId": "farmer-carry",
+        "approvedAliases": [
+          "kettlebell loaded carry"
+        ],
+        "coverageTier": 1,
+        "status": "approved",
+        "metadataOverrides": {
+          "equipment": [
+            "kettlebell"
+          ]
+        }
+      }
+    },
+    {
+      "candidateId": "loaded-carry--trap-bar",
+      "decision": "approve",
+      "reason": "Independent review approves loaded-carry--trap-bar: the loaded-carry signature [trap-bar] is a stable identity; source trap-bar-carry supplies populated metadata, and only the reviewed aliases (trap bar loaded carry) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--pronated-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects loaded-carry--dumbbell--pronated-grip: The farmer-carry source documents the ordinary neutral carry rather than a pronated grip, and the frozen catalogue has no populated pronated dumbbell-carry source to support this signature."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--neutral-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects loaded-carry--dumbbell--neutral-grip: Neutral grip is inherent in the farmer-carry source and duplicates the generic dumbbell loaded-carry identity; no separate neutral-handle source justifies a second signature."
+    },
+    {
+      "candidateId": "loaded-carry--dumbbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves loaded-carry--dumbbell--single-arm: the loaded-carry signature [dumbbell, single-arm] is a stable identity; source farmer-carry supplies populated metadata, and only the reviewed aliases (single arm dumbbell carry) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--barbell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves loaded-carry--barbell--single-arm: the loaded-carry signature [barbell, single-arm] is a stable identity; source farmer-carry supplies populated metadata, and only the reviewed aliases (single arm barbell carry) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--kettlebell--single-arm",
+      "decision": "approve",
+      "reason": "Independent review approves loaded-carry--kettlebell--single-arm: the loaded-carry signature [kettlebell, single-arm] is a stable identity; source farmer-carry supplies populated metadata, and only the reviewed aliases (single arm kettlebell carry) are eligible for the emitted variant."
+    },
+    {
+      "candidateId": "loaded-carry--trap-bar--neutral-grip",
+      "decision": "reject",
+      "reason": "Independent review rejects loaded-carry--trap-bar--neutral-grip: Rejected: the trap-bar carry already has a fixed neutral handle orientation, so this adds no independent identity. Source trap-bar-carry is not used to emit this signature."
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "id": "squat",
+      "name": "Squat",
+      "aliases": [],
+      "sortOrder": 1,
+      "allowedModifierCategories": [
+        "implement",
+        "position",
+        "stance",
+        "range-of-motion",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "bodyweight",
+        "back-rack",
+        "front-rack",
+        "high-bar",
+        "low-bar",
+        "split-stance",
+        "paused",
+        "deficit",
+        "partial",
+        "single-leg"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "bench-press",
+      "name": "Bench Press",
+      "aliases": [],
+      "sortOrder": 2,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "support",
+        "range-of-motion",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "cable",
+        "machine",
+        "bodyweight",
+        "pronated-grip",
+        "neutral-grip",
+        "incline",
+        "decline",
+        "paused",
+        "partial",
+        "single-arm"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "deadlift-hinge",
+      "name": "Deadlift and Hinge",
+      "aliases": [
+        "hinge"
+      ],
+      "sortOrder": 3,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "stance",
+        "range-of-motion",
+        "laterality",
+        "execution"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "trap-bar",
+        "bodyweight",
+        "pronated-grip",
+        "mixed-grip",
+        "hook-grip",
+        "sumo",
+        "staggered-stance",
+        "paused",
+        "deficit",
+        "partial",
+        "single-leg",
+        "hinge",
+        "romanian"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "row",
+      "name": "Row",
+      "aliases": [],
+      "sortOrder": 4,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "support",
+        "laterality",
+        "attachment"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "cable",
+        "machine",
+        "band",
+        "pronated-grip",
+        "supinated-grip",
+        "neutral-grip",
+        "chest-supported",
+        "bench-supported",
+        "single-arm",
+        "rope",
+        "straight-bar",
+        "ez-bar"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "pull-up-pulldown",
+      "name": "Pull-up and Pulldown",
+      "aliases": [
+        "vertical pull"
+      ],
+      "sortOrder": 5,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "support",
+        "laterality",
+        "attachment"
+      ],
+      "allowedModifierIds": [
+        "bodyweight",
+        "cable",
+        "machine",
+        "band",
+        "pronated-grip",
+        "supinated-grip",
+        "neutral-grip",
+        "single-arm",
+        "rope",
+        "straight-bar",
+        "ez-bar"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "overhead-landmine-press",
+      "name": "Overhead and Landmine Press",
+      "aliases": [
+        "vertical press"
+      ],
+      "sortOrder": 6,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "position",
+        "support",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "cable",
+        "machine",
+        "landmine",
+        "pronated-grip",
+        "neutral-grip",
+        "overhead",
+        "seated",
+        "single-arm"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "lunge-split-squat",
+      "name": "Lunge and Split Squat",
+      "aliases": [],
+      "sortOrder": 7,
+      "allowedModifierCategories": [
+        "implement",
+        "stance",
+        "support",
+        "range-of-motion",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "bodyweight",
+        "split-stance",
+        "staggered-stance",
+        "bench-supported",
+        "paused",
+        "deficit",
+        "partial",
+        "single-leg"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "push-up",
+      "name": "Push-up",
+      "aliases": [],
+      "sortOrder": 8,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "support",
+        "range-of-motion",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "bodyweight",
+        "band",
+        "pronated-grip",
+        "neutral-grip",
+        "incline",
+        "decline",
+        "paused",
+        "partial",
+        "single-arm"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "curl",
+      "name": "Curl",
+      "aliases": [],
+      "sortOrder": 9,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "support",
+        "laterality",
+        "attachment"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "cable",
+        "machine",
+        "band",
+        "supinated-grip",
+        "neutral-grip",
+        "incline",
+        "single-arm",
+        "rope",
+        "straight-bar",
+        "ez-bar"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "triceps-extension-pushdown",
+      "name": "Triceps Extension and Pushdown",
+      "aliases": [],
+      "sortOrder": 10,
+      "allowedModifierCategories": [
+        "implement",
+        "position",
+        "support",
+        "laterality",
+        "attachment"
+      ],
+      "allowedModifierIds": [
+        "dumbbell",
+        "cable",
+        "machine",
+        "band",
+        "overhead",
+        "single-arm",
+        "rope",
+        "straight-bar",
+        "ez-bar"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "raise-fly",
+      "name": "Raise and Fly",
+      "aliases": [],
+      "sortOrder": 11,
+      "allowedModifierCategories": [
+        "implement",
+        "support",
+        "laterality",
+        "execution"
+      ],
+      "allowedModifierIds": [
+        "dumbbell",
+        "cable",
+        "machine",
+        "band",
+        "incline",
+        "single-arm",
+        "strict",
+        "fly"
+      ],
+      "maxIdentityModifiers": 4,
+      "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "loaded-carry",
+      "name": "Loaded Carry",
+      "aliases": [],
+      "sortOrder": 12,
+      "allowedModifierCategories": [
+        "implement",
+        "grip",
+        "laterality"
+      ],
+      "allowedModifierIds": [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "trap-bar",
+        "pronated-grip",
+        "neutral-grip",
+        "single-arm"
+      ],
+      "maxIdentityModifiers": 3,
+      "displayTemplate": "{modifiers} {movement}"
+    }
+  ]
+}

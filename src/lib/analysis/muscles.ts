@@ -60,9 +60,22 @@ export function mapMuscleExpanded(label: string): MuscleGroup[] {
   return single ? [single] : [];
 }
 
+/**
+ * Analysis reads muscles, equipment and movement patterns off ONE concrete
+ * catalogue record, and deliberately resolves no movement family. A correction
+ * changes how an exercise is grouped, never what it trains, so routing this
+ * through the resolver would add a dependency that cannot change the answer.
+ *
+ * Two consequences, stated rather than hidden. An id with no current catalogue
+ * record — a user-exercise id (selectable in pickers since Task 11) or a legacy
+ * id — returns `undefined`, and `balance.ts` then falls back to the exercise's
+ * own analysis tags. And the legacy redirect table is not consulted; it ships
+ * empty (`legacyRedirects.generated.json` has zero records, because no concrete
+ * ids were merged), so there is nothing for it to find today.
+ */
 export function lookupCatalogExercise(exercise: ProgramExercise): ExerciseCatalogItem | undefined {
   if (exercise.canonicalExerciseId) {
-    return catalogIndex.get(exercise.canonicalExerciseId);
+    return catalogIndex.get(exercise.canonicalExerciseId); // Exact concrete metadata lookup; grouping is intentionally not performed here.
   }
   return undefined;
 }

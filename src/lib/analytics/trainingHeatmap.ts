@@ -1,5 +1,6 @@
 // src/lib/analytics/trainingHeatmap.ts
 import type { WorkoutLogDocument } from "@/lib/programs/types";
+import { readableEntries, readableSets } from "@/lib/workout/historyUtils";
 
 export type HeatmapCell = {
   intensity: 0 | 1 | 2 | 3 | 4;
@@ -37,8 +38,16 @@ export function buildHeatmapCells(
   for (const log of logs) {
     const date = log.performedAt.slice(0, 10);
     let vol = 0;
-    for (const entry of log.entries) {
-      for (const s of entry.sets) {
+    // Task 12's shared guards rather than a third variant: `appDb.ts:181-191`
+    // keeps a log whose `entries` is unreadable, and logs predating the field
+    // have no `entries` key at all, so the raw `for...of` here threw out of
+    // ProfileClient's un-caught `logRepo.list().then(...)` and took the whole
+    // heatmap with it. A string is *iterable*, so the unguarded read did not
+    // even fail loudly for every shape — `entries: "corrupt"` iterated seven
+    // characters — which is why zero volume from an unreadable value is the
+    // behaviour, not merely "does not throw".
+    for (const { entry } of readableEntries(log)) {
+      for (const s of readableSets(entry)) {
         const effectiveWeight = s.weight ?? 70; // 70kg nominal for bodyweight exercises
         vol += effectiveWeight * (s.reps ?? 1);
       }

@@ -1,5 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { deleteDB } from "idb";
+import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
+import type { ProgramExercise } from "@/lib/programs/types";
+import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 import { ExerciseEditSheet } from "./ExerciseEditSheet";
 
 const baseExercise = {
@@ -55,5 +59,72 @@ describe("ExerciseEditSheet", () => {
     await user.clear(screen.getByLabelText(/load/i));
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(onSave.mock.calls[0][0].load).toBeUndefined();
+  });
+});
+
+// The editor links to the shared correction sheet rather than growing its own
+// identity controls between the sets/reps/load fields.
+describe("ExerciseEditSheet — identity correction", () => {
+  beforeEach(async () => {
+    resetDbConnection();
+    await deleteDB(DB_NAME);
+    resetDbConnection();
+  });
+
+  // The provider reads three stores when it mounts. A test that asserts
+  // something is ABSENT never waits for those reads, so without this flush the
+  // next `deleteDB` races a live connection and fake-indexeddb throws
+  // `InvalidStateError` after the suite has already reported green.
+  afterEach(() => {
+    resetDbConnection();
+  });
+
+  /**
+   * Waits for the sheet to be READ, not merely mounted.
+   *
+   * The provider reads three stores when it mounts and the sheet renders
+   * "Reading stored corrections…" until they land. A test that stopped at the
+   * region left those reads in flight, so the next `beforeEach` closed the
+   * connection under them and fake-indexeddb threw `InvalidStateError` — every
+   * run under `--maxWorkers=24`, and none under `--runInBand`.
+   */
+  async function loadedSheet(name: string) {
+    const sheet = await screen.findByRole("region", { name });
+    await waitFor(() => expect(within(sheet).queryByText("Reading stored corrections…")).toBeNull());
+    return sheet;
+  }
+
+  function renderInApp(exercise: ProgramExercise) {
+    render(
+      <ExerciseNormalizationProvider>
+        <ExerciseEditSheet exercise={exercise} onSave={() => undefined} onClose={() => undefined} />
+      </ExerciseNormalizationProvider>,
+    );
+  }
+
+  it("opens the shared correction sheet for a catalogue exercise, but only when asked", async () => {
+    const user = userEvent.setup();
+    renderInApp({ ...baseExercise, name: "High Bar Back Squat", canonicalExerciseId: "barbell-high-bar-squat" });
+
+    // Quiet by default: the editor is sets, reps, load and notes until the user
+    // asks about identity.
+    expect(screen.queryByRole("region", { name: /^Correct / })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /change movement/i }));
+
+    const sheet = await loadedSheet("Correct High Bar Back Squat");
+    // The bundled entry, not the text: a name-only target would carry the same
+    // label, so the kind tag is what tells the two apart.
+    expect(within(sheet).getByText("bundled")).toBeInTheDocument();
+  });
+
+  it("corrects a name-only exercise by its name", async () => {
+    const user = userEvent.setup();
+    renderInApp({ ...baseExercise, name: "Wobble Board Thing" });
+
+    await user.click(screen.getByRole("button", { name: /change movement/i }));
+
+    const sheet = await loadedSheet("Correct Wobble Board Thing");
+    expect(within(sheet).getByText("name only")).toBeInTheDocument();
   });
 });

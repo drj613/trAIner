@@ -7,6 +7,12 @@ process.env.TZ = process.env.TZ || "America/New_York";
 module.exports = {
   setupFiles: ["fake-indexeddb/auto"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  // The catalogue is ~3,200 exercises, so the RTL tests that render a whole
+  // muscle section or type a query char-by-char legitimately take seconds in
+  // jsdom. Under parallel CI load that overran the 5s default and failed as a
+  // timeout, and a test killed mid-click leaves pending React work that fails
+  // the next test too. Real hangs still fail here, just later.
+  testTimeout: 30000,
   testEnvironment: "jsdom",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
@@ -15,7 +21,7 @@ module.exports = {
   transform: {
     "^.+\\.(ts|tsx|js)$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
   },
-  collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts"],
+  collectCoverageFrom: ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "!src/**/*.d.ts"],
   testPathIgnorePatterns: [
     "<rootDir>/node_modules/",
     "<rootDir>/.worktrees/",

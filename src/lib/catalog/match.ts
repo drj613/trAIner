@@ -1,10 +1,47 @@
 import { exerciseCatalog, type ExerciseCatalogItem } from "./exercises";
-import { normalizeExerciseName, similarity } from "./normalize";
+import { similarity } from "./normalize";
+import {
+  prepareImportName,
+  resolveExerciseIdentity,
+  type ExerciseIdentityContext,
+  type IdentityAlias,
+  type NormalizationOverrideDocument,
+} from "./identity";
+import {
+  disambiguationsByNormalizedName,
+  legacyExerciseIdRedirects,
+  modifiersById,
+  movementsById,
+} from "./registries";
 import type { AliasDocument, ExerciseSuggestion, UserExerciseDocument } from "@/lib/programs/types";
 
+export type MatchVia = "canonical" | "alias" | "normalized" | "user-alias" | "user-exercise";
+
 export type MatchResult =
-  | { kind: "matched"; item: ExerciseCatalogItem; via: "canonical" | "alias" | "normalized" | "user-alias" | "user-exercise" }
-  | { kind: "unmatched"; suggestions: ExerciseSuggestion[] };
+  | { kind: "matched"; item: ExerciseCatalogItem; via: MatchVia }
+  | {
+      kind: "underspecified";
+      movementId: string;
+      candidates: ExerciseSuggestion[];
+      matchedModifierIds: string[];
+      nonIdentityAnnotations: string[];
+    }
+  | { kind: "unmatched"; suggestions: ExerciseSuggestion[]; nonIdentityAnnotations: string[] };
+
+export type MatchExerciseContext = Pick<
+  ExerciseIdentityContext,
+  "catalogById" | "movementsById" | "modifiersById" | "redirects" | "disambiguations"
+> & {
+  normalizationOverrides?: readonly NormalizationOverrideDocument[];
+};
+
+const defaultMatchContext: MatchExerciseContext = {
+  catalogById: new Map(exerciseCatalog.map((item) => [item.id, item])),
+  movementsById,
+  modifiersById,
+  redirects: legacyExerciseIdRedirects,
+  disambiguations: disambiguationsByNormalizedName,
+};
 
 function userExToItem(ex: UserExerciseDocument): ExerciseCatalogItem {
   return {
@@ -15,44 +52,73 @@ function userExToItem(ex: UserExerciseDocument): ExerciseCatalogItem {
     movementPatterns: [],
     muscles: { primary: [], secondary: [] },
     tags: [],
+    movementModifierIds: [],
   };
 }
 
 export function matchExercise(
   name: string,
-  userAliases: AliasDocument[] = [],
-  userExercises: UserExerciseDocument[] = [],
+  userAliases: readonly (AliasDocument | IdentityAlias)[] = [],
+  userExercises: readonly UserExerciseDocument[] = [],
+  matchContext: MatchExerciseContext = defaultMatchContext,
 ): MatchResult {
-  const normalized = normalizeExerciseName(name);
+  const context: ExerciseIdentityContext = {
+    ...matchContext,
+    aliases: userAliases,
+    userExercises,
+    normalizationOverrides: matchContext.normalizationOverrides ?? [],
+  };
+  const prepared = prepareImportName(name, context.disambiguations);
+  const directIdentity = resolveExerciseIdentity(
+    { kind: "catalog-reference", canonicalExerciseId: name },
+    context,
+  );
+  const identity = directIdentity.concreteExerciseId
+    ? directIdentity
+    : resolveExerciseIdentity({ kind: "import-name", name }, context);
 
-  const canonical = exerciseCatalog.find((item) => item.id === normalized);
-  if (canonical) return { kind: "matched", item: canonical, via: "canonical" };
-
-  const userAlias = userAliases.find((alias) => alias.normalizedAlias === normalized);
-  if (userAlias) {
-    const catalogItem = exerciseCatalog.find((exercise) => exercise.id === userAlias.canonicalExerciseId);
-    if (catalogItem) return { kind: "matched", item: catalogItem, via: "user-alias" };
-    const userItem = userExercises.find((ex) => ex.id === userAlias.canonicalExerciseId);
-    if (userItem) return { kind: "matched", item: userExToItem(userItem), via: "user-alias" };
+  if (identity.specificity === "underspecified" && identity.movementId) {
+    const rule = context.disambiguations.get(prepared.normalizedName);
+    const candidates = rule?.kind === "underspecified-name"
+      ? rule.candidateExerciseIds
+        .map((exerciseId) => matchContext.catalogById.get(exerciseId))
+        .filter((item): item is ExerciseCatalogItem => item !== undefined)
+        .map((item) => ({ exerciseId: item.id, name: item.name, score: similarity(name, item.name) }))
+      : [];
+    return {
+      kind: "underspecified",
+      movementId: identity.movementId,
+      candidates,
+      matchedModifierIds: identity.movementModifierIds,
+      nonIdentityAnnotations: prepared.nonIdentityAnnotations,
+    };
   }
 
-  const exactAlias = exerciseCatalog.find((item) =>
-    item.aliases.some((alias) => normalizeExerciseName(alias) === normalized),
-  );
-  if (exactAlias) return { kind: "matched", item: exactAlias, via: "alias" };
-
-  const normalizedName = exerciseCatalog.find((item) => normalizeExerciseName(item.name) === normalized);
-  if (normalizedName) return { kind: "matched", item: normalizedName, via: "normalized" };
-
-  const userExMatch = userExercises.find((ex) => normalizeExerciseName(ex.name) === normalized);
-  if (userExMatch) return { kind: "matched", item: userExToItem(userExMatch), via: "user-exercise" };
+  if (identity.concreteExerciseId) {
+    const catalogItem = matchContext.catalogById.get(identity.concreteExerciseId);
+    const customExercise = userExercises.find((exercise) => exercise.id === identity.concreteExerciseId);
+    const item = catalogItem ?? (customExercise ? userExToItem(customExercise) : undefined);
+    if (item) {
+      const via: MatchVia = identity.source === "saved-alias"
+        ? "user-alias"
+        : identity.source === "catalog-id" || identity.source === "legacy-redirect"
+          ? "canonical"
+          : customExercise
+            ? "user-exercise"
+            : prepareImportName(item.name, context.disambiguations).normalizedName === prepared.normalizedName
+              ? "normalized"
+              : "alias";
+      return { kind: "matched", item, via };
+    }
+  }
 
   return {
     kind: "unmatched",
-    suggestions: exerciseCatalog
+    suggestions: [...matchContext.catalogById.values()]
       .map((item) => ({ exerciseId: item.id, name: item.name, score: similarity(name, item.name) }))
       .filter((suggestion) => suggestion.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .sort((left, right) => right.score - left.score)
       .slice(0, 3),
+    nonIdentityAnnotations: prepared.nonIdentityAnnotations,
   };
 }

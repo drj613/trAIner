@@ -16,6 +16,7 @@ import {
   buildInitialResolutions,
   applyResolutions,
   dedupeAliasResolutions,
+  unrememberableReason,
   CUSTOM_ID,
   type ResolutionItem,
 } from "./resolution";
@@ -25,6 +26,26 @@ import { DB_NAME, resetDbConnection } from "@/lib/storage/appDb";
 
 const fixturePath = path.join(__dirname, "__fixtures__", "knee-conscious-powerbuilding-cut.json");
 const fixtureJson = fs.readFileSync(fixturePath, "utf-8");
+
+// `buildInitialResolutions` no longer finalizes a fuzzy suggestion (fuzzy
+// similarity is suggestion-only now), so this test stands in for the user's
+// choices in the resolution step: every item the parser left unresolved that
+// has at least one suggestion gets its top suggestion picked. That reproduces
+// the same repeated-name shape the regression is about — the ConstraintError
+// came from concurrent alias writes for a repeated raw name, not from how the
+// choice was made.
+function pickTopSuggestions(
+  items: ResolutionItem[],
+  resolutions: Record<string, string>,
+): Record<string, string> {
+  const chosen = { ...resolutions };
+  for (const item of items) {
+    if (!chosen[item.path] && item.suggestions.length > 0) {
+      chosen[item.path] = item.suggestions[0].exerciseId;
+    }
+  }
+  return chosen;
+}
 
 beforeEach(async () => {
   resetDbConnection();
@@ -41,7 +62,7 @@ describe("import -> save with a deload override that reuses base-day exercise na
     // Step 2: figure out which exercises need resolution and their
     // auto-assigned resolutions, exactly like ImportClient does.
     const unresolvedItems = extractUnresolvedExercises(review.warnings);
-    const resolutions = buildInitialResolutions(unresolvedItems);
+    const resolutions = pickTopSuggestions(unresolvedItems, buildInitialResolutions(unresolvedItems));
     const resolvedItems = unresolvedItems.filter(
       (item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID,
     );
@@ -71,8 +92,18 @@ describe("import -> save with a deload override that reuses base-day exercise na
     // ImportClient.handleSave.
     const aliasesToSave = dedupeAliasResolutions(resolvedItems, resolutions);
     // One alias write per unique normalized name — the duplicate rawName
-    // pairs collapse to a single save each.
-    expect(aliasesToSave.length).toBe(rawNameCounts.size);
+    // pairs collapse to a single save each — MINUS the names no stored alias
+    // could ever be read back for. This fixture carries exactly one: an
+    // `X or Y` name, for which `resolveName` returns a standalone result
+    // before it consults the alias table, so the row would have been written
+    // and then ignored forever. Named rather than subtracted blindly, so a
+    // fixture edit cannot quietly change what this count means.
+    const unrememberable = [...rawNameCounts.keys()].filter(
+      (rawName) => unrememberableReason(rawName) !== undefined,
+    );
+    expect(unrememberable).toEqual(["Assisted or bodyweight neutral-grip pull-up"]);
+    expect(aliasesToSave.length).toBe(rawNameCounts.size - unrememberable.length);
+    expect(aliasesToSave.map((entry) => entry.alias)).not.toContain(unrememberable[0]);
 
     await Promise.all(aliasesToSave.map((entry) => aliasRepo.save(entry)));
 
@@ -93,7 +124,7 @@ describe("import -> save with a deload override that reuses base-day exercise na
   it("re-importing the same fixture into a DB that already has the aliases does not throw or duplicate", async () => {
     const review = parseProgramJson(fixtureJson, undefined, [], []);
     const unresolvedItems = extractUnresolvedExercises(review.warnings);
-    const resolutions = buildInitialResolutions(unresolvedItems);
+    const resolutions = pickTopSuggestions(unresolvedItems, buildInitialResolutions(unresolvedItems));
     const resolvedItems = unresolvedItems.filter(
       (item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID,
     );
@@ -132,7 +163,11 @@ describe("dedupeAliasResolutions conflict handling", () => {
     };
     const out = dedupeAliasResolutions(items, resolutions);
     expect(out).toHaveLength(1);
-    expect(out[0]).toEqual({ alias: "Bench Press", canonicalExerciseId: "bench-press" });
+    expect(out[0]).toEqual({
+      alias: "Bench Press",
+      canonicalExerciseId: "bench-press",
+      provenance: "remembered",
+    });
   });
 
   it("drops a normalized name that resolved to conflicting canonical ids (no arbitrary global alias)", () => {
@@ -148,6 +183,10 @@ describe("dedupeAliasResolutions conflict handling", () => {
     const items = [item("a", "Press"), item("b", "Press"), item("c", "Squat")];
     const resolutions = { a: "bench-press", b: "overhead-press", c: "back-squat" };
     const out = dedupeAliasResolutions(items, resolutions);
-    expect(out).toEqual([{ alias: "Squat", canonicalExerciseId: "back-squat" }]);
+    expect(out).toEqual([{
+      alias: "Squat",
+      canonicalExerciseId: "back-squat",
+      provenance: "remembered",
+    }]);
   });
 });
