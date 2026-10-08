@@ -21,15 +21,19 @@ export function buildRequiredContract(): string {
   ].join("\n\n");
 }
 
-export function buildPersonaSynthesis(personas: readonly { name: string; text: string }[]): string {
+export function buildPersonaGuidance(personas: readonly { name: string }[]): string {
   const synthesisBlock = personas.length > 1
     ? "## Multi-Coach Synthesis\nUse each coach's methods where they fit and keep their contributions distinct. Explain material tradeoffs. Resolve conflicts with explicit rules that follow the athlete's stated priorities."
     : "";
   const precedenceBlock = personas.length > 0
     ? "Coach personas are advisory methodologies. Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona."
     : "";
+  return assemblePrompt([synthesisBlock, precedenceBlock]);
+}
+
+export function buildPersonaSynthesis(personas: readonly { name: string; text: string }[]): string {
   const personaBlocks = personas.map(({ name, text }) => `## Coach: ${name}\n${text}`);
-  return assemblePrompt([synthesisBlock, precedenceBlock, ...personaBlocks]);
+  return assemblePrompt([buildPersonaGuidance(personas), ...personaBlocks]);
 }
 
 export function buildSchemaBlock(): string {

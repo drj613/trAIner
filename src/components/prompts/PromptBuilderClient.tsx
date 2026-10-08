@@ -11,7 +11,7 @@ import {
   PROFILE_FIELDS,
   missingImportantFields,
 } from "@/lib/prompts/profileFields";
-import { buildRequiredContract, buildCoachingBlock, buildPersonaSynthesis, assemblePrompt } from "@/lib/prompts/builder";
+import { buildRequiredContract, buildCoachingBlock, buildPersonaSynthesis, buildPersonaGuidance, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import type { PromptPresetDocument } from "@/lib/programs/types";
@@ -29,6 +29,7 @@ export function PromptBuilderClient() {
   const [adhocInput, setAdhocInput] = useState("");
   const [presets, setPresets] = useState<PromptPresetDocument[]>([]);
   const [presetName, setPresetName] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
 
   // savePreset and deletePreset each await the repo and then refresh, so two
   // refreshes can overlap. Stamp each one and drop any response that a later
@@ -151,8 +152,24 @@ export function PromptBuilderClient() {
     return assemblePrompt([personaBlock, ...sectionBlocks]);
   }, [selectedPersonas, editedBlocks, enabled, coachingOn, profile, adhocInjuries]);
 
+  useEffect(() => { setCopyStatus(""); }, [prompt]);
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      markPromptCopied();
+      setCopyStatus("Copied the complete prompt.");
+    } catch {
+      setCopyStatus("Could not copy the prompt. Please try again.");
+    }
+  }
+
   return (
-    <div className="stack">
+    <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
+      <header>
+        <h1 className="text-lg font-semibold">Prompt editor</h1>
+        <p className="text-sm muted mt-1">Review what each section adds, then copy the complete prompt at the bottom.</p>
+      </header>
       {!profile && !loading && (
         <div
           role="alert"
@@ -182,8 +199,8 @@ export function PromptBuilderClient() {
               <div key={preset.id} className="flex items-center justify-between panel">
                 <button
                   type="button"
-                  className="text-sm text-left flex-1"
-                  style={{ color: "var(--fg)" }}
+                  className="text-sm text-left flex-1 min-w-0 break-words"
+                  style={{ color: "var(--fg)", overflowWrap: "anywhere" }}
                   onClick={() => loadPreset(preset)}
                 >
                   {preset.name}
@@ -202,7 +219,7 @@ export function PromptBuilderClient() {
         )}
         <div className="flex gap-1 mt-2">
           <input
-            className="input flex-1"
+            className="input flex-1 min-w-0"
             style={{ fontSize: 12, padding: "3px 7px" }}
             value={presetName}
             placeholder="Name this preset…"
@@ -223,7 +240,9 @@ export function PromptBuilderClient() {
 
       <section>
         <p className="tx-up mb-2">Coach personas · select &amp; combine</p>
-        <div className="grid grid-cols-2 gap-2">
+        <details className="panel min-w-0">
+          <summary className="text-sm cursor-pointer"><span>Choose coaches</span><span className="muted"> · {selectedPersonas.length} selected</span></summary>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0 mt-3">
           {DEFAULT_PERSONAS.map((p) => (
             <PersonaCard
               key={p.id}
@@ -233,28 +252,32 @@ export function PromptBuilderClient() {
             />
           ))}
         </div>
+        </details>
       </section>
 
       {selectedPersonas.length > 0 && (
         <section>
-          <p className="tx-up mb-2">Selected persona blocks · ephemeral edits</p>
+          <p className="tx-up mb-2">Selected coach instructions</p>
+          <p className="text-sm muted mb-2">Open a coach to read or edit the text included in this prompt. Save a preset to keep your edits.</p>
           <div className="stack">
             {selectedPersonas.map((p) => (
-              <div key={p.id} className="panel">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-semibold">{p.name}</span>
-                  <span className="tx-mono text-xs muted">ephemeral</span>
-                </div>
+              <details key={p.id} className="panel min-w-0">
+                <summary className="text-sm font-semibold cursor-pointer">Coach: {p.name}</summary>
                 <textarea
                   aria-label={p.name}
-                  className="input tx-mono text-xs min-h-20 resize-y"
+                  className="input tx-mono text-xs min-h-20 resize-y mt-2 min-w-0"
+                  rows={8}
                   value={editedBlocks[p.id] ?? p.block}
                   onChange={(e) =>
                     setEditedBlocks((prev) => ({ ...prev, [p.id]: e.target.value }))
                   }
                 />
-              </div>
+              </details>
             ))}
+            <details className="panel min-w-0">
+              <summary className="text-sm cursor-pointer">How the selected coaches work together</summary>
+              <PromptText text={buildPersonaGuidance(selectedPersonas)} />
+            </details>
           </div>
         </section>
       )}
@@ -282,7 +305,8 @@ export function PromptBuilderClient() {
         <p className="tx-up mb-2">Profile fields</p>
         <div className="stack">
           {PROFILE_FIELDS.filter((f) => f.group === "profile").map((f) => (
-            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
+            <section key={f.key} aria-label={`${f.label} prompt section`} className="panel min-w-0">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={fieldOn[f.key]}
@@ -291,13 +315,16 @@ export function PromptBuilderClient() {
               />
               <span className="text-sm flex-1">{f.label}</span>
             </label>
+            {fieldOn[f.key] ? <PromptText text={profile ? f.render(profile) ?? "No saved value. Add it in your Profile to include it here." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+            </section>
           ))}
         </div>
 
         <p className="tx-up mb-2 mt-3">Constraints</p>
         <div className="stack">
           {PROFILE_FIELDS.filter((f) => f.group === "constraints").map((f) => (
-            <label key={f.key} className="flex items-center gap-3 panel cursor-pointer">
+            <section key={f.key} aria-label={`${f.label} prompt section`} className="panel min-w-0">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={fieldOn[f.key]}
@@ -306,11 +333,13 @@ export function PromptBuilderClient() {
               />
               <span className="text-sm flex-1">{f.label}</span>
             </label>
+            {fieldOn[f.key] ? <PromptText text={profile ? buildConstraintsFieldsBlock(profile, new Set([f.key]), adhocInjuries) || "No saved injuries or constraints." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+            </section>
           ))}
         </div>
 
         <div className="panel stack" style={{ gap: 6 }}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm">Temporary injuries (this prompt only)</span>
             <span className="tx-mono text-xs muted">ephemeral</span>
           </div>
@@ -319,14 +348,14 @@ export function PromptBuilderClient() {
               <span
                 key={item}
                 className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                style={{ background: "var(--bg-3)", border: "1px solid var(--line)", color: "var(--fg-2)" }}
+                style={{ background: "var(--bg-3)", border: "1px solid var(--line)", color: "var(--fg-2)", minWidth: 0, overflowWrap: "anywhere" }}
               >
-                {item}
+                <span className="min-w-0">{item}</span>
                 <button
                   type="button"
                   aria-label={`Remove ${item}`}
                   onClick={() => setAdhocInjuries((prev) => prev.filter((i) => i !== item))}
-                  style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 1px" }}
+                  style={{ color: "var(--fg-3)", lineHeight: 1, padding: "0 1px", flexShrink: 0 }}
                 >
                   ×
                 </button>
@@ -335,7 +364,7 @@ export function PromptBuilderClient() {
           </div>
           <div className="flex gap-1">
             <input
-              className="input flex-1"
+              className="input flex-1 min-w-0"
               style={{ fontSize: 12, padding: "3px 7px" }}
               value={adhocInput}
               placeholder="Add a temporary injury…"
@@ -348,8 +377,9 @@ export function PromptBuilderClient() {
           </div>
         </div>
 
-        <p className="tx-up mb-2 mt-3">Output</p>
-        <label className="flex items-center gap-3 panel cursor-pointer">
+        <p className="tx-up mb-2 mt-3">Coaching preferences</p>
+        <section aria-label="Coaching instructions" className="panel min-w-0">
+        <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={coachingOn}
@@ -358,32 +388,38 @@ export function PromptBuilderClient() {
           />
           <span className="text-sm flex-1">Optional coaching</span>
         </label>
+        <p className="text-xs muted mt-2">Adds advice on exercise selection, volume, progression, recovery, and reviewing the routine.</p>
+        {coachingOn ? <details className="mt-2"><summary className="text-sm cursor-pointer">Read the coaching instructions</summary><PromptText text={buildCoachingBlock()} /></details> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+        </section>
       </section>
 
-      <section>
-        <p className="tx-up mb-2">Generated prompt</p>
-        <div
-          className="panel font-mono text-xs leading-relaxed whitespace-pre-wrap max-h-52 overflow-y-auto muted"
-          style={{ minHeight: "3rem" }}
-        >
-          {prompt || "(select at least one persona)"}
-        </div>
+      <section aria-label="Output requirements" className="panel min-w-0">
+        <h2 className="text-sm font-semibold">Routine JSON contract</h2>
+        <p className="text-xs muted mt-2">Always included. Defines the import format, repeating weeks, exercise groups, and set counts. New routines are limited to eight generated weeks.</p>
+        <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptText text={buildRequiredContract()} /></details>
+      </section>
+
+      <section aria-label="Copy complete prompt">
+        <p className="text-sm muted">Copy all included sections together, ready to paste into your chat.</p>
         <button
+          type="button"
           className="button mt-2 w-full justify-center"
           disabled={!prompt}
-          onClick={() => {
-            markPromptCopied();
-            void navigator.clipboard.writeText(prompt).catch(() => {});
-          }}
+          onClick={() => void copyPrompt()}
         >
           <Copy size={14} /> Copy prompt · {prompt.length.toLocaleString()} chars
         </button>
+        {copyStatus && <p role="status" className="text-xs mt-2">{copyStatus}</p>}
         <Link to="/import" className="button mt-2 w-full justify-center">
           <ArrowRight size={14} /> Go to Import
         </Link>
       </section>
     </div>
   );
+}
+
+function PromptText({ text }: { text: string }) {
+  return <div className="text-xs leading-relaxed whitespace-pre-wrap muted mt-2 min-w-0" style={{ overflowWrap: "anywhere" }}>{text}</div>;
 }
 
 function PersonaCard({

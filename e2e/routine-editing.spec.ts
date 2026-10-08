@@ -171,12 +171,11 @@ test.describe("Routine import review and editing", () => {
 test("prompt builder keeps the required contract on and optional coaching off by default", async ({ page }) => {
   await page.goto("prompts");
   await expect(page.getByLabel("Optional coaching")).not.toBeChecked();
-  const generated = page.locator("section").filter({ hasText: "Generated prompt" });
-  await expect(generated).toContainText("Routine JSON contract");
-  await expect(generated).not.toContainText("Optional coaching");
+  await expect(page.getByRole("heading", { name: "Routine JSON contract" })).toBeVisible();
+  await expect(page.getByText("Read the coaching instructions", { exact: true })).toHaveCount(0);
   await page.getByLabel("Optional coaching").check();
-  await expect(generated).toContainText("Optional coaching");
-  await expect(generated).toContainText("Routine JSON contract");
+  await expect(page.getByText("Read the coaching instructions", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Routine JSON contract" })).toBeVisible();
 });
 
 test("applies an AI grouping-only change with shared routine scope", async ({ page }) => {

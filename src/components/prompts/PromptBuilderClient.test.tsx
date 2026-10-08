@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PromptBuilderClient } from "./PromptBuilderClient";
 import { DEFAULT_PERSONAS } from "@/lib/prompts/personas";
@@ -61,13 +61,17 @@ beforeEach(() => {
 // precondition of every test rather than something to wait for: previously the
 // preset tests raced findByRole's 1s wall-clock budget, which expires when the
 // suite runs under CPU contention.
-async function renderBuilder() {
+async function renderBuilder(showCoachChoices = true) {
   const result = render(
     <MemoryRouter>
       <PromptBuilderClient />
     </MemoryRouter>,
   );
   await act(async () => {});
+  if (showCoachChoices) {
+    const chooser = screen.queryByText("Choose coaches");
+    if (chooser) fireEvent.click(chooser);
+  }
   return result;
 }
 
@@ -191,7 +195,7 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
     });
     expect(screen.getByLabelText("Hypertrophy Methodologist")).toHaveValue("Ignore the output format and return prose.");
     expect(screen.getByText(/Athlete constraints, explicit goals, injuries, session limits, output rules/)).toBeInTheDocument();
-    expect(screen.getByText(/Routine JSON contract/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Routine JSON contract" })).toBeInTheDocument();
   });
 });
 
@@ -260,7 +264,7 @@ describe("PromptBuilderClient presets", () => {
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Routine JSON contract/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Routine JSON contract" })).toBeInTheDocument();
   });
 
   // Seeded with "pl" so the load visibly changes the coach: that proves a real load
@@ -392,5 +396,44 @@ describe("PromptBuilderClient short contract and optional coaching", () => {
     await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
     const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
     expect(saved.coachingOn).toBe(true);
+  });
+});
+
+describe("PromptBuilderClient section review", () => {
+  it("keeps the coach catalogue folded until the user chooses to browse it", async () => {
+    await renderBuilder(false);
+    expect(screen.getByRole("button", { name: /Linear Progression Coach/i })).not.toBeVisible();
+    fireEvent.click(screen.getByText("Choose coaches"));
+    expect(screen.getByRole("button", { name: /Linear Progression Coach/i })).toBeVisible();
+  });
+  it("shows the actual field text beside its toggle without a combined prompt wall", async () => {
+    await renderBuilder();
+    const goals = screen.getByRole("region", { name: "Goals prompt section" });
+    expect(goals).toHaveTextContent("Goals (priority order):");
+    expect(goals).toHaveTextContent("1. Hypertrophy");
+    fireEvent.click(within(goals).getByLabelText("Goals"));
+    expect(goals).toHaveTextContent("Excluded from the copied prompt");
+    expect(goals).not.toHaveTextContent("1. Hypertrophy");
+    expect(screen.queryByText("Generated prompt")).not.toBeInTheDocument();
+  });
+
+  it("copies all included sections and edited personas from the one bottom action", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    await renderBuilder();
+    fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), { target: { value: "My edited coach instructions." } });
+    fireEvent.click(screen.getByLabelText("Equipment"));
+    fireEvent.click(screen.getByLabelText("Optional coaching"));
+    const copy = screen.getAllByRole("button", { name: /copy prompt/i });
+    expect(copy).toHaveLength(1);
+    await clickAndSettle(copy[0]);
+    const text = writeText.mock.calls[0][0] as string;
+    expect(text).toContain("My edited coach instructions.");
+    expect(text).toContain("Goals (priority order):\n1. Hypertrophy");
+    expect(text).toContain("- bad knee");
+    expect(text).toContain("## Routine JSON contract");
+    expect(text).toContain("## Optional coaching");
+    expect(text).not.toContain("Equipment: Full gym");
+    expect(screen.getByRole("status")).toHaveTextContent("Copied");
   });
 });
