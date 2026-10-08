@@ -10,15 +10,21 @@ test("prompt editor fits a narrow preview, including long edited text", async ({
   await page.getByPlaceholder(/name this preset/i).fill("VeryLongPresetName".repeat(12));
   await page.getByPlaceholder(/temporary injury/i).fill("AnUnbrokenInjuryDescription".repeat(12));
   await page.getByRole("button", { name: "Add", exact: true }).click();
-  await page.getByText("Coach: Hypertrophy Methodologist", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Programming principles", exact: true })).toBeVisible();
+  await expect(page.locator("textarea")).toHaveCount(0);
+  await page.getByRole("button", { name: "Write custom instructions" }).click();
   await page.getByLabel("Hypertrophy Methodologist", { exact: true }).fill("AnUnbrokenCoachInstruction".repeat(20));
   await expect.poll(fits).toBe(true);
+  const editor = page.getByLabel("Hypertrophy Methodologist", { exact: true });
+  await expect.poll(() => editor.evaluate((element) => element.scrollHeight <= element.clientHeight + 2)).toBe(true);
   await page.getByLabel("Optional coaching").check();
   await page.getByText("Read the coaching instructions", { exact: true }).click();
   await page.getByText("Read the output requirements", { exact: true }).click();
+  await page.getByText("Example routine structure", { exact: true }).click();
   await expect.poll(fits).toBe(true);
   await page.setViewportSize({ width: 320, height: 640 });
   await expect.poll(fits).toBe(true);
+  await expect.poll(() => editor.evaluate((element) => element.scrollHeight <= element.clientHeight + 2)).toBe(true);
 });
 
 test("field previews match the complete copied prompt", async ({ page, context }) => {
@@ -38,10 +44,12 @@ test("field previews match the complete copied prompt", async ({ page, context }
   });
   await page.reload();
   const goals = page.getByRole("region", { name: "Goals prompt section", exact: true });
-  await expect(goals).toContainText("1. Stronger squats");
+  await expect(goals).toContainText("Stronger squats");
   await page.getByLabel("Goals", { exact: true }).uncheck();
   await expect(goals).toContainText("Excluded from the copied prompt");
-  await page.getByText("Coach: Hypertrophy Methodologist", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Programming principles", exact: true })).toBeVisible();
+  await expect(page.locator("textarea")).toHaveCount(0);
+  await page.getByRole("button", { name: "Write custom instructions" }).click();
   await page.getByLabel("Hypertrophy Methodologist", { exact: true }).fill("My own coach instructions.");
   await page.getByLabel("Optional coaching", { exact: true }).check();
   await page.getByRole("button", { name: /copy prompt/i }).click();

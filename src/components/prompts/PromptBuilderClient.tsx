@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PersonaInstructions } from "./PersonaInstructions";
+import { PromptDetails } from "./PromptDetails";
 import { Link } from "react-router-dom";
 import { ArrowRight, Copy } from "lucide-react";
 import { markPromptCopied } from "@/lib/workspace/onboarding";
@@ -258,25 +260,17 @@ export function PromptBuilderClient() {
       {selectedPersonas.length > 0 && (
         <section>
           <p className="tx-up mb-2">Selected coach instructions</p>
-          <p className="text-sm muted mb-2">Open a coach to read or edit the text included in this prompt. Save a preset to keep your edits.</p>
+          <p className="text-sm muted mb-2">Open a coach to review its philosophy, methodology, and principles. Save a preset to keep your edits.</p>
           <div className="stack">
             {selectedPersonas.map((p) => (
-              <details key={p.id} className="panel min-w-0">
+              <details key={p.id} open className="panel min-w-0">
                 <summary className="text-sm font-semibold cursor-pointer">Coach: {p.name}</summary>
-                <textarea
-                  aria-label={p.name}
-                  className="input tx-mono text-xs min-h-20 resize-y mt-2 min-w-0"
-                  rows={8}
-                  value={editedBlocks[p.id] ?? p.block}
-                  onChange={(e) =>
-                    setEditedBlocks((prev) => ({ ...prev, [p.id]: e.target.value }))
-                  }
-                />
+                <PersonaInstructions name={p.name} text={editedBlocks[p.id] ?? p.block} onChange={(text) => setEditedBlocks((prev) => ({ ...prev, [p.id]: text }))} />
               </details>
             ))}
             <details className="panel min-w-0">
               <summary className="text-sm cursor-pointer">How the selected coaches work together</summary>
-              <PromptText text={buildPersonaGuidance(selectedPersonas)} />
+              <PromptDetails text={buildPersonaGuidance(selectedPersonas)} paragraphLabels={selectedPersonas.length > 1 ? ["Combining approaches", "Athlete priorities"] : ["Athlete priorities"]} />
             </details>
           </div>
         </section>
@@ -315,7 +309,7 @@ export function PromptBuilderClient() {
               />
               <span className="text-sm flex-1">{f.label}</span>
             </label>
-            {fieldOn[f.key] ? <PromptText text={profile ? f.render(profile) ?? "No saved value. Add it in your Profile to include it here." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+            {fieldOn[f.key] ? <PromptDetails text={profile ? f.render(profile) ?? "No saved value. Add it in your Profile to include it here." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
             </section>
           ))}
         </div>
@@ -333,7 +327,7 @@ export function PromptBuilderClient() {
               />
               <span className="text-sm flex-1">{f.label}</span>
             </label>
-            {fieldOn[f.key] ? <PromptText text={profile ? buildConstraintsFieldsBlock(profile, new Set([f.key]), adhocInjuries) || "No saved injuries or constraints." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+            {fieldOn[f.key] ? <PromptDetails paragraphLabels={profile ? ["Injury precautions"] : undefined} text={profile ? buildConstraintsFieldsBlock(profile, new Set([f.key]), adhocInjuries) || "No saved injuries or constraints." : "No saved profile."} /> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
             </section>
           ))}
         </div>
@@ -341,7 +335,6 @@ export function PromptBuilderClient() {
         <div className="panel stack" style={{ gap: 6 }}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm">Temporary injuries (this prompt only)</span>
-            <span className="tx-mono text-xs muted">ephemeral</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {adhocInjuries.map((item) => (
@@ -389,14 +382,14 @@ export function PromptBuilderClient() {
           <span className="text-sm flex-1">Optional coaching</span>
         </label>
         <p className="text-xs muted mt-2">Adds advice on exercise selection, volume, progression, recovery, and reviewing the routine.</p>
-        {coachingOn ? <details className="mt-2"><summary className="text-sm cursor-pointer">Read the coaching instructions</summary><PromptText text={buildCoachingBlock()} /></details> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
+        {coachingOn ? <details className="mt-2"><summary className="text-sm cursor-pointer">Read the coaching instructions</summary><PromptDetails text={buildCoachingBlock()} paragraphLabels={["Coaching approach", "Exercise selection", "Volume and frequency", "Progression", "Deloads and recovery", "Routine review", "Final response"]} /></details> : <p className="text-xs muted mt-2">Excluded from the copied prompt</p>}
         </section>
       </section>
 
       <section aria-label="Output requirements" className="panel min-w-0">
         <h2 className="text-sm font-semibold">Routine JSON contract</h2>
         <p className="text-xs muted mt-2">Always included. Defines the import format, repeating weeks, exercise groups, and set counts. New routines are limited to eight generated weeks.</p>
-        <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptText text={buildRequiredContract()} /></details>
+        <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptDetails text={buildRequiredContract()} paragraphLabels={["Response format", "Weeks and weekly changes", "Groups and set counts", "Exercise fields and volume", "Variants and progression", "Using the example"]} /></details>
       </section>
 
       <section aria-label="Copy complete prompt">
@@ -416,10 +409,6 @@ export function PromptBuilderClient() {
       </section>
     </div>
   );
-}
-
-function PromptText({ text }: { text: string }) {
-  return <div className="text-xs leading-relaxed whitespace-pre-wrap muted mt-2 min-w-0" style={{ overflowWrap: "anywhere" }}>{text}</div>;
 }
 
 function PersonaCard({
