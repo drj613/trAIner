@@ -86,3 +86,16 @@ describe("WorkoutDayClient unit toggle (real provider)", () => {
     expect((override?.replacement as ProgramDay).sections[0].groups[0].exercises[0].unit).toBe("kg");
   });
 });
+it('reviews an edited prescription before committing without remounting the session',async()=>{
+ renderDay();const heading=await screen.findByRole('heading',{level:1,name:'Push Day'});const user=userEvent.setup();
+ await user.click(screen.getByRole('button',{name:'Edit prescription for Bench Press'}));
+ await user.clear(screen.getByLabelText('Sets'));await user.type(screen.getByLabelText('Sets'),'1');
+ await user.click(screen.getByRole('button',{name:'Save'}));
+ expect(await screen.findByRole('region',{name:'Edit impact preview'})).toBeInTheDocument();
+ expect((await programRepo.get('p1'))?.overrides).toHaveLength(0);
+ await user.click(screen.getByRole('button',{name:'Apply reviewed edit'}));
+ await screen.findByRole('button',{name:'Edit prescription for Bench Press'});
+ expect(screen.getByRole('heading',{level:1,name:'Push Day'})).toBe(heading);
+ const stored=await programRepo.get('p1');
+ expect((stored?.overrides[0].replacement as ProgramDay).sections[0].groups[0].exercises[0].sets).toBe(1);
+});

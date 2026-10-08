@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ProfileDocument, ProgramDocument } from "@/lib/programs/types";
 import { profileRepo } from "@/lib/storage/profileRepo";
 import { programRepo } from "@/lib/storage/programRepo";
+import { commitProgramEdit as commitEdit } from "@/lib/programs/applyEdit";
+import type { ProgramEditPreview } from "@/lib/programs/edits";
 
 type LocalDataContextValue = {
   programs: ProgramDocument[];
@@ -12,6 +14,7 @@ type LocalDataContextValue = {
   error: Error | null;
   refresh: () => Promise<void>;
   saveProgram: (program: ProgramDocument) => Promise<void>;
+  commitProgramEdit?: (preview: ProgramEditPreview) => Promise<Awaited<ReturnType<typeof commitEdit>>>;
   removeProgram: (id: string) => Promise<void>;
   activateProgram: (id: string) => Promise<void>;
   duplicateProgram: (id: string) => Promise<ProgramDocument>;
@@ -50,6 +53,17 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
     });
   }
 
+  async function commitProgramEdit(preview: ProgramEditPreview) {
+    const result = await commitEdit(preview);
+    if (result.status === "saved") {
+      setPrograms((prev) => {
+        const index = prev.findIndex((program) => program.id === result.program.id);
+        return index < 0 ? [...prev, result.program] : prev.map((program, i) => i === index ? result.program : program);
+      });
+    }
+    return result;
+  }
+
   async function removeProgram(id: string) {
     await programRepo.remove(id);
     setPrograms((prev) => prev.filter((p) => p.id !== id));
@@ -84,7 +98,7 @@ export function LocalDataProvider({ children }: Readonly<{ children: React.React
   );
 
   return (
-    <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh, saveProgram, removeProgram, activateProgram, duplicateProgram, saveProfile }}>
+    <LocalDataContext.Provider value={{ programs, profile, loading, error, refresh, saveProgram, commitProgramEdit, removeProgram, activateProgram, duplicateProgram, saveProfile }}>
       {children}
     </LocalDataContext.Provider>
   );

@@ -29,6 +29,10 @@ import { userExerciseRepo } from "@/lib/storage/userExerciseRepo";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ResolutionStep } from "./ResolutionStep";
 import type { UserExerciseDocument } from "@/lib/programs/types";
+import { createImportDraft, replaceDraftProgram, type ImportDraft } from "@/lib/import/draft";
+import { ImportReviewEditor } from "./ImportReviewEditor";
+import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
+import { getOverrideReplacementDays, getRenderableDays } from "@/lib/programs/overrides";
 
 type Step = "paste" | "resolve" | "confirm";
 
@@ -38,6 +42,7 @@ export function ImportClient() {
   const [step, setStep] = useState<Step>("paste");
   const [json, setJson] = useState("");
   const [review, setReview] = useState<ImportReview | undefined>();
+  const [draft, setDraft] = useState<ImportDraft | undefined>();
   const [parseError, setParseError] = useState<string | null>(null);
   const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("syntax");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -127,8 +132,11 @@ export function ImportClient() {
       ]);
       setUserExercises(userExs);
       const result = parseProgramJson(json, undefined, aliases, userExs);
-      setReview(result);
-      const items = extractUnresolvedExercises(result.warnings);
+      const nextDraft = createImportDraft(result, json);
+      setDraft(nextDraft);
+      const reviewResult = { ...result, warnings: [...nextDraft.currentWarnings, ...nextDraft.correctionHistory] };
+      setReview(reviewResult);
+      const items = extractUnresolvedExercises(reviewResult.warnings);
       const initial = buildInitialResolutions(items);
       setResolutions(initial);
       setRemembered({});
@@ -174,6 +182,32 @@ export function ImportClient() {
     });
   }
 
+  function handleDraftChange(program: ImportReview["program"]) {
+    if (!draft) return;
+    clearSavedState();
+    const changedIdentities = findEditedExerciseIdentities(draft.program, program, review?.warnings ?? []);
+    const changedToCustom = changedIdentities.filter((item) => item.custom);
+    const nextDraft = replaceDraftProgram(draft, program);
+    setDraft(nextDraft);
+    setReview((previous) => previous ? {
+      ...previous,
+      program,
+      warnings: [...nextDraft.currentWarnings, ...nextDraft.correctionHistory, ...changedToCustom.map(({ warning, name }) => ({
+        ...warning,
+        rawName: name,
+        resolutionKind: "unmatched" as const,
+        message: `${name} was imported without a catalog match.`,
+      }))],
+    } : previous);
+    if (changedToCustom.length) {
+      const changedPaths = new Set(changedToCustom.map(({ warning }) => warning.path));
+      setResolutions((previous) => Object.fromEntries(Object.entries(previous).filter(([path]) => !changedPaths.has(path))));
+      setStep("resolve");
+    }
+    const stalePaths = new Set(changedIdentities.map(({ warning }) => warning.path));
+    if (stalePaths.size) setResolutions((previous) => Object.fromEntries(Object.entries(previous).filter(([path]) => !stalePaths.has(path))));
+  }
+
   function handleRememberChange(groupKey: string, remember: boolean) {
     clearSavedState();
     setRemembered((prev) => ({ ...prev, [groupKey]: remember }));
@@ -215,12 +249,12 @@ export function ImportClient() {
     try {
       const catalogResolutions = unresolvedItems
         .filter((item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID)
-        .map((item) => ({ path: item.path, canonicalId: resolutions[item.path] }));
+        .map((item) => ({ path: resolutionPathForTarget(draft?.program ?? review.program, review.warnings.find((warning) => warning.path === item.path)?.targetId, item.path), canonicalId: resolutions[item.path] }));
 
       const applied =
         catalogResolutions.length > 0
-          ? applyResolutions(review.program, catalogResolutions)
-          : review.program;
+          ? syncResolvedEditingMetadata(applyResolutions(draft?.program ?? review.program, catalogResolutions))
+          : draft?.program ?? review.program;
       // Same paste, already saved once (the conflict path stays on this step,
       // so the user can walk back and validate again): update that document
       // instead of leaving two for one routine.
@@ -364,13 +398,16 @@ export function ImportClient() {
       unresolvedItems.filter((i) => resolutions[i.path] === CUSTOM_ID).map((i) => i.path),
     );
 
+    const weekCount = new Set(getRenderableDays(review.program).map((day) => day.weekNumber ?? 1)).size;
+    const templateCount = review.program.editing?.templateDays.length ?? review.program.days.length;
+
     return (
-      <div className="stack">
+      <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
         <h1 className="text-2xl font-bold">Confirm import</h1>
         <section className="panel stack">
           <h2 className="font-bold">{review.program.title}</h2>
           <p className="muted text-sm">
-            {review.program.days.length} {review.program.days.length === 1 ? "day" : "days"} · {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
+            {weekCount > 1 ? `${weekCount} weeks · ${templateCount} template ${templateCount === 1 ? "workout" : "workouts"}` : `${review.program.days.length} ${review.program.days.length === 1 ? "day" : "days"} · ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`}
           </p>
           {resolvedCount > 0 && (
             <p className="text-sm" style={{ color: "var(--good, green)" }}>
@@ -383,6 +420,24 @@ export function ImportClient() {
             </p>
           )}
         </section>
+        {draft && (
+          <ImportReviewEditor
+            program={draft.program}
+            warnings={draft.currentWarnings}
+            corrections={draft.correctionHistory}
+            onChange={handleDraftChange}
+          />
+        )}
+        <details className="panel">
+          <summary className="font-semibold">Original JSON</summary>
+          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-xs">{draft?.originalJson ?? json}</pre>
+          <button type="button" className="button secondary mt-2" onClick={() => {
+            setReview(undefined);
+            setDraft(undefined);
+            setResolutions({});
+            setStep("paste");
+          }}>Revise source JSON</button>
+        </details>
         {saveError && (
           <p className="text-sm" style={{ color: "var(--bad, red)" }}>
             {saveError}
@@ -393,7 +448,7 @@ export function ImportClient() {
             {rememberNotice}
           </p>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 sticky bottom-0 z-10 py-3" style={{ background: "var(--bg)", borderTop: "1px solid var(--line)" }}>
           <button
             type="button"
             className="button secondary"
@@ -427,4 +482,93 @@ export function ImportClient() {
   }
 
   return null;
+}
+
+function resolutionPathForTarget(program: ImportReview["program"], targetId: string | undefined, originalPath: string): string {
+  if (!targetId) return originalPath;
+  if (originalPath.startsWith("overrides.")) return originalPath;
+  const variantSuffix = originalPath.match(/(\.variants\.\d+)$/)?.[1] ?? "";
+  for (const [overrideIndex, override] of program.overrides.entries()) {
+    for (const day of getOverrideReplacementDays(override)) {
+      for (const [sectionIndex, section] of day.sections.entries()) {
+        for (const [groupIndex, group] of section.groups.entries()) {
+          const exerciseIndex = group.exercises.findIndex((exercise) => exercise.id === targetId);
+          if (exerciseIndex >= 0) return overrideExercisePath(overrideIndex, day.dayNumber, day.templateWeek, sectionIndex, groupIndex, exerciseIndex);
+        }
+      }
+    }
+  }
+  for (const day of getRenderableDays(program)) {
+    for (const [sectionIndex, section] of day.sections.entries()) {
+      for (const [groupIndex, group] of section.groups.entries()) {
+        for (const [exerciseIndex, exercise] of group.exercises.entries()) {
+          if (exercise.id === targetId) {
+            return `${baseExercisePath(day.dayNumber, day.templateWeek, sectionIndex, groupIndex, exerciseIndex)}${variantSuffix}`;
+          }
+        }
+      }
+    }
+  }
+  return originalPath;
+}
+
+function syncResolvedEditingMetadata(program: ImportReview["program"]): ImportReview["program"] {
+  if (!program.editing) return program;
+  const resolved = structuredClone(program);
+  const templateExercises = resolved.editing!.templateDays.flatMap((day) => day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises)));
+  const effectiveDays = getRenderableDays(resolved);
+  const exercisesByOccurrence = new Map(effectiveDays.map((day) => [day.id, day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises))]));
+  for (const binding of resolved.editing!.elementBindings) {
+    if (binding.kind !== "exercise") continue;
+    const occurrenceDay = effectiveDays.find((day) => day.id === binding.occurrenceDayId);
+    if (occurrenceDay?.weekNumber !== undefined && occurrenceDay.weekNumber !== 1) continue;
+    const occurrenceExercise = exercisesByOccurrence.get(binding.occurrenceDayId)?.find((exercise) => exercise.id === binding.occurrenceElementId);
+    const templateExercise = templateExercises.find((exercise) => exercise.id === binding.templateElementId);
+    if (occurrenceExercise?.canonicalExerciseId && templateExercise) {
+      templateExercise.canonicalExerciseId = occurrenceExercise.canonicalExerciseId;
+    }
+  }
+  return resolved;
+}
+
+function findEditedExerciseIdentities(previous: ImportReview["program"], next: ImportReview["program"], warnings: ImportReview["warnings"]): { warning: ImportReview["warnings"][number]; name: string; custom: boolean }[] {
+  const targets = new Map<string, { name: string; canonicalExerciseId?: string }>();
+  const nextDays = getRenderableDays(next);
+  for (const day of nextDays) for (const section of day.sections) for (const group of section.groups) for (const exercise of group.exercises) {
+    targets.set(exercise.id, { name: exercise.name, canonicalExerciseId: exercise.canonicalExerciseId });
+  }
+  const prior = new Map<string, { name: string; canonicalExerciseId?: string }>();
+  for (const day of getRenderableDays(previous)) for (const section of day.sections) for (const group of section.groups) for (const exercise of group.exercises) prior.set(exercise.id, { name: exercise.name, canonicalExerciseId: exercise.canonicalExerciseId });
+  const changed = new Map<string, { name: string; custom: boolean }>();
+  for (const [id, item] of targets) {
+    const old = prior.get(id);
+    if ((!old && !item.canonicalExerciseId) || (old && (old.name !== item.name || old.canonicalExerciseId !== item.canonicalExerciseId))) {
+      changed.set(id, { name: item.name, custom: !item.canonicalExerciseId });
+    }
+  }
+  const result: { warning: ImportReview["warnings"][number]; name: string; custom: boolean }[] = [];
+  for (const [targetId, { name, custom }] of changed) {
+    const old = warnings.find((warning) => warning.targetId === targetId);
+    if (old) {
+      result.push({ warning: { ...old, path: resolutionPathForTarget(next, targetId, old.path) }, name, custom });
+      continue;
+    }
+    if (!custom) continue;
+    for (const [dayIndex, day] of nextDays.entries()) {
+      let found = false;
+      for (const [sectionIndex, section] of day.sections.entries()) for (const [groupIndex, group] of section.groups.entries()) {
+        const exerciseIndex = group.exercises.findIndex((exercise) => exercise.id === targetId);
+        if (exerciseIndex < 0) continue;
+        result.push({ warning: {
+          path: resolutionPathForTarget(next, targetId, baseExercisePath(day.dayNumber, day.templateWeek, sectionIndex, groupIndex, exerciseIndex)),
+          message: `${name} was imported without a catalog match.`, rawName: name,
+          sectionType: section.type, targetId,
+        }, name, custom });
+        found = true;
+      }
+      if (found) break;
+      void dayIndex;
+    }
+  }
+  return result;
 }

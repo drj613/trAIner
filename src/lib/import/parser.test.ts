@@ -17,6 +17,60 @@ const minimalDay = (day: number, title: string) => ({
 });
 
 describe("import parser", () => {
+  it("preserves exercise units on base exercises and week variants", () => {
+    const review = parseProgramJson(JSON.stringify({ title: "Units", weeks: 2, days: [{ day: 1, sections: [{ type: "strength", groups: [{ exercises: [
+      { name: "Squat", sets: 3, reps: "5", unit: "lb", variants: [{ weeks: [2], unit: "kg" }] },
+    ] }] }] }] }));
+    expect(review.program.days.map((day) => day.sections[0].groups[0].exercises[0].unit)).toEqual(["lb", "kg"]);
+  });
+
+  it("reports unsupported unit and discarded nested content as structural source warnings", () => {
+    const input = JSON.stringify({ days: [{ day: 1, sections: [{ type: "strength", groups: [null, { exercises: [{ name: "Press", unit: "stone" }, "not-an-exercise"] }] }, 7] }, false] });
+    const review = parseProgramJson(input);
+    const structural = review.warnings.filter((warning) => warning.code === "content-skipped" || warning.code === "unit-defaulted");
+    expect(structural.map((warning) => warning.code)).toEqual(expect.arrayContaining(["content-skipped", "unit-defaulted"]));
+    expect(structural.every((warning) => warning.rawName === undefined)).toBe(true);
+    expect(review.program.import?.rawJson).toEqual(JSON.parse(input));
+  });
+
+  it("normalizes unsafe prescriptions while retaining the source JSON and diagnostics", () => {
+    const raw = {
+      weeks: 2,
+      days: [{
+        day: 1,
+        title: "Day 1",
+        sections: [{ type: "strength", groups: [{ type: "superset", exercises: [
+          { name: "Barbell Squat", sets: "4", reps: 8, variants: [{ weeks: [2], sets: 0 }] },
+          { name: "Barbell Bench Press", sets: 4, reps: "AMRAP" },
+        ] }, { exercises: [{ name: "Barbell Row", sets: 2.5 }] }] }],
+      }],
+    };
+    const review = normalizePayload(raw);
+    const baseExercises = review.program.days[0].sections[0].groups[0].exercises;
+    expect(baseExercises.map((exercise) => [exercise.sets, exercise.reps])).toEqual([[4, "8"], [4, "AMRAP"]]);
+    expect(review.program.import?.rawJson).toEqual(raw);
+    expect(review.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "sets-coerced", originalValue: "4", replacementValue: 4 }),
+      expect.objectContaining({ code: "reps-coerced", originalValue: 8, replacementValue: "8" }),
+      expect.objectContaining({ code: "sets-defaulted", originalValue: 2.5, replacementValue: 3 }),
+      expect.objectContaining({ code: "sets-defaulted", originalValue: 0, replacementValue: 3 }),
+      expect.objectContaining({ code: "superset-set-mismatch", affectedWeeks: [2] }),
+    ]));
+  });
+
+  it("makes structural fallbacks visible without queuing them for exercise resolution", () => {
+    const review = normalizePayload({ days: [{ day: 1, sections: [{
+      type: "unsupported", groups: [{ type: "unsupported", exercises: [{ name: "Barbell Squat" }] }],
+    }] }] });
+    expect(review.program.days[0].sections[0].type).toBe("training");
+    expect(review.program.days[0].sections[0].groups[0].type).toBe("single");
+    expect(review.warnings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "section-type-defaulted", originalValue: "unsupported", replacementValue: "training" }),
+      expect.objectContaining({ code: "group-type-defaulted", originalValue: "unsupported", replacementValue: "single" }),
+    ]));
+    expect(extractUnresolvedExercises(review.warnings)).toHaveLength(0);
+  });
+
   it("imports the preserved example as a one-day program", () => {
     const review = normalizePayload(example);
 
@@ -416,7 +470,7 @@ describe("multi-week import", () => {
         ],
       })
     );
-    const paths = review.warnings.map((w) => w.path);
+    const paths = review.warnings.filter((w) => w.rawName).map((w) => w.path);
     expect(paths.length).toBe(new Set(paths).size);
   });
 
@@ -579,9 +633,10 @@ describe("canonical base-day warning paths (non-sequential day numbers)", () => 
       })
     );
 
-    expect(review.warnings).toHaveLength(1);
-    expect(review.warnings[0].path).toBe(baseExercisePath(3, undefined, 0, 0, 0));
-    expect(review.warnings[0].path).not.toBe(baseExercisePath(2, undefined, 0, 0, 0));
+    const resolutionWarnings = review.warnings.filter((warning) => warning.rawName);
+    expect(resolutionWarnings).toHaveLength(1);
+    expect(resolutionWarnings[0].path).toBe(baseExercisePath(3, undefined, 0, 0, 0));
+    expect(resolutionWarnings[0].path).not.toBe(baseExercisePath(2, undefined, 0, 0, 0));
   });
 
   it("applies a resolution to declared Day 3 only, leaving Day 1 and Day 5 untouched", () => {
@@ -592,7 +647,7 @@ describe("canonical base-day warning paths (non-sequential day numbers)", () => 
       })
     );
 
-    const warningPath = review.warnings[0].path;
+    const warningPath = review.warnings.find((warning) => warning.rawName)!.path;
     const patched = applyResolutions(review.program, [
       { path: warningPath, canonicalId: "lunge-canonical" },
     ]);
@@ -680,10 +735,10 @@ describe("explicit-week base days sharing a dayNumber (F2)", () => {
     );
 
     expect(review.program.days).toHaveLength(6);
-    expect(review.warnings).toHaveLength(1);
+    expect(review.warnings.filter((warning) => warning.rawName)).toHaveLength(1);
 
     const patched = applyResolutions(review.program, [
-      { path: review.warnings[0].path, canonicalId: "lunge-canonical" },
+      { path: review.warnings.find((warning) => warning.rawName)!.path, canonicalId: "lunge-canonical" },
     ]);
 
     const day2Clones = patched.days.filter((d) => d.dayNumber === 2);
@@ -826,7 +881,7 @@ describe("duplicate base-day diagnostics", () => {
       })
     );
 
-    const structural = review.warnings.filter((w) => w.rawName === undefined);
+    const structural = review.warnings.filter((w) => w.rawName === undefined && !w.code);
     expect(structural).toHaveLength(1);
     expect(structural[0].message).toMatch(/duplicate/i);
     expect(structural[0].message).toMatch(/3/);
@@ -1316,9 +1371,10 @@ describe("typed resolution warnings", () => {
       makeImportMatchContext(),
     );
 
-    expect(review.warnings).toEqual([
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([
       {
         path,
+        targetId: expect.any(String),
         message: "Back Squat needs a specific version chosen.",
         rawName: "Back Squat",
         suggestions: [
@@ -1367,7 +1423,7 @@ describe("typed resolution warnings", () => {
       makeImportMatchContext(),
     );
 
-    expect(review.warnings).toEqual([]);
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([]);
     expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-high-bar-squat");
   });
 
@@ -1387,7 +1443,7 @@ describe("typed resolution warnings", () => {
       makeImportMatchContext(),
     );
 
-    expect(review.warnings).toEqual([]);
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([]);
     expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-low-bar-squat");
   });
 
@@ -1408,7 +1464,7 @@ describe("typed resolution warnings", () => {
       }),
     );
 
-    expect(review.warnings).toEqual([]);
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([]);
     expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-high-bar-squat");
     // Prescription text is stripped for MATCHING only — the program keeps the
     // name the user's routine actually used.
@@ -1439,7 +1495,7 @@ describe("typed resolution warnings", () => {
       }),
     );
 
-    expect(review.warnings).toEqual([]);
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([]);
     expect(exerciseAt(review).canonicalExerciseId).toBe("barbell-paused-high-bar-squat");
     expect(exerciseAt(review).name).toBe("2-second paused High Bar Back Squat");
   });
@@ -1513,9 +1569,10 @@ describe("typed resolution warnings", () => {
       makeImportMatchContext(),
     );
 
-    expect(review.warnings).toEqual([
+    expect(review.warnings.filter((warning) => warning.rawName)).toEqual([
       {
         path: `${path}.variants.0`,
+        targetId: expect.any(String),
         message: "Back Squat needs a specific version chosen.",
         rawName: "Back Squat",
         suggestions: expect.any(Array),

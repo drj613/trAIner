@@ -1,4 +1,6 @@
 import type { ProgramDay } from "@/lib/programs/types";
+import type { ImportWarning } from "@/lib/programs/types";
+import type { EditScope, ProgramEdit } from "@/lib/programs/edits";
 
 const SESSION_KEY = "trainer-pending-diff";
 
@@ -6,18 +8,29 @@ export type PendingDiff = {
   programId: string;
   original: ProgramDay;
   replacement: ProgramDay;
-  scope: "week" | "day";
+  // "week" and "day" are accepted only for pending data written by older builds.
+  scope?: EditScope | "week" | "day";
   weekNumber?: number;
   dayId?: string;
+  warnings?: ImportWarning[];
+  edit?: ProgramEdit;
 };
+
+export function resolvePendingDiffScope(pending: PendingDiff): EditScope | null {
+  if (pending.scope === "week") return null;
+  if (pending.scope === "day" || pending.scope === undefined) return "occurrence";
+  return pending.scope;
+}
 
 export function storePendingDiff(
   programId: string,
   original: ProgramDay,
   replacement: ProgramDay,
-  scope: "week" | "day" = "day",
+  scope: EditScope | "week" | "day" = "occurrence",
   weekNumber?: number,
-  dayId?: string
+  dayId?: string,
+  warnings?: ImportWarning[],
+  edit?: ProgramEdit,
 ): boolean {
   try {
     const payload: PendingDiff = {
@@ -27,6 +40,8 @@ export function storePendingDiff(
       scope,
       weekNumber,
       dayId: dayId ?? original.id,
+      warnings,
+      edit,
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
     return true;

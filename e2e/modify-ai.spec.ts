@@ -55,6 +55,10 @@ test.describe("Modify with AI", () => {
     // Should navigate to diff page
     await expect(page).toHaveURL(/\/programs\/.+\/diff/);
     await expect(page.getByText(/review changes/i)).toBeVisible();
+    await expect(page.getByRole("radio", { name: "This occurrence" })).toBeChecked();
+    await expect(page.getByRole("radio", { name: /apply to remaining occurrences/i })).toBeVisible();
+    await expect(page.getByText("Entire week", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Review changes" })).toBeVisible();
   });
 
   test("diff page shows added and removed exercises", async ({ page }) => {

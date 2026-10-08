@@ -47,6 +47,26 @@ describe("programRepo.duplicate", () => {
     expect(copy.status).toBe("draft");
     expect(copy.title).toMatch(/Copy of/);
   });
+
+  it("copies routine editing metadata without attaching program or session identifiers", async () => {
+    const editing = {
+      version: 1 as const,
+      templateDays: [{ id: "template-day", dayNumber: 1, title: "Day", sections: [] }],
+      dayBindings: [{ occurrenceDayId: "day-1", templateDayId: "template-day" }],
+      elementBindings: [],
+      exceptions: [],
+    };
+    await programRepo.save({
+      ...makeProgram("p1", false), editing,
+      overrides: [{ id: "o1", scope: "week", weekNumber: 2, programId: "p1", replacement: [], createdAt: "now" }],
+    });
+
+    const copy = await programRepo.duplicate("p1");
+
+    expect(copy.editing).toEqual(editing);
+    expect(JSON.stringify(copy.editing)).not.toContain("p1");
+    expect(copy.overrides[0].programId).toBe(copy.id);
+  });
 });
 
 describe("programRepo.activate — edge cases", () => {

@@ -39,6 +39,16 @@ function draftWithSection(kind: SectionType) {
 }
 
 describe("draftToProgram manual-builder volume defaults", () => {
+  it("initializes editing metadata for a manually built routine", () => {
+    const program = draftToProgram(draftWithSection("strength"));
+    expect(program.editing?.version).toBe(1);
+    expect(program.editing?.templateDays).toEqual(program.days);
+    expect(program.editing?.dayBindings).toEqual([{
+      occurrenceDayId: program.days[0].id,
+      templateDayId: program.days[0].id,
+    }]);
+  });
+
   const expected: { kind: SectionType; countsTowardVolume: boolean }[] = [
     { kind: "warmup", countsTowardVolume: false },
     { kind: "mobility", countsTowardVolume: false },

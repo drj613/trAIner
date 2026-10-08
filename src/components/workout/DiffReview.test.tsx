@@ -4,6 +4,7 @@ import { DiffReview } from "./DiffReview";
 import type { ExerciseDiff } from "@/lib/workout/programDiff";
 import type { ProgramDay, ProgramExercise } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
+import type { ProgramEditPreview } from "@/lib/programs/edits";
 
 const mockDay: ProgramDay = {
   id: "day-1",
@@ -114,5 +115,30 @@ describe("DiffReview", () => {
     );
     expect(screen.getByText(/added/i)).toBeInTheDocument();
     expect(screen.getByText(/removed/i)).toBeInTheDocument();
+  });
+
+  it("shows shared scope and impact information when a preview is supplied", () => {
+    const preview = {
+      changes: [{ dayId: "day-1", elementId: "ex-3", field: "sets", before: 3, after: 4 }],
+      preservedExceptions: [{ dayId: "day-2", reason: "Preserved reps exception" }],
+      unmappedTargets: [],
+      validationResults: [],
+    } as unknown as ProgramEditPreview;
+    render(
+      <DiffReview diffs={[modifiedDiff]} replacement={mockDay} onAccept={jest.fn()} onDiscard={jest.fn()}
+        editPreview={preview} scope="routine-day" scopeTitle="Leg Day" onScopeChange={jest.fn()} />,
+    );
+    expect(screen.getByRole("radio", { name: /remaining occurrences of Leg Day/i })).toBeChecked();
+    expect(screen.getByText(/3 → 4/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Preserved reps exception/).length).toBeGreaterThan(0);
+  });
+
+  it("resets the apply button after a failed save attempt", async () => {
+    const user = userEvent.setup();
+    const onAccept = jest.fn().mockRejectedValue(new Error("save failed"));
+    render(<DiffReview diffs={[addedDiff]} replacement={mockDay} onAccept={onAccept} onDiscard={jest.fn()} />);
+    const button = screen.getByRole("button", { name: /apply changes/i });
+    await user.click(button);
+    expect(button).toBeEnabled();
   });
 });

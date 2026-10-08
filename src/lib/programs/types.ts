@@ -2,6 +2,7 @@
 // here, and the override document is defined there beside the resolver that
 // consumes it.
 import type { NormalizationOverrideDocument } from "@/lib/catalog/identity";
+import type { ProgramEditingMetadata } from "./editTypes";
 
 export type ISODate = string;
 export type ID = string;
@@ -64,6 +65,7 @@ export type ProgramDocument = {
   origin?: string;
   days: ProgramDay[];
   overrides: ProgramOverride[];
+  editing?: ProgramEditingMetadata;
   import?: {
     rawJson: unknown;
     warnings: ImportWarning[];
@@ -143,6 +145,8 @@ export type WorkoutLogDocument = {
   id: ID;
   programId: ID;
   dayId: ID;
+  /** Frozen prescription used for this completed session's historical display. */
+  prescriptionSnapshot?: ProgramDay;
   performedAt: ISODate;
   // Local calendar date (YYYY-MM-DD) the session belongs to, captured in the
   // user's timezone at save time. performedAt is UTC, so its date component
@@ -221,6 +225,11 @@ export type ImportWarning = {
   path: string;
   rawName?: string;
   message: string;
+  code?: string;
+  originalValue?: unknown;
+  replacementValue?: unknown;
+  targetId?: ID;
+  affectedWeeks?: number[];
   suggestions?: ExerciseSuggestion[];
   sectionType?: string;
   resolutionKind?: "underspecified" | "unmatched";
@@ -280,6 +289,7 @@ export type PromptPresetDocument = {
   editedBlocks: Record<string, string>;
   fieldOn: Record<string, boolean>;
   schemaOn: boolean;
+  coachingOn?: boolean;
   createdAt: ISODate;
   updatedAt: ISODate;
 };

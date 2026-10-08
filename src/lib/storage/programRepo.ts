@@ -1,5 +1,8 @@
 import { getDb } from "./appDb";
 import type { ProgramDocument } from "@/lib/programs/types";
+import type { ProgramEditPreview } from "@/lib/programs/edits";
+import { completionRevision, previewProgramEdit, programRevision } from "@/lib/programs/edits";
+import { getRenderableDays } from "@/lib/programs/overrides";
 
 export const programRepo = {
   async list() {
@@ -21,6 +24,51 @@ export const programRepo = {
       updatedAt: now,
       createdAt: program.createdAt || now
     });
+  },
+
+  async commitEdit(preview: ProgramEditPreview): Promise<{ status: "saved"; program: ProgramDocument } | { status: "stale"; preview: ProgramEditPreview }> {
+    const db = await getDb();
+    const tx = db.transaction(["programs", "logs"], "readwrite");
+    const programs = tx.objectStore("programs");
+    const logs = tx.objectStore("logs");
+    const current = await programs.get(preview.proposedDocument.id);
+    const allLogs = await logs.getAll();
+    const programLogs = allLogs.filter((log) => log.programId === preview.proposedDocument.id);
+    if (!current) {
+      await tx.done;
+      throw new Error(`Program ${preview.proposedDocument.id} not found`);
+    }
+    if (programRevision(current) !== preview.sourceRevision || completionRevision(programLogs) !== preview.completionRevision) {
+      await tx.done;
+      const refreshedPreview = previewProgramEdit(current, preview.edit, { ...preview.context, logs: programLogs });
+      return { status: "stale", preview: refreshedPreview };
+    }
+
+    const next: ProgramDocument = { ...preview.proposedDocument, updatedAt: new Date().toISOString() };
+    const changedPrescriptions = new Set(
+      preview.changes.filter((change) => change.field !== "dayNumber" && change.field !== "title").map((change) => change.dayId),
+    );
+    const writes: Promise<IDBValidKey>[] = [];
+    const done = tx.done;
+    try {
+      if (changedPrescriptions.size > 0) {
+        const before = getRenderableDays(current);
+        for (const log of programLogs) {
+          if ((!log.completedAt && !log.skippedAt) || !changedPrescriptions.has(log.dayId) || log.prescriptionSnapshot) continue;
+          const day = before.find((candidate) => candidate.id === log.dayId);
+          if (day) writes.push(logs.put({ ...log, prescriptionSnapshot: structuredClone(day) }));
+        }
+      }
+      writes.push(programs.put(next));
+      await Promise.all(writes);
+      await done;
+    } catch (error) {
+      try { tx.abort(); } catch { /* The request may already have aborted it. */ }
+      await Promise.allSettled(writes);
+      await done.catch(() => {});
+      throw error;
+    }
+    return { status: "saved", program: next };
   },
 
   async remove(id: string) {
@@ -68,9 +116,11 @@ export const programRepo = {
     const original = await this.get(id);
     if (!original) throw new Error(`Program ${id} not found`);
     const now = new Date().toISOString();
+    const copyId = crypto.randomUUID();
     const copy: ProgramDocument = {
       ...structuredClone(original),
-      id: crypto.randomUUID(),
+      id: copyId,
+      overrides: structuredClone(original.overrides).map((override) => ({ ...override, programId: copyId })),
       title: `Copy of ${original.title}`,
       active: false,
       status: "draft",

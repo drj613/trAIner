@@ -36,6 +36,21 @@ describe("buildInitialCells", () => {
     expect(map[exId]).toHaveLength(3);
   });
 
+  it("uses the shared safe set-count fallback for an invalid stored prescription", () => {
+    const invalid = {
+      ...day,
+      sections: [{
+        ...day.sections[0],
+        groups: [{
+          ...day.sections[0].groups[0],
+          exercises: [{ ...day.sections[0].groups[0].exercises[0], sets: 2.5 }],
+        }],
+      }],
+    };
+    const map = buildInitialCells(invalid);
+    expect(map[invalid.sections[0].groups[0].exercises[0].id]).toHaveLength(3);
+  });
+
   it("initialises all cells to empty string", () => {
     const map = buildInitialCells(day);
     for (const cells of Object.values(map)) {

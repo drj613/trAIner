@@ -3,6 +3,10 @@
 import { useState } from "react";
 import type { ExerciseDiff } from "@/lib/workout/programDiff";
 import type { ProgramDay } from "@/lib/programs/types";
+import type { ImportWarning } from "@/lib/programs/types";
+import type { EditScope, ProgramEditPreview } from "@/lib/programs/edits";
+import { EditScopeControl } from "@/components/workout/EditScopeControl";
+import { EditImpactPreview } from "@/components/workout/EditImpactPreview";
 
 const typeStyle: Record<string, { bg: string; color: string; label: string }> = {
   added:    { bg: "rgba(127,199,122,0.12)", color: "var(--good)",  label: "+ added" },
@@ -24,19 +28,48 @@ function ExField({ label, before, after }: { label: string; before?: string | nu
 type Props = {
   diffs: ExerciseDiff[];
   replacement: ProgramDay;
-  onAccept: () => void;
+  onAccept: () => void | Promise<void>;
   onDiscard: () => void;
+  editPreview?: Pick<ProgramEditPreview, "changes" | "preservedExceptions" | "unmappedTargets" | "validationResults">;
+  warnings?: ImportWarning[];
+  scope?: EditScope | null;
+  scopeTitle?: string;
+  dayNumber?: number;
+  onScopeChange?: (scope: EditScope) => void;
+  includeExceptionDayIds?: string[];
+  onIncludeExceptionDayIdsChange?: (dayIds: string[]) => void;
+  canApply?: boolean;
 };
 
-export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
+export function DiffReview({
+  diffs,
+  replacement,
+  onAccept,
+  onDiscard,
+  editPreview,
+  warnings,
+  scope,
+  scopeTitle,
+  dayNumber,
+  onScopeChange,
+  includeExceptionDayIds,
+  onIncludeExceptionDayIdsChange,
+  canApply = true,
+}: Props) {
   const [accepting, setAccepting] = useState(false);
 
-  function handleAccept() {
+  async function handleAccept() {
     setAccepting(true);
-    onAccept();
+    try {
+      await onAccept();
+    } catch {
+      // The review stays open so the user can retry; the owning page reports the error.
+    } finally {
+      setAccepting(false);
+    }
   }
 
-  if (diffs.length === 0) {
+  if (diffs.length === 0 && !editPreview) {
     return (
       <div style={{ padding: 24 }}>
         <h2 style={{ fontSize: 17, fontWeight: 600, margin: "0 0 8px", color: "var(--fg)" }}>No changes detected</h2>
@@ -63,7 +96,14 @@ export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
           {counts.modified > 0 && <span style={{ color: "var(--warn)", marginLeft: 8 }}>~{counts.modified}</span>}
         </p>
       </div>
+      {scope !== undefined && onScopeChange && (
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--line)" }}>
+          <EditScopeControl scope={scope} onChange={onScopeChange} title={scopeTitle ?? replacement.title} dayNumber={dayNumber ?? replacement.dayNumber} />
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+        {editPreview && <EditImpactPreview preview={editPreview} warnings={warnings} includeExceptionDayIds={includeExceptionDayIds} onIncludeExceptionDayIdsChange={onIncludeExceptionDayIdsChange} />}
+        {diffs.length === 0 && !editPreview && <p style={{ color: "var(--fg-3)", fontSize: 13 }}>The pasted workout appears identical to the current day.</p>}
         {diffs.map((diff) => {
           const s = typeStyle[diff.type] ?? typeStyle.modified;
           return (
@@ -102,7 +142,7 @@ export function DiffReview({ diffs, replacement, onAccept, onDiscard }: Props) {
           {accepting ? "Applying changes to your workout" : ""}
         </span>
         <button type="button" className="btn ghost" onClick={onDiscard} style={{ flex: 1 }}>Discard</button>
-        <button type="button" className="btn primary" onClick={handleAccept} disabled={accepting} style={{ flex: 2 }}>Apply changes</button>
+        <button type="button" className="btn primary" onClick={handleAccept} disabled={accepting || !canApply} style={{ flex: 2 }}>Apply changes</button>
       </div>
     </div>
   );

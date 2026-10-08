@@ -38,13 +38,16 @@ export async function seedDemoIfNeeded(page: Page) {
   await page.locator("textarea").waitFor({ state: "visible", timeout: 10000 });
   await page.locator("textarea").fill(IMPORT_PROGRAM_JSON);
   await page.waitForTimeout(300);
-  await page.getByRole("button", { name: /validate/i }).click({ timeout: 10000 });
+  const validate = page.getByRole("button", { name: /validate/i });
+  await validate.waitFor({ state: "visible", timeout: 10000 });
+  await validate.click();
   // Handle "Resolve exercises" step — exercises may need attention
   await chooseImportVersions(page);
   const reviewBtn = page.getByRole("button", { name: /review import/i });
   if (await reviewBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
     await reviewBtn.click();
   }
+  await page.getByRole("heading", { name: "Confirm import" }).waitFor({ state: "visible", timeout: 10000 });
   await page.getByRole("button", { name: /save program/i }).click({ timeout: 10000 });
   await page.waitForTimeout(500);
   // Honour the documented contract: end on the Today screen with workout

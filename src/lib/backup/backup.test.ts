@@ -131,6 +131,24 @@ describe("exportBackup", () => {
     expect(Array.isArray(backup.userExercises)).toBe(true);
     expect(Array.isArray(backup.bodyweight)).toBe(true);
   });
+
+  it("preserves editing lineage in exported and restored program documents", async () => {
+    const editing = {
+      version: 1 as const,
+      templateDays: [{ id: "template-day", dayNumber: 1, title: "Day", sections: [] }],
+      dayBindings: [{ occurrenceDayId: "day-1", templateDayId: "template-day" }],
+      elementBindings: [],
+      exceptions: [],
+    };
+    storeData.programs = [{ ...validDoc.programs[0], editing }];
+
+    const backup = await exportBackup();
+    expect(backup.programs[0].editing).toEqual(editing);
+    mockPut.mockClear();
+    await restoreBackup({ ...validDoc, programs: backup.programs, logs: [], aliases: [] });
+
+    expect(mockPut).toHaveBeenCalledWith(expect.objectContaining({ id: "p1", editing }));
+  });
 });
 
 describe("countsTowardVolume — backup round trip", () => {

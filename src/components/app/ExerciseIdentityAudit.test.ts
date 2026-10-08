@@ -139,6 +139,7 @@ const IDENTITY_CONSUMERS: ReadonlyArray<{
   { file: "src/lib/import/parser.ts", verdict: "resolver", via: "matchExercise", why: "matches through matchExercise" },
   { file: "src/lib/import/resolution.ts", verdict: "resolver", via: "prepareImportName", why: "shares the resolver's name preparation" },
   { file: "src/components/import/ImportClient.tsx", verdict: "exact-only", why: "labels a chosen concrete id" },
+  { file: "src/components/import/ImportReviewEditor.tsx", verdict: "exact-only", why: "searches concrete catalogue records for an explicit user selection" },
   { file: "src/components/import/ResolutionStep.tsx", verdict: "exact-only", why: "labels and searches concrete versions the user picks between" },
 
   // --- storage, migration, backup -------------------------------------------

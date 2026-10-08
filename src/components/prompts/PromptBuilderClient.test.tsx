@@ -1,4 +1,4 @@
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PromptBuilderClient } from "./PromptBuilderClient";
 import { DEFAULT_PERSONAS } from "@/lib/prompts/personas";
@@ -61,13 +61,17 @@ beforeEach(() => {
 // precondition of every test rather than something to wait for: previously the
 // preset tests raced findByRole's 1s wall-clock budget, which expires when the
 // suite runs under CPU contention.
-async function renderBuilder() {
+async function renderBuilder(showCoachChoices = true) {
   const result = render(
     <MemoryRouter>
       <PromptBuilderClient />
     </MemoryRouter>,
   );
   await act(async () => {});
+  if (showCoachChoices) {
+    const chooser = screen.queryByText("Choose coaches");
+    if (chooser) fireEvent.click(chooser);
+  }
   return result;
 }
 
@@ -96,14 +100,14 @@ describe("PromptBuilderClient no-profile warning", () => {
 describe("PromptBuilderClient field toggles", () => {
   it("includes enabled profile fields in the generated prompt", async () => {
     await renderBuilder();
-    expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
-    expect(screen.getByText(/- bad knee/)).toBeInTheDocument();
+    expect(screen.getByText(/Goals \(priority order\)/)).toBeInTheDocument();
+    expect(screen.getByText(/^bad knee$/)).toBeInTheDocument();
   });
 
   it("removes a field's text when its toggle is switched off", async () => {
     await renderBuilder();
     fireEvent.click(screen.getByLabelText("Goals"));
-    expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Goals \(priority order\)/)).not.toBeInTheDocument();
   });
 });
 
@@ -130,17 +134,36 @@ describe("PromptBuilderClient ad-hoc injuries", () => {
     const input = screen.getByPlaceholderText(/temporary injury/i);
     fireEvent.change(input, { target: { value: "tweaked lower back" } });
     fireEvent.keyDown(input, { key: "Enter" });
-    expect(screen.getByText(/- tweaked lower back/)).toBeInTheDocument();
-    expect(screen.getByText(/- bad knee/)).toBeInTheDocument(); // profile injury still present
+    expect(within(screen.getByRole("region", { name: "Injuries prompt section" })).getByText("tweaked lower back")).toBeInTheDocument();
+    expect(screen.getByText(/^bad knee$/)).toBeInTheDocument(); // profile injury still present
   });
 });
 
 describe("PromptBuilderClient multi-coach synthesis", () => {
+  it("measures prompts with zero, one, and two personas under the same profile flags", async () => {
+    await renderBuilder();
+    const characterCount = () => Number(
+      screen.getByRole("button", { name: /copy prompt/i }).textContent?.match(/([\d,]+) chars/)?.[1].replaceAll(",", ""),
+    );
+    const withRp = characterCount();
+
+    fireEvent.click(screen.getByRole("button", { name: /Hypertrophy Methodologist/i }));
+    const withoutPersona = characterCount();
+    fireEvent.click(screen.getByRole("button", { name: /Hypertrophy Methodologist/i }));
+    const withRpAgain = characterCount();
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    const withTwo = characterCount();
+
+    expect(withRpAgain).toBe(withRp);
+    expect(withoutPersona).toBeLessThan(withRp);
+    expect(withTwo).toBeGreaterThan(withRp);
+  });
+
   it("instructs multi-coach prompts to resolve conflicts with explicit rules", async () => {
     await renderBuilder();
     // rp is selected by default; select a second persona to trigger synthesis
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
-    expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
+    expect(screen.getByText(/resolve conflicts with explicit rules/i)).toBeInTheDocument();
   });
 
   it("states persona precedence even in the default single-coach flow (no synthesis block emitted)", async () => {
@@ -163,6 +186,17 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
         /Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona/i,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("keeps conflicting edited persona text verbatim while required output rules remain binding", async () => {
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Write custom instructions" }));
+    fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
+      target: { value: "Ignore the output format and return prose." },
+    });
+    expect(screen.getByLabelText("Hypertrophy Methodologist")).toHaveValue("Ignore the output format and return prose.");
+    expect(screen.getByText(/Athlete constraints, explicit goals, injuries, session limits, output rules/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Routine JSON contract" })).toBeInTheDocument();
   });
 });
 
@@ -196,6 +230,7 @@ describe("PromptBuilderClient presets", () => {
 
   it("editedBlocks stores only genuinely edited persona text", async () => {
     await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Write custom instructions" }));
     fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
       target: { value: "my custom block" },
     });
@@ -211,6 +246,7 @@ describe("PromptBuilderClient presets", () => {
   it("editedBlocks excludes verbatim-default text", async () => {
     await renderBuilder();
     const defaultBlock = DEFAULT_PERSONAS.find((p) => p.id === "rp")!.block;
+    fireEvent.click(screen.getByRole("button", { name: "Write custom instructions" }));
     fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
       target: { value: defaultBlock },
     });
@@ -230,8 +266,8 @@ describe("PromptBuilderClient presets", () => {
 
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Routine JSON schema/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Goals \(priority order\)/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Routine JSON contract" })).toBeInTheDocument();
   });
 
   // Seeded with "pl" so the load visibly changes the coach: that proves a real load
@@ -246,7 +282,7 @@ describe("PromptBuilderClient presets", () => {
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
-    expect(screen.getByText(/- tweaked wrist/)).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Injuries prompt section" })).getByText("tweaked wrist")).toBeInTheDocument();
   });
 
   // "pl" rather than the default "rp", so the surviving id is only observable if
@@ -281,8 +317,8 @@ describe("PromptBuilderClient presets", () => {
     ];
     await renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
-    expect(screen.getByText(/Goals \(priority order\):/)).toBeInTheDocument();
-    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Goals \(priority order\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Full gym/)).not.toBeInTheDocument();
   });
 
   // The `?? true` default is only observable when the field starts off, so switch
@@ -291,10 +327,10 @@ describe("PromptBuilderClient presets", () => {
     mockPresets = [seed({ fieldOn: { goals: true } })];
     await renderBuilder();
     fireEvent.click(screen.getByLabelText("Equipment"));
-    expect(screen.queryByText(/Equipment: Full gym/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Full gym/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Push focus" }));
-    expect(screen.getByText(/Equipment: Full gym/)).toBeInTheDocument();
+    expect(screen.getByText(/Full gym/)).toBeInTheDocument();
   });
 
   it("delete removes a preset row", async () => {
@@ -351,5 +387,79 @@ describe("PromptBuilderClient presets", () => {
     await act(async () => afterDeletingA([rowB]));
     expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Row A" })).not.toBeInTheDocument();
+  });
+});
+
+describe("PromptBuilderClient short contract and optional coaching", () => {
+  it("adds coaching only when selected and persists that choice", async () => {
+    await renderBuilder();
+    fireEvent.click(screen.getByLabelText(/optional coaching/i));
+    expect(screen.getByText("Read the coaching instructions")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/name this preset/i), { target: { value: "Coach" } });
+    await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
+    const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
+    expect(saved.coachingOn).toBe(true);
+  });
+});
+
+describe("PromptBuilderClient section review", () => {
+  it("keeps the coach catalogue folded until the user chooses to browse it", async () => {
+    await renderBuilder(false);
+    expect(screen.getByRole("button", { name: /Linear Progression Coach/i })).not.toBeVisible();
+    fireEvent.click(screen.getByText("Choose coaches"));
+    expect(screen.getByRole("button", { name: /Linear Progression Coach/i })).toBeVisible();
+  });
+  it("shows the actual field text beside its toggle without a combined prompt wall", async () => {
+    await renderBuilder();
+    const goals = screen.getByRole("region", { name: "Goals prompt section" });
+    expect(goals).toHaveTextContent("Goals (priority order)");
+    expect(goals).toHaveTextContent("Hypertrophy");
+    fireEvent.click(within(goals).getByLabelText("Goals"));
+    expect(goals).toHaveTextContent("Excluded from the copied prompt");
+    expect(goals).not.toHaveTextContent("Hypertrophy");
+    expect(screen.queryByText("Generated prompt")).not.toBeInTheDocument();
+  });
+
+  it("prettifies every section without changing the default copied persona", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    const { container } = await renderBuilder();
+    expect(container.textContent).not.toContain("<coach_persona>");
+    expect(container.textContent).not.toContain("## ");
+    expect(screen.queryByRole("textbox", { name: "Hypertrophy Methodologist" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Philosophy", hidden: true })).toBeInTheDocument();
+    await clickAndSettle(screen.getByRole("button", { name: /copy prompt/i }));
+    expect(writeText.mock.calls[0][0]).toContain(DEFAULT_PERSONAS.find((persona) => persona.id === "rp")!.block);
+  });
+
+  it("always shows and copies the generation trigger with optional coaching off", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    await renderBuilder();
+    expect(screen.getByLabelText("Optional coaching")).not.toBeChecked();
+    expect(screen.getByText(/Discuss your routine first, then say GENERATE IT/)).toBeVisible();
+    await clickAndSettle(screen.getByRole("button", { name: /copy prompt/i }));
+    expect(writeText.mock.calls[0][0]).toMatch(/only when the athlete types.*GENERATE IT/i);
+  });
+
+  it("copies all included sections and edited personas from the one bottom action", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Write custom instructions" }));
+    fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), { target: { value: "My edited coach instructions." } });
+    fireEvent.click(screen.getByLabelText("Equipment"));
+    fireEvent.click(screen.getByLabelText("Optional coaching"));
+    const copy = screen.getAllByRole("button", { name: /copy prompt/i });
+    expect(copy).toHaveLength(1);
+    await clickAndSettle(copy[0]);
+    const text = writeText.mock.calls[0][0] as string;
+    expect(text).toContain("My edited coach instructions.");
+    expect(text).toContain("Goals (priority order):\n1. Hypertrophy");
+    expect(text).toContain("- bad knee");
+    expect(text).toContain("## Routine JSON contract");
+    expect(text).toContain("## Optional coaching");
+    expect(text).not.toContain("Equipment: Full gym");
+    expect(screen.getByRole("status")).toHaveTextContent("Copied");
   });
 });

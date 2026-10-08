@@ -8,6 +8,7 @@ export type ExerciseDiff = {
   type: DiffType;
   before?: ProgramExercise;
   after?: ProgramExercise;
+  structure?: { before: string; after: string };
 };
 
 function flatExercises(day: ProgramDay): Map<string, ProgramExercise> {
@@ -34,6 +35,9 @@ function tagsEqual(a: ProgramExercise["tags"], b: ProgramExercise["tags"]): bool
 
 function exercisesEqual(a: ProgramExercise, b: ProgramExercise): boolean {
   return (
+    a.canonicalExerciseId === b.canonicalExerciseId &&
+    a.unit === b.unit &&
+    a.countsTowardVolume === b.countsTowardVolume &&
     a.name === b.name &&
     a.sets === b.sets &&
     a.reps === b.reps &&
@@ -65,6 +69,14 @@ export function diffDays(before: ProgramDay, after: ProgramDay): ExerciseDiff[] 
     }
   }
 
+  const structure = (day: ProgramDay) => JSON.stringify(day.sections.map(s => ({
+    type: s.type, name: s.name, groups: s.groups.map(g => ({
+      type: g.type, notes: g.notes, exercises: g.exercises.map(e => e.id),
+    })),
+  })));
+  if (structure(before) !== structure(after)) {
+    result.push({ exerciseId: `structure:${before.id}`, exerciseName: "Sections, grouping and exercise order", type: "modified", structure: { before: structure(before), after: structure(after) } });
+  }
   return result;
 }
 
@@ -90,7 +102,7 @@ export function remapExerciseIds(original: ProgramDay, parsed: ProgramDay): Prog
     for (const group of section.groups) {
       for (const ex of group.exercises) {
         const key = `${section.id}:${ex.name.toLowerCase().trim()}`;
-        sectionNameToId.set(key, ex.id);
+        sectionNameToId.set(key, sectionNameToId.has(key) ? "" : ex.id);
         // Only set global entry if name is unique (first occurrence wins)
         if (!globalNameToId.has(ex.name.toLowerCase().trim())) {
           globalNameToId.set(ex.name.toLowerCase().trim(), ex.id);

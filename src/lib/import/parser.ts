@@ -2,6 +2,8 @@ import { matchExercise, type MatchExerciseContext, type MatchResult } from "@/li
 import { normalizeSectionType } from "@/lib/programs/domain";
 import type { AliasDocument, ID, ImportWarning, ProfileDocument, ProgramDay, ProgramDocument, ProgramExercise, ProgramGroup, ProgramOverride, ProgramSection, ProgressionRule, UserExerciseDocument } from "@/lib/programs/types";
 import { emptyTags } from "@/lib/programs/types";
+import { normalizePrescription, validateProgram } from "@/lib/programs/validation";
+import { deriveEditingMetadata } from "@/lib/programs/editMetadata";
 import { parseLooseJson, type RecoveryReason } from "@/lib/import/sanitizeJson";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { diagnoseImportOverrides } from "@/lib/programs/overrideDiagnostics";
@@ -88,6 +90,7 @@ type NormalizedVariant = {
     Pick<
       ProgramExercise,
       "name" | "sets" | "reps" | "load" | "rest" | "tempo" | "notes" | "countsTowardVolume" | "tags"
+      | "unit"
     >
   >;
   // Resolved match for the variant name, when the variant supplied a name.
@@ -121,6 +124,7 @@ export function parseProgramJson(input: string, profileSnapshot?: ProfileDocumen
 export function normalizePayload(payload: ImportPayload, profileSnapshot?: ProfileDocument, aliases: AliasDocument[] = [], userExercises: UserExerciseDocument[] = [], matchContext?: MatchExerciseContext): ImportReview {
   const matchInputs: MatchInputs = { aliases, userExercises, matchContext };
   const warnings: ImportWarning[] = [];
+  diagnoseDiscardedContent(payload, warnings);
   const now = new Date().toISOString();
   const programId = newId("program");
 
@@ -171,6 +175,14 @@ export function normalizePayload(payload: ImportPayload, profileSnapshot?: Profi
     updatedAt: now
   };
 
+  if (!stringFrom(payload.program_name ?? payload.programName ?? payload.title, "")) warnings.push({
+    code: "program-title-defaulted", path: "program_name", originalValue: payload.program_name ?? payload.programName ?? payload.title,
+    replacementValue: program.title, message: `Program title is missing; using "${program.title}".`,
+  });
+
+  program.editing = deriveEditingMetadata(program, baseDays);
+  warnings.push(...validateProgram(program));
+
   return { program, warnings };
 }
 
@@ -180,6 +192,49 @@ function parseBaseDays(
   matchInputs: MatchInputs
 ): ProgramDay[] {
   return detectDays(payload).map((day, index) => normalizeDay(day, index + 1, warnings, matchInputs));
+}
+
+// Report source objects dropped by arrayOfRecords. These diagnostics remain
+// structural (no rawName), so they never enter the exercise-resolution queue.
+function diagnoseDiscardedContent(payload: ImportPayload, warnings: ImportWarning[]): void {
+  const warnArray = (value: unknown, path: string, label: string) => {
+    if (value === undefined) return;
+    if (!Array.isArray(value)) {
+      warnings.push({ code: "content-skipped", path, originalValue: value, message: `${label} was not an array and was ignored.` });
+      return;
+    }
+    value.forEach((entry, index) => {
+      if (!isRecord(entry)) warnings.push({ code: "content-skipped", path: `${path}.${index}`, originalValue: entry, message: `Non-object ${label.toLowerCase()} content was ignored.` });
+    });
+  };
+  const days = Array.isArray(payload.days) ? payload.days : Array.isArray(payload.weeks)
+    ? payload.weeks.flatMap((week) => isRecord(week) && Array.isArray(week.days) ? week.days : [])
+    : Array.isArray(payload.sections) ? [payload] : [];
+  const sourceDays = Array.isArray(payload.days) ? payload.days : Array.isArray(payload.weeks)
+    ? payload.weeks.flatMap((week, wi) => isRecord(week) && Array.isArray(week.days) ? week.days.map((day, di) => ({ day, path: `weeks.${wi}.days.${di}` })) : [])
+    : Array.isArray(payload.sections) ? [{ day: payload, path: "days.0" }] : [];
+  warnArray(payload.days, "days", "Days");
+  if (Array.isArray(payload.weeks)) payload.weeks.forEach((week, wi) => {
+    if (!isRecord(week)) warnings.push({ code: "content-skipped", path: `weeks.${wi}`, originalValue: week, message: "Non-object week content was ignored." });
+    else warnArray(week.days, `weeks.${wi}.days`, "Week days");
+  });
+  void days;
+  for (const { day, path } of sourceDays) {
+    if (!isRecord(day)) continue;
+    warnArray(day.sections, `${path}.sections`, "Sections");
+    if (!Array.isArray(day.sections)) continue;
+    day.sections.forEach((section, si) => {
+      if (!isRecord(section)) return;
+      const groups = section.exercise_groups ?? section.groups;
+      const groupPath = section.exercise_groups !== undefined ? `${path}.sections.${si}.exercise_groups` : `${path}.sections.${si}.groups`;
+      warnArray(groups, groupPath, "Groups");
+      if (!Array.isArray(groups)) return;
+      groups.forEach((group, gi) => {
+        if (!isRecord(group)) return;
+        warnArray(group.exercises, `${groupPath}.${gi}.exercises`, "Exercises");
+      });
+    });
+  }
 }
 
 // Structural warning only (no rawName), so extractUnresolvedExercises never
@@ -443,13 +498,18 @@ function normalizeDay(
   const sections = arrayOfRecords(day.sections).map((section, index) =>
     normalizeSection(section, dayNumber, templateWeek, index, warnings, matchInputs, pathBuilder, allowVariants)
   );
+  const title = stringFrom(day.title ?? day.name, `Day ${fallbackDayNumber}`);
+  if (!stringFrom(day.title ?? day.name, "")) warnings.push({
+    code: "day-title-defaulted", path: `days.${dayNumber}.title`, originalValue: day.title ?? day.name,
+    replacementValue: title, message: `Day title is missing; using "${title}".`,
+  });
 
   return {
     id: newId("day"),
     dayNumber,
     weekNumber: templateWeek,
     templateWeek,
-    title: stringFrom(day.title ?? day.name, `Day ${fallbackDayNumber}`),
+    title,
     sections
   };
 }
@@ -464,15 +524,34 @@ function normalizeSection(
   pathBuilder: ExercisePathBuilder,
   allowVariants: boolean
 ): ProgramSection {
-  const sectionType = normalizeSectionType(stringFrom(section.type, "training"));
+  const sectionId = newId("section");
+  const rawType = section.type;
+  const fallbackType = normalizeSectionType(stringFrom(rawType, "training"));
+  if (typeof rawType !== "string" || !rawType.trim() || fallbackType !== rawType.toLowerCase().trim()) {
+    warnings.push({
+      code: "section-type-defaulted",
+      path: `days.${dayNumber}.sections.${sectionIndex}`,
+      targetId: sectionId,
+      originalValue: rawType,
+      replacementValue: fallbackType,
+      message: `Section type ${rawType === undefined ? "is missing" : `\"${String(rawType)}\" is unsupported`}; using \"${fallbackType}\".`,
+    });
+  }
+  const sectionType = fallbackType;
   const groups = arrayOfRecords(section.exercise_groups ?? section.groups).map((group, index) =>
     normalizeGroup(group, dayNumber, templateWeek, sectionIndex, index, warnings, matchInputs, sectionType, pathBuilder, allowVariants)
   );
 
+  const sectionName = stringFrom(section.name ?? section.type, "Training");
+  if (!stringFrom(section.name ?? section.type, "")) warnings.push({
+    code: "section-name-defaulted", path: `days.${dayNumber}.sections.${sectionIndex}.name`,
+    originalValue: section.name ?? section.type, replacementValue: sectionName,
+    message: `Section name is missing; using "${sectionName}".`,
+  });
   return {
-    id: newId("section"),
+    id: sectionId,
     type: sectionType,
-    name: stringFrom(section.name ?? section.type, "Training"),
+    name: sectionName,
     groups
   };
 }
@@ -489,20 +568,45 @@ function normalizeGroup(
   pathBuilder: ExercisePathBuilder,
   allowVariants: boolean
 ): ProgramGroup {
+  const groupId = newId("group");
   const exercises = arrayOfRecords(group.exercises).map((exercise, index) =>
     normalizeExercise(exercise, pathBuilder(dayNumber, templateWeek, sectionIndex, groupIndex, index), warnings, matchInputs, sectionType, allowVariants)
   );
 
+  const rawType = group.type;
+  const groupType = normalizeGroupType(optionalString(rawType));
+  if (rawType !== undefined && (typeof rawType !== "string" || !["single", "superset", "circuit", "giant-set"].includes(rawType.trim().toLowerCase()))) {
+    warnings.push({
+      code: "group-type-defaulted",
+      path: `days.${dayNumber}.sections.${sectionIndex}.groups.${groupIndex}`,
+      targetId: groupId,
+      originalValue: rawType,
+      replacementValue: groupType,
+      message: `Group type ${String(rawType)} is unsupported; using \"${groupType}\".`,
+    });
+  }
   return {
-    id: newId("group"),
-    type: normalizeGroupType(optionalString(group.type)),
+    id: groupId,
+    type: groupType,
     notes: optionalString(group.notes),
     exercises
   };
 }
 
 function normalizeExercise(exercise: ImportPayload, path: string, warnings: ImportWarning[], matchInputs: MatchInputs, sectionType: string, allowVariants: boolean = true): ProgramExercise {
-  const name = stringFrom(exercise.name, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
+  const exerciseId = newId("exercise");
+  const rawName = exercise.name;
+  const name = stringFrom(rawName, "Unnamed Exercise").replace(/^[a-z]\.\s+/i, "");
+  if (typeof rawName !== "string" || !rawName.trim()) {
+    warnings.push({
+      code: "exercise-name-defaulted",
+      path,
+      targetId: exerciseId,
+      originalValue: rawName,
+      replacementValue: name,
+      message: `Exercise name is missing; using \"${name}\".`,
+    });
+  }
   const match = runMatch(name, matchInputs);
   const tags = isRecord(exercise.tags)
     ? {
@@ -516,20 +620,25 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
   if (match.kind !== "matched") {
     warnings.push({
       path,
+      targetId: exerciseId,
       ...resolutionWarningFields(name, match),
       sectionType,
     });
   }
 
   const countsTowardVolume = optionalBoolean(exercise.countsTowardVolume) ?? optionalBoolean(exercise.counts_toward_volume);
+  const prescription = normalizePrescription(exercise, path, exerciseId);
+  warnings.push(...prescription.diagnostics);
+  const unit = normalizeUnit(exercise.unit, path, exerciseId, warnings);
 
   const result: WithVariants = {
-    id: newId("exercise"),
+    id: exerciseId,
     name,
     canonicalExerciseId: match.kind === "matched" ? match.item.id : undefined,
-    sets: optionalNumber(exercise.sets),
-    reps: optionalString(exercise.reps),
+    sets: prescription.sets,
+    reps: prescription.reps,
     load: optionalString(exercise.load ?? exercise.weight),
+    unit,
     rest: optionalString(exercise.rest),
     tempo: normalizeTempo(exercise),
     notes: optionalString(exercise.notes),
@@ -538,7 +647,7 @@ function normalizeExercise(exercise: ImportPayload, path: string, warnings: Impo
   };
 
   if (allowVariants) {
-    const variants = parseVariants(exercise.variants, path, warnings, matchInputs, sectionType);
+    const variants = parseVariants(exercise.variants, path, warnings, matchInputs, sectionType, exerciseId);
     if (variants.length > 0) result.__variants = variants;
   } else if (Array.isArray(exercise.variants) && exercise.variants.length > 0) {
     // Variants inside an override replacement day are out of scope: they are
@@ -566,6 +675,7 @@ function parseVariants(
   warnings: ImportWarning[],
   matchInputs: MatchInputs,
   sectionType: string,
+  targetId: ID,
 ): NormalizedVariant[] {
   if (!Array.isArray(raw)) return [];
   const out: NormalizedVariant[] = [];
@@ -575,10 +685,15 @@ function parseVariants(
     const fields: NormalizedVariant["fields"] = {};
     const name = optionalString(entry.name);
     if (name !== undefined) fields.name = name.replace(/^[a-z]\.\s+/i, "");
-    const sets = optionalNumber(entry.sets);
-    if (sets !== undefined) fields.sets = sets;
-    const reps = optionalString(entry.reps);
-    if (reps !== undefined) fields.reps = reps;
+    const prescription = normalizePrescription(entry, `${basePath}.variants.${variantIndex}`);
+    if (Object.hasOwn(entry, "sets")) {
+      fields.sets = prescription.sets;
+      warnings.push(...prescription.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("sets-")));
+    }
+    if (Object.hasOwn(entry, "reps")) {
+      fields.reps = prescription.reps;
+      warnings.push(...prescription.diagnostics.filter((diagnostic) => diagnostic.code === "reps-coerced"));
+    }
     const load = optionalString(entry.load ?? entry.weight);
     if (load !== undefined) fields.load = load;
     const rest = optionalString(entry.rest);
@@ -587,6 +702,7 @@ function parseVariants(
     if (tempo !== undefined) fields.tempo = tempo;
     const notes = optionalString(entry.notes);
     if (notes !== undefined) fields.notes = notes;
+    if (Object.hasOwn(entry, "unit")) fields.unit = normalizeUnit(entry.unit, `${basePath}.variants.${variantIndex}`, targetId, warnings);
     const ctv = optionalBoolean(entry.countsTowardVolume) ?? optionalBoolean(entry.counts_toward_volume);
     if (ctv !== undefined) fields.countsTowardVolume = ctv;
     if (isRecord(entry.tags)) {
@@ -606,6 +722,7 @@ function parseVariants(
       } else {
         warnings.push({
           path: `${basePath}.variants.${variantIndex}`,
+          targetId,
           ...resolutionWarningFields(fields.name!, match),
           sectionType,
         });
@@ -614,6 +731,17 @@ function parseVariants(
     out.push({ weeks, fields, canonicalExerciseId, hasName });
   });
   return out;
+}
+
+function normalizeUnit(value: unknown, path: string, targetId: string, warnings: ImportWarning[]): ProgramExercise["unit"] {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "lb" || normalized === "lbs" || normalized === "pound" || normalized === "pounds") return "lb";
+    if (normalized === "kg" || normalized === "kgs" || normalized === "kilogram" || normalized === "kilograms") return "kg";
+  }
+  warnings.push({ code: "unit-defaulted", path, targetId, originalValue: value, replacementValue: "lb", message: `Weight unit ${String(value)} is unsupported; using lb.` });
+  return undefined;
 }
 
 // De-duplicated positive integers, preserving first-seen order.

@@ -224,3 +224,27 @@ describe("H9: remapExerciseIds handles same-name exercises in different sections
     expect(s1Ex.id).not.toBe(s2Ex.id);
   });
 });
+
+
+describe("routine structure changes", () => {
+  it("reports grouping, membership order, section names and volume roles", () => {
+    const after = structuredClone(base);
+    after.sections[0].groups[0].type = "superset";
+    expect(diffDays(base, after).some(d => d.structure)).toBe(true);
+    after.sections[0].groups[0].type = "single";
+    after.sections[0].groups[0].exercises.reverse();
+    expect(diffDays(base, after).some(d => d.structure)).toBe(true);
+    after.sections[0].groups[0].exercises.reverse();
+    after.sections[0].name = "Working sets";
+    expect(diffDays(base, after).some(d => d.structure)).toBe(true);
+    after.sections[0].name = base.sections[0].name;
+    after.sections[0].groups[0].exercises[0].countsTowardVolume = false;
+    after.sections[0].groups[0].exercises[0].unit = "kg";
+    expect(diffDays(base, after)[0].type).toBe("modified");
+  });
+  it("does not bind duplicate exercises within the same section", () => {
+    const original = makeDay([{id:"one",name:"Row"},{id:"two",name:"Row"}]);
+    const parsed = makeDay([{id:"new-one",name:"Row"},{id:"new-two",name:"Row"}]);
+    expect(remapExerciseIds(original, parsed).sections[0].groups[0].exercises.map(e => e.id)).toEqual(["new-one","new-two"]);
+  });
+});
