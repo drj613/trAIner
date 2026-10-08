@@ -11,7 +11,8 @@ export function buildRequiredContract(): string {
 
   return [
     "## Routine JSON contract",
-    "When you provide a final routine, return one JSON object with no fences or commentary. Discussion and questions are fine before the final routine. Use the field names and hierarchy in this example; use straight ASCII quotes.",
+    "Default to conversational coaching: discuss choices, ask focused questions, and keep routine JSON out of this phase. Only when the athlete types `GENERATE IT` (exactly those words, all caps), emit the final routine as JSON only for that response. After emitting, return to conversational coaching; discuss follow-up changes until they type `GENERATE IT` again. At the end of every conversational message, append: Say GENERATE IT (all caps) when you're ready for the final routine.",
+    "When emitting after GENERATE IT, return one JSON object with no fences or commentary. Use the field names and hierarchy in this example; use straight ASCII quotes.",
     "Plan no more than 8 weeks. `days` is the repeating weekly template. Use sparse `variants` for exercise-level changes and sparse `overrides` with complete replacement days for structural changes; omit unchanged weeks.",
     "Within each superset, every exercise must have the same effective set count. Do not impose this rule on circuits or giant-sets. Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training. Valid group types: single, superset, circuit, giant-set.",
     "Every exercise needs `name`, numeric `sets`, `reps`, `countsTowardVolume` and muscle `tags` (primary, secondary, incidental, modifiers). `load`, `unit`, `rest`, `tempo`, and `notes` are optional. Mark productive work true; ordinary warmup, mobility, rehab, cooldown, and low-fatigue practice false. `sets` is the number of logged sets.",
@@ -49,7 +50,7 @@ export function buildCoachingBlock(): string {
     "Progress gradually. Prefer adding reps within a range before adding load when that fits the lift; increase load in small steps while keeping technique and effort appropriate. State what counts as a successful progression and what to do when targets are missed.",
     "Use deloads when fatigue, performance, or the planned block calls for them. Reduce stress deliberately, usually by reducing sets, load, or both, while keeping movement practice. Explain the reason and how normal training resumes.",
     "Before presenting a routine, self-audit it for schedule fit, progression, recovery, muscle coverage, equipment, injury constraints, realistic session length, and internal consistency. Check that every superset has equal effective set counts, that volume roles are accurate, and that weekly changes match their intended weeks.",
-    "When a final routine is requested, follow the required JSON contract exactly. Keep coaching discussion outside the JSON and never put comments or markdown fences inside it.",
+    "When the athlete types GENERATE IT, follow the required JSON contract exactly. Keep coaching discussion outside the JSON and never put comments or markdown fences inside it.",
   ].join("\n\n");
 }
 

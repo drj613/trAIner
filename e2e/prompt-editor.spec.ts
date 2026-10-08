@@ -59,6 +59,7 @@ test("field previews match the complete copied prompt", async ({ page, context }
   expect(text).toContain("Equipment: Full gym");
   expect(text).toContain("- Sore shoulder");
   expect(text).toContain("## Routine JSON contract");
+  expect(text).toContain("Only when the athlete types `GENERATE IT`");
   expect(text).toContain("## Optional coaching");
   expect(text).not.toContain("Stronger squats");
   expect(text).not.toContain("Excluded from the copied prompt");

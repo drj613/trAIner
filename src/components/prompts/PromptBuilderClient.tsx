@@ -389,7 +389,8 @@ export function PromptBuilderClient() {
       <section aria-label="Output requirements" className="panel min-w-0">
         <h2 className="text-sm font-semibold">Routine JSON contract</h2>
         <p className="text-xs muted mt-2">Always included. Defines the import format, repeating weeks, exercise groups, and set counts. New routines are limited to eight generated weeks.</p>
-        <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptDetails text={buildRequiredContract()} paragraphLabels={["Response format", "Weeks and weekly changes", "Groups and set counts", "Exercise fields and volume", "Variants and progression", "Using the example"]} /></details>
+        <p className="text-sm mt-2">Discuss your routine first, then say GENERATE IT (all caps) in your chat to receive the final routine JSON.</p>
+        <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptDetails text={buildRequiredContract()} paragraphLabels={["Generation trigger", "Response format", "Weeks and weekly changes", "Groups and set counts", "Exercise fields and volume", "Variants and progression", "Using the example"]} /></details>
       </section>
 
       <section aria-label="Copy complete prompt">

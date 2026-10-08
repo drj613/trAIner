@@ -6,6 +6,18 @@ describe("buildSchemaBlock", () => {
   });
 });
 
+describe("generation trigger", () => {
+  it("keeps discussion separate from JSON until the explicit export command", () => {
+    const contract = buildSchemaBlock();
+    expect(contract).toContain("GENERATE IT");
+    expect(contract).toMatch(/only when the athlete types.*GENERATE IT/i);
+    expect(contract).toMatch(/all caps/i);
+    expect(contract).toMatch(/keep routine JSON out of this phase/i);
+    expect(contract).toMatch(/after emitting, return to conversational coaching/i);
+    expect(contract).toContain("Say GENERATE IT (all caps) when you're ready for the final routine.");
+  });
+});
+
 describe("buildRecoveryPrompt", () => {
   it("always instructs JSON-only output with straight quotes and no fences", () => {
     const prompt = buildRecoveryPrompt("syntax");

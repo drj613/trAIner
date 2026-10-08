@@ -432,6 +432,16 @@ describe("PromptBuilderClient section review", () => {
     expect(writeText.mock.calls[0][0]).toContain(DEFAULT_PERSONAS.find((persona) => persona.id === "rp")!.block);
   });
 
+  it("always shows and copies the generation trigger with optional coaching off", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    await renderBuilder();
+    expect(screen.getByLabelText("Optional coaching")).not.toBeChecked();
+    expect(screen.getByText(/Discuss your routine first, then say GENERATE IT/)).toBeVisible();
+    await clickAndSettle(screen.getByRole("button", { name: /copy prompt/i }));
+    expect(writeText.mock.calls[0][0]).toMatch(/only when the athlete types.*GENERATE IT/i);
+  });
+
   it("copies all included sections and edited personas from the one bottom action", async () => {
     const writeText = jest.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
