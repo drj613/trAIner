@@ -11,7 +11,7 @@ import {
   PROFILE_FIELDS,
   missingImportantFields,
 } from "@/lib/prompts/profileFields";
-import { buildSchemaBlock, assemblePrompt } from "@/lib/prompts/builder";
+import { buildRequiredContract, buildCoachingBlock, buildPersonaSynthesis, assemblePrompt } from "@/lib/prompts/builder";
 import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import type { PromptPresetDocument } from "@/lib/programs/types";
@@ -24,7 +24,7 @@ export function PromptBuilderClient() {
   const [fieldOn, setFieldOn] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(PROFILE_FIELDS.map((f) => [f.key, true])),
   );
-  const [schemaOn, setSchemaOn] = useState(true);
+  const [coachingOn, setCoachingOn] = useState(false);
   const [adhocInjuries, setAdhocInjuries] = useState<string[]>([]);
   const [adhocInput, setAdhocInput] = useState("");
   const [presets, setPresets] = useState<PromptPresetDocument[]>([]);
@@ -59,7 +59,8 @@ export function PromptBuilderClient() {
       personaIds: [...selectedIds],
       editedBlocks: edited,
       fieldOn: { ...fieldOn },
-      schemaOn,
+      schemaOn: true,
+      coachingOn,
       createdAt: "",
       updatedAt: "",
     });
@@ -83,7 +84,7 @@ export function PromptBuilderClient() {
         PROFILE_FIELDS.map((f) => [f.key, preset.fieldOn[f.key] ?? true]),
       ),
     );
-    setSchemaOn(preset.schemaOn);
+    setCoachingOn(preset.coachingOn ?? false);
     // adhocInjuries / adhocInput intentionally untouched
   }
 
@@ -128,23 +129,10 @@ export function PromptBuilderClient() {
   );
 
   const prompt = useMemo(() => {
-    const personaBlocks = selectedPersonas.map((p) => {
-      const text = editedBlocks[p.id] ?? p.block;
-      return `## Coach: ${p.name}\n${text}`;
-    });
-
-    const synthesisBlock =
-      selectedPersonas.length > 1
-        ? `## Multi-Coach Synthesis\n\nYou are drawing on the combined expertise of ${selectedPersonas.length} coaches: ${selectedPersonas.map((p) => p.name).join(", ")}.\n\nWhen the athlete asks for a program or any significant programming decision, do not immediately produce a complete routine. Follow this two-step process:\n\n**Step 1 — Surface perspectives and tradeoffs.** Present each coach's position on the key programming variables at stake — volume, frequency, intensity, exercise selection, periodization structure. Where the coaches agree, note the consensus. Where they diverge, name the tradeoff clearly: what the athlete gains and gives up with each approach. Then invite the athlete to weigh in before committing to a final direction.\n\n**Step 2 — Synthesize a recommended approach.** Once the athlete has clarified their priorities, describe the integrated program you would build — in plain prose, not JSON. Explain how each coach's methodology shows up where its strengths are most relevant. Where two coaches genuinely conflict (e.g. hypertrophy volume vs. powerlifting recovery), resolve each conflict with an explicit rule rather than averaging them or splitting the difference. Keep refining with the athlete as long as they have questions.\n\n**Step 3 — Emit the routine.** Only when the athlete types \`GENERATE IT\` (all caps) do you produce the JSON routine, following the Output mode rules below. Do not emit JSON before this trigger, even if Step 2 feels finalized.\n\nFor conversational questions that do not require a full program, respond directly while attributing perspectives by coach name wherever the methodologies meaningfully differ.`
-        : "";
-
-    // Persona precedence applies whenever any coach persona is in play — including
-    // the default single-persona case, where the multi-coach synthesis block above
-    // is not emitted. Coach methodologies are advisory; the binding requirements win.
-    const precedenceBlock =
-      selectedPersonas.length > 0
-        ? `Coach personas are advisory methodologies. Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona.`
-        : "";
+    const personaBlock = buildPersonaSynthesis(selectedPersonas.map((persona) => ({
+      name: persona.name,
+      text: editedBlocks[persona.id] ?? persona.block,
+    })));
 
     const sectionBlocks: string[] = [];
     if (profile) {
@@ -157,10 +145,11 @@ export function PromptBuilderClient() {
         ),
       );
     }
-    if (schemaOn) sectionBlocks.push(buildSchemaBlock());
+    sectionBlocks.push(buildRequiredContract());
+    if (coachingOn) sectionBlocks.push(buildCoachingBlock());
 
-    return assemblePrompt([synthesisBlock, precedenceBlock, ...personaBlocks, ...sectionBlocks]);
-  }, [selectedPersonas, editedBlocks, enabled, schemaOn, profile, adhocInjuries]);
+    return assemblePrompt([personaBlock, ...sectionBlocks]);
+  }, [selectedPersonas, editedBlocks, enabled, coachingOn, profile, adhocInjuries]);
 
   return (
     <div className="stack">
@@ -363,11 +352,11 @@ export function PromptBuilderClient() {
         <label className="flex items-center gap-3 panel cursor-pointer">
           <input
             type="checkbox"
-            checked={schemaOn}
-            onChange={() => setSchemaOn((v) => !v)}
+            checked={coachingOn}
+            onChange={() => setCoachingOn((v) => !v)}
             className="accent-[var(--accent)]"
           />
-          <span className="text-sm flex-1">Output schema block</span>
+          <span className="text-sm flex-1">Optional coaching</span>
         </label>
       </section>
 

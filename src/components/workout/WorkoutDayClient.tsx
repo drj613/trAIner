@@ -1,4 +1,9 @@
-"use client";
+import { previewProgramEdit, type ProgramEditPreview, type ProgramEdit, type ExerciseFields, type EditScope } from "@/lib/programs/edits";
+import { commitProgramEdit as commitReviewedEdit } from "@/lib/programs/applyEdit";
+import { EditScopeControl } from "./EditScopeControl";
+import { EditImpactPreview } from "./EditImpactPreview";
+import { preserveEditedSession } from "@/lib/workout/editSession";
+import type { ImportWarning } from "@/lib/programs/types";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -658,7 +663,7 @@ function WorkoutBottomBar({
 
 function WorkoutBody({
   program,
-  day,
+  day: renderedDay,
   days,
   dayIndex,
   aiModalOpen,
@@ -672,7 +677,11 @@ function WorkoutBody({
   onAiModalClose: () => void;
 }) {
   const navigate = useNavigate();
-  const { saveProgram } = useLocalData();
+  const { saveProgram, commitProgramEdit } = useLocalData();
+  const [historicalDay, setHistoricalDay] = useState<ProgramDay | null>(null);
+  const day = historicalDay ?? renderedDay;
+  const [editPreview, setEditPreview] = useState<ProgramEditPreview | null>(null);
+  const [previewSaving, setPreviewSaving] = useState(false);
   const { context: identityContext } = useExerciseNormalization();
 
   const [cells, setCells] = useState<CellMap>(() => buildInitialCells(day));
@@ -784,7 +793,7 @@ function WorkoutBody({
     let cancelled = false;
     const today = localDateString();
     const prescribedSetsMap = new Map<string, number>();
-    for (const section of day.sections) {
+    for (const section of renderedDay.sections) {
       for (const group of section.groups) {
         for (const ex of group.exercises) {
           prescribedSetsMap.set(ex.id, ex.sets ?? 1);
@@ -792,7 +801,7 @@ function WorkoutBody({
       }
     }
     (async () => {
-      const logs = (await logRepo.listForDay(day.id)).filter(
+      const logs = (await logRepo.listForDay(renderedDay.id)).filter(
         (l) => l.programId === program.id,
       );
       if (cancelled) return;
@@ -846,6 +855,7 @@ function WorkoutBody({
       if (typeof target.dayNote === "string" && target.dayNote) setDayNote(target.dayNote);
 
       const targetDone = !!target.completedAt || !!target.skippedAt;
+      setHistoricalDay(targetDone && target.prescriptionSnapshot ? target.prescriptionSnapshot : null);
       if (todayLog) {
         logIdRef.current = todayLog.id;
         setAlreadyComplete(targetDone);
@@ -871,7 +881,7 @@ function WorkoutBody({
       if (!cancelled) setSessionMode("blocked");
     });
     return () => { cancelled = true; };
-  }, [program.id, day]);
+  }, [program.id, renderedDay]);
 
   async function saveCells(
     { cells: c, notes: n, dayNote: dn }: { cells: CellMap; notes: Record<string, string>; dayNote: string },
@@ -897,8 +907,9 @@ function WorkoutBody({
         }
       }
     }
+    const storedEntries = Array.isArray(existing?.entries) ? existing.entries : [];
     const entries = Object.entries(c).map(([exerciseId, vals]) => {
-      const canonicalExerciseId = exerciseCanonicalMap.get(exerciseId);
+      const canonicalExerciseId = exerciseCanonicalMap.has(exerciseId) ? exerciseCanonicalMap.get(exerciseId) : storedEntries.find(e => e?.exerciseId === exerciseId)?.canonicalExerciseId;
       const base: {
         exerciseId: string;
         exerciseName?: string;
@@ -906,8 +917,8 @@ function WorkoutBody({
         sets: ReturnType<typeof serialiseSets>;
       } = {
         exerciseId,
-        exerciseName: exerciseNameMap.get(exerciseId),
-        sets: serialiseSets(vals, exerciseUnitMap.get(exerciseId) ?? "lb"),
+        exerciseName: exerciseNameMap.get(exerciseId) ?? storedEntries.find(e => e?.exerciseId === exerciseId)?.exerciseName,
+        sets: serialiseSets(vals, exerciseUnitMap.get(exerciseId) ?? storedEntries.find(e => e?.exerciseId === exerciseId)?.sets?.[0]?.unit ?? "lb"),
       };
       if (canonicalExerciseId) base.canonicalExerciseId = canonicalExerciseId;
       return applyEntryNotes(base, n[exerciseId] ?? "");
@@ -940,6 +951,7 @@ function WorkoutBody({
       // `performedAt` above still carries the original value verbatim.
       performedDate: (existing && logLocalDate(existing)) || today,
       completedAt: shouldComplete ? new Date().toISOString() : existing?.completedAt,
+      ...((shouldComplete || existing?.prescriptionSnapshot) ? { prescriptionSnapshot: existing?.prescriptionSnapshot ?? day } : {}),
       skippedAt: skippedAt ?? existing?.skippedAt,
       skipReason: skipReason ?? existing?.skipReason,
       dayNote: dn || existing?.dayNote || undefined,
@@ -1030,7 +1042,8 @@ function WorkoutBody({
   // Leave the read-only historical view and begin a fresh session for today.
   function startNewSession() {
     logIdRef.current = null;
-    setCells(buildInitialCells(day));
+    setHistoricalDay(null);
+    setCells(buildInitialCells(renderedDay));
     setNotes({});
     setDayNote("");
     setViewedDate(null);
@@ -1054,47 +1067,71 @@ function WorkoutBody({
 
   const handleEditExercise = useCallback((ex: ProgramExercise) => setEditTarget(ex), []);
 
-  async function applyExercisePatch(exerciseId: string, patch: Partial<ProgramExercise>, reason: string) {
+  function exerciseFieldEdit(exerciseId: string, patch: Partial<ProgramExercise>): ProgramEdit {
+    const current = day.sections.flatMap(s => s.groups.flatMap(g => g.exercises)).find(e => e.id === exerciseId);
+    const fields: ExerciseFields = {};
+    for (const key of Object.keys(patch) as (keyof ExerciseFields)[]) {
+      if (JSON.stringify(current?.[key]) !== JSON.stringify(patch[key])) {
+        (fields as Record<string, unknown>)[key] = patch[key] ?? null;
+      }
+    }
+    return { kind: "exercise-fields", dayId: day.id, exerciseId, fields };
+  }
+
+  async function buildEditPreview(edit: ProgramEdit, scope: EditScope = "occurrence", includeExceptionDayIds: string[] = []) {
     const fresh = await programRepo.get(program.id);
-    if (!fresh) return;
-    const patchedDay: ProgramDay = {
-      ...day,
-      sections: day.sections.map((s) => ({
-        ...s,
-        groups: s.groups.map((g) => ({
-          ...g,
-          exercises: g.exercises.map((e) => e.id === exerciseId ? { ...e, ...patch } : e),
-        })),
-      })),
-    };
-    const filteredOverrides = fresh.overrides.filter(
-      (o) => !(o.scope === "day" && o.dayId === day.id),
-    );
-    const newOverride = {
-      id: crypto.randomUUID(),
-      scope: "day" as const,
-      programId: program.id,
-      dayId: day.id,
-      replacement: patchedDay,
-      reason,
-      createdAt: new Date().toISOString(),
-    };
-    // Save through the provider so its programs state updates in place.
-    // A global refresh() here flips `loading`, which swaps the whole view for
-    // "Loading…" — remounting every row and throwing the scroll to the top.
-    await saveProgram({ ...fresh, overrides: [...filteredOverrides, newOverride] });
+    if (!fresh) throw new Error("Program no longer exists");
+    const logs = await logRepo.listForProgram(program.id);
+    return previewProgramEdit(fresh, edit, { scope, logs, includeExceptionDayIds });
+  }
+
+  async function commitPreview(preview: ProgramEditPreview) {
+    await flush();
+    return runExclusive(async () => {
+      // A queue write of the current cells also propagates any autosave error.
+      await saveCells({cells, notes, dayNote});
+      const result = commitProgramEdit ? await commitProgramEdit(preview) : await commitReviewedEdit(preview);
+      if (result.status === "stale") {
+        setEditPreview(result.preview);
+        setEditError("The routine or completion state changed. Review the updated preview.");
+        return false;
+      }
+      if (!commitProgramEdit) await saveProgram(result.program);
+      const updatedDay = getRenderableDays(result.program).find(d => d.id === day.id)!;
+      setCells(previous => preserveEditedSession(day, updatedDay, previous, []).cells);
+      setEditPreview(null);
+      setEditTarget(null);
+      return true;
+    });
+  }
+
+  async function applyExercisePatch(exerciseId: string, patch: Partial<ProgramExercise>, _reason: string) {
+    const preview = await buildEditPreview(exerciseFieldEdit(exerciseId, patch));
+    await commitPreview(preview);
   }
 
   async function applyExerciseEdit(patch: Partial<ProgramExercise>) {
     if (!editTarget) return;
     setEditError(null);
     try {
-      await applyExercisePatch(editTarget.id, patch, "Edited from workout");
-      setEditTarget(null);
-    } catch (e) {
-      console.error("[applyExerciseEdit] save failed", e);
-      setEditError("Failed to save. Please try again.");
+      setEditPreview(await buildEditPreview(exerciseFieldEdit(editTarget.id, patch)));
+    } catch {
+      setEditError("Failed to prepare changes. Please try again.");
     }
+  }
+
+  async function changePreviewScope(scope: EditScope, included = editPreview?.context.includeExceptionDayIds ?? []) {
+    if (!editPreview) return;
+    try { setEditPreview(await buildEditPreview(editPreview.edit, scope, included)); }
+    catch { setEditError("Failed to prepare changes. Please try again."); }
+  }
+
+  async function applyReviewedEdit() {
+    if (!editPreview || previewSaving) return;
+    setPreviewSaving(true); setEditError(null);
+    try { await commitPreview(editPreview); }
+    catch { setEditError("Failed to save. Please try again."); }
+    finally { setPreviewSaving(false); }
   }
 
   async function handleToggleUnit(ex: ProgramExercise) {
@@ -1108,9 +1145,9 @@ function WorkoutBody({
     }
   }
 
-  async function handleApplyReplacement(replacement: ProgramDay) {
+  async function handleApplyReplacement(replacement: ProgramDay, warnings?: ImportWarning[]) {
     await flush();
-    const stored = storePendingDiff(program.id, day, replacement);
+    const stored = storePendingDiff(program.id, day, replacement, "occurrence", undefined, undefined, warnings);
     if (!stored) {
       alert("Unable to store changes temporarily. Please try again or check your browser settings.");
       return;
@@ -1252,13 +1289,24 @@ function WorkoutBody({
           onClose={() => setReplaceTarget(null)}
         />
       )}
-      {editTarget && (
+      {editTarget && !editPreview && (
         <ExerciseEditSheet
           exercise={editTarget}
           onSave={applyExerciseEdit}
           onClose={() => { setEditTarget(null); setEditError(null); }}
           error={editError}
         />
+      )}
+
+      {editPreview && (
+        <div role="dialog" aria-modal="true" aria-label="Review prescription edit" className="panel stack" style={{position:"fixed",inset:"10% 12px",zIndex:60,overflowY:"auto",background:"var(--bg-1)",padding:16}}>
+          <h2>Review prescription edit</h2>
+          <EditScopeControl scope={editPreview.context.scope} title={day.title} dayNumber={day.dayNumber} disabled={previewSaving} onChange={scope => void changePreviewScope(scope)} />
+          <EditImpactPreview preview={editPreview} includeExceptionDayIds={editPreview.context.includeExceptionDayIds} onIncludeExceptionDayIdsChange={ids => void changePreviewScope(editPreview.context.scope, ids)} />
+          {editError && <p role="alert">{editError}</p>}
+          <button className="button" type="button" disabled={previewSaving} onClick={() => void applyReviewedEdit()}>Apply reviewed edit</button>
+          <button className="button secondary" type="button" disabled={previewSaving} onClick={() => {setEditPreview(null);setEditError(null);}}>Back to editing</button>
+        </div>
       )}
 
       {aiModalOpen && (

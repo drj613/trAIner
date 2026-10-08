@@ -6,12 +6,12 @@ import { parseLooseJson } from "@/lib/import/sanitizeJson";
 import { normalizePayload } from "@/lib/import/parser";
 import { remapExerciseIds } from "@/lib/workout/programDiff";
 import { useFocusTrap } from "@/lib/workout/useFocusTrap";
-import type { ProgramDay } from "@/lib/programs/types";
+import type { ImportWarning, ProgramDay } from "@/lib/programs/types";
 
 type Props = {
   currentDay: ProgramDay;
   programId: string;
-  onApply: (replacement: ProgramDay) => void;
+  onApply: (replacement: ProgramDay, warnings?: ImportWarning[]) => void;
   onClose: () => void;
 };
 
@@ -101,7 +101,7 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
     }
 
     try {
-      const { program } = normalizePayload(raw as Record<string, unknown>);
+      const { program, warnings } = normalizePayload(raw as Record<string, unknown>);
       const parsedDay = program.days[0];
       if (!parsedDay) {
         setError("No day found in the pasted JSON.");
@@ -112,7 +112,7 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
         id: currentDay.id,
         dayNumber: currentDay.dayNumber,
       });
-      onApply(remapped);
+      onApply(remapped, warnings);
     } catch (e) {
       setError(`Parse error: ${e instanceof Error ? e.message : String(e)}`);
     }

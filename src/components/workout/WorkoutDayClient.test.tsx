@@ -46,6 +46,10 @@ jest.mock("@/components/app/LocalDataProvider", () => ({
     error: undefined,
     refresh: refreshMock,
     saveProgram: saveProgramMock,
+    commitProgramEdit: async (preview: import('@/lib/programs/edits').ProgramEditPreview) => {
+      await saveProgramMock(preview.proposedDocument);
+      return { status: "saved", program: preview.proposedDocument };
+    },
   }),
 }));
 
@@ -389,7 +393,10 @@ describe("WorkoutDayClient exercise edit — countsTowardVolume preservation", (
       await screen.findByRole("heading", { level: 1, name: "Push Day" });
       const user = userEvent.setup();
       await user.click(screen.getByRole("button", { name: /edit prescription for bench press/i }));
+      await user.clear(screen.getByLabelText(/sets/i));
+      await user.type(screen.getByLabelText(/sets/i), "4");
       await user.click(await screen.findByRole("button", { name: /^save$/i }));
+      await user.click(await screen.findByRole("button", { name: "Apply reviewed edit" }));
 
       await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
       const saved = saveProgramMock.mock.calls[0][0];
@@ -531,7 +538,7 @@ describe("WorkoutDayClient unit toggle", () => {
     const override = savedDoc.overrides.find(
       (o: { scope: string; dayId: string }) => o.scope === "day" && o.dayId === "day-1",
     );
-    expect(override.reason).toBe("Unit toggled from workout");
+    expect(override.reason).toBe("Reviewed routine edit");
     const patched = override.replacement.sections[0].groups[0].exercises[0];
     expect(patched.id).toBe("e1");
     expect(patched.unit).toBe("kg");

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ModifyAiModal, buildPrompt } from "./ModifyAiModal";
 import type { ProgramDay } from "@/lib/programs/types";
@@ -127,6 +127,32 @@ describe("ModifyAiModal", () => {
   it("instructs preserving fields unrelated to the requested modification", () => {
     const prompt = buildPrompt(mockDay);
     expect(prompt).toMatch(/preserve all fields unrelated to the requested modification/i);
+  });
+
+  it("passes import normalization warnings with the proposed day", async () => {
+    const user = userEvent.setup();
+    const onApply = jest.fn();
+    render(<ModifyAiModal currentDay={mockDay} programId="prog-1" onApply={onApply} onClose={jest.fn()} />);
+    const response = {
+      days: [{
+        day: 1,
+        title: "Test Day",
+        sections: [{
+          name: "Strength",
+          type: "strength",
+          groups: [{
+            type: "single",
+            exercises: [{
+              name: "Squat", sets: 0, reps: "5", countsTowardVolume: true,
+              tags: { primary: [], secondary: [], incidental: [], modifiers: [] },
+            }],
+          }],
+        }],
+      }],
+    };
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: JSON.stringify(response) } });
+    await user.click(screen.getByRole("button", { name: /review changes/i }));
+    expect(onApply).toHaveBeenCalledWith(expect.any(Object), expect.arrayContaining([expect.objectContaining({ code: "sets-defaulted" })]));
   });
 
   it("renders the replace instruction note", () => {

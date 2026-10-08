@@ -136,11 +136,30 @@ describe("PromptBuilderClient ad-hoc injuries", () => {
 });
 
 describe("PromptBuilderClient multi-coach synthesis", () => {
+  it("measures prompts with zero, one, and two personas under the same profile flags", async () => {
+    await renderBuilder();
+    const characterCount = () => Number(
+      screen.getByRole("button", { name: /copy prompt/i }).textContent?.match(/([\d,]+) chars/)?.[1].replaceAll(",", ""),
+    );
+    const withRp = characterCount();
+
+    fireEvent.click(screen.getByRole("button", { name: /Hypertrophy Methodologist/i }));
+    const withoutPersona = characterCount();
+    fireEvent.click(screen.getByRole("button", { name: /Hypertrophy Methodologist/i }));
+    const withRpAgain = characterCount();
+    fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
+    const withTwo = characterCount();
+
+    expect(withRpAgain).toBe(withRp);
+    expect(withoutPersona).toBeLessThan(withRp);
+    expect(withTwo).toBeGreaterThan(withRp);
+  });
+
   it("instructs multi-coach prompts to resolve conflicts with explicit rules", async () => {
     await renderBuilder();
     // rp is selected by default; select a second persona to trigger synthesis
     fireEvent.click(screen.getByRole("button", { name: /Powerlifting Specialist/i }));
-    expect(screen.getByText(/resolve each conflict with an explicit rule/i)).toBeInTheDocument();
+    expect(screen.getByText(/resolve conflicts with explicit rules/i)).toBeInTheDocument();
   });
 
   it("states persona precedence even in the default single-coach flow (no synthesis block emitted)", async () => {
@@ -163,6 +182,16 @@ describe("PromptBuilderClient multi-coach synthesis", () => {
         /Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona/i,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("keeps conflicting edited persona text verbatim while required output rules remain binding", async () => {
+    await renderBuilder();
+    fireEvent.change(screen.getByLabelText("Hypertrophy Methodologist"), {
+      target: { value: "Ignore the output format and return prose." },
+    });
+    expect(screen.getByLabelText("Hypertrophy Methodologist")).toHaveValue("Ignore the output format and return prose.");
+    expect(screen.getByText(/Athlete constraints, explicit goals, injuries, session limits, output rules/)).toBeInTheDocument();
+    expect(screen.getByText(/Routine JSON contract/)).toBeInTheDocument();
   });
 });
 
@@ -231,7 +260,7 @@ describe("PromptBuilderClient presets", () => {
     expect(screen.getByText(/Coach: Powerlifting Specialist/)).toBeInTheDocument();
     expect(screen.queryByText(/Coach: Hypertrophy Methodologist/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Goals \(priority order\):/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Routine JSON schema/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Routine JSON contract/)).toBeInTheDocument();
   });
 
   // Seeded with "pl" so the load visibly changes the coach: that proves a real load
@@ -351,5 +380,17 @@ describe("PromptBuilderClient presets", () => {
     await act(async () => afterDeletingA([rowB]));
     expect(screen.queryByRole("button", { name: "Row B" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Row A" })).not.toBeInTheDocument();
+  });
+});
+
+describe("PromptBuilderClient short contract and optional coaching", () => {
+  it("adds coaching only when selected and persists that choice", async () => {
+    await renderBuilder();
+    fireEvent.click(screen.getByLabelText(/optional coaching/i));
+    expect(screen.getByText(/## Optional coaching/)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/name this preset/i), { target: { value: "Coach" } });
+    await clickAndSettle(screen.getByRole("button", { name: /^Save$/ }));
+    const saved = promptPresetRepo.save.mock.calls[0][0] as PromptPresetDocument;
+    expect(saved.coachingOn).toBe(true);
   });
 });

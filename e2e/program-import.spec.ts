@@ -90,7 +90,7 @@ test.describe("Program import", () => {
     await sharedPage.getByRole("button", { name: /save program/i }).click();
     // Saving navigates to the new program's detail page
     await sharedPage.waitForURL(/\/programs\/[^/]+$/);
-    await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
+    await expect(sharedPage.getByText("E2E Test Program", { exact: true })).toBeVisible();
   });
 
   // 6. imported program appears on programs list (persistence)

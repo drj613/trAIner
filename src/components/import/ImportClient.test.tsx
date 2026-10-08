@@ -1,10 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ImportClient } from "./ImportClient";
+import { getRenderableDays } from "@/lib/programs/overrides";
+import { exerciseCatalog } from "@/lib/catalog/exercises";
+import { toTitleCase } from "@/lib/catalog/normalize";
 
 jest.mock("@/components/app/LocalDataProvider", () => ({
-  useLocalData: () => ({ saveProgram: jest.fn() }),
+  useLocalData: () => ({ saveProgram: mockSaveProgram }),
 }));
+
+const mockSaveProgram = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("@/lib/storage/aliasRepo", () => ({
   aliasRepo: { list: jest.fn().mockResolvedValue([]), saveMany: jest.fn() },
@@ -25,19 +30,28 @@ jest.mock("@/lib/import/parser", () => ({
     program: {
       id: "test-prog",
       title: "Test Program",
+      source: "import",
+      active: true,
+      createdAt: "2026-10-08",
+      updatedAt: "2026-10-08",
       days: [
         {
+          id: "day-1",
           day: 1,
+          dayNumber: 1,
           title: "Day 1",
           sections: [
             {
+              id: "section-1",
               name: "Main",
               type: "strength",
               groups: [
                 {
+                  id: "group-1",
                   type: "single",
                   exercises: [
                     {
+                      id: "exercise-1",
                       name: "Squat",
                       sets: 3,
                       reps: "5",
@@ -82,5 +96,47 @@ describe("ImportClient confirm step pluralization", () => {
     const documentText = document.body.textContent || "";
     expect(documentText).not.toMatch(/day\(s\)/);
     expect(documentText).not.toMatch(/exercise\(s\)/);
+  });
+
+  it("saves the structured edit from the review draft", async () => {
+    mockSaveProgram.mockClear();
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+    const setCount = await screen.findByLabelText("Sets");
+    fireEvent.change(setCount, { target: { value: "5" } });
+    fireEvent.blur(setCount);
+    await user.click(await screen.findByRole("button", { name: "Apply edit" }));
+    await user.click(screen.getByRole("button", { name: /Save program/ }));
+    expect(mockSaveProgram).toHaveBeenCalledTimes(1);
+    expect(getRenderableDays(mockSaveProgram.mock.calls[0][0])[0].sections[0].groups[0].exercises[0].sets).toBe(5);
+  });
+
+  it("reopens exercise resolution after adding an exercise in review", async () => {
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+    await user.click(await screen.findByRole("button", { name: "Add exercise" }));
+    await user.click(await screen.findByRole("button", { name: "Apply edit" }));
+    expect(await screen.findByRole("heading", { name: "Resolve exercises" })).toBeInTheDocument();
+    expect(screen.getByText(/1 exercise need attention/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Remember "New exercise"/i)).toBeInTheDocument();
+  });
+
+  it("saves catalog identity selected in the review editor", async () => {
+    mockSaveProgram.mockClear();
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+    const catalogItem = exerciseCatalog[0];
+    fireEvent.change(screen.getByLabelText("Search exercise catalog"), { target: { value: toTitleCase(catalogItem.name) } });
+    fireEvent.change(screen.getByLabelText("Choose catalog exercise"), { target: { value: catalogItem.id } });
+    await user.click(await screen.findByRole("button", { name: "Apply edit" }));
+    await user.click(screen.getByRole("button", { name: /Save program/ }));
+    const saved = mockSaveProgram.mock.calls[0][0];
+    expect(getRenderableDays(saved)[0].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe(catalogItem.id);
   });
 });

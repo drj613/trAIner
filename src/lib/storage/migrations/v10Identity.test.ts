@@ -21,6 +21,19 @@ const context = createMigrationContext([], [], []);
 // drops such a key on write, so no database-level assertion can see it; real
 // browsers' structuredClone keeps it, so the record comes back changed.
 describe("v10 transforms preserve the stored key set", () => {
+  it("preserves editing lineage metadata", () => {
+    const editing = {
+      version: 1 as const,
+      templateDays: [{ id: "template-day", dayNumber: 1, title: "Day", sections: [] }],
+      dayBindings: [{ occurrenceDayId: "occurrence-day", templateDayId: "template-day" }],
+      elementBindings: [],
+      exceptions: [],
+    };
+    const program = { id: "p1", days: [], overrides: [], editing } as unknown as ProgramDocument;
+
+    expect(migrateProgram(program, context).editing).toStrictEqual(editing);
+  });
+
   it("does not add an entries key to a log that predates the field", () => {
     const log = {
       id: "l1",

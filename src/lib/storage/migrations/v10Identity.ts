@@ -220,6 +220,12 @@ export function migrateProgram(
       ...override,
       replacement: migrateProgramReplacement(override.replacement, context),
     } : override)),
+    ...(isRecord(program.editing) && Array.isArray(program.editing.templateDays) ? {
+      editing: {
+        ...program.editing,
+        templateDays: program.editing.templateDays.map((day) => migrateProgramDay(day, context)),
+      },
+    } : {}),
     ...(isRecord(program.import) ? {
       import: {
         ...program.import,

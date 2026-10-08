@@ -8,6 +8,7 @@ import { ExercisePickerSheet } from "./ExercisePickerSheet";
 import type { ExerciseCatalogItem } from "@/lib/catalog/exercises";
 import { toTitleCase } from "@/lib/catalog/normalize";
 import { DEFAULT_COUNTS_BY_SECTION } from "@/lib/analysis/volumeRole";
+import { deriveEditingMetadata } from "@/lib/programs/editMetadata";
 import type {
   ProgramDocument,
   ProgramDay,
@@ -114,7 +115,7 @@ export function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): Progra
         })),
   }));
 
-  return {
+  const program: ProgramDocument = {
     id: crypto.randomUUID(),
     title: draft.name || "New Routine",
     description: draft.description || undefined,
@@ -126,6 +127,8 @@ export function draftToProgram(draft: Draft, primaryGoal?: TrainingGoal): Progra
     createdAt: now,
     updatedAt: now,
   };
+  program.editing = deriveEditingMetadata(program, days);
+  return program;
 }
 
 // ── Stepper header ────────────────────────────────────────────────────────────

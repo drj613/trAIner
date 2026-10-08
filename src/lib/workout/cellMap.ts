@@ -1,4 +1,5 @@
 import type { ProgramDay } from "@/lib/programs/types";
+import { normalizeSetCount } from "@/lib/programs/validation";
 
 export type CellMap = Record<string, string[]>;
 
@@ -7,7 +8,7 @@ export function buildInitialCells(day: ProgramDay): CellMap {
   for (const section of day.sections ?? []) {
     for (const group of section.groups ?? []) {
       for (const ex of group.exercises ?? []) {
-        map[ex.id] = Array(ex.sets ?? 3).fill("");
+        map[ex.id] = Array(normalizeSetCount(ex.sets).value).fill("");
       }
     }
   }

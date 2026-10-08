@@ -31,6 +31,11 @@ describe("promptPresetRepo", () => {
     expect(all[0].name).toBe("Push focus");
   });
 
+  it("round-trips the optional coaching preference", async () => {
+    await promptPresetRepo.save(make({ coachingOn: true }));
+    expect((await promptPresetRepo.list())[0].coachingOn).toBe(true);
+  });
+
   it("save twice with same id overwrites (single row)", async () => {
     await promptPresetRepo.save(make({ name: "A" }));
     await promptPresetRepo.save(make({ name: "B" }));

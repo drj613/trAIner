@@ -1,226 +1,52 @@
 import type { RecoveryReason } from "@/lib/import/sanitizeJson";
 
-export function buildSchemaBlock(): string {
-  const exDay = {
-    day: 1,
-    title: "Day Name",
-    sections: [
-      {
-        name: "Section Name",
-        type: "strength",
-        groups: [
-          {
-            type: "single",
-            exercises: [
-              {
-                name: "Exercise Name",
-                sets: 3,
-                reps: "5-8",
-                load: "optional — e.g. '80% 1RM' or '60 kg'",
-                rest: "optional — e.g. '90s'",
-                notes: "optional",
-                countsTowardVolume: true,
-                variants: [
-                  {
-                    weeks: [2, 4],
-                    name: "A week-specific swap of this ONE exercise — omit any field to inherit it from the base exercise above",
-                    load: "optional — only include fields that differ from the base"
-                  }
-                ],
-                tags: {
-                  primary: ["quads"],
-                  secondary: ["glutes"],
-                  incidental: [],
-                  modifiers: []
-                }
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  };
-
-  const overrideReplacementDay = {
-    day: 1,
-    title: "Day Name",
-    sections: [
-      {
-        name: "Section Name",
-        type: "strength",
-        groups: [
-          {
-            type: "single",
-            exercises: [
-              {
-                name: "Exercise Name",
-                sets: 2,
-                reps: "5-8",
-                load: "optional — e.g. '65% 1RM' or '50 kg' (reduced vs base week)",
-                rest: "optional — e.g. '90s'",
-                notes: "deload — reduced volume vs the base week (approximately 50% of normal)",
-                countsTowardVolume: true,
-                tags: {
-                  primary: ["quads"],
-                  secondary: ["glutes"],
-                  incidental: [],
-                  modifiers: []
-                }
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  };
-
-  const progressionExample = [
-    {
-      applies: "Primary compounds (squat, bench, deadlift)",
-      rule: "Top set + 3 back-offs; when the top set stays <=RPE8 for all reps, add 2.5-5% load."
-    },
-    {
-      applies: "Hypertrophy accessories",
-      rule: "Double progression: add reps to the top of the range across all sets, then +5-10% load and reset."
-    }
-  ];
-
-  const skeleton = {
+export function buildRequiredContract(): string {
+  const example = {
     title: "Program Name",
-    weeks: "OPTIONAL integer — total number of weeks. Omit for single-week programs.",
-    progression: progressionExample,
-    days: [exDay],
-    overrides: [
-      {
-        scope: "week",
-        weekNumber: 4,
-        reason: "Deload — use approximately 50% of normal working-set volume",
-        days: [overrideReplacementDay]
-      }
-    ]
+    weeks: 8,
+    progression: [{ applies: "Movement class", rule: "Add load when all sets reach the top of the rep range." }],
+    days: [{ day: 1, title: "Day Name", sections: [{ name: "Strength", type: "strength", groups: [{ type: "single", exercises: [{ name: "Exercise", sets: 3, reps: "5-8", load: "100", unit: "lb", rest: "2 min", tempo: "3-1-1", notes: "Stop with two reps in reserve.", countsTowardVolume: true, tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] }, variants: [{ weeks: [2, 4], name: "Variation", sets: 3, reps: "5-8", load: "95 lb" }] }] }] }] }],
+    overrides: [{ scope: "week", weekNumber: 4, reason: "Changed day structure", days: [{ day: 1, title: "Day Name", sections: [{ name: "Strength", type: "strength", groups: [{ type: "single", exercises: [{ name: "Exercise", sets: 3, reps: "5-8", countsTowardVolume: true, tags: { primary: ["quads"], secondary: [], incidental: [], modifiers: [] } }] }] }] }] }],
   };
-
-  const exerciseSchemaNotes = `## countsTowardVolume (required on every exercise)
-Every exercise object must include a boolean \`countsTowardVolume\` field.
-
-Set \`countsTowardVolume\` to \`true\` when the prescribed sets are intended to contribute to working strength, hypertrophy, muscular conditioning, or explosive training volume.
-
-Set it to \`false\` for ordinary warmups, activation drills, mobility work, cooldowns, rehabilitation or prehabilitation work, and low-fatigue practice that is not intended as productive muscular working volume.
-
-Muscle tags still describe anatomical involvement when \`countsTowardVolume\` is false. The boolean controls analysis, not anatomy.`;
-
-  const overrideInstructions = `## Overrides
-Only emit an override when at least one routine day actually changes.
-
-Every override must contain one or more complete replacement day objects.
-
-An override with omitted \`days\` or an empty \`days\` array does not alter the routine and must not be emitted.
-
-If a week is identical to the base template, omit the entire override object.
-
-The \`reason\` field is descriptive only. It does not alter sets, repetitions, loads, exercises, or effort targets.`;
-
-  const constraints = `## Session and volume constraints
-Design sessions using these default planning guardrails:
-- Listed exercises or protocols per session: generally 4-8. All warmup, mobility, skill, conditioning, and cooldown exercises count toward this number.
-- Working sets per session: generally 10-25. Only exercises with \`countsTowardVolume: true\` count toward this range.
-- Estimated session duration: 30-75 minutes, including all programmed work.
-- Direct working sets per muscle group per session: generally no more than 8, unless the athlete deliberately requests specialization and accepts the tradeoff.
-
-The numeric \`sets\` value controls the number of workout logging rows. It must equal the complete prescription described in \`reps\`, \`load\`, and \`notes\`.
-- One top set plus three back-off sets uses \`"sets": 4\`.
-- One top set plus two back-off sets uses \`"sets": 3\`.
-
-Unlogged ramp-up sets may be described in the heavy exercise's \`notes\` and must not be included in its numeric \`sets\` value. Listed warmup exercises must use \`countsTowardVolume: false\`.
-
-Weekly volume targets (effective sets — primary × 1.0, secondary × 0.5, incidental × 0.25 — counting only exercises with \`countsTowardVolume: true\`):
-- Chest: productive range 6–16 sets/week, hard limit 24
-- Lats: productive range 10–20 sets/week, hard limit 30
-- Upper back / traps: productive range 10–20 sets/week, hard limit 30
-- Front delts: productive range 4–8 sets/week, hard limit 12
-- Side delts: productive range 8–24 sets/week, hard limit 30
-- Rear delts: productive range 4–12 sets/week, hard limit 20
-- Biceps: productive range 14–20 sets/week, hard limit 26
-- Triceps: productive range 6–16 sets/week, hard limit 20
-- Forearms: productive range 2–8 sets/week, hard limit 12
-- Quads: productive range 6–14 sets/week, hard limit 18
-- Hamstrings: productive range 4–8 sets/week, hard limit 14
-- Glutes: productive range 8–24 sets/week, hard limit 30
-- Calves: productive range 6–16 sets/week, hard limit 24
-- Core: productive range 8–16 sets/week, hard limit 20
-- Adductors/Abductors: productive range 4–10 sets/week, hard limit 16
-
-IMPORTANT: incidental muscles (e.g. "core" on almost every compound, "forearms" on most pulling, "shoulders" on everything) accumulate quickly across many exercises. Tag incidental sparingly — only when the incidental recruitment is genuinely meaningful. "Core" should NOT be incidental on every exercise.
-
-The weekly volume ranges are default programming guardrails, not mandatory targets for every muscle.
-
-Prioritized hypertrophy muscles should generally fall within their productive ranges. Maintenance muscles may fall below them.
-
-When the athlete explicitly requests specialization above a preferred range, preserve the decision when the recovery and session tradeoffs remain plausible. Acknowledge the tradeoff during conversation rather than automatically reducing the requested volume.
-
-Hard limits are strong caution thresholds, not automatic reasons to reject an explicit athlete request.
-
-Exclude exercises with \`countsTowardVolume: false\` from working-set, weekly muscle-volume, direct-muscle-set, movement-balance, and periodization calculations.
-
-Do not classify an athlete-requested and acknowledged specialization as an audit failure merely because it departs from a preferred range.`;
-
-  const multiWeekInstructions = `## Multi-week programs
-For programs longer than one week:
-- Set \`weeks\` to the total number of weeks (integer).
-- \`days\` is the base weekly template — the repeating pattern followed by most weeks.
-- \`overrides\` lists only the weeks that deviate (e.g. deload week, peak week, test week). Weeks without an override automatically repeat the base template.
-- Use \`variants\` (an optional array on any exercise) to swap or retune ONE exercise on specific weeks while the rest of the day stays on the base template — e.g. \`"variants": [{"weeks": [2], "name": "Stiff-Leg Deadlift"}]\`. Each variant lists the 1-based \`weeks\` it applies to; any field you omit (\`sets\`, \`reps\`, \`load\`, \`name\`, \`tags\`, …) is inherited from the base exercise. Supply \`tags\` on a variant only when the muscle emphasis changes. Reserve \`overrides\` for weeks whose STRUCTURE differs (deload, test week, added/removed exercises); do not use an override just to swap one movement.
-- Omit \`weeks\` and \`overrides\` for single-week programs.`;
-
-  const programRequirements = `## Program requirements
-Every routine you emit must include:
-- State progression as a scoped list in the top-level \`progression\` field — one entry per movement class (e.g. primary barbell lifts, hypertrophy accessories, kettlebell/skill practice), each with \`applies\` (the class it governs) and \`rule\` (stated numerically, e.g. double progression: "when all sets reach the top of the rep range at ≤1 RIR, add 2.5–5% load and reset to the bottom", or a defined weekly load step). Scope each rule to the class it governs — do not apply one progression model to every exercise, and do not bury the rule in exercise notes. Exercise-specific tweaks may still go in that exercise's \`notes\`.
-- For multi-week programs, include periodization with a planned deload — organize the mesocycle (accumulate volume/intensity across weeks, then a deload week at approximately 50% of normal working-set volume), expressed via \`weeks\` + \`overrides\`. Single-week routines are permitted only when the athlete explicitly requests a single standalone week.
-- A balanced week — cover the major movement patterns (horizontal/vertical push and pull, hinge, squat) across the week with a sane push:pull ratio; don't leave large gaps or pile redundant volume on one pattern.
-- A warmup in every session (a dedicated warmup section or ramp-up sets before heavy work).`;
-
-  const outputContract = `## Output contract (when emitting after GENERATE IT)
-Output a single JSON object so the app can import it directly:
-- The first character of your reply is \`{\` and the last is \`}\`.
-- Use the exact field names and structure from the schema above.
-- Use straight ASCII quotes.
-
-Emit only the JSON object — no markdown code fences, no preamble, no commentary before or after.`;
-
-  const conversationMode = `## Output mode
-
-Default to conversational coaching. Ask clarifying questions, surface tradeoffs between approaches, and discuss programming choices with the athlete. Keep the routine JSON out of this phase entirely — discussing in prose keeps the design flexible and easy to revise.
-
-Do not declare the program ready for export until you have stated the required programming decisions and completed the self-audit — in prose, in the conversation:
-- Stated your key programming decisions: weekly volume per muscle group, intensity scheme (RIR/RPE or %1RM), the progression rule, and the deload plan.
-- Run a quick self-audit and fixed any issues — is per-muscle weekly volume within the ranges below? Is the week balanced across movement patterns (push/pull, all major patterns)? Does every session include a warmup? Does every exercise respect the athlete's equipment and injuries?
-
-When the athlete types \`GENERATE IT\` (exactly those words, all caps), switch to emit-only mode for that single response and output the routine JSON described below — and nothing else. Keep all reasoning, rationale, and audit notes in the conversation; the JSON itself carries only the program.
-
-After emitting, return to conversational coaching for any follow-up. If the athlete asks for changes, discuss them in prose until they type \`GENERATE IT\` again.
-
-At the end of every conversational message, append one line: \`Say GENERATE IT (all caps) when you're ready for the final routine.\``;
 
   return [
-    conversationMode,
-    "## Routine JSON schema (used only when emitting after GENERATE IT)",
-    "You MUST use the exact field names shown below. Do not rename or restructure the hierarchy.",
-    "  - Top level: `title`, `days`, and optionally `weeks` + `overrides` + `progression`",
-    "  - Each day: `day` (number), `title`, `sections`",
-    "  - Each section: `name`, `type`, `groups`",
-    "  - Each group: `type`, `exercises`",
-    "  - Each exercise: `name`, `sets`, `reps`, `countsTowardVolume`, `tags`, and optionally `load`, `rest`, `notes`, `variants`",
-    `Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training`,
-    `Valid group types: single, superset, circuit, giant-set`,
-    exerciseSchemaNotes,
-    multiWeekInstructions,
-    constraints,
-    "Structural skeleton (all real content should replace the placeholder strings):",
-    JSON.stringify(skeleton, null, 2),
-    overrideInstructions,
-    programRequirements,
-    outputContract,
-  ].join("\n");
+    "## Routine JSON contract",
+    "When you provide a final routine, return one JSON object with no fences or commentary. Discussion and questions are fine before the final routine. Use the field names and hierarchy in this example; use straight ASCII quotes.",
+    "Plan no more than 8 weeks. `days` is the repeating weekly template. Use sparse `variants` for exercise-level changes and sparse `overrides` with complete replacement days for structural changes; omit unchanged weeks.",
+    "Within each superset, every exercise must have the same effective set count. Do not impose this rule on circuits or giant-sets. Valid section types: warmup, explosive, strength, power, hypertrophy, accessory, metcon, cardio, conditioning, rehab, mobility, cooldown, training. Valid group types: single, superset, circuit, giant-set.",
+    "Every exercise needs `name`, numeric `sets`, `reps`, `countsTowardVolume` and muscle `tags` (primary, secondary, incidental, modifiers). `load`, `unit`, `rest`, `tempo`, and `notes` are optional. Mark productive work true; ordinary warmup, mobility, rehab, cooldown, and low-fatigue practice false. `sets` is the number of logged sets.",
+    "Variants can change the exercise name or its `sets`, `reps`, and `load`; use `weeks` to list only affected weeks. Include progression rules scoped to movement classes. Respect goals, equipment, injuries, schedule, and explicit constraints.",
+    JSON.stringify(example),
+    "The example is illustrative; replace its values with the requested routine.",
+  ].join("\n\n");
+}
+
+export function buildPersonaSynthesis(personas: readonly { name: string; text: string }[]): string {
+  const synthesisBlock = personas.length > 1
+    ? "## Multi-Coach Synthesis\nUse each coach's methods where they fit and keep their contributions distinct. Explain material tradeoffs. Resolve conflicts with explicit rules that follow the athlete's stated priorities."
+    : "";
+  const precedenceBlock = personas.length > 0
+    ? "Coach personas are advisory methodologies. Athlete constraints, explicit goals, injuries, session limits, output rules, and the synthesized plan override any absolute statement inside an individual coach persona."
+    : "";
+  const personaBlocks = personas.map(({ name, text }) => `## Coach: ${name}\n${text}`);
+  return assemblePrompt([synthesisBlock, precedenceBlock, ...personaBlocks]);
+}
+
+export function buildSchemaBlock(): string {
+  return buildRequiredContract();
+}
+
+export function buildCoachingBlock(): string {
+  return [
+    "## Optional coaching",
+    "Default to conversational coaching. Ask focused questions when goals, experience, equipment, schedule, injuries, or preferences are unclear. Explain choices and tradeoffs in plain language; do not turn every answer into a program.",
+    "When programming, build around the athlete's stated goal, training age, available days, time, equipment, and recovery. Choose exercises they can perform safely and consistently. Give each movement an appropriate role and count only productive work toward volume.",
+    "Set weekly volume and frequency by muscle group and training experience. Distribute hard sets across sessions, leave room to recover, and avoid changing several major variables at once. Use practical rep ranges, rest periods, and progression methods suited to the exercise and goal.",
+    "Progress gradually. Prefer adding reps within a range before adding load when that fits the lift; increase load in small steps while keeping technique and effort appropriate. State what counts as a successful progression and what to do when targets are missed.",
+    "Use deloads when fatigue, performance, or the planned block calls for them. Reduce stress deliberately, usually by reducing sets, load, or both, while keeping movement practice. Explain the reason and how normal training resumes.",
+    "Before presenting a routine, self-audit it for schedule fit, progression, recovery, muscle coverage, equipment, injury constraints, realistic session length, and internal consistency. Check that every superset has equal effective set counts, that volume roles are accurate, and that weekly changes match their intended weeks.",
+    "When a final routine is requested, follow the required JSON contract exactly. Keep coaching discussion outside the JSON and never put comments or markdown fences inside it.",
+  ].join("\n\n");
 }
 
 export function buildRecoveryPrompt(reason: RecoveryReason, detail?: string): string {
