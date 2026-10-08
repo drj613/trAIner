@@ -72,7 +72,7 @@ async function openImportReview(page: Page, json: string) {
   await chooseImportVersions(page);
   const review = page.getByRole("button", { name: /review import/i });
   if (await review.isVisible().catch(() => false)) await review.click();
-  await expect(page.getByRole("heading", { name: /expanded program preview/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /weekly preview/i })).toBeVisible();
 }
 
 async function openWorkout(page: Page, week: number, title: string) {
@@ -95,7 +95,10 @@ test.describe("Routine import review and editing", () => {
     await page.getByText(/correction.*made to the imported input/i).click();
     await expect(page.getByText(/Set count.*converted to 3/i)).toBeVisible();
     await expect(page.getByText(/Superset set counts differ/i).first()).toBeVisible();
+    await page.getByLabel("Preview week").selectOption("6");
     await expect(page.getByRole("button", { name: "Select Lower A week 6" })).toBeVisible();
+    await page.getByLabel("Preview week").selectOption("1");
+    await page.getByRole("button", { name: "Select Lower A week 1" }).click();
 
     const sets = page.locator('input[type="number"]');
     await expect(sets).toHaveCount(2);
@@ -115,7 +118,7 @@ test.describe("Routine import review and editing", () => {
     const moveLater = page.getByRole("button", { name: "Move workout later" });
     await moveLater.click();
     await page.getByRole("button", { name: "Apply edit" }).click();
-    const expanded = page.getByRole("region", { name: "Expanded program preview" });
+    const expanded = page.getByRole("region", { name: "Weekly preview" });
     const previewRows = expanded.locator("button");
     await expect(previewRows.first()).toContainText("Upper A");
     await expect(previewRows.nth(1)).toContainText("Lower A");
@@ -159,13 +162,46 @@ test.describe("Routine import review and editing", () => {
 
   test("imports and repairs a twelve-week routine without a length cap", async ({ page }) => {
     await openImportReview(page, twelveWeekProgram);
-    const preview = page.getByRole("region", { name: "Expanded program preview" });
-    await expect(preview.getByText(/Week 12/)).toBeVisible();
+    const preview = page.getByRole("region", { name: "Weekly preview" });
+    await page.getByLabel("Preview week").selectOption("12");
+    await expect(preview.getByRole("button", { name: "Select Full Body week 12" })).toBeVisible();
     await expect(page.getByText(/maximum of 8|at most 8 weeks/i)).toHaveCount(0);
     await page.getByRole("button", { name: /save program/i }).click();
     await expect(page).toHaveURL(/\/programs\/[^/]+$/);
     await expect(page.getByRole("button", { name: "WK 12" })).toBeVisible();
   });
+});
+
+test("confirmation stays compact on mobile with many weeks and workouts", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const sample = JSON.parse(eightWeekProgram);
+  const routine = {
+    title: "Compact confirmation fixture", weeks: 8,
+    days: Array.from({ length: 4 }, (_, index) => ({ ...sample.days[0], day: index + 1, title: `Workout ${index + 1}`, sections: [{ name: "Strength", type: "strength", groups: [{ type: "single", exercises: Array.from({ length: 6 }, () => ({ ...sample.days[0].sections[0].groups[0].exercises[0], sets: 3 })) }] }] })),
+  };
+  await openImportReview(page, JSON.stringify(routine));
+  await expect(page.getByText("8 weeks · 4 template workouts", { exact: true })).toBeVisible();
+  const preview = page.getByRole("region", { name: "Weekly preview" });
+  await expect(preview.getByRole("button", { name: /^Select / })).toHaveCount(4);
+  await expect(page.getByLabel("Sets", { exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThan(1500);
+  const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  await expect.poll(fits).toBe(true);
+  await page.getByLabel("Preview week").selectOption("7");
+  await page.getByRole("button", { name: "Select Workout 1 week 7" }).click();
+  await expect(page.getByRole("region", { name: "Workout editor" })).toBeVisible();
+  await expect(page.getByLabel("Sets", { exact: true })).toHaveCount(6);
+  await expect.poll(fits).toBe(true);
+  const saveIsInViewport = () => page.getByRole("button", { name: /save program/i }).evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return rect.top >= 0 && rect.bottom <= innerHeight;
+  });
+  await expect.poll(saveIsInViewport).toBe(true);
+  await page.setViewportSize({ width: 320, height: 640 });
+  await expect.poll(fits).toBe(true);
+  await expect.poll(saveIsInViewport).toBe(true);
+  await page.getByRole("button", { name: "Done editing" }).click();
+  await expect(page.getByLabel("Sets", { exact: true })).toHaveCount(0);
 });
 
 test("prompt builder keeps the required contract on and optional coaching off by default", async ({ page }) => {

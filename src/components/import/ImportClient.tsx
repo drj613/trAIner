@@ -398,13 +398,16 @@ export function ImportClient() {
       unresolvedItems.filter((i) => resolutions[i.path] === CUSTOM_ID).map((i) => i.path),
     );
 
+    const weekCount = new Set(getRenderableDays(review.program).map((day) => day.weekNumber ?? 1)).size;
+    const templateCount = review.program.editing?.templateDays.length ?? review.program.days.length;
+
     return (
-      <div className="stack">
+      <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
         <h1 className="text-2xl font-bold">Confirm import</h1>
         <section className="panel stack">
           <h2 className="font-bold">{review.program.title}</h2>
           <p className="muted text-sm">
-            {review.program.days.length} {review.program.days.length === 1 ? "day" : "days"} · {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
+            {weekCount > 1 ? `${weekCount} weeks · ${templateCount} template ${templateCount === 1 ? "workout" : "workouts"}` : `${review.program.days.length} ${review.program.days.length === 1 ? "day" : "days"} · ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`}
           </p>
           {resolvedCount > 0 && (
             <p className="text-sm" style={{ color: "var(--good, green)" }}>
@@ -445,7 +448,7 @@ export function ImportClient() {
             {rememberNotice}
           </p>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 sticky bottom-0 z-10 py-3" style={{ background: "var(--bg)", borderTop: "1px solid var(--line)" }}>
           <button
             type="button"
             className="button secondary"

@@ -19,6 +19,11 @@ type Props = {
 export function ImportReviewEditor({ program, warnings, corrections, onChange }: Props) {
   const days = useMemo(() => getRenderableDays(program), [program]);
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id ?? "");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [previewWeek, setPreviewWeek] = useState(days[0]?.weekNumber ?? 1);
+  const weeks = [...new Set(days.map((day) => day.weekNumber ?? 1))].sort((a, b) => a - b);
+  const previewDays = days.filter((day) => (day.weekNumber ?? 1) === previewWeek);
+
   const [scope, setScope] = useState<EditScope>("routine-day");
   const [operationError, setOperationError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ edit: ProgramEdit; context: ProgramEditContext; preview: ProgramEditPreview } | null>(null);
@@ -116,7 +121,11 @@ export function ImportReviewEditor({ program, warnings, corrections, onChange }:
   function focusTarget(targetId: string, affectedWeeks?: number[]) {
     const found = days.find((day) => (!affectedWeeks?.length || affectedWeeks.includes(day.weekNumber ?? 1)) && day.sections.some((section) => section.id === targetId
       || section.groups.some((group) => group.id === targetId || group.exercises.some((exercise) => exercise.id === targetId))));
-    if (found) setSelectedDayId(found.id);
+    if (found) {
+      setSelectedDayId(found.id);
+      setPreviewWeek(found.weekNumber ?? 1);
+      setEditorOpen(true);
+    }
     requestAnimationFrame(() => {
       const target = document.getElementById(`import-target-${targetId}`);
       target?.focus({ preventScroll: true });
@@ -127,7 +136,7 @@ export function ImportReviewEditor({ program, warnings, corrections, onChange }:
   if (!selectedDay) return <p className="muted">No recoverable workout days to edit.</p>;
 
   return (
-    <div className="stack">
+    <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
       {pending && <div ref={reviewPanel} tabIndex={-1}>
         <EditImpactPreview
           preview={pending.preview}
@@ -141,18 +150,55 @@ export function ImportReviewEditor({ program, warnings, corrections, onChange }:
       </div>}
       <ImportWarnings warnings={warnings} corrections={corrections} onSelectTarget={focusTarget} />
       {operationError && <p role="alert" className="text-sm" style={{ color: "var(--bad, red)" }}>{operationError}</p>}
-      <section ref={editorPanel} tabIndex={-1} className="panel stack">
+      <section className="panel stack min-w-0" aria-label="Weekly preview">
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <h2 className="font-bold">Weekly preview</h2>
+          <label className="flex items-center gap-2 text-sm">Preview week
+            <select className="input min-w-0" value={previewWeek} onChange={(event) => setPreviewWeek(Number(event.target.value))}>
+              {weeks.map((week) => <option key={week} value={week}>Week {week}</option>)}
+            </select>
+          </label>
+        </div>
+        <p className="text-sm muted">Review one week at a time. Open a workout to see its exercises or edit it.</p>
+        {previewDays.map((day) => {
+          const exercises = day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises));
+          return <article key={day.id} className="rounded border p-3 min-w-0">
+            <button type="button" aria-label={`Select ${dayLabel(day)}${day.weekNumber ? ` week ${day.weekNumber}` : ""}`} className="w-full text-left flex flex-wrap justify-between items-center gap-2" onClick={() => {
+              setSelectedDayId(day.id);
+              setEditorOpen(true);
+              requestAnimationFrame(() => editorPanel.current?.focus());
+            }}>
+              <span className="text-sm font-semibold min-w-0" style={{ overflowWrap: "anywhere" }}>{dayLabel(day)}</span>
+              <span className="text-xs muted">{exercises.length} {exercises.length === 1 ? "exercise" : "exercises"} · Edit workout →</span>
+            </button>
+            <details className="mt-2">
+              <summary className="text-xs muted cursor-pointer">View exercises</summary>
+              <ul className="stack mt-2" style={{ gap: 4 }}>
+                {exercises.map((exercise) => <li key={exercise.id} className="flex flex-wrap justify-between gap-2 text-sm min-w-0">
+                  <span style={{ overflowWrap: "anywhere" }}>{exercise.name}</span>
+                  <span className="text-xs muted">{exercise.sets ?? 3} sets × {exercise.reps ?? "reps unspecified"}</span>
+                </li>)}
+              </ul>
+            </details>
+          </article>;
+        })}
+      </section>
+      {editorOpen && <section ref={editorPanel} tabIndex={-1} className="panel stack min-w-0" aria-label="Workout editor">
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <h2 className="font-bold">Edit workout</h2>
+          <button type="button" className="button secondary" disabled={pending !== null} onClick={() => setEditorOpen(false)}>Done editing</button>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="stack text-sm" style={{ gap: 4 }}>
+          <label className="stack text-sm min-w-0" style={{ gap: 4, maxWidth: "100%" }}>
             Template workout
-            <select className="input" value={templateId ?? ""} onChange={(event) => {
+            <select className="input min-w-0" value={templateId ?? ""} onChange={(event) => {
               const day = days.find((item) => program.editing?.dayBindings.some((binding) => binding.occurrenceDayId === item.id && binding.templateDayId === event.target.value && (item.weekNumber === 1 || item.weekNumber === undefined)));
               if (day) setSelectedDayId(day.id);
             }}>
               {templateChoices.map((day) => <option key={day.id} value={day.id}>{dayLabel(day)}</option>)}
             </select>
           </label>
-          <label className="stack text-sm" style={{ gap: 4 }}>
+          <label className="stack text-sm min-w-0" style={{ gap: 4, maxWidth: "100%" }}>
             Week
             <select className="input" value={selectedDay.id} onChange={(event) => setSelectedDayId(event.target.value)}>
               {occurrenceChoices.map((day) => <option key={day.id} value={day.id}>{day.weekNumber ? `Week ${day.weekNumber}` : "Single week"}</option>)}
@@ -190,19 +236,8 @@ export function ImportReviewEditor({ program, warnings, corrections, onChange }:
             ))}
           </section>
         ))}
-      </section>
+      </section>}
 
-      <section className="panel stack" aria-label="Expanded program preview">
-        <h2 className="font-bold">Expanded program preview</h2>
-        {days.map((day) => (
-          <button key={day.id} type="button" aria-label={`Select ${dayLabel(day)}${day.weekNumber ? ` week ${day.weekNumber}` : ""}`} className="stack rounded border p-2 text-left" onClick={() => setSelectedDayId(day.id)}>
-            <span className="flex justify-between"><span>{dayLabel(day)}{day.weekNumber ? ` · Week ${day.weekNumber}` : ""}</span><span className="muted">{day.sections.reduce((total, section) => total + section.groups.reduce((groupTotal, group) => groupTotal + group.exercises.length, 0), 0)} exercises</span></span>
-            {day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises.map((exercise) => (
-              <span key={`${day.id}-${exercise.id}`} className="text-xs muted">{exercise.name}: {exercise.sets ?? 3} sets × {exercise.reps ?? "reps unspecified"}</span>
-            ))))}
-          </button>
-        ))}
-      </section>
     </div>
   );
 }
@@ -228,7 +263,7 @@ function ExerciseEditor({ exercise, groups, onFields, onRemove, onGroupChange }:
   }, [exercise.id, exercise.name, exercise.sets, exercise.reps]);
 
   return (
-    <div id={`import-target-${exercise.id}`} tabIndex={-1} className="grid gap-2 rounded border p-2 md:grid-cols-[minmax(12rem,2fr)_5rem_minmax(7rem,1fr)_minmax(8rem,1fr)_auto]">
+    <div id={`import-target-${exercise.id}`} tabIndex={-1} className="grid min-w-0 gap-2 rounded border p-2 md:grid-cols-[minmax(12rem,2fr)_5rem_minmax(7rem,1fr)_minmax(8rem,1fr)_auto]">
       <label className="text-xs muted">Exercise name
         <input className="input mt-1 w-full" value={name} onChange={(event) => setName(event.target.value)} onBlur={() => { if (name !== exercise.name) onFields({ name, canonicalExerciseId: null }); }} />
         <input aria-label="Search exercise catalog" className="input mt-1 w-full" value={catalogQuery} placeholder="Search catalog to match…" onChange={(event) => setCatalogQuery(event.target.value)} />

@@ -104,6 +104,7 @@ describe("ImportClient confirm step pluralization", () => {
     render(<ImportClient />);
     fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
     await user.click(screen.getByRole("button", { name: "Validate →" }));
+    await user.click(await screen.findByRole("button", { name: /^Select Day 1/ }));
     const setCount = await screen.findByLabelText("Sets");
     fireEvent.change(setCount, { target: { value: "5" } });
     fireEvent.blur(setCount);
@@ -118,6 +119,7 @@ describe("ImportClient confirm step pluralization", () => {
     render(<ImportClient />);
     fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
     await user.click(screen.getByRole("button", { name: "Validate →" }));
+    await user.click(await screen.findByRole("button", { name: /^Select Day 1/ }));
     await user.click(await screen.findByRole("button", { name: "Add exercise" }));
     await user.click(await screen.findByRole("button", { name: "Apply edit" }));
     expect(await screen.findByRole("heading", { name: "Resolve exercises" })).toBeInTheDocument();
@@ -131,6 +133,7 @@ describe("ImportClient confirm step pluralization", () => {
     render(<ImportClient />);
     fireEvent.change(screen.getByPlaceholderText('{ "program_name": "...", "days": [...] }'), { target: { value: "{}" } });
     await user.click(screen.getByRole("button", { name: "Validate →" }));
+    await user.click(await screen.findByRole("button", { name: /^Select Day 1/ }));
     const catalogItem = exerciseCatalog[0];
     fireEvent.change(screen.getByLabelText("Search exercise catalog"), { target: { value: toTitleCase(catalogItem.name) } });
     fireEvent.change(screen.getByLabelText("Choose catalog exercise"), { target: { value: catalogItem.id } });
