@@ -44,7 +44,6 @@ jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
   useNavigate: () => mockNavigate,
 }));
-jest.mock("@/lib/pwa/viteEnv", () => ({ BASE_URL: "/", IS_PROD: false }));
 
 const danglingBackSquatAlias: AliasDocument = {
   id: "alias-1",

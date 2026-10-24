@@ -1,6 +1,4 @@
-import { readFile } from "node:fs/promises";
 import { readImportFile, MAX_ROUTINE_FILE_BYTES } from "./fileSource";
-import { parseProgramJson } from "./parser";
 
 function fileWith(text: string, size = Buffer.byteLength(text), name = "routine.json") {
   const file = { name, size, text: jest.fn().mockResolvedValue(text) } as unknown as File;
@@ -47,17 +45,5 @@ describe("readImportFile", () => {
     const result = await readImportFile(file);
     expect(result).toMatchObject({ kind: "error", reason: "read" });
     expect(JSON.stringify(result)).not.toContain("private details");
-  });
-
-  it("parses the downloadable example with the real routine parser", async () => {
-    const source = await readFile("public/examples/routine.json", "utf8");
-    const imported = await readImportFile(fileWith(source, Buffer.byteLength(source), "routine.json"));
-    expect(imported.kind).toBe("text");
-    if (imported.kind !== "text") throw new Error("The routine example should be accepted as file text.");
-    const { program } = parseProgramJson(imported.text);
-    const exercise = program.days[0].sections[0].groups[0].exercises[0];
-
-    expect(program.title).toBe("Example routine");
-    expect(exercise).toMatchObject({ name: "Barbell Bench Press", sets: 3, reps: "8", load: "95", unit: "lb" });
   });
 });

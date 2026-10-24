@@ -34,7 +34,6 @@ import { ImportReviewEditor } from "./ImportReviewEditor";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { getOverrideReplacementDays, getRenderableDays } from "@/lib/programs/overrides";
 import { readImportFile } from "@/lib/import/fileSource";
-import { BASE_URL } from "@/lib/pwa/viteEnv";
 
 type Step = "paste" | "resolve" | "confirm";
 
@@ -374,9 +373,6 @@ export function ImportClient() {
               {fileError.message}{fileError.reason === "backup" && <> <Link to="/settings" className="underline">Settings</Link></>}
             </p>
           )}
-          <a className="button secondary w-fit" href={`${BASE_URL}examples/routine.json`} download="routine.json">
-            Download example JSON
-          </a>
         </div>
         <textarea
           className="input min-h-72 font-mono text-xs"

@@ -23,7 +23,6 @@ jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
   useNavigate: () => jest.fn(),
 }));
-jest.mock("@/lib/pwa/viteEnv", () => ({ BASE_URL: "/trAIner/", IS_PROD: false }));
 
 const routineText = JSON.stringify({
   program_name: "Example routine",
@@ -157,11 +156,6 @@ describe("ImportClient file input", () => {
     });
     expect(prescription(selected)).toEqual(prescription(pasted));
     expect(selected.id).not.toBe(pasted.id);
-  });
-
-  it("offers the example at the application base URL", () => {
-    render(<ImportClient />);
-    expect(screen.getByRole("link", { name: "Download example JSON" })).toHaveAttribute("href", "/trAIner/examples/routine.json");
   });
 
   it("keeps parser error guidance source-neutral for a selected file", async () => {

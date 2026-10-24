@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
 import { chooseImportVersions, clearDb, finishWorkout } from "./helpers";
 
@@ -129,36 +128,5 @@ test("backup file guidance preserves the current import and stored routines and 
   await page.goto("programs");
   await expect(page.getByRole("button", { name: "Uploaded Routine" })).toBeVisible();
   await expect(page.getByText("Must Not Restore")).toHaveCount(0);
-  await context.close();
-});
-
-test("the downloaded example routine can be uploaded, validated, and saved", async ({ browser }) => {
-  const context = await browser.newContext({ acceptDownloads: true });
-  const page = await context.newPage();
-  await page.goto("import");
-  await clearDb(page);
-  await page.goto("import");
-
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download example JSON" }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("routine.json");
-  const path = await download.path();
-  expect(path).toBeTruthy();
-
-  const exampleText = await readFile(path!, "utf8");
-  await page.getByLabel("Choose JSON file").setInputFiles(path!);
-  await expect(page.getByLabel("Routine JSON")).toHaveValue(exampleText);
-  await expect(page.getByRole("status")).toHaveText(/^Loaded .+$/);
-  await page.getByRole("button", { name: /validate/i }).click();
-  await chooseImportVersions(page);
-  await continueImportReview(page);
-  await page.getByRole("button", { name: /save program/i }).click();
-  await page.waitForURL(/\/programs\/[^/]+$/);
-  await page.reload();
-  await expect(page.getByText("Example routine", { exact: true })).toBeVisible();
-  await page.getByText("Upper body", { exact: true }).click();
-  await expect(page.getByText(/3×\s*8\s*95/)).toBeVisible();
-
   await context.close();
 });
