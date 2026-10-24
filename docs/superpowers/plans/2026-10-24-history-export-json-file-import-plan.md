@@ -1,7 +1,7 @@
 # Workout history text export and routine JSON file import
 
 Date: 2026-10-24
-Status: Ready to implement
+Status: Implemented and verified
 Grounded at commit: `31dfd5a`
 
 This plan contains the feature contract and implementation steps. The implementing agent does not need the planning conversation or candidate files in `/tmp`.
@@ -120,7 +120,7 @@ All other content, including empty or malformed JSON, fills the textarea and is 
 
 Cancel, oversized file, backup detection, and read failure leave current JSON and saved/review state intact. Show file errors separately from parser errors. Disable Validate and textarea edits during a read. A request counter ensures an older read cannot replace a newer selection; invalidate pending reads on unmount. Reset the file input value after capturing the File so choosing the same file again fires change.
 
-Show a successful load notice with the filename as React text. No `innerHTML`. Add a downloadable example routine. Use `import.meta.env.BASE_URL` for the asset URL so the GitHub Pages base path works.
+Show a successful load notice with the filename as React text. No `innerHTML`.
 
 ## Task 1: Build and test the pure export module
 
@@ -206,13 +206,12 @@ Run: `bun run test --runInBand src/components/workout/HistoryClient.test.tsx src
 
 Done when the actual History entry point opens the working panel and errors cannot masquerade as complete exports.
 
-## Task 3: Add the file reader and example
+## Task 3: Add the file reader
 
 Create:
 
 - `src/lib/import/fileSource.ts`
 - `src/lib/import/fileSource.test.ts`
-- `public/examples/routine.json`
 
 Export `MAX_ROUTINE_FILE_BYTES` and `readImportFile(file: File)`. Result union:
 
@@ -224,9 +223,7 @@ type ImportFileResult =
 
 Follow the file-selection contract above. Catch read errors with a fixed user-facing message; do not expose arbitrary exception internals. Do not call `parseProgramJson` in this helper. The `text` result intentionally includes invalid JSON, which the existing Validate action owns.
 
-Example payload: `program_name: "Example routine"`, one day with a named strength section, one single group, and one `Barbell Bench Press` exercise with `sets: 3`, `reps: "8"`, `load: "95"`, `unit: "lb"`. Use `days`, `sections`, `groups`, and `exercises`; omit IDs and backup fields. Add normal notes if helpful, but no profile information.
-
-Test limit boundaries without allocating huge strings by mocking `file.text`; assert too-large files are never read. Also test cancel at the UI layer, read rejection, BOM stripping, exact text retention, malformed/empty JSON pass-through, backup detection, and a valid routine that is not misclassified. Parse the committed example with the real parser and assert its prescription survives.
+Test limit boundaries without allocating huge strings by mocking `file.text`; assert too-large files are never read. Also test cancel at the UI layer, read rejection, BOM stripping, exact text retention, malformed/empty JSON pass-through, backup detection, and a valid routine that is not misclassified.
 
 Run: `bun run test --runInBand src/lib/import/fileSource.test.ts`
 
@@ -236,7 +233,7 @@ Done when file acceptance leaves routine validation to the existing parser.
 
 Modify `src/components/import/ImportClient.tsx`. Create `src/components/import/ImportClient.file.test.tsx` with the real parser; existing `ImportClient.test.tsx` mocks it and cannot prove equivalence.
 
-Add labeled input `Choose JSON file`, read/loading status, separate file error, and **Download example JSON** on the paste step. Capture the File before resetting the input value. Use a `useRef` request counter and unmount invalidation. Disable text editing and Validate while reading; allow a newer file selection to supersede the old one. Only the current request may change loading, errors, or JSON.
+Add labeled input `Choose JSON file`, read/loading status, and a separate file error on the paste step. Capture the File before resetting the input value. Use a `useRef` request counter and unmount invalidation. Disable text editing and Validate while reading; allow a newer file selection to supersede the old one. Only the current request may change loading, errors, or JSON.
 
 On successful read, update JSON and clear stale parse/file messages. Do not reset `savedJson` or `savedProgramId`, run Validate, or write any repository. Keep `handleValidate` and `handleSave` as the only existing routine processing path. Make any shared parser-error UI wording source-neutral where necessary; do not change parser acceptance rules.
 
@@ -249,8 +246,6 @@ Tests first:
 5. A slow first read cannot overwrite a faster second read; unmounted completion causes no state updates.
 6. Re-selecting the same file fires; filename changes do not define routine identity.
 7. Existing unchanged-text retry protection survives; an independent new import of the same title gets fresh IDs. Do not promise global deduplication or that changed JSON reuses the earlier ID.
-8. Download example link uses the configured base URL.
-
 Use controllable deferred Promises for read-race tests. Mock `File.text` locally if jsdom lacks it. Reuse alias/user-exercise repository mocks from nearby tests rather than adding network behavior.
 
 Run: `bun run test --runInBand src/components/import src/lib/import`
@@ -263,7 +258,7 @@ Create `e2e/history-export.spec.ts` and `e2e/routine-file-import.spec.ts`. Use e
 
 Export test: import a routine, log at least one numeric and one raw-text set, finish the workout, open History, select Export for AI, and assert preview content. Download the file and compare its UTF-8 content to the preview. Verify a nonmatching date range disables delivery. Test mixed units and richer malformed data in Jest fixtures rather than building an elaborate UI setup.
 
-Import test: select an actual JSON file through `setInputFiles`, Validate, resolve exercise versions if requested, review, Save, and reload the saved routine. Verify title and prescription. A second case selects a backup and verifies guidance and no overwritten routine/history. Download the example and prove it can be imported.
+Import test: select an actual JSON file through `setInputFiles`, Validate, resolve exercise versions if requested, review, Save, and reload the saved routine. Verify title and prescription. A second case selects a backup and verifies guidance and no overwritten routine/history.
 
 Test Copy in Chromium with clipboard permissions if supported; the Jest test remains the deterministic exact-string check. Exercise the real download independently of clipboard support.
 
@@ -300,3 +295,21 @@ Final handoff must list the implemented behavior, tests and browser flows actual
 The two candidate designs converged on a pure formatter and the existing import flow. The first candidate is the base because it preserves raw and numeric fields independently, keeps set numbers, and reports invalid ranges explicitly. The second contributes compact output, summary counts, and backup-file guidance. The final comparison agreed with that choice.
 
 Rejected designs: exporting rendered history labels loses data; a repository-backed transfer service adds another loading path; raw-text precedence hides numeric observations; treating reversed dates as zero matches hides an input error. These choices are settled for this implementation.
+
+## Implementation verification
+
+The example download and asset were removed after the initial implementation at the user's request. The verification entries below describe the original implementation and remain as historical records.
+
+Luna agents implemented the formatter, History panel, file import, and browser tests. DeepSeek V4.1 Flash agents reviewed the chunks through `opencode-go/deepseek-v4.1-flash`. Follow-up changes include stable labels for deleted routines, omission of blank set placeholders, separate entry-note lines, accurate copied-text status, and warnings for malformed completion timestamps. Blank completion timestamps are absent. A nonblank timestamp must be parseable before it can establish completed or skipped status. Filtered exclusion warnings are exportable even when no sessions remain. Unreadable routine IDs use an explicit Unknown routine label and warning rather than sharing a deleted routine label. Final DeepSeek reviews found no unresolved defects.
+
+The following checks passed on 2026-10-24:
+
+- Full Jest suite: 131 suites, 1,803 tests. Run with Bun 1.3.12 on PATH because catalog CLI tests spawn `bun`.
+- TypeScript checks for production and tests, repository ESLint, production Vite build, and `git diff --check`.
+- Combined Chromium acceptance/regression run: 14 tests across the new export/import specs, `program-import.spec.ts`, and `history-rawcell.spec.ts`.
+- Final Chromium run of the two new specs: 4 tests, including exact preview/clipboard/download equality, routine reload, backup rejection, and example download/import.
+- Collaborative browser: uploaded, validated, and saved the example; checked the History export panel at a 390px viewport with no horizontal overflow.
+
+The export size measurement uses 24 completed sessions dated October 1 through 24, 2026. Each has Bench press, Seated row, and Plank entries with three sets each. Weighted sets use `80 + sessionIndex` kg, `8 - setIndex` reps, and RPE `7 + setIndex / 2`. Plank sets contain `40s hold`. Every fourth session has the day note `Slept poorly`. The input includes stored log, routine, day, and exercise-slot IDs and timestamps. The comparison serializes the same selected raw logs, without an unrelated workspace backup.
+
+Using tiktoken 0.14.0 with `cl100k_base`, the exported text measured 6,203 UTF-8 bytes and 3,051 tokens. Minified JSON measured 19,822 bytes and 7,292 tokens. Pretty-printed JSON measured 41,795 bytes and 12,380 tokens. The text therefore used 58.2% fewer tokens than minified JSON for this fixture. Token savings depend on the data and tokenizer. The tokenizer was installed only in a temporary development environment; the app has no tokenizer dependency.

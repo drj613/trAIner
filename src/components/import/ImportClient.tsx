@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Copy, Save } from "lucide-react";
 import { parseProgramJson, ImportError, type ImportReview } from "@/lib/import/parser";
 import type { RecoveryReason } from "@/lib/import/sanitizeJson";
@@ -33,6 +33,7 @@ import { createImportDraft, replaceDraftProgram, type ImportDraft } from "@/lib/
 import { ImportReviewEditor } from "./ImportReviewEditor";
 import { baseExercisePath, overrideExercisePath } from "@/lib/import/paths";
 import { getOverrideReplacementDays, getRenderableDays } from "@/lib/programs/overrides";
+import { readImportFile } from "@/lib/import/fileSource";
 
 type Step = "paste" | "resolve" | "confirm";
 
@@ -61,6 +62,38 @@ export function ImportClient() {
   const [remembered, setRemembered] = useState<Record<string, boolean>>({});
   const [userExercises, setUserExercises] = useState<UserExerciseDocument[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReadingFile, setIsReadingFile] = useState(false);
+  const [fileError, setFileError] = useState<{ reason: "too-large" | "backup" | "read"; message: string } | null>(null);
+  const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
+  const fileRequestId = useRef(0);
+
+  useEffect(() => () => {
+    fileRequestId.current += 1;
+  }, []);
+
+  async function handleFileSelection(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    const requestId = ++fileRequestId.current;
+    setIsReadingFile(true);
+    setFileError(null);
+    setLoadedFileName(null);
+    const result = await readImportFile(file);
+    if (requestId !== fileRequestId.current) return;
+
+    setIsReadingFile(false);
+    if (result.kind === "error") {
+      setFileError(result);
+      return;
+    }
+
+    setJson(result.text);
+    setParseError(null);
+    setFileError(null);
+    setLoadedFileName(result.fileName);
+  }
 
   const unresolvedItems = useMemo<ResolutionItem[]>(
     () => (review ? extractUnresolvedExercises(review.warnings) : []),
@@ -154,7 +187,7 @@ export function ImportClient() {
     } catch (err) {
       if (err instanceof ImportError) {
         setRecoveryReason(err.reason);
-        setParseError(err.message);
+        setParseError(err.message.replace(/\bpasted\b/gi, "provided"));
       } else {
         setRecoveryReason("syntax");
         setParseError(err instanceof Error ? err.message : "Parse error");
@@ -325,11 +358,29 @@ export function ImportClient() {
           <h1 className="text-2xl font-bold">Import</h1>
           <p className="muted">Paste JSON from an AI coach or external source.</p>
         </div>
+        <div className="stack" style={{ gap: 8 }}>
+          <label className="text-sm font-semibold" htmlFor="routine-file">Choose JSON file</label>
+          <input
+            id="routine-file"
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) => void handleFileSelection(event)}
+          />
+          {isReadingFile && <p className="text-sm muted" role="status">Reading file…</p>}
+          {loadedFileName && <p className="text-sm muted" role="status">Loaded {loadedFileName}</p>}
+          {fileError && (
+            <p className="text-sm" role="alert" style={{ color: "var(--bad, red)" }}>
+              {fileError.message}{fileError.reason === "backup" && <> <Link to="/settings" className="underline">Settings</Link></>}
+            </p>
+          )}
+        </div>
         <textarea
           className="input min-h-72 font-mono text-xs"
+          aria-label="Routine JSON"
           value={json}
           placeholder='{ "program_name": "...", "days": [...] }'
           onChange={(e) => setJson(e.target.value)}
+          disabled={isReadingFile}
         />
         {parseError && (
           <div className="stack" style={{ gap: 6 }}>
@@ -354,7 +405,7 @@ export function ImportClient() {
         <button
           type="button"
           className="button"
-          disabled={!json.trim()}
+          disabled={!json.trim() || isReadingFile}
           onClick={() => void handleValidate()}
         >
           Validate →

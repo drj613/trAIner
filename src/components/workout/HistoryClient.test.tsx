@@ -1,9 +1,16 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ExerciseNormalizationProvider } from "@/components/app/ExerciseNormalizationProvider";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { logRepo } from "@/lib/storage/logRepo";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
 import { HistoryClient } from "./HistoryClient";
+
+jest.mock("@/components/app/LocalDataProvider", () => ({
+  useLocalData: jest.fn(),
+}));
+
+const mockUseLocalData = useLocalData as jest.Mock;
 
 /**
  * Logs for the all-time history page, installed over `logRepo.list`.
@@ -74,6 +81,7 @@ const unresolvedLog = log("l-plank", daysAgo(1), [
 ]);
 
 function renderHistory() {
+  mockUseLocalData.mockReturnValue({ programs: [], loading: false, error: null });
   return render(
     <ExerciseNormalizationProvider>
       <HistoryClient />
@@ -89,6 +97,7 @@ async function openFamily(name: RegExp) {
 
 afterEach(() => {
   jest.restoreAllMocks();
+  mockUseLocalData.mockReset();
 });
 
 describe("HistoryClient — all-time family history", () => {
@@ -202,6 +211,20 @@ describe("HistoryClient — all-time family history", () => {
     expect(screen.queryByRole("button", { name: /^Squat\b/ })).not.toBeInTheDocument();
   });
 
+  it("keeps export independent from the movement search filter", async () => {
+    makeHistoryClientFixture([...squatLogs, benchLog]).install();
+    renderHistory();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Export for AI" }));
+    const preview = screen.getByLabelText("Export preview") as HTMLTextAreaElement;
+    const beforeSearch = preview.value;
+
+    await user.type(screen.getByPlaceholderText(/filter/i), "bench");
+
+    expect(preview).toHaveValue(beforeSearch);
+    expect(preview.value).toContain('routine:"Unavailable routine 1"');
+  });
+
   // The old `recent` / `stale` chips split on `sessions > 3`, where `sessions`
   // counted entries — a frequency test wearing the words of a time test. They
   // now mean what they say.
@@ -224,6 +247,7 @@ describe("HistoryClient — all-time family history", () => {
     makeHistoryClientFixture([]).install();
     renderHistory();
     expect(await screen.findByText(/no history yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeEnabled();
   });
 
   /**
@@ -257,11 +281,57 @@ describe("HistoryClient — all-time family history", () => {
     expect(screen.getByRole("button", { name: /^Deadlift\b/ })).toBeInTheDocument();
   });
 
-  it("renders the empty state rather than nothing when the read fails", async () => {
+  it("shows a visible load error instead of treating a failed read as empty history", async () => {
     const fixture = makeHistoryClientFixture([]);
     fixture.fail(new Error("idb closed"));
     renderHistory();
-    expect(await screen.findByText(/no history yet/i)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not load history/i);
+    expect(screen.queryByText(/no history yet/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeDisabled();
+  });
+
+  it("keeps export gated while routines are loading after history finishes", async () => {
+    mockUseLocalData.mockReturnValue({ programs: [], loading: true, error: null });
+    let finishRead!: (logs: WorkoutLogDocument[]) => void;
+    jest.spyOn(logRepo, "list").mockReturnValue(new Promise((resolve) => { finishRead = resolve; }));
+    render(
+      <ExerciseNormalizationProvider>
+        <HistoryClient />
+      </ExerciseNormalizationProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeDisabled();
+
+    await act(async () => finishRead([]));
+
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeDisabled();
+  });
+
+  it("keeps export gated until the history read completes", async () => {
+    mockUseLocalData.mockReturnValue({ programs: [], loading: false, error: null });
+    let finishRead!: (logs: WorkoutLogDocument[]) => void;
+    jest.spyOn(logRepo, "list").mockReturnValue(new Promise((resolve) => { finishRead = resolve; }));
+    render(
+      <ExerciseNormalizationProvider>
+        <HistoryClient />
+      </ExerciseNormalizationProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeDisabled();
+
+    await act(async () => finishRead([]));
+
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeEnabled();
+  });
+
+  it("shows a routine load error and keeps export unavailable", async () => {
+    mockUseLocalData.mockReturnValue({ programs: [], loading: false, error: new Error("storage unavailable") });
+    makeHistoryClientFixture([]).install();
+    render(
+      <ExerciseNormalizationProvider>
+        <HistoryClient />
+      </ExerciseNormalizationProvider>,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not load routines/i);
+    expect(screen.getByRole("button", { name: "Export for AI" })).toBeDisabled();
   });
   // The header used to print `logs.length`, which counts stored records: a
   // skipped day with nothing recorded is a log, and calling it a workout
