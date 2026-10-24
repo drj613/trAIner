@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
+import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExerciseCorrectionSheet, type CorrectionTarget } from "@/components/catalog/ExerciseCorrectionSheet";
 import { logRepo } from "@/lib/storage/logRepo";
 import { toTitleCase } from "@/lib/catalog/normalize";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/workout/historyProjection";
 import { textOf } from "@/lib/workout/historyUtils";
 import type { WorkoutLogDocument } from "@/lib/programs/types";
+import { HistoryExportPanel } from "./HistoryExportPanel";
 import { HistoryWorkoutList, countEntries, formatShortDate, groupByWorkout } from "./HistoryRows";
 
 /**
@@ -218,19 +220,25 @@ type Sort = (typeof SORTS)[number]["id"];
 
 export function HistoryClient() {
   const { context } = useExerciseNormalization();
+  const { programs, loading: programsLoading, error: programsError } = useLocalData();
   const [logs, setLogs] = useState<WorkoutLogDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("workouts");
   const [openFamilyKey, setOpenFamilyKey] = useState<string | null>(null);
   const [correctionTarget, setCorrectionTarget] = useState<CorrectionTarget | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     logRepo
       .list()
       .then(setLogs)
-      .catch(() => setLogs([]))
+      .catch(() => {
+        setLogs([]);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -304,31 +312,7 @@ export function HistoryClient() {
     );
   }
 
-  if (loading) {
-    return (
-      <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-        Loading history…
-      </p>
-    );
-  }
-
-  if (families.length === 0) {
-    return (
-      <div
-        style={{
-          padding: 24,
-          textAlign: "center",
-          background: "var(--bg-2)",
-          border: "1px solid var(--line)",
-          borderRadius: "var(--r)",
-          color: "var(--fg-3)",
-        }}
-      >
-        <div style={{ fontSize: 14, color: "var(--fg-2)", marginBottom: 6 }}>No history yet</div>
-        <div style={{ fontSize: 12 }}>Log a workout from the Today screen to start tracking.</div>
-      </div>
-    );
-  }
+  const exportUnavailable = loading || programsLoading || loadError || !!programsError;
 
   return (
     <div>
@@ -343,7 +327,30 @@ export function HistoryClient() {
               user would count. */}
           {families.length} movements · {loggedWorkoutCount} workouts
         </span>
+        <button
+          type="button"
+          className="btn ghost"
+          disabled={exportUnavailable}
+          onClick={() => setExportOpen(true)}
+          style={{ marginLeft: "auto", padding: "4px 8px" }}
+        >
+          Export for AI
+        </button>
       </div>
+      {loadError && <p role="alert" style={{ color: "var(--danger, #b42318)" }}>Could not load history. Export is unavailable until history can be read.</p>}
+      {programsError && <p role="alert" style={{ color: "var(--danger, #b42318)" }}>Could not load routines. Export is unavailable until routines can be read.</p>}
+      {loading && <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading history…</p>}
+      {programsLoading && <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading routines…</p>}
+      {exportOpen && !exportUnavailable && (
+        <HistoryExportPanel logs={logs} programs={programs} context={context} onClose={() => setExportOpen(false)} />
+      )}
+      {!loading && !loadError && families.length === 0 && (
+        <div style={{ padding: 24, textAlign: "center", background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r)", color: "var(--fg-3)" }}>
+          <div style={{ fontSize: 14, color: "var(--fg-2)", marginBottom: 6 }}>No history yet</div>
+          <div style={{ fontSize: 12 }}>Log a workout from the Today screen to start tracking.</div>
+        </div>
+      )}
+      {!loading && !loadError && families.length > 0 && <>
       <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
         Tap a movement to see every version and session.
       </p>
@@ -500,6 +507,7 @@ export function HistoryClient() {
         )}
       </div>
       {sheet}
+      </>}
     </div>
   );
 }

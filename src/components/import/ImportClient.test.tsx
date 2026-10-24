@@ -23,6 +23,7 @@ jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
   useNavigate: () => jest.fn(),
 }));
+jest.mock("@/lib/pwa/viteEnv", () => ({ BASE_URL: "/", IS_PROD: false }));
 
 // Mock the parser to return a test program
 jest.mock("@/lib/import/parser", () => ({

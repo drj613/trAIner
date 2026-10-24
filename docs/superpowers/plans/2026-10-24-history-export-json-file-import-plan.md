@@ -1,7 +1,7 @@
 # Workout history text export and routine JSON file import
 
 Date: 2026-10-24
-Status: Ready to implement
+Status: Implemented and verified
 Grounded at commit: `31dfd5a`
 
 This plan contains the feature contract and implementation steps. The implementing agent does not need the planning conversation or candidate files in `/tmp`.
@@ -300,3 +300,19 @@ Final handoff must list the implemented behavior, tests and browser flows actual
 The two candidate designs converged on a pure formatter and the existing import flow. The first candidate is the base because it preserves raw and numeric fields independently, keeps set numbers, and reports invalid ranges explicitly. The second contributes compact output, summary counts, and backup-file guidance. The final comparison agreed with that choice.
 
 Rejected designs: exporting rendered history labels loses data; a repository-backed transfer service adds another loading path; raw-text precedence hides numeric observations; treating reversed dates as zero matches hides an input error. These choices are settled for this implementation.
+
+## Implementation verification
+
+Luna agents implemented the formatter, History panel, file import, and browser tests. DeepSeek V4.1 Flash agents reviewed the chunks through `opencode-go/deepseek-v4.1-flash`. Follow-up changes include stable labels for deleted routines, omission of blank set placeholders, separate entry-note lines, accurate copied-text status, and warnings for malformed completion timestamps. Blank completion timestamps are absent. A nonblank timestamp must be parseable before it can establish completed or skipped status. Filtered exclusion warnings are exportable even when no sessions remain. Unreadable routine IDs use an explicit Unknown routine label and warning rather than sharing a deleted routine label. Final DeepSeek reviews found no unresolved defects.
+
+The following checks passed on 2026-10-24:
+
+- Full Jest suite: 131 suites, 1,803 tests. Run with Bun 1.3.12 on PATH because catalog CLI tests spawn `bun`.
+- TypeScript checks for production and tests, repository ESLint, production Vite build, and `git diff --check`.
+- Combined Chromium acceptance/regression run: 14 tests across the new export/import specs, `program-import.spec.ts`, and `history-rawcell.spec.ts`.
+- Final Chromium run of the two new specs: 4 tests, including exact preview/clipboard/download equality, routine reload, backup rejection, and example download/import.
+- Collaborative browser: uploaded, validated, and saved the example; checked the History export panel at a 390px viewport with no horizontal overflow.
+
+The export size measurement uses 24 completed sessions dated October 1 through 24, 2026. Each has Bench press, Seated row, and Plank entries with three sets each. Weighted sets use `80 + sessionIndex` kg, `8 - setIndex` reps, and RPE `7 + setIndex / 2`. Plank sets contain `40s hold`. Every fourth session has the day note `Slept poorly`. The input includes stored log, routine, day, and exercise-slot IDs and timestamps. The comparison serializes the same selected raw logs, without an unrelated workspace backup.
+
+Using tiktoken 0.14.0 with `cl100k_base`, the exported text measured 6,203 UTF-8 bytes and 3,051 tokens. Minified JSON measured 19,822 bytes and 7,292 tokens. Pretty-printed JSON measured 41,795 bytes and 12,380 tokens. The text therefore used 58.2% fewer tokens than minified JSON for this fixture. Token savings depend on the data and tokenizer. The tokenizer was installed only in a temporary development environment; the app has no tokenizer dependency.
