@@ -265,7 +265,7 @@ export function SettingsClient() {
         </ActionRow>
         <ActionRow
           label={snapshotting ? "Saving…" : "Snapshot (undo point)"}
-          sub={`${snapshotSub} · stored in-browser, wiped with it — not a backup`}
+          sub={`${snapshotSub} · this browser only, not a backup`}
           disabled={snapshotting}
           onClick={handleSnapshot}
         />
@@ -369,8 +369,7 @@ export function SettingsClient() {
             fontFamily: "var(--font-ui)",
             fontSize: 12,
             color: "var(--bad, #ef9a9a)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            fontWeight: 600,
             margin: "0 0 12px",
           }}
         >
