@@ -1,0 +1,167 @@
+{
+  "model": "gpt-6.1-sol",
+  "imageInspection": true,
+  "inspectedScreenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/workout.png",
+    "desktop-light/routines.png",
+    "desktop-light/history.png",
+    "desktop-light/prompts.png"
+  ],
+  "scores": {
+    "typography": 6.7,
+    "hierarchy": 6.4,
+    "spacing": 7.0,
+    "contrast": 5.8,
+    "iconography": 7.0,
+    "consistency": 6.8,
+    "clarity": 6.5
+  },
+  "overall": 6.6,
+  "unresolvedMajorIssues": [
+    "Dark-theme secondary text makes workout prescriptions, library categories, and workspace explanations difficult to read.",
+    "The principal copy-prompt action is absent from both captured prompt viewports while expanded coach reference text dominates the screen."
+  ],
+  "findings": [
+    {
+      "id": "R00-SOL-01",
+      "severity": "major",
+      "screenIds": [
+        "mobile-dark/workout.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "mobile-light/history.png",
+        "mobile-light/library.png",
+        "desktop-light/history.png"
+      ],
+      "evidence": "Dark-theme prescription lines, navigation metadata, library category names and counts, and workspace explanatory text are visibly dim against dark surfaces. Light-theme history dates and version counts and library counts are also faint. Several of these labels combine low visual contrast with small monospace text.",
+      "userConsequence": "Users must work to read training instructions and distinguish catalog groups or recent sessions. The dark theme weakens information needed for ordinary workout and browsing tasks.",
+      "suggestedChange": "Increase the foreground strength of secondary text, especially prescriptions and category names. Reserve the faintest treatment for decorative information, and review each theme independently at the captured sizes."
+    },
+    {
+      "id": "R00-SOL-02",
+      "severity": "major",
+      "screenIds": [
+        "mobile-light/prompts.png",
+        "desktop-light/prompts.png"
+      ],
+      "evidence": "The introduction directs users to copy the complete prompt at the bottom, but neither viewport shows that action. Preset saving appears first, followed by an expanded coach containing long philosophy and methodology text. On mobile, even that first coach's text continues beyond the viewport.",
+      "userConsequence": "A user following the onboarding copy/paste workflow can miss its principal action or mistake saving a preset for the required next step.",
+      "suggestedChange": "Place a clearly labeled Copy complete prompt action near the top and keep it available while scrolling. Collapse detailed coach reference text initially, with a concise selected-coach summary and an explicit next step to paste the result into an external AI chat."
+    },
+    {
+      "id": "R00-SOL-03",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routine-detail.png",
+        "mobile-dark/routine-detail.png"
+      ],
+      "evidence": "The analysis card occupies a large portion of the first viewport before the week and workout list. It includes a grade, timing, OFFLINE/PARTIAL metadata, a goal selector, explanatory prose, and four tiny metric tiles. The final metric's label is visibly truncated. Workout rows below have only small trailing symbols to suggest opening them.",
+      "userConsequence": "Reference analysis competes with choosing a workout, and the compressed metrics are difficult to interpret despite their prominent placement.",
+      "suggestedChange": "Prioritize the current week and a labeled workout action. Reduce analysis to a short summary with expandable details, and give metric labels enough space when expanded."
+    },
+    {
+      "id": "R00-SOL-04",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png",
+        "desktop-light/workout.png"
+      ],
+      "evidence": "Exercise cards use small unlabeled history, pencil, and opposing-arrow controls. Timer play and reset controls sit close to compact set chips and add-note text. On desktop, the cards stretch across most of the content width, separating the exercise information at the left from its tools at the far right.",
+      "userConsequence": "Users must infer tool meanings during logging, and desktop users must scan across a large empty span to associate actions with the exercise.",
+      "suggestedChange": "Give ambiguous exercise tools visible labels or a labeled actions menu. Increase spacing around timer controls and keep exercise tools closer to their exercise content on wide screens."
+    },
+    {
+      "id": "R00-SOL-05",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routines.png",
+        "desktop-light/routines.png",
+        "mobile-light/profile.png",
+        "mobile-light/workspace.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/history.png"
+      ],
+      "evidence": "Page-title treatment varies substantially: Import has a large heading, History has a medium heading, and Routines uses a small uppercase label above file-like counts and an OTHER filter label. The routine row says not started but offers no labeled start or open action. Profile exposes profile.json and Routines exposes routines.json as prominent metadata.",
+      "userConsequence": "Screen identity and action priority change between destinations. The routines landing screen reads more like a storage listing than a clear place to begin training.",
+      "suggestedChange": "Use a shared page-heading and action pattern. Give the routine row an explicit Open routine or Start workout action appropriate to its state, rename OTHER meaningfully, and move storage filenames into secondary details."
+    },
+    {
+      "id": "R00-SOL-06",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png"
+      ],
+      "evidence": "Resolve exercises reports 0 of 1 handled while Review import is presented as a filled primary button. Confirm import then shows a green mapped-exercises message, a note that Squat needs a specific version chosen, and a filled Save program action. The visual status does not explain whether that unresolved choice is optional.",
+      "userConsequence": "Users cannot confidently tell whether the import is ready or whether saving will preserve an ambiguous exercise mapping.",
+      "suggestedChange": "State explicitly whether unresolved names may be saved as custom exercises. Make the primary action reflect that choice, or require resolution before presenting an unqualified save action."
+    },
+    {
+      "id": "R00-SOL-07",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/profile.png"
+      ],
+      "evidence": "The bodyweight card shows a descending line and a current value of 168 lb without dates, a time range, or a weight scale. The training heatmap also lacks visible month labels, while its summary and legend use very small text.",
+      "userConsequence": "Users can see a trend but cannot judge when it occurred or how much bodyweight changed. The heatmap's time context is difficult to recover.",
+      "suggestedChange": "Add a concise time range and starting/current values to the bodyweight card, plus sparse date labels. Add month anchors to the heatmap and enlarge its summary text."
+    },
+    {
+      "id": "R00-SOL-08",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routine-map.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/history.png",
+        "desktop-light/history.png"
+      ],
+      "evidence": "The routine map repeats three colored dots without a visible legend and wraps compact metadata such as '3 sections · 3 ex' onto multiple lines. Exercise history shows VOL figures without a visible unit. History sorting includes a bare # symbol alongside A-Z and LAST.",
+      "userConsequence": "Users must infer what colors, volume figures, and sorting symbols mean. Small abbreviated labels reduce the usefulness of otherwise compact summaries.",
+      "suggestedChange": "Use short plain-language labels for sorting and volume units. Explain the map colors once and simplify card metadata so it fits cleanly at mobile width."
+    }
+  ],
+  "strengths": [
+    "All 27 images were readable and directly inspected.",
+    "The navigation drawer pairs consistent outline icons with text and clearly marks the current destination.",
+    "The onboarding screen gives an understandable sequence through Profile, Prompts, and Import.",
+    "Import error recovery explicitly supports returning to the external AI conversation with a copied recovery prompt.",
+    "Workout cards keep exercise names, prescriptions, entered sets, and rest timers together. Section colors are reinforced with text labels.",
+    "Saved-set feedback and the prominent Finish workout action provide useful closure during logging.",
+    "The session summary is concise and offers clear Review session and Next day actions.",
+    "History export exposes scope, dates, a populated preview, Copy, and Download .txt without implying an in-app AI connection.",
+    "Workspace explains browser-local storage, backup limitations, and destructive import behavior in concrete language.",
+    "The builder's step indicator and labeled Add exercise, Add section, and Save routine actions are easy to follow."
+  ],
+  "limitations": [
+    "This is an independent baseline review. No previous round or other reviewer output was consulted, so no improvement or regression is claimed.",
+    "Judgments cover exactly the 27 frozen manifest images. No source inspection or live app interaction was performed.",
+    "Contrast judgments are visual observations, not measured ratios or accessibility conformance claims.",
+    "Screenshots cannot establish keyboard behavior, accessible names, actual touch target bounds, persistence, data safety, or behavior outside the captured viewports.",
+    "Actions outside the captured viewport may exist; findings about their discoverability concern the supplied visible states."
+  ]
+}

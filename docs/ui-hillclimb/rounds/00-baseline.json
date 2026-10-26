@@ -1,0 +1,549 @@
+{
+  "screenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/workout.png",
+    "desktop-light/routines.png",
+    "desktop-light/history.png",
+    "desktop-light/prompts.png"
+  ],
+  "checks": {
+    "lint": true,
+    "types": true,
+    "build": true,
+    "behavior": false
+  },
+  "reviews": [
+    {
+      "model": "claude-sonnet-5-5",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/workout.png",
+        "desktop-light/routines.png",
+        "desktop-light/history.png",
+        "desktop-light/prompts.png"
+      ],
+      "scores": {
+        "typography": 6.0,
+        "hierarchy": 6.0,
+        "spacing": 6.5,
+        "contrast": 5.5,
+        "iconography": 6.0,
+        "consistency": 6.5,
+        "clarity": 6.5
+      },
+      "overall": 6.2,
+      "unresolvedMajorIssues": [
+        "Workout logging screen relies on tiny monospace text and unlabeled icon buttons",
+        "Muted and metadata text looks faint in both themes and nothing in the captures confirms it is readable",
+        "Primary next action is weak or missing on Today, Routines and Prompts",
+        "Screen titles and headers are inconsistent across routes",
+        "The routine analysis card is dense and clips content on mobile"
+      ],
+      "findings": [
+        {
+          "id": "F1",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png",
+            "desktop-light/workout.png",
+            "mobile-light/exercise-history.png"
+          ],
+          "evidence": "Each exercise card has four small icon-only buttons at the top right: a 'lb' unit toggle, a history clock, a pencil and a swap arrows glyph. None has a visible label. Prescription, set summary and 'add note' are tiny monospace text of roughly 10-11px. The set chips ('135x5', '40x10') look like inputs but also look like static pills. The '+' add-set chip is a faint low-contrast button. The timer shows '--:--' next to play and reset glyphs with no label.",
+          "userConsequence": "Mid-workout, on a phone, the user has to guess what the pencil, swap and 'lb' controls do, and has to hit small targets. Reading the prescription (3x5 135 lb, rest 2:00) takes effort, and a mis-tap on swap or edit could change the exercise.",
+          "suggestedChange": "Raise prescription and set text to 13-14px or more. Give the tap targets visible or accessible names (at minimum a visible label on first use, or an overflow menu with text). Make the set chip a clear field with a distinct completed state. Make 'add set' obviously interactive."
+        },
+        {
+          "id": "F2",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/routine-detail.png",
+            "mobile-dark/routine-detail.png"
+          ],
+          "evidence": "The analysis card stacks a grade badge ('B 89'), the label 'ANALYSIS \u00b7 4MS \u00b7 OFFLINE \u00b7 PARTIAL' in about 8px monospace, a '3-day program' title, an unlabeled '\u25bc' chevron, a goal select, a five-line explanatory paragraph, and a row of metric tiles. The 'PERIODIZATION \u00b7RE...' tile is clipped at the right edge. The day list below uses a green dot and '\u25b8' with no explanation.",
+          "userConsequence": "The card takes up half of the first viewport and pushes the actual workout days below it. The clipped tile reads as a layout bug. The grade and 'PARTIAL' label are hard to interpret, and the green dot status is ambiguous, so the user may not know which day to start.",
+          "suggestedChange": "Collapse the analysis by default into a one-line summary (grade and a 'Details' toggle). Put the day list and a clear 'Start Day 1' action first. Fix the clipped tile (wrap or scroll with a visible affordance). Label the status dot and give the \u25bc a text name."
+        },
+        {
+          "id": "F3",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/library.png",
+            "mobile-dark/library.png",
+            "mobile-light/history.png",
+            "desktop-light/history.png",
+            "mobile-dark/workspace.png",
+            "mobile-dark/routine-detail.png",
+            "mobile-light/today-empty.png"
+          ],
+          "evidence": "Secondary text looks very faint. In Library, the row counts (4, 18, 296) and chevrons are pale gray on gray. In History, 'last 10/26' and the version counts are pale on a gray panel. On Today, the '\u2192' glyphs at the right of the onboarding steps are barely visible. In the dark theme, 'UPCOMING' and the Library counts look dim against near-black. No contrast ratios were measured here.",
+          "userConsequence": "Users with ordinary vision in bright light, such as a gym, may miss the dates, counts and row affordances. The faint chevrons weaken the signal that a row is tappable.",
+          "suggestedChange": "Raise the muted text and glyph tones in both themes and check them with a contrast tool. Avoid placing mid-gray text on gray-filled panels. Keep dates and counts at primary or secondary text strength."
+        },
+        {
+          "id": "F4",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/today-empty.png",
+            "mobile-light/routines.png",
+            "desktop-light/routines.png",
+            "mobile-light/prompts.png",
+            "desktop-light/prompts.png"
+          ],
+          "evidence": "On Today (empty), nothing in the three steps reads as a button, so the primary action is only the small 'Go to Profile \u2192' link in a banner that repeats step 1. Roughly 60% of the screen is empty. On Routines, the single routine 'Everyday Strength' shows only '3d/wk \u00b7 4w \u00b7 not started' and an overflow '\u00b7\u00b7\u00b7'. There is no 'Start' or 'Open' action, and the header says '0 active \u00b7 1 draft' with an unexplained orange dot. On Prompts, the preset name field and 'Save' come first. The copy-the-prompt action is only 'at the bottom' of a very long page, per the intro text.",
+          "userConsequence": "A new user may not realize the steps are tappable. A returning user must open the routine to start training and has to read the status words to know what 'draft' and 'not started' mean. Prompts users have to scroll past long coach text to find the one action that matters for the AI workflow.",
+          "suggestedChange": "Make the steps full buttons with a clear current step (and drop the duplicated banner). Give the routine row a visible status label plus a primary 'Start' or 'Continue'. On Prompts, use a sticky 'Copy prompt' bar and put the preset controls below the main flow."
+        },
+        {
+          "id": "F5",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routines.png",
+            "mobile-light/workspace.png",
+            "mobile-light/profile.png",
+            "mobile-light/routine-map.png",
+            "mobile-light/history.png",
+            "mobile-light/library.png",
+            "mobile-light/today-empty.png"
+          ],
+          "evidence": "Screen headers differ. Import, History, Library, Prompts and Today use a large bold title. Routines uses a small spaced 'ROUTINES' label with counts and a '+ New' button, with different side margins. Workspace has no title and starts with a 'WORKSPACE' data card. Profile leads with the user's name and avatar. Routine map uses a small caps eyebrow and then a large title. The filter row on Routines starts with an unexplained 'OTHER' label.",
+          "userConsequence": "The app feels like several different layouts. The 'OTHER' label looks like an error. On Workspace, users get no title confirming they are in settings, which is only reachable through the drawer.",
+          "suggestedChange": "Define one page header pattern (title, optional one-line meta, one primary action) and apply it to every route. Remove or explain 'OTHER'. Add a visible 'Workspace' title."
+        },
+        {
+          "id": "F6",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/import-paste.png",
+            "mobile-light/import-error.png",
+            "mobile-light/import-resolve.png",
+            "mobile-light/import-confirm.png",
+            "mobile-light/history-export.png"
+          ],
+          "evidence": "The Import screen shows the browser's raw 'Choose File No file chosen' control with no styling, above a textarea whose content is cut off. The 'Validate \u2192' button is a full-width blue bar with tiny text. In the error state the message 'The provided content is not valid JSON.' is red text with no icon, and the recovery action sits below it as an outlined button with a small helper line. On the Resolve step, the metadata ('imported \u00b7 strength', 'used 4 times') is set in a small monospace font. In the History export panel, the preview is a clipped monospace block with horizontal truncation. It sits next to empty native 'mm/dd/yyyy' date inputs and two small buttons, 'Copy' and 'Download .txt'.",
+          "userConsequence": "The offline copy/paste AI workflow is the product's core, but its controls look unfinished. A user may not realize the export text is cut off, or that the empty date fields mean 'all dates'. In the import error the primary 'Validate' stays visually dominant over the recovery action.",
+          "suggestedChange": "Style the file input as a secondary button next to the paste area. Add a labeled 'Paste' area with a visible character or line count. Show the error in a bordered alert and make 'Copy recovery prompt' the primary action in that state. Make 'Copy' the primary button in the export panel and wrap or scroll the preview with a visible affordance."
+        },
+        {
+          "id": "F7",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/library.png",
+            "mobile-dark/library.png",
+            "mobile-light/profile.png",
+            "mobile-light/routine-map.png"
+          ],
+          "evidence": "The Library filter chips are cut off at the right edge ('machine' touches the edge, with no sign of scrolling). The 3175-exercise catalog is a flat accordion list of muscle groups, with 'NEEDS REVIEW' first. Profile shows a bodyweight line with no axis or dates, and the heatmap labels (M, W, F, S) and 'streak: 0 \u00b7 avg: 0.3/wk' are about 9px. The Routine map cards wrap '3 sections \u00b7 3 ex' to two lines.",
+          "userConsequence": "Users may not find the hidden chips, and finding an exercise means opening many groups. The bodyweight chart doesn't communicate a trend or dates, and the heatmap legend needs a good eye.",
+          "suggestedChange": "Make the chip row obviously scrollable (fade edge) or wrap it. Put the most-used groups first. Add dates to the chart ends and enlarge the heatmap labels. Shorten the map card meta so it fits on one line."
+        },
+        {
+          "id": "F8",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-dark/workspace.png",
+            "mobile-light/workspace.png",
+            "mobile-light/builder.png",
+            "mobile-light/session-summary.png"
+          ],
+          "evidence": "In mobile-dark/workspace.png the page uses the dark terminal styling but the 'linen' theme chip is the selected one, which contradicts the manifest's 'terminal' theme. This may be a capture-state artifact; the screenshot alone can't tell. On Workspace, the destructive 'Import workspace \u2014 Replace all local data \u2014 destructive' row is only distinguished by an orange chevron and gray subtext, and looks like the neighboring rows. In the builder, 'Save routine' is the strongest control on a day with 0 exercises. The session summary dims the page behind it but the footer 'Finish workout' button shows through beneath the dialog.",
+          "userConsequence": "If the theme state is a real bug, the user can't tell which theme is active. The destructive row could be tapped by accident. A user can save an empty routine and see 'Save routine' before they have added anything.",
+          "suggestedChange": "Check that the selected theme chip matches the applied theme. Give the destructive action a clear warning color or a confirmation step. Disable 'Save routine' until a day has content, or explain what saving an empty day does. Make the summary dialog fully opaque."
+        }
+      ],
+      "strengths": [
+        "The visual system is restrained and consistent across screens: the same blue accent, linen surfaces, bordered cards and monospace metadata are used throughout.",
+        "Dark and light themes have visibly parallel structure, and the dark workout and detail screens keep the same layout and hierarchy.",
+        "The workout screen is information-dense in a useful way: sections are separated with color rails (blue warm-up, main lift, purple accessory), entered sets are visible as chips, and 'saved 6/6 sets' with 'Finish workout' is anchored in a sticky bar.",
+        "The exercise history drawer is clear and compact: dates, volume, and previous sets per version are all scannable, and the current session is highlighted.",
+        "Local-first messaging on Workspace is explicit, with data counts, backup download, persistence warning and an explained undo point.",
+        "The three-step Today onboarding and the Import flow (paste, resolve names, confirm with weekly preview) form a clear linear path for the copy/paste AI workflow.",
+        "The import error state offers a concrete recovery action ('Copy recovery prompt for your AI chat').",
+        "The navigation drawer is simple: icons with text labels, a clear active state, and no more than eight items."
+      ],
+      "limitations": [
+        "Review was based only on the 27 frozen static screenshots; no live interaction, keyboard, screen-reader, focus, hover or animation behavior was checked.",
+        "Contrast was judged by eye only. I did not measure ratios, so contrast claims are impressions rather than pass/fail results.",
+        "Only three desktop captures and four dark captures exist, so desktop and dark parity for the other screens is not evidenced. Responsive behavior outside 390x844 and 1280x900 was not checked.",
+        "The dark Workspace capture shows 'linen' selected while appearing dark; I could not determine from the image whether this is a real bug or a capture artifact.",
+        "Long pages (Prompts, Profile, Library, Import confirm) were captured only above the fold, so content below was not reviewed.",
+        "I did not validate any finding against source code or the running app, and I did not read other reviewers' output or compare with earlier rounds (this is the baseline)."
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/workout.png",
+        "desktop-light/routines.png",
+        "desktop-light/history.png",
+        "desktop-light/prompts.png"
+      ],
+      "scores": {
+        "typography": 6.7,
+        "hierarchy": 6.4,
+        "spacing": 7.0,
+        "contrast": 5.8,
+        "iconography": 7.0,
+        "consistency": 6.8,
+        "clarity": 6.5
+      },
+      "overall": 6.6,
+      "unresolvedMajorIssues": [
+        "Dark-theme secondary text makes workout prescriptions, library categories, and workspace explanations difficult to read.",
+        "The principal copy-prompt action is absent from both captured prompt viewports while expanded coach reference text dominates the screen."
+      ],
+      "findings": [
+        {
+          "id": "R00-SOL-01",
+          "severity": "major",
+          "screenIds": [
+            "mobile-dark/workout.png",
+            "mobile-dark/routine-detail.png",
+            "mobile-dark/library.png",
+            "mobile-dark/workspace.png",
+            "mobile-light/history.png",
+            "mobile-light/library.png",
+            "desktop-light/history.png"
+          ],
+          "evidence": "Dark-theme prescription lines, navigation metadata, library category names and counts, and workspace explanatory text are visibly dim against dark surfaces. Light-theme history dates and version counts and library counts are also faint. Several of these labels combine low visual contrast with small monospace text.",
+          "userConsequence": "Users must work to read training instructions and distinguish catalog groups or recent sessions. The dark theme weakens information needed for ordinary workout and browsing tasks.",
+          "suggestedChange": "Increase the foreground strength of secondary text, especially prescriptions and category names. Reserve the faintest treatment for decorative information, and review each theme independently at the captured sizes."
+        },
+        {
+          "id": "R00-SOL-02",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/prompts.png",
+            "desktop-light/prompts.png"
+          ],
+          "evidence": "The introduction directs users to copy the complete prompt at the bottom, but neither viewport shows that action. Preset saving appears first, followed by an expanded coach containing long philosophy and methodology text. On mobile, even that first coach's text continues beyond the viewport.",
+          "userConsequence": "A user following the onboarding copy/paste workflow can miss its principal action or mistake saving a preset for the required next step.",
+          "suggestedChange": "Place a clearly labeled Copy complete prompt action near the top and keep it available while scrolling. Collapse detailed coach reference text initially, with a concise selected-coach summary and an explicit next step to paste the result into an external AI chat."
+        },
+        {
+          "id": "R00-SOL-03",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routine-detail.png",
+            "mobile-dark/routine-detail.png"
+          ],
+          "evidence": "The analysis card occupies a large portion of the first viewport before the week and workout list. It includes a grade, timing, OFFLINE/PARTIAL metadata, a goal selector, explanatory prose, and four tiny metric tiles. The final metric's label is visibly truncated. Workout rows below have only small trailing symbols to suggest opening them.",
+          "userConsequence": "Reference analysis competes with choosing a workout, and the compressed metrics are difficult to interpret despite their prominent placement.",
+          "suggestedChange": "Prioritize the current week and a labeled workout action. Reduce analysis to a short summary with expandable details, and give metric labels enough space when expanded."
+        },
+        {
+          "id": "R00-SOL-04",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png",
+            "desktop-light/workout.png"
+          ],
+          "evidence": "Exercise cards use small unlabeled history, pencil, and opposing-arrow controls. Timer play and reset controls sit close to compact set chips and add-note text. On desktop, the cards stretch across most of the content width, separating the exercise information at the left from its tools at the far right.",
+          "userConsequence": "Users must infer tool meanings during logging, and desktop users must scan across a large empty span to associate actions with the exercise.",
+          "suggestedChange": "Give ambiguous exercise tools visible labels or a labeled actions menu. Increase spacing around timer controls and keep exercise tools closer to their exercise content on wide screens."
+        },
+        {
+          "id": "R00-SOL-05",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routines.png",
+            "desktop-light/routines.png",
+            "mobile-light/profile.png",
+            "mobile-light/workspace.png",
+            "mobile-light/import-paste.png",
+            "mobile-light/history.png"
+          ],
+          "evidence": "Page-title treatment varies substantially: Import has a large heading, History has a medium heading, and Routines uses a small uppercase label above file-like counts and an OTHER filter label. The routine row says not started but offers no labeled start or open action. Profile exposes profile.json and Routines exposes routines.json as prominent metadata.",
+          "userConsequence": "Screen identity and action priority change between destinations. The routines landing screen reads more like a storage listing than a clear place to begin training.",
+          "suggestedChange": "Use a shared page-heading and action pattern. Give the routine row an explicit Open routine or Start workout action appropriate to its state, rename OTHER meaningfully, and move storage filenames into secondary details."
+        },
+        {
+          "id": "R00-SOL-06",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/import-resolve.png",
+            "mobile-light/import-confirm.png"
+          ],
+          "evidence": "Resolve exercises reports 0 of 1 handled while Review import is presented as a filled primary button. Confirm import then shows a green mapped-exercises message, a note that Squat needs a specific version chosen, and a filled Save program action. The visual status does not explain whether that unresolved choice is optional.",
+          "userConsequence": "Users cannot confidently tell whether the import is ready or whether saving will preserve an ambiguous exercise mapping.",
+          "suggestedChange": "State explicitly whether unresolved names may be saved as custom exercises. Make the primary action reflect that choice, or require resolution before presenting an unqualified save action."
+        },
+        {
+          "id": "R00-SOL-07",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/profile.png"
+          ],
+          "evidence": "The bodyweight card shows a descending line and a current value of 168 lb without dates, a time range, or a weight scale. The training heatmap also lacks visible month labels, while its summary and legend use very small text.",
+          "userConsequence": "Users can see a trend but cannot judge when it occurred or how much bodyweight changed. The heatmap's time context is difficult to recover.",
+          "suggestedChange": "Add a concise time range and starting/current values to the bodyweight card, plus sparse date labels. Add month anchors to the heatmap and enlarge its summary text."
+        },
+        {
+          "id": "R00-SOL-08",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routine-map.png",
+            "mobile-light/exercise-history.png",
+            "mobile-light/history.png",
+            "desktop-light/history.png"
+          ],
+          "evidence": "The routine map repeats three colored dots without a visible legend and wraps compact metadata such as '3 sections \u00b7 3 ex' onto multiple lines. Exercise history shows VOL figures without a visible unit. History sorting includes a bare # symbol alongside A-Z and LAST.",
+          "userConsequence": "Users must infer what colors, volume figures, and sorting symbols mean. Small abbreviated labels reduce the usefulness of otherwise compact summaries.",
+          "suggestedChange": "Use short plain-language labels for sorting and volume units. Explain the map colors once and simplify card metadata so it fits cleanly at mobile width."
+        }
+      ],
+      "strengths": [
+        "All 27 images were readable and directly inspected.",
+        "The navigation drawer pairs consistent outline icons with text and clearly marks the current destination.",
+        "The onboarding screen gives an understandable sequence through Profile, Prompts, and Import.",
+        "Import error recovery explicitly supports returning to the external AI conversation with a copied recovery prompt.",
+        "Workout cards keep exercise names, prescriptions, entered sets, and rest timers together. Section colors are reinforced with text labels.",
+        "Saved-set feedback and the prominent Finish workout action provide useful closure during logging.",
+        "The session summary is concise and offers clear Review session and Next day actions.",
+        "History export exposes scope, dates, a populated preview, Copy, and Download .txt without implying an in-app AI connection.",
+        "Workspace explains browser-local storage, backup limitations, and destructive import behavior in concrete language.",
+        "The builder's step indicator and labeled Add exercise, Add section, and Save routine actions are easy to follow."
+      ],
+      "limitations": [
+        "This is an independent baseline review. No previous round or other reviewer output was consulted, so no improvement or regression is claimed.",
+        "Judgments cover exactly the 27 frozen manifest images. No source inspection or live app interaction was performed.",
+        "Contrast judgments are visual observations, not measured ratios or accessibility conformance claims.",
+        "Screenshots cannot establish keyboard behavior, accessible names, actual touch target bounds, persistence, data safety, or behavior outside the captured viewports.",
+        "Actions outside the captured viewport may exist; findings about their discoverability concern the supplied visible states."
+      ]
+    },
+    {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/workout.png",
+        "desktop-light/routines.png",
+        "desktop-light/history.png",
+        "desktop-light/prompts.png"
+      ],
+      "scores": {
+        "typography": 6.6,
+        "hierarchy": 6.4,
+        "spacing": 7.0,
+        "contrast": 7.0,
+        "iconography": 7.5,
+        "consistency": 6.8,
+        "clarity": 6.5
+      },
+      "overall": 6.7,
+      "unresolvedMajorIssues": [
+        "Prompts buries the copy-prompt action below long instructions while non-primary actions use filled buttons",
+        "Today onboarding steps look like static or disabled status rows rather than navigation"
+      ],
+      "findings": [
+        {
+          "id": "F1",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/prompts.png",
+            "desktop-light/prompts.png"
+          ],
+          "evidence": "Both captures say to copy the complete prompt at the bottom, but neither viewport shows a copy control. The only filled buttons in view are Save next to the preset name and, on desktop, Edit coach details and Write custom instructions. The long coach instructions push the actual copy action well below the fold.",
+          "userConsequence": "A user can mistake preset saving or coach editing for the task and never copy the prompt, stalling the copy/paste AI workflow this screen exists to support.",
+          "suggestedChange": "Pin a Copy prompt \u00b7 N chars primary action (plus Go to Import) in a sticky footer or above the long instructions, and demote Save preset, Edit coach details, and Write custom instructions to secondary styling."
+        },
+        {
+          "id": "F2",
+          "severity": "major",
+          "screenIds": [
+            "mobile-light/today-empty.png"
+          ],
+          "evidence": "The three setup rows are full-width links, but the styling does not reveal that: white cards on a white page, no visible chevron, and only a barely visible pale-gray arrow at the far right. The only blue action is the banner's Go to Profile.",
+          "userConsequence": "A new user can read the checklist as inert status text and stay on an empty Today screen instead of proceeding through Profile, Prompts, and Import.",
+          "suggestedChange": "Make each row visibly actionable with a clear chevron or Open label and hover/focus treatment, emphasize the current step, and preserve the completed checkmark state."
+        },
+        {
+          "id": "F3",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routine-detail.png",
+            "mobile-dark/routine-detail.png"
+          ],
+          "evidence": "The four analysis chips use the smallest type on the screen; the fourth caption is cut mid-word at the card edge (PERIODIZATION \u00b7 RE), and the remaining coverage chip is not visible at all, with no scroll cue or more indicator.",
+          "userConsequence": "Users cannot reliably read the routine grade breakdown and may not discover the hidden coverage metric, weakening confidence in the score shown.",
+          "suggestedChange": "Wrap the chips onto two rows or add a visible scroll/peek affordance, give captions a legible size, avoid truncating labels, and include the coverage chip in the same visible group."
+        },
+        {
+          "id": "F4",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/import-paste.png",
+            "mobile-light/import-error.png"
+          ],
+          "evidence": "The file path renders as an unstyled native input reading Choose File No file chosen directly under the label Choose JSON file. It looks like plain sentence text, not a control, and does not match any button or input elsewhere in the app.",
+          "userConsequence": "Users who would rather load a JSON file than paste it can overlook or distrust the control, and the import route looks unfinished at the point of data entry.",
+          "suggestedChange": "Replace it with a styled secondary button or dropzone that states the expected file type, shows the selected filename and size, and matches the app's existing controls."
+        },
+        {
+          "id": "F5",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workspace.png",
+            "mobile-dark/workspace.png"
+          ],
+          "evidence": "The destructive Import workspace row has the same surface, typography, and weight as Download backup file and Snapshot; only a small orange chevron marks it. The storage status uses unexplained jargon (evictable), and the screen has no plain-language page title above the stats card.",
+          "userConsequence": "A user can choose the destructive restore by mistake or fail to understand that the browser may clear their data; the confirmation dialog only appears after the choice.",
+          "suggestedChange": "Move restore into a distinct danger section or apply danger styling with an explicit verb, replace evictable with plain language, and add a Workspace page heading above the summary card."
+        },
+        {
+          "id": "F6",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routines.png",
+            "mobile-light/today-empty.png",
+            "mobile-light/library.png",
+            "mobile-light/workspace.png",
+            "mobile-light/profile.png",
+            "desktop-light/routines.png"
+          ],
+          "evidence": "Screen titles use incompatible treatments: ROUTINES and WORKSPACE are tiny uppercase captions or absent above the stats card, Today is a 16px heading, while History, Library, and Import use a large title. On Routines the only program sits under an OTHER filter label rather than under a real page heading.",
+          "userConsequence": "The user must re-learn where the title is on every screen and gets weaker confirmation of location, especially when returning from a detail page.",
+          "suggestedChange": "Adopt one page-header component with a consistent title size and placement, reserve eyebrows for section metadata, and rename Other to All routines or Inactive."
+        },
+        {
+          "id": "F7",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png",
+            "desktop-light/workout.png"
+          ],
+          "evidence": "At the right of every exercise name, a bare lb and three tiny pictograms (clock, pencil, opposing arrows) sit in a tight unlabeled row. The lb is a unit toggle but reads as a static unit, and the icons have no visible labels at phone size.",
+          "userConsequence": "Users can change the weight unit unintentionally or fail to find exercise history, prescription editing, and replacement during a workout.",
+          "suggestedChange": "Separate the unit display from the actions, move edit and replace into a labeled overflow menu, and enlarge or space the remaining icon buttons."
+        },
+        {
+          "id": "F8",
+          "severity": "minor",
+          "screenIds": [
+            "desktop-light/routines.png",
+            "desktop-light/history.png",
+            "desktop-light/workout.png",
+            "desktop-light/prompts.png"
+          ],
+          "evidence": "At 1280px the app still uses one narrow column with phone-scale type and hamburger-only navigation. Routines is a single line in an almost empty page, History tells mouse users to Tap a movement, and long prompt prose runs across the full column.",
+          "userConsequence": "The desktop experience feels like a stretched phone: low information density, extra pointer travel to open navigation, and touch-specific wording that does not match the device.",
+          "suggestedChange": "At desktop widths use a persistent sidebar and a multi-column or master-detail layout, raise type and spacing modestly, cap prose line length, and change Tap to Select."
+        }
+      ],
+      "strengths": [
+        "Workout logging fits prescription, set inputs, rest timer, and note into one scannable card; three exercises remain usable in a single phone viewport.",
+        "The mono and uppercase data language with tabular set values makes dense training numbers comparatively easy to scan.",
+        "Import recovery is concrete: it names the JSON problem and offers a copyable recovery prompt for the external AI chat.",
+        "The session-complete sheet clearly states sets logged and percentage and offers one obvious primary next action.",
+        "Light and dark captures share structure and section semantics; the theme changes the accent without breaking the layout.",
+        "The navigation drawer has a clear selected state and a consistent, recognizable icon set.",
+        "The copy/paste AI loop is explicitly represented across Today, Prompts, Import, and History export.",
+        "The import resolve/confirm sequence makes catalog mapping, review notes, and the weekly preview visible before saving."
+      ],
+      "limitations": [
+        "Only static screenshots were reviewed; hover, focus, keyboard, screen-reader behavior, persistence, and real-device touch were not tested.",
+        "Responsive behavior was observed only at 390x844 and 1280x900; other widths were not captured.",
+        "Dark-theme evidence covers only four screens, so cross-theme conclusions are limited to those.",
+        "Contrast judgments are visual only; no contrast ratios were measured.",
+        "All 27 manifest images were readable and present; no evidence was missing.",
+        "Source was checked only after image review to validate affordances (Today step links, prompt copy placement, file input, chip overflow, and destination safety); it was not used as a substitute for appearance.",
+        "No earlier round, prior findings, or implementation response was supplied, so no regression or improvement comparison is claimed.",
+        "No other reviewer output or parent conversation was consulted."
+      ]
+    }
+  ]
+}

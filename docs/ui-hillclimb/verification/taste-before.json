@@ -1,0 +1,1144 @@
+{
+ "url": "http://127.0.0.1:4175/trAIner/today",
+ "at": "2026-10-26T21:38:23.243Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.22
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 900,
+     "screens": 1,
+     "words": 58,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 1,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 1.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 118,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Today",
+     "words": 1,
+     "lines": 1,
+     "size": 16,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.99,
+       "mono": false
+      },
+      {
+       "family": "JetBrains Mono",
+       "share": 0.01,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      13,
+      14,
+      16
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 15.4
+     },
+     "measureChars": 122,
+     "max": {
+      "size": 16,
+      "vw": 1.1,
+      "font": "Inter",
+      "text": "Today"
+     },
+     "monoShare": 0.01,
+     "monoProseShare": 0.01,
+     "monoFamilies": [
+      "JetBrains Mono"
+     ],
+     "monoSamples": [
+      "1",
+      "2",
+      "3"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f6f7f9",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.2,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f6f7f9",
+       "top": 0,
+       "hsl": {
+        "h": 220,
+        "s": 0.2,
+        "l": 0.97
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#1c1f24",
+       "share": 0.7
+      },
+      {
+       "color": "#565d67",
+       "share": 0.22
+      },
+      {
+       "color": "#2f6fdf",
+       "share": 0.07
+      },
+      {
+       "color": "#a4abb4",
+       "share": 0.01
+      }
+     ],
+     "button": null,
+     "lowContrast": [
+      {
+       "text": "Go to Profile →",
+       "ratio": 4.4,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#2f6fdf",
+       "bg": "#f6f7f9"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 0,
+     "inHero": 0,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": []
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "header 1440px"
+     ],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 46,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter",
+     "jetbrains mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 900,
+    "margins": {
+     "left": 10,
+     "right": 271
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Today",
+      "size": 16,
+      "top": 118,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 256,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.6,
+    "voidBox": {
+     "x": 0,
+     "y": 360,
+     "w": 1440,
+     "h": 540
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f6f7f9",
+    "sidebar": null,
+    "topbar": {
+     "h": 46
+    },
+    "canvas": {
+     "left": 10,
+     "right": 271
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 1.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 118,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 0,
+     "firstScreen": 0,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 0,
+     "radii": [],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      13,
+      14,
+      16
+     ]
+    },
+    "title": {
+     "text": "Today",
+     "size": 16,
+     "top": 118
+    },
+    "colourShare": 0.001
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.26
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1024,
+     "screens": 1,
+     "words": 58,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 1,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 2.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 118,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Today",
+     "words": 1,
+     "lines": 1,
+     "size": 16,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.99,
+       "mono": false
+      },
+      {
+       "family": "JetBrains Mono",
+       "share": 0.01,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      13,
+      14,
+      16
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 15.4
+     },
+     "measureChars": 93,
+     "max": {
+      "size": 16,
+      "vw": 2.1,
+      "font": "Inter",
+      "text": "Today"
+     },
+     "monoShare": 0.01,
+     "monoProseShare": 0.01,
+     "monoFamilies": [
+      "JetBrains Mono"
+     ],
+     "monoSamples": [
+      "1",
+      "2",
+      "3"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f6f7f9",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.2,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f6f7f9",
+       "top": 0,
+       "hsl": {
+        "h": 220,
+        "s": 0.2,
+        "l": 0.97
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#1c1f24",
+       "share": 0.7
+      },
+      {
+       "color": "#565d67",
+       "share": 0.22
+      },
+      {
+       "color": "#2f6fdf",
+       "share": 0.07
+      },
+      {
+       "color": "#a4abb4",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#eef0f3",
+      "hsl": {
+       "h": 216,
+       "s": 0.17,
+       "l": 0.94
+      },
+      "fg": "#1c1f24"
+     },
+     "lowContrast": [
+      {
+       "text": "Go to Profile →",
+       "ratio": 4.4,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#2f6fdf",
+       "bg": "#f6f7f9"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 3,
+     "radius": 4,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "1 Fill out your Profile →",
+      "2 Choose a coach on Prompts — copy the g",
+      "3 Paste the AI's JSON response on Import"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "header 768px"
+     ],
+     "outlinedBoxes": 0,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 46,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter",
+     "jetbrains mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1024,
+    "margins": {
+     "left": 10,
+     "right": 31
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Today",
+      "size": 16,
+      "top": 118,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f6f7f9",
+    "sidebar": null,
+    "topbar": {
+     "h": 46
+    },
+    "canvas": {
+     "left": 10,
+     "right": 31
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 2.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 118,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 0,
+     "firstScreen": 0,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 0,
+     "radii": [],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      13,
+      14,
+      16
+     ]
+    },
+    "title": {
+     "text": "Today",
+     "size": 16,
+     "top": 118
+    },
+    "colourShare": 0.004
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 1,
+   "filled": [
+    0.43
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 844,
+     "screens": 1,
+     "words": 58,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 1,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 4.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 157,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Today",
+     "words": 1,
+     "lines": 1,
+     "size": 16,
+     "font": "Inter"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Inter",
+       "share": 0.99,
+       "mono": false
+      },
+      {
+       "family": "JetBrains Mono",
+       "share": 0.01,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      13,
+      14,
+      16
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Inter",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 15.4
+     },
+     "measureChars": 35,
+     "max": {
+      "size": 16,
+      "vw": 4.1,
+      "font": "Inter",
+      "text": "Today"
+     },
+     "monoShare": 0.01,
+     "monoProseShare": 0.01,
+     "monoFamilies": [
+      "JetBrains Mono"
+     ],
+     "monoSamples": [
+      "1",
+      "2",
+      "3"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0,
+     "smallText": 0
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f6f7f9",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.2,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#f6f7f9",
+       "top": 0,
+       "hsl": {
+        "h": 220,
+        "s": 0.2,
+        "l": 0.97
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#1c1f24",
+       "share": 0.7
+      },
+      {
+       "color": "#565d67",
+       "share": 0.22
+      },
+      {
+       "color": "#2f6fdf",
+       "share": 0.07
+      },
+      {
+       "color": "#a4abb4",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#eef0f3",
+      "hsl": {
+       "h": 216,
+       "s": 0.17,
+       "l": 0.94
+      },
+      "fg": "#1c1f24"
+     },
+     "lowContrast": [
+      {
+       "text": "Go to Profile →",
+       "ratio": 4.4,
+       "need": 4.5,
+       "size": 13,
+       "fg": "#2f6fdf",
+       "bg": "#f6f7f9"
+      }
+     ]
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 3,
+     "radius": 4,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "1 Fill out your Profile →",
+      "2 Choose a coach on Prompts — copy the g",
+      "3 Paste the AI's JSON response on Import"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "header 390px"
+     ],
+     "outlinedBoxes": 1,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 0,
+     "boxRadius": 0,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 0,
+     "fixed": true,
+     "height": 46,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "inter",
+     "jetbrains mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 844,
+    "margins": {
+     "left": 10,
+     "right": 27
+    },
+    "sections": [],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Today",
+      "size": 16,
+      "top": 157,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f6f7f9",
+    "sidebar": null,
+    "topbar": {
+     "h": 46
+    },
+    "canvas": {
+     "left": 10,
+     "right": 27
+    },
+    "hero": {
+     "text": "Today",
+     "words": 1,
+     "chars": 5,
+     "lines": 1,
+     "size": 16,
+     "vw": 4.1,
+     "font": "Inter",
+     "weight": 700,
+     "tracking": 0,
+     "leading": 1.5,
+     "top": 157,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 1,
+     "radii": [
+      [
+       4,
+       1
+      ]
+     ],
+     "heavyBorders": 1,
+     "borderSamples": [
+      "#2f6fdf on #f6f7f9 (4.39:1)"
+     ],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      13,
+      14,
+      16
+     ]
+    },
+    "title": {
+     "text": "Today",
+     "size": 16,
+     "top": 157
+    },
+    "colourShare": 0.002
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "contrast",
+   "width": 1440,
+   "message": "Low-contrast text: \"Go to Profile →\" 4.4:1 needs 4.5:1",
+   "fix": "Darken or lighten the text colour.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "hero-void",
+   "width": 1440,
+   "message": "60% of the first screen is one empty block (1440×540px at 0,360).",
+   "fix": "Place the void on purpose or fill it: move the picture, the film or one fact into it, grow the headline to meet it, or shrink the screen to its content. A void reads as placed only when something closes it on the far side and it is the screen's one rest."
+  },
+  {
+   "level": "WARN",
+   "id": "unused-canvas",
+   "width": 1440,
+   "message": "The content stops 271px short of the right edge while it starts 10px from the sidebar.",
+   "fix": "Let the grid fill the canvas (columns in fr units), or centre a capped canvas with equal margins. A dead strip on one side reads as unfinished."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/tmp/trainer-ui-hillclimb/taste-before/desktop-fold.jpg",
+   "pages": [
+    "/tmp/trainer-ui-hillclimb/taste-before/desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/tmp/trainer-ui-hillclimb/taste-before/tablet-fold.jpg",
+   "pages": [
+    "/tmp/trainer-ui-hillclimb/taste-before/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/tmp/trainer-ui-hillclimb/taste-before/mobile-fold.jpg",
+   "pages": [
+    "/tmp/trainer-ui-hillclimb/taste-before/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

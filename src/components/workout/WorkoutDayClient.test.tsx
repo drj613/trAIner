@@ -120,10 +120,13 @@ describe("WorkoutDayClient header", () => {
       await user.tab();
       await waitFor(() => expect(saveMock).toHaveBeenCalled(), { timeout: 3000 });
       expect(saveMock.mock.calls.at(-1)[0].entries[0].sets[0]).toMatchObject({ reps: 12 });
-      await user.clear(input);
-      await user.type(input, "pain");
-      await user.tab();
-      await waitFor(() => expect(saveMock.mock.calls.at(-1)[0].entries[0].sets[0]).toMatchObject({ rawCell: "pain" }), { timeout: 3000 });
+      for (const raw of ["pain", "10/8", "12 easy"]) {
+        await user.clear(input);
+        await user.type(input, raw);
+        expect(input).toHaveValue(raw);
+        await user.tab();
+        await waitFor(() => expect(saveMock.mock.calls.at(-1)[0].entries[0].sets[0]).toMatchObject({ rawCell: raw }), { timeout: 3000 });
+      }
     } finally {
       exercise.load = originalLoad;
     }

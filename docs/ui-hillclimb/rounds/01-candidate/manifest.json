@@ -1,0 +1,441 @@
+{
+  "fixture": "Everyday Strength / Alex Morgan (fictional)",
+  "fixedTime": "2026-10-26T15:00:00-04:00",
+  "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+  "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+  "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "screenshots": [
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/today-empty.png",
+      "screen": "Today",
+      "state": "Fresh workspace onboarding",
+      "route": "/today",
+      "sha256": "c3d4d9aa4b3706098a1aaed58272fae1f3faa8facf0e1522556bd8778ca94a61",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/today-empty.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/navigation.png",
+      "screen": "Navigation drawer",
+      "state": "Global navigation open over empty Today",
+      "route": "/today",
+      "sha256": "9e5180351e69f2feb8d765521d3065f75322c2acaa7d74c53e13d31cac5563d4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/navigation.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/import-paste.png",
+      "screen": "Import",
+      "state": "Fictional three-day routine pasted, before validation",
+      "route": "/import",
+      "sha256": "05e86e38a3cc39219ab4947bcafac35df1ee6809cc6adad19e9aea6eff38ab3f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/import-paste.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/import-error.png",
+      "screen": "Import",
+      "state": "Invalid JSON with recovery message",
+      "route": "/import",
+      "sha256": "8d55c02c33375d84627a78972c661c53e4bd47a7d401cf70f3cf734d8905e967",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/import-error.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/import-resolve.png",
+      "screen": "Import",
+      "state": "Resolve exercise names before confirmation",
+      "route": "/import",
+      "sha256": "f66f87d2f41f44f9267067e83f7ee65b6e851fbe15ab8b2961a852563fc8d0a7",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/import-resolve.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/import-confirm.png",
+      "screen": "Import",
+      "state": "Validated routine ready to save",
+      "route": "/import",
+      "sha256": "891ab308063cda901382c7cc77d6d3a9a0d3b95e63bf0ee2ca0b5e5b1be649f3",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/import-confirm.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/profile.png",
+      "screen": "Profile",
+      "state": "Filled fictional profile, training heatmap and bodyweight history",
+      "route": "/profile",
+      "sha256": "13185fbb38ffbfc5077fa216cc5b675203b4fb75f3231306eb6bcf3423539707",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/profile.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/prompts.png",
+      "screen": "Prompts",
+      "state": "Coach prompt with saved profile available",
+      "route": "/prompts",
+      "sha256": "c019e2ae51268431bc3d946800242a3df471cde6d784f4847acd0b196d5f264f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/prompts.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/routines.png",
+      "screen": "Routines",
+      "state": "Active four-week, three-day strength routine",
+      "route": "/programs",
+      "sha256": "28650f1f4c9dc7bbc6377836ae1b7eabd5efae22eee0163a5f945a2a4b151238",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/routines.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/routine-detail.png",
+      "screen": "Routine overview",
+      "state": "Routine details and day list",
+      "route": "/programs/program-c1d999bf-aa61-475f-8672-a24fed88483b",
+      "sha256": "1236c941d6a4c449aaf18a5329f327acb427f58b06e883ba1f58ff4a8db022c2",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/routine-detail.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/routine-map.png",
+      "screen": "Routine map",
+      "state": "Four-week schedule",
+      "route": "/programs/program-c1d999bf-aa61-475f-8672-a24fed88483b/map",
+      "sha256": "ce4764db1e5ee35150fda16fa5271b3c82635e322df89ca129bdba4c0a26f3a4",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/routine-map.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/builder.png",
+      "screen": "Routine builder",
+      "state": "Editing first day with a strength section",
+      "route": "/programs/new",
+      "sha256": "5fcfc647809db5c59ff8b994f2c8c2ccd518db63839c71aa93021a806a2a88b0",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/builder.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/workout.png",
+      "screen": "Workout day",
+      "state": "Lower body with entered sets, warmup, main lift and accessory",
+      "route": "/programs/program-c1d999bf-aa61-475f-8672-a24fed88483b/days/day-8fc70e17-3580-48d6-81bd-6f2f5fa5868f",
+      "sha256": "ff189d7e25a4a8e524aaea3abef082971d1d656ac7f6aa58cdc7b8b903227bd6",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/workout.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/exercise-history.png",
+      "screen": "Exercise history drawer",
+      "state": "Previous squat sessions from three weeks",
+      "route": "/programs/program-c1d999bf-aa61-475f-8672-a24fed88483b/days/day-8fc70e17-3580-48d6-81bd-6f2f5fa5868f",
+      "sha256": "9b3b4d891a3e7f12fc485d3e1256dc2c2ce1527b4e218af132b309625a394073",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/exercise-history.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/session-summary.png",
+      "screen": "Session summary",
+      "state": "Completed lower body session with all sets logged",
+      "route": "/programs/program-c1d999bf-aa61-475f-8672-a24fed88483b/days/day-8fc70e17-3580-48d6-81bd-6f2f5fa5868f",
+      "sha256": "ae52a6aa0f223620cc97ab97db81afed87780f9199f9ce8644af29c7b6cf83e1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/session-summary.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/history.png",
+      "screen": "History",
+      "state": "Populated movement families with logged sessions",
+      "route": "/history",
+      "sha256": "0b80249217b1a0fa453ac39cb0c3db26069ebc5875983bda27313a9acd24d658",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/history.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/history-export.png",
+      "screen": "History export",
+      "state": "Export scope and populated text preview",
+      "route": "/history",
+      "sha256": "64ba3176647ce4d763153553ad0f48c7fbd55264450170dbe63ae651fd17e87a",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/history-export.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/library.png",
+      "screen": "Library",
+      "state": "Exercise catalog and movement families",
+      "route": "/library",
+      "sha256": "5b2cfac83bef0c58efba55e27dd6cce0386fff1304a96649efe9508df625e82b",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/library.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-light/workspace.png",
+      "screen": "Workspace",
+      "state": "Appearance and local workspace controls",
+      "route": "/settings",
+      "sha256": "26a877e2bd33dfd81014d5c27b5aa582202f200573272fd1f67e0e74913a504a",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-light/workspace.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-dark/routine-detail.png",
+      "screen": "Routine overview",
+      "state": "Routine details and day list",
+      "route": "/programs/program-5a951c65-d9c1-4a3a-8a54-bd35b8bff375",
+      "sha256": "3e2d0fbc0f6e8e690a9bd45cb3e68e74b90b37285d2e3e60ce94d9d8a1adc452",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "terminal",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-dark/routine-detail.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-dark/workout.png",
+      "screen": "Workout day",
+      "state": "Lower body with entered sets, warmup, main lift and accessory",
+      "route": "/programs/program-5a951c65-d9c1-4a3a-8a54-bd35b8bff375/days/day-5eb5f632-1ac3-4494-b092-c6c045a6dd34",
+      "sha256": "8e14175204a9d93a95ea2743cb0c4820abf7e4a0fe134b233d0c9688cd11b338",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "terminal",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-dark/workout.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-dark/library.png",
+      "screen": "Library",
+      "state": "Exercise catalog and movement families",
+      "route": "/library",
+      "sha256": "2a441be77ac1205901fd5f6c1925eb77bb4f0034f7333c4a7ef10e49de1c871f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "terminal",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-dark/library.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/mobile-dark/workspace.png",
+      "screen": "Workspace",
+      "state": "Appearance and local workspace controls",
+      "route": "/settings",
+      "sha256": "c04ed3dde114e836493b62e515d445376bceda70948486c67ac22dd943cc4155",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "terminal",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "mobile-dark/workspace.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/desktop-light/prompts.png",
+      "screen": "Prompts",
+      "state": "Coach prompt with saved profile available",
+      "route": "/prompts",
+      "sha256": "026195943be5e611581560d38deb2b467acb33e4d2f1dd02f8d76a81bb99c734",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "desktop-light/prompts.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/desktop-light/routines.png",
+      "screen": "Routines",
+      "state": "Active four-week, three-day strength routine",
+      "route": "/programs",
+      "sha256": "07f49cffbfb0155ca8348b18ca6d1df546af7993a6c0e7c6a2a430879182e477",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "desktop-light/routines.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/desktop-light/workout.png",
+      "screen": "Workout day",
+      "state": "Lower body with entered sets, warmup, main lift and accessory",
+      "route": "/programs/program-76530c09-6c97-465f-b7b9-e52cf6eb80d6/days/day-e59039d0-c61c-4e1c-9a4d-aad849a79176",
+      "sha256": "291886fa542f9cc56d9eb3204b60ce9c87300b81907d997330c8246378f30457",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "desktop-light/workout.png"
+    },
+    {
+      "path": "docs/ui-hillclimb/rounds/01-candidate/captures/desktop-light/history.png",
+      "screen": "History",
+      "state": "Populated movement families with logged sessions",
+      "route": "/history",
+      "sha256": "360fd83b93122ad7a8b8348f81bed7a51a957ef7e04d329d8d494154140dd457",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "theme": "linen",
+      "command": "FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/round-01 bun run docs:flows:capture",
+      "sourceRevision": "a2f17173fe448fdbd600aec7ab27755bf2347e0e",
+      "sourceDiffDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "id": "desktop-light/history.png"
+    }
+  ]
+}

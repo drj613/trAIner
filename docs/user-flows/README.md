@@ -1,6 +1,6 @@
 # User flows
 
-These maps describe the implemented trAIner user journeys as of 2026-10-26. Cards represent screens or screen states, diamonds represent decisions, purple cards represent external AI chats, pink cards represent recovery states, and green cards represent saved outcomes. They are schematic flowcharts, not screenshots or proposed UI.
+These maps describe the implemented trAIner user journeys as of 2026-10-26. Cards represent screens or screen states, diamonds represent decisions, purple cards represent external AI chats, pink cards represent recovery states, and green cards represent saved outcomes. The tall image cards are actual app screenshots captured with Playwright. Text cards describe decisions, external actions, and recovery branches. Screenshots use fictional data, not a real user workspace.
 
 Open a preview below. Click an image to open the full SVG, then use your browser's zoom controls. GitHub renders these images directly. Viewing requires no app server, diagram editor, or installed dependencies.
 
@@ -16,7 +16,7 @@ Open a preview below. Click an image to open the full SVG, then use your browser
 
 ## Navigation and screens
 
-All route labels omit the `/trAIner` browser-router base. The navigation menu is available throughout the app. A transition labeled "via menu" means that the user opens that menu, rather than following a screen-specific button.
+All route labels omit the `/trAIner` browser-router base. Mobile uses a navigation drawer; desktop shows persistent navigation. A transition labeled "via menu" means that the user opens that menu, rather than following a screen-specific button.
 
 [![Navigation map of trAIner screens](rendered/overview.svg)](rendered/overview.svg)
 
@@ -75,9 +75,9 @@ Exported files protect against browser data loss. Snapshots remain in the same b
 
 ## Update a flow
 
-The `.d2` files are the source of truth. SVGs are generated output. Each journey owns its cards and transitions. Shared colors live in [style.d2](style.d2). D2 calculates layout, so agents do not maintain coordinates or viewer code.
+The `.d2` files are the source of truth. SVGs are generated output. Each journey owns its cards and transitions. Shared colors and screenshot dimensions live in [style.d2](style.d2). Image cards use `shape: image`, local `icon` paths, and labels below the image. The render command passes `--bundle`, so each SVG embeds its PNGs and opens without the app or adjacent screenshot files. D2 calculates layout, so agents do not maintain coordinates or viewer code.
 
-1. Change the relevant journey file when its screens, decisions, or transitions change. Check the implementation links above.
+1. Change the relevant journey file when its screens, decisions, or transitions change. Check the implementation links above. When the UI changes, refresh the screenshots using the capture workflow below.
 2. Install [D2 v0.9.0](https://github.com/d2lang/d2/releases/tag/v0.9.0), which includes the ELK layout engine. D2 is only needed to edit diagrams.
 3. Run `bun run docs:flows` from the repo root. To use a binary outside your PATH, set `D2_BINARY=/absolute/path/to/d2`.
 4. Open the changed SVGs and check their labels and arrows. Commit the D2 source and generated SVGs together.
@@ -89,3 +89,38 @@ d2 --watch --layout=elk docs/user-flows/import.d2 /tmp/trainer-import-flow.svg
 ```
 
 These are maintained product maps, not automatically discovered routes. They cover the principal user journeys and recovery branches, not every input, modal, or storage failure. A startup data-load failure blocks the app with an error message before these journeys begin.
+
+## Capture actual screens
+
+Run from the repo root after `bun install`:
+
+```bash
+bun run docs:flows:capture
+bun run docs:flows
+```
+
+The capture uses the existing Playwright Chromium installation. If Chromium is missing on a new machine, run `bunx playwright install chromium` first. The package command builds the app first. The scoped [Playwright configuration](../../scripts/capture-user-flows/playwright.config.ts) starts a separate Vite preview at `http://127.0.0.1:4173/trAIner/` and stops only that server after the run. It leaves an existing development server on port 5173 alone. Port 4173 must be free, so the capture cannot silently reuse an older build. Capturing the build also prevents documentation edits from triggering Vite reloads mid-capture. Set `FLOW_BASE_URL` to use another running server with the same `/trAIner/` base instead; the workflow still builds locally but does not manage that external server.
+
+[The capture spec](../../scripts/capture-user-flows/capture.spec.ts) imports the fictional [Everyday Strength fixture](../../scripts/capture-user-flows/fixture.ts) through the actual Import UI. It adds nine completed sessions and a filled profile to that fresh context's IndexedDB, then drives the builder, logging, finish, history, and export controls. Each viewport/theme gets a new isolated browser context. The script fixes time to October 26, 2026, uses `en-US` and `America/New_York`, waits for fonts, and disables screenshot animations. It never reads an existing browser profile or real user data.
+
+The tracked [screenshots](screenshots/) contain 19 screen states in each set:
+
+| Set | Viewport | App theme |
+| --- | --- | --- |
+| `mobile-light` | 390 × 844 | Linen |
+| `mobile-dark` | 390 × 844 | Terminal |
+| `desktop-light` | 1280 × 900 | Linen |
+
+The diagrams embed mobile light captures. Dark and desktop captures support visual review. All PNGs show the viewport rather than an artificially stretched full-page screen; scrollable controls may continue below the image.
+
+[manifest.json](screenshots/manifest.json) records each file, screen, state, route, viewport, theme, SHA-256 digest, command, and source revision. The source diff digest records uncommitted application changes at capture time. A commit SHA alone cannot identify uncommitted UI changes. Per-set manifests also record the Chromium version. Browser/font versions can affect pixels, so use the lockfile and recorded browser for comparisons.
+
+For a separate baseline, choose an output directory:
+
+```bash
+FLOW_OUTPUT_DIR=/tmp/trainer-ui-hillclimb/baseline bun run docs:flows:capture
+```
+
+After verifying all captures, place a `.frozen` file in that directory. The capture refuses to overwrite a frozen directory. Keep that baseline unchanged during UI review; capture later iterations to the default tracked directory or another `FLOW_OUTPUT_DIR`. A baseline run does not update the diagrams' tracked PNGs. Commit refreshed PNGs, manifests, D2 sources, and generated SVGs together when updating the documented UI.
+
+The [UI hillclimb](../ui-hillclimb/README.md) preserves the original baseline, independent model reviews, decisions and verification evidence. The navigation state uses the drawer on mobile and the persistent sidebar on desktop. The capture checks horizontal overflow in every state before writing its PNG.

@@ -2,15 +2,36 @@
 # Sources: TodayClient, ProfileClient, PromptBuilderClient, RoutineBuilderClient.
 open: "Today\n/today\n\nLoading local data" {class: screen}
 hasRoutine: "Routine with\nrenderable days?" {class: decision}
-welcome: "Today · onboarding\n\nProfile → Prompts → Import\nChecklist reflects local progress" {class: screen}
-profile: "Profile\n/profile\n\nRank goals, add equipment\nand training constraints\nSave profile" {class: screen}
-prompts: "Prompts\n/prompts\n\nSelect and combine coaches\nEdit included sections\nSave or load a preset" {class: screen}
+welcome: "Today · onboarding" {
+  class: screenshot
+  icon: screenshots/mobile-light/today-empty.png
+}
+profile: "Profile · save goals and constraints" {
+  class: screenshot
+  icon: screenshots/mobile-light/profile.png
+}
+prompts: "Prompts · prepare coach prompt" {
+  class: screenshot
+  icon: screenshots/mobile-light/prompts.png
+}
 copy: "Copy complete prompt\n\nClipboard failure stays here\nProfile is encouraged, not required" {class: screen}
 ai: "External AI conversation\n\nPaste prompt into your chosen AI\nReceive routine JSON\nReturn to trAIner" {class: external}
-import: "Import\n/import\n\nValidate → resolve if needed\nReview → save program\nSee import flow" {class: screen}
-builder: "New routine\n/programs/new\n\nSetup → days → edit day\nAdd sections and exercises\nSave routine" {class: screen}
-routine: "Routine overview\n/programs/:id\n\nReview weeks and analysis\nStart any training day" {class: outcome}
-workout: "Workout day\n/programs/:id/days/:dayId\n\nNext incomplete day\nActive routine, else first stored\nSee workout flow" {class: outcome}
+import: "Import · paste routine JSON" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-paste.png
+}
+builder: "Builder · create routine by hand" {
+  class: screenshot
+  icon: screenshots/mobile-light/builder.png
+}
+routine: "Saved routine overview" {
+  class: screenshot
+  icon: screenshots/mobile-light/routine-detail.png
+}
+workout: "Workout · next training day" {
+  class: screenshot
+  icon: screenshots/mobile-light/workout.png
+}
 open -> hasRoutine
 hasRoutine -> welcome: No
 hasRoutine -> workout: Yes

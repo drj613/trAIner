@@ -1,0 +1,419 @@
+{
+  "screenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/prompts.png",
+    "desktop-light/routines.png",
+    "desktop-light/workout.png",
+    "desktop-light/history.png"
+  ],
+  "checks": {
+    "lint": true,
+    "types": true,
+    "build": true,
+    "behavior": true
+  },
+  "reviews": [
+    {
+      "model": "claude-sonnet-5-5",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/prompts.png",
+        "desktop-light/routines.png",
+        "desktop-light/workout.png",
+        "desktop-light/history.png"
+      ],
+      "scores": {
+        "typography": 8,
+        "hierarchy": 8.4,
+        "spacing": 8,
+        "contrast": 8.2,
+        "iconography": 8,
+        "consistency": 8.2,
+        "clarity": 8.5
+      },
+      "overall": 8.3,
+      "unresolvedMajorIssues": [],
+      "findings": [
+        {
+          "id": "R03-F1",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png",
+            "mobile-light/session-summary.png"
+          ],
+          "evidence": "The phone workout shows the Warm-up and Main lift cards in full and only the Accessory header and prescription above the sticky bar. The warm-up row shows 'Set rest' with no duration, while Squat shows 'Rest 2:00' with Start and Reset. The footer offers 'Skip day' beside 'Finish workout' while it reads 'saved 6/6 sets'. The warm-up chip 'BWx12' is green mono, unlike the grey '135x5' chips.",
+          "userConsequence": "The third exercise still needs a scroll mid-session. The rest control looks different on each card, and 'Skip day' stays visible after every set is logged. The green chip can read as a different state rather than a bodyweight entry.",
+          "suggestedChange": "Hide or demote 'Skip day' once all sets are saved, and make the rest control the same pattern on every card. Give bodyweight chips the same chip style, or add a short key for the green one. Consider putting Session options on the title row to fit a third card."
+        },
+        {
+          "id": "R03-F2",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workspace.png",
+            "mobile-dark/workspace.png"
+          ],
+          "evidence": "The theme chips (editor, terminal, logbook, linen, paper) are cut off at the bottom edge of the fixed fold. The 'Download backup file' bar is the heaviest element on the page, above a dense Local-first card. The Snapshot subtitle reads 'no snapshots \u00b7 stored in-browser, wiped with it \u2014 not a backup'. 'Request protection' sits as plain inline text after a long amber warning.",
+          "userConsequence": "A user may not know Appearance exists without scrolling. The storage guidance reads as a wall of text, and the persistence action is easy to miss.",
+          "suggestedChange": "Move Appearance above the Local-first explanation, or collapse that explanation. Style 'Request protection' as a visible button. Shorten the Snapshot subtitle."
+        },
+        {
+          "id": "R03-F3",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routine-detail.png",
+            "mobile-dark/routine-detail.png",
+            "mobile-light/routines.png"
+          ],
+          "evidence": "The Routine overview now shows 'Next: Lower body \u00b7 Week 2' and 'Plan: Draft', which is a real improvement. However, Week 1 is the selected tab and shows all three days 'Logged: Done', and Week 2 is only 'View week'. The tab sublabels 'Selected' and 'View week' repeat the state rather than naming the next target. Completed days keep a large 'View day' button.",
+          "userConsequence": "The next target is stated in the top button but not marked in the day list. A routine labelled Draft with logged-Done days still takes a moment to reconcile.",
+          "suggestedChange": "Open on the week containing the next day and mark that day in the list. Replace the tab sublabels with progress such as '3/3 done'. Make 'View day' on completed days a quiet text link."
+        },
+        {
+          "id": "R03-F4",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/profile.png"
+          ],
+          "evidence": "The bodyweight card has useful text ('Starting 169 lb \u00b7 Current 168 lb \u00b7 Change \u22121 lb \u00b7 Range 168\u2013169 lb') and start and end dates. The line is almost flat, with no point markers or y values. The Body card shows lowercase faint labels (age, height, weight) and a small pencil icon as its only edit affordance.",
+          "userConsequence": "The chart adds little beyond the caption. The only way to edit the Body fields is a roughly 14px glyph.",
+          "suggestedChange": "Add point markers and min/max labels on the axis, or drop the chart when there are fewer than three entries. Add a text 'Edit' label next to the pencil."
+        },
+        {
+          "id": "R03-F5",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/history.png",
+            "desktop-light/history.png",
+            "mobile-light/library.png",
+            "mobile-light/history-export.png"
+          ],
+          "evidence": "History rows sit on a grey panel with no chevrons or dividers, while Library rows have chevrons and are separate cards. The sort chips ('Most sessions', 'Name', 'Most recent') are clear. In History export, the From and Through date inputs wrap into a staggered two-row layout next to a narrower Routine select. The preview is 11px mono.",
+          "userConsequence": "History rows look less tappable than Library rows. The export form's uneven field grid looks unfinished.",
+          "suggestedChange": "Give History rows the same row treatment and chevron as Library. Lay out the export filters as a single column with equal widths."
+        },
+        {
+          "id": "R03-F6",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routines.png",
+            "mobile-light/history.png",
+            "mobile-light/exercise-history.png",
+            "mobile-light/profile.png",
+            "mobile-light/library.png"
+          ],
+          "evidence": "The smallest text is still about 11\u201312px. This covers the Routines filter chips ('all \u00b71'), History metadata ('4 workouts \u00b7 2 versions'), version names in exercise history ('Barbell Squat'), the heatmap labels and the Library previews. The text is dark enough to read in the captures, but it is the least legible tier.",
+          "userConsequence": "This metadata is harder to read at arm's length or in a gym, especially on the History and Routines lists.",
+          "suggestedChange": "Set a floor of about 13px for list metadata and chip labels. Keep 12px only for the heatmap."
+        },
+        {
+          "id": "R03-F7",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/import-resolve.png",
+            "mobile-light/import-confirm.png",
+            "mobile-light/import-error.png"
+          ],
+          "evidence": "The resolve card has a small 'Keep as custom' button, a tiny 'Remember \"Squat\"' checkbox and a native select, with more than half the screen blank below. On Confirm, the green '36 exercises mapped to catalog' sits above 'Squat will link to Barbell Squat; its name is kept', and the sticky bar cuts through the Weekly preview. The earlier contradiction between green success and an unresolved note is now explained by 'Further review is optional'.",
+          "userConsequence": "The resolve step works, but its controls are small touch targets on a mostly empty screen.",
+          "suggestedChange": "Enlarge the checkbox and 'Keep as custom' targets, and say how many exercises are mapped and how many are not on one line. Add bottom padding so the footer doesn't cover the preview card."
+        },
+        {
+          "id": "R03-F8",
+          "severity": "minor",
+          "screenIds": [
+            "desktop-light/routines.png",
+            "desktop-light/prompts.png",
+            "desktop-light/workout.png",
+            "desktop-light/history.png"
+          ],
+          "evidence": "The desktop shell is now stable: sidebar at x\u224816\u2013208 and content starting at x\u2248332 on every page, with no hamburger. Content is capped at 840px, leaving about a 124px gap on the left and a wider right margin. Desktop Routines is one row of content in an otherwise empty page, and the History panel is all grey with no row dividers.",
+          "userConsequence": "The layout reads as consistent but sparse. The wide band between sidebar and content is dead space. Routines gives no sense of what to do next.",
+          "suggestedChange": "Reduce the gap between sidebar and content, or center the column within the remaining space. On Routines, show a one-line summary of the next workout under the list."
+        }
+      ],
+      "strengths": [
+        "Today's onboarding now has a visible current step, solid and outlined action buttons, and a manual-builder alternative. Prompts puts 'Copy prompt \u00b7 5,501 chars' at the top and collapses the coach prose.",
+        "The mobile workout screen is much more compact than round 2. Prescription and note share one line, History and More sit beside the exercise name, rest has a bordered pencil control, and set text is large enough to read.",
+        "Routine overview names the next day and week and separates plan state (Draft) from logged state. Routines no longer says 'Not started'. List padding now aligns with the page title.",
+        "The desktop shell has a fixed sidebar, a bounded content column and no duplicate hamburger, so the frame no longer jumps between pages.",
+        "Import paste, error, resolve and confirm each state their next step in plain words. The error card includes a recovery-prompt copy action, and the textarea shows a line and character count.",
+        "Exercise history labels volume as 'lb' and uses BWx12 consistently. The History sort labels are now explicit.",
+        "Destructive Import workspace is visibly distinct from Download backup. The dark and light themes look consistent in the captured screens, and local-first framing is clear."
+      ],
+      "limitations": [
+        "Static 390x844 and 1280x900 captures only. They cannot show keyboard behavior, screen-reader behavior, persistence, tap target sizes, responsive behavior at other widths, or measured contrast. Contrast judgments here are visual only.",
+        "Dark theme was captured for four screens only (routine overview, workout, Library, Workspace). Other dark states were not reviewable.",
+        "The Workspace Appearance section is below the fold in both themes, so its full control set could not be judged from the images.",
+        "I did not validate against source. I read the prior-round JSON and assessments, and the round 3 implementation response, for comparison. Round 3 scores are my own."
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/prompts.png",
+        "desktop-light/routines.png",
+        "desktop-light/workout.png",
+        "desktop-light/history.png"
+      ],
+      "scores": {
+        "typography": 8.8,
+        "hierarchy": 8.9,
+        "spacing": 8.4,
+        "contrast": 8.6,
+        "iconography": 9,
+        "consistency": 8.8,
+        "clarity": 8.8
+      },
+      "overall": 8.7,
+      "unresolvedMajorIssues": [],
+      "findings": [
+        {
+          "id": "R03-SOL-01",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png"
+          ],
+          "evidence": "The accessory name and prescription are visible, but its set fields remain below the fixed footer. Warm-up and main-lift cards each retain a separate section-heading strip and substantial vertical spacing. The prior density objection remains partly unresolved.",
+          "userConsequence": "Logging the third exercise requires scrolling, and the complete session's entered sets cannot be surveyed in the initial viewport.",
+          "suggestedChange": "Trim repeated section-header space and card padding enough to expose the accessory set row while preserving the current readable prescription and set text."
+        },
+        {
+          "id": "R03-SOL-02",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-dark/workout.png",
+            "mobile-dark/library.png"
+          ],
+          "evidence": "Workout prescriptions, History/More tools, timer actions and notes share a subdued green-gray treatment. Library previews and counts use similarly muted small text. They are readable, but require closer attention than the primary values.",
+          "userConsequence": "Task-relevant instructions and secondary actions are harder to scan quickly, particularly beside the much brighter set values.",
+          "suggestedChange": "Strengthen task-relevant secondary foregrounds slightly and distinguish prescription text from optional metadata. Preserve the restrained dark palette."
+        },
+        {
+          "id": "R03-SOL-03",
+          "severity": "minor",
+          "screenIds": [
+            "desktop-light/routines.png"
+          ],
+          "evidence": "The bounded desktop column still places Everyday Strength at the far left and Open plus the overflow menu at the far right of a mostly empty row. Workout tools are now grouped beside their exercise names, but the routine-row separation remains.",
+          "userConsequence": "Opening a routine requires unnecessary horizontal scanning and pointer travel between its name and action.",
+          "suggestedChange": "Place Open beside the routine information or give routine rows a narrower internal layout within the stable page frame."
+        },
+        {
+          "id": "R03-SOL-04",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/history.png",
+            "desktop-light/history.png"
+          ],
+          "evidence": "Movement entries appear as text blocks inside one shared surface, without trailing chevrons or individual row boundaries. The introductory sentence explains that they open, but the rows themselves provide little visual action cue.",
+          "userConsequence": "A user scanning past the introduction can read the movements as a static report and overlook access to their sessions.",
+          "suggestedChange": "Add a restrained trailing chevron or another consistent row-level opening affordance, matching Library."
+        }
+      ],
+      "strengths": [
+        "The copy/paste AI workflow is immediately understandable. Copy prompt, Go to Import, import recovery and export actions have clear priority.",
+        "Routine overview names the next workout and week and explicitly separates Plan: Draft from Logged: Done, resolving the prior visible status ambiguity.",
+        "Rest editing now has a bordered control and recognizable icon. Bodyweight set notation is consistent across the current workout and exercise history.",
+        "Desktop navigation and content alignment are consistent across all four captures. Exercise tools sit beside their names, and the duplicate hamburger is absent.",
+        "Onboarding, import resolution and the unfinished builder explain their next actions and consequences clearly.",
+        "History sorting states its direction, exercise history supplies volume units, and Profile provides readable dates and explicit bodyweight change.",
+        "Library equipment filters use clear text, and category previews provide useful context without overflowing the viewport.",
+        "Workspace gives backup clear priority and visibly distinguishes destructive import. The session summary is concise and has an obvious next action."
+      ],
+      "limitations": [
+        "Opened every one of the 27 manifest images directly with the image-viewing tool. All were readable.",
+        "Read the nine prior reviews, all three prior assessments and the round 03 implementation response. No other current-round output or parent conversation was consulted.",
+        "Earlier screenshots were not opened, so no direct image-to-image regression claim is made. Remaining prior objections are identified in the findings; no new major issue was established.",
+        "Contrast judgments are visual impressions. No contrast ratios or accessibility conformance were measured.",
+        "Static captures cannot establish keyboard behavior, accessible names, touch target bounds, persistence, data safety or scrolling behavior.",
+        "Evidence covers 390x844 mobile and 1280x900 desktop viewports, with four dark screens. Workspace appearance controls remain partially below the captured fold.",
+        "No source inspection, live interaction, app mutation, file edits, installation, commits, pushes or delegation was performed."
+      ]
+    },
+    {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "imageInspection": true,
+      "inspectedScreenshots": [
+        "mobile-light/today-empty.png",
+        "mobile-light/navigation.png",
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png",
+        "mobile-light/profile.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/routine-detail.png",
+        "mobile-light/routine-map.png",
+        "mobile-light/builder.png",
+        "mobile-light/workout.png",
+        "mobile-light/exercise-history.png",
+        "mobile-light/session-summary.png",
+        "mobile-light/history.png",
+        "mobile-light/history-export.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-dark/workout.png",
+        "mobile-dark/library.png",
+        "mobile-dark/workspace.png",
+        "desktop-light/prompts.png",
+        "desktop-light/routines.png",
+        "desktop-light/workout.png",
+        "desktop-light/history.png"
+      ],
+      "scores": {
+        "typography": 8.7,
+        "hierarchy": 8.7,
+        "spacing": 8.4,
+        "contrast": 8.7,
+        "iconography": 8.7,
+        "consistency": 8.6,
+        "clarity": 8.5
+      },
+      "overall": 8.6,
+      "unresolvedMajorIssues": [],
+      "findings": [
+        {
+          "id": "R03-DS-01",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/routines.png",
+            "mobile-light/routine-detail.png",
+            "mobile-dark/routine-detail.png",
+            "desktop-light/routines.png"
+          ],
+          "evidence": "The Routines list reports '1 total \u00b7 0 active \u00b7 1 draft', offers all/draft/completed/archived filters, and labels the row 'Draft'; the Active category is counted but not offered as a filter. The same routine's overview shows all three Week 1 days as 'Logged: Done' and a primary 'Next: Lower body \u00b7 Week 2'. Only the overview qualifies the state as 'Plan: Draft'. The false 'Not started' wording is gone, but this round-2 objection is only partly resolved.",
+          "userConsequence": "A person who has logged three sessions sees the plan counted as inactive and cannot isolate an active plan, so the list reads as unstarted while the overview says training is underway.",
+          "suggestedChange": "Use one vocabulary across the summary, filters, row, and detail: show 'Plan: draft' on the list row and either add an Active filter or stop counting active separately, keeping training progress (next week) distinct from plan status."
+        },
+        {
+          "id": "R03-DS-02",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png"
+          ],
+          "evidence": "At 390\u00d7844 the Warm-up and Main lift cards fill the viewport. The Accessory title and its '2\u00d710 35 lb rest 90s' prescription are the last visible content; its set chips and rest control sit behind the fixed footer. Merging prescription and prescribed note reduced height, but three exercises still do not fit as in the baseline.",
+          "userConsequence": "Logging the third lift requires a scroll before any of its set fields are reachable, and a mid-session glance shows only two exercises.",
+          "suggestedChange": "Condense the day header further and trim repeated card spacing while keeping the 15px set values, then add bottom padding so the last card clears the footer."
+        },
+        {
+          "id": "R03-DS-03",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/library.png",
+            "mobile-dark/library.png"
+          ],
+          "evidence": "The catalogue opens with a 'needs review 4' row above every muscle group. The page copy says only 'Browse movements, versions and exercise details', so the label is not explained and reads as an internal maintenance bucket.",
+          "userConsequence": "A browsing user may interpret it as an outstanding task and open a catalog-maintenance list instead of an exercise group.",
+          "suggestedChange": "Rename it to something self-explanatory such as 'Exercises to confirm (4)' with one line of help, or move it below the muscle groups."
+        },
+        {
+          "id": "R03-DS-04",
+          "severity": "minor",
+          "screenIds": [
+            "mobile-light/workout.png",
+            "mobile-dark/workout.png",
+            "desktop-light/workout.png"
+          ],
+          "evidence": "On the Accessory card the prescription says 'rest 90s' while its rest control shows '1:30'. The Main lift consistently pairs 'rest 2:00' with '2:00'. Both formats are visible in the same screen in light and dark.",
+          "userConsequence": "The timer appears to disagree with the prescription, so a user may think the rest was adjusted or misread the target.",
+          "suggestedChange": "Use one convention in the prescription line and the control, for example 'rest 1:30' and '1:30', or show seconds in both."
+        }
+      ],
+      "strengths": [
+        "Onboarding pairs each of the three steps with a labeled action and keeps the current step visually primary; the manual builder is offered without competing with the guided path.",
+        "Prompts makes copy the first action, with a character count and a direct Go to Import step, preserving the offline AI workflow without implying an in-app AI call.",
+        "Import handles error, resolution, and confirmation distinctly: a bordered recovery alert with the recovery prompt as primary, a gated Resolve step, and a confirmation that names Squat's catalog link and states that further review is optional.",
+        "The desktop shell is stable: fixed sidebar, one content origin, an 840px content measure, no duplicate hamburger, and exercise tools beside their names.",
+        "Light and dark themes keep the same hierarchy; the dark Workout, Routine, Library, and Workspace screens are legible and the terminal theme chip is visibly selected.",
+        "Workout logging labels History, More, Set rest, Start, and Reset, keeps 15px set values, and the warm-up rest control is now a bordered clock button rather than dotted text.",
+        "Routine overview names the next day and week, states logged days in text, and keeps analysis to a single summary row with a View analysis action.",
+        "History sort labels are explicit, exercise-history volume includes lb, library equipment filters are text chips that fit on two rows, and the bodyweight card states start, current, change, and range.",
+        "Workspace distinguishes backup, destructive import, snapshots, and local-first limits, with the current theme visible as selected."
+      ],
+      "limitations": [
+        "Inspected all 27 frozen manifest images with the image viewer; every file was readable.",
+        "Read the nine prior raw reviews, all three prior assessments, and the round 3 implementation response. Prior-round screenshots were not reopened for pixel comparison, so no direct image-to-image regression claim is made.",
+        "No other current-round reviewer output and no parent conversation were read.",
+        "No regression was established from the supplied current images. The prior objections that remain are recorded in R03-DS-01 and R03-DS-02.",
+        "Contrast is a visual judgment only; no ratios, accessibility conformance, keyboard behavior, persistence, or tap-target sizes were measured or exercised.",
+        "Evidence covers 390\u00d7844 mobile light and dark and 1280\u00d7900 desktop light only; dark coverage is four screens and desktop coverage is four routes.",
+        "The Workspace theme chips are cut by the bottom edge of the 844px capture; the selected chip is visible, but the rest of the Appearance controls cannot be verified.",
+        "Read frozen source src/lib/programs/routineMeta.ts to confirm 'Draft' is a stored plan status. No live app interaction, mutation, install, commit, or delegation was performed."
+      ]
+    }
+  ]
+}

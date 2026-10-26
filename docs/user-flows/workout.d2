@@ -1,11 +1,20 @@
 ...@style
 # Sources: TodayClient, WorkoutDayClient, SessionSummary, dayResolver.ts.
 today: "Today\n/today\n\nLoad routine and completion counts\nChoose first incomplete day in pass\nIf history read fails, use first day" {class: screen}
-day: "Workout day\n/programs/:id/days/:dayId\n\nHydrate saved session\nCompleted sessions are locked" {class: screen}
-log: "Log sets\n\nEnter reps and weight\nAdd sets, notes, bodyweight\nUse rest timer and exercise history\nAutosave locally" {class: screen}
+day: "Workout · saved sets reload locally" {
+  class: screenshot
+  icon: screenshots/mobile-light/workout.png
+}
+log: "Log warmup, main lift and accessory" {
+  class: screenshot
+  icon: screenshots/mobile-light/workout.png
+}
 resume: "Leave and return\n\nSaved unfinished sets reload\nUntouched days do not create logs" {class: screen}
 finish: "Finish workout\n\nConfirm before locking session" {class: screen}
-summary: "Session summary\n\nCompleted sets and session stats\nReview completed day or continue" {class: outcome}
+summary: "Session summary · review or continue" {
+  class: screenshot
+  icon: screenshots/mobile-light/session-summary.png
+}
 skip: "Skip day\n\nOptional reason\nConfirm skip" {class: screen}
 next: "Next incomplete day\n\nFinish and skip count as completion\nWhen all days finish a pass,\nstart next pass at first day" {class: outcome}
 failed: "Write failed\n\nShow save or finish error\nStay on workout and retry" {class: recovery}
@@ -28,3 +37,10 @@ day -> skip: Skip day
 skip -> day: Cancel
 skip -> next: Save skip
 next -> day: Open resolved day
+
+exerciseHistory: "Exercise history · compare earlier sessions" {
+  class: screenshot
+  icon: screenshots/mobile-light/exercise-history.png
+}
+log -> exerciseHistory: History beside exercise
+exerciseHistory -> log: Close drawer

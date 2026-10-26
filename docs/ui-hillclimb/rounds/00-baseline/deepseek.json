@@ -1,0 +1,163 @@
+{
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "imageInspection": true,
+  "inspectedScreenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/workout.png",
+    "desktop-light/routines.png",
+    "desktop-light/history.png",
+    "desktop-light/prompts.png"
+  ],
+  "scores": {
+    "typography": 6.6,
+    "hierarchy": 6.4,
+    "spacing": 7.0,
+    "contrast": 7.0,
+    "iconography": 7.5,
+    "consistency": 6.8,
+    "clarity": 6.5
+  },
+  "overall": 6.7,
+  "unresolvedMajorIssues": [
+    "Prompts buries the copy-prompt action below long instructions while non-primary actions use filled buttons",
+    "Today onboarding steps look like static or disabled status rows rather than navigation"
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "screenIds": [
+        "mobile-light/prompts.png",
+        "desktop-light/prompts.png"
+      ],
+      "evidence": "Both captures say to copy the complete prompt at the bottom, but neither viewport shows a copy control. The only filled buttons in view are Save next to the preset name and, on desktop, Edit coach details and Write custom instructions. The long coach instructions push the actual copy action well below the fold.",
+      "userConsequence": "A user can mistake preset saving or coach editing for the task and never copy the prompt, stalling the copy/paste AI workflow this screen exists to support.",
+      "suggestedChange": "Pin a Copy prompt · N chars primary action (plus Go to Import) in a sticky footer or above the long instructions, and demote Save preset, Edit coach details, and Write custom instructions to secondary styling."
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "screenIds": [
+        "mobile-light/today-empty.png"
+      ],
+      "evidence": "The three setup rows are full-width links, but the styling does not reveal that: white cards on a white page, no visible chevron, and only a barely visible pale-gray arrow at the far right. The only blue action is the banner's Go to Profile.",
+      "userConsequence": "A new user can read the checklist as inert status text and stay on an empty Today screen instead of proceeding through Profile, Prompts, and Import.",
+      "suggestedChange": "Make each row visibly actionable with a clear chevron or Open label and hover/focus treatment, emphasize the current step, and preserve the completed checkmark state."
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routine-detail.png",
+        "mobile-dark/routine-detail.png"
+      ],
+      "evidence": "The four analysis chips use the smallest type on the screen; the fourth caption is cut mid-word at the card edge (PERIODIZATION · RE), and the remaining coverage chip is not visible at all, with no scroll cue or more indicator.",
+      "userConsequence": "Users cannot reliably read the routine grade breakdown and may not discover the hidden coverage metric, weakening confidence in the score shown.",
+      "suggestedChange": "Wrap the chips onto two rows or add a visible scroll/peek affordance, give captions a legible size, avoid truncating labels, and include the coverage chip in the same visible group."
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png"
+      ],
+      "evidence": "The file path renders as an unstyled native input reading Choose File No file chosen directly under the label Choose JSON file. It looks like plain sentence text, not a control, and does not match any button or input elsewhere in the app.",
+      "userConsequence": "Users who would rather load a JSON file than paste it can overlook or distrust the control, and the import route looks unfinished at the point of data entry.",
+      "suggestedChange": "Replace it with a styled secondary button or dropzone that states the expected file type, shows the selected filename and size, and matches the app's existing controls."
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workspace.png",
+        "mobile-dark/workspace.png"
+      ],
+      "evidence": "The destructive Import workspace row has the same surface, typography, and weight as Download backup file and Snapshot; only a small orange chevron marks it. The storage status uses unexplained jargon (evictable), and the screen has no plain-language page title above the stats card.",
+      "userConsequence": "A user can choose the destructive restore by mistake or fail to understand that the browser may clear their data; the confirmation dialog only appears after the choice.",
+      "suggestedChange": "Move restore into a distinct danger section or apply danger styling with an explicit verb, replace evictable with plain language, and add a Workspace page heading above the summary card."
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routines.png",
+        "mobile-light/today-empty.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "mobile-light/profile.png",
+        "desktop-light/routines.png"
+      ],
+      "evidence": "Screen titles use incompatible treatments: ROUTINES and WORKSPACE are tiny uppercase captions or absent above the stats card, Today is a 16px heading, while History, Library, and Import use a large title. On Routines the only program sits under an OTHER filter label rather than under a real page heading.",
+      "userConsequence": "The user must re-learn where the title is on every screen and gets weaker confirmation of location, especially when returning from a detail page.",
+      "suggestedChange": "Adopt one page-header component with a consistent title size and placement, reserve eyebrows for section metadata, and rename Other to All routines or Inactive."
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png",
+        "desktop-light/workout.png"
+      ],
+      "evidence": "At the right of every exercise name, a bare lb and three tiny pictograms (clock, pencil, opposing arrows) sit in a tight unlabeled row. The lb is a unit toggle but reads as a static unit, and the icons have no visible labels at phone size.",
+      "userConsequence": "Users can change the weight unit unintentionally or fail to find exercise history, prescription editing, and replacement during a workout.",
+      "suggestedChange": "Separate the unit display from the actions, move edit and replace into a labeled overflow menu, and enlarge or space the remaining icon buttons."
+    },
+    {
+      "id": "F8",
+      "severity": "minor",
+      "screenIds": [
+        "desktop-light/routines.png",
+        "desktop-light/history.png",
+        "desktop-light/workout.png",
+        "desktop-light/prompts.png"
+      ],
+      "evidence": "At 1280px the app still uses one narrow column with phone-scale type and hamburger-only navigation. Routines is a single line in an almost empty page, History tells mouse users to Tap a movement, and long prompt prose runs across the full column.",
+      "userConsequence": "The desktop experience feels like a stretched phone: low information density, extra pointer travel to open navigation, and touch-specific wording that does not match the device.",
+      "suggestedChange": "At desktop widths use a persistent sidebar and a multi-column or master-detail layout, raise type and spacing modestly, cap prose line length, and change Tap to Select."
+    }
+  ],
+  "strengths": [
+    "Workout logging fits prescription, set inputs, rest timer, and note into one scannable card; three exercises remain usable in a single phone viewport.",
+    "The mono and uppercase data language with tabular set values makes dense training numbers comparatively easy to scan.",
+    "Import recovery is concrete: it names the JSON problem and offers a copyable recovery prompt for the external AI chat.",
+    "The session-complete sheet clearly states sets logged and percentage and offers one obvious primary next action.",
+    "Light and dark captures share structure and section semantics; the theme changes the accent without breaking the layout.",
+    "The navigation drawer has a clear selected state and a consistent, recognizable icon set.",
+    "The copy/paste AI loop is explicitly represented across Today, Prompts, Import, and History export.",
+    "The import resolve/confirm sequence makes catalog mapping, review notes, and the weekly preview visible before saving."
+  ],
+  "limitations": [
+    "Only static screenshots were reviewed; hover, focus, keyboard, screen-reader behavior, persistence, and real-device touch were not tested.",
+    "Responsive behavior was observed only at 390x844 and 1280x900; other widths were not captured.",
+    "Dark-theme evidence covers only four screens, so cross-theme conclusions are limited to those.",
+    "Contrast judgments are visual only; no contrast ratios were measured.",
+    "All 27 manifest images were readable and present; no evidence was missing.",
+    "Source was checked only after image review to validate affordances (Today step links, prompt copy placement, file input, chip overflow, and destination safety); it was not used as a substitute for appearance.",
+    "No earlier round, prior findings, or implementation response was supplied, so no regression or improvement comparison is claimed.",
+    "No other reviewer output or parent conversation was consulted."
+  ]
+}

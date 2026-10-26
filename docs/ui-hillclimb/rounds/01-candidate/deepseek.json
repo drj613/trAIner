@@ -1,0 +1,170 @@
+{
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "imageInspection": true,
+  "inspectedScreenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/prompts.png",
+    "desktop-light/routines.png",
+    "desktop-light/workout.png",
+    "desktop-light/history.png"
+  ],
+  "scores": {
+    "typography": 8.3,
+    "hierarchy": 8.2,
+    "spacing": 8.1,
+    "contrast": 8.4,
+    "iconography": 8.5,
+    "consistency": 7.6,
+    "clarity": 8.2
+  },
+  "overall": 8.1,
+  "unresolvedMajorIssues": [
+    "Desktop shell width and sidebar position shift between routes in the frozen 1280px captures; most desktop content collapses to phone-width columns."
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "screenIds": [
+        "desktop-light/prompts.png",
+        "desktop-light/workout.png",
+        "desktop-light/routines.png",
+        "desktop-light/history.png"
+      ],
+      "evidence": "The persistent sidebar is at the far left in Prompts, about 220 pixels in in Workout, and about 350 pixels in in Routines and History at the same 1280px viewport. The content columns are roughly 990, 555, and 305 pixels wide. This is a regression from the baseline's stable centered desktop column.",
+      "userConsequence": "Desktop users cannot build a stable spatial model of the app: the navigation and content move every time they switch screens, Routines and History collapse to a phone-width strip with most of the canvas empty, and the desktop shell reads as broken rather than persistent.",
+      "suggestedChange": "Anchor the sidebar and content to one shared frame with a viewport-width grid and a single content max-width, then recapture all four desktop routes at 1280px to confirm the navigation does not move."
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-confirm.png"
+      ],
+      "evidence": "The top card shows a green '4 exercises mapped to catalog'. The next card, Review notes, says 'Squat needs a specific version chosen.' with an enabled Review button, while the sticky footer still offers an enabled primary Save program.",
+      "userConsequence": "A user cannot tell whether Squat is mapped, will be kept as a custom exercise, or still needs a decision. They may save while assuming a catalog link exists and lose history linkage for that exercise.",
+      "suggestedChange": "State the actual outcome in the note, for example 'Squat will be saved as a custom exercise', and make the green line reflect only catalog-mapped entries; or block Save until the note is resolved."
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png"
+      ],
+      "evidence": "The Routine JSON textarea is only about two and a half lines tall and clips the pasted object mid-string, while more than half of the 844px screen below is empty. There is no line or character count and no expand affordance, and the file row still leaves native 'No file chosen' text beside the styled Choose File button.",
+      "userConsequence": "The user cannot verify what they pasted before validating, and the principal import input feels like an afterthought despite available space; a clipped-looking paste can prompt unnecessary re-pasting or distrust.",
+      "suggestedChange": "Let the textarea grow to show roughly 8-12 lines or auto-expand, show a character or line count and a short expected-shape hint, and make the file chooser a secondary control that displays the selected filename."
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png",
+        "desktop-light/workout.png"
+      ],
+      "evidence": "The new labeled History, Edit, Replace and Unit actions are a clear improvement. 'Unit lb' still reads as static text rather than a toggle and does not show the alternate unit; 'Set rest' is a dotted-underlined phrase with no visible duration or timer action. The set chips and Add set control are clear.",
+      "userConsequence": "A user can miss that lb can switch to kg, or fail to set the rest duration, leaving two guess points during the principal logging task.",
+      "suggestedChange": "Use a small segmented lb/kg control or a labeled select for the unit, and show the rest duration and timer affordance together, for example 'Rest 2:00' with a clock and play control, instead of a dotted label."
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/history.png",
+        "desktop-light/history.png",
+        "mobile-light/exercise-history.png"
+      ],
+      "evidence": "History's sort row reads 'sort · Sessions Name Recent'; 'Sessions' and 'Recent' are not self-explanatory, and the active choice is indicated only by an underline. The desktop History still says 'Tap a movement...', and exercise history shows 'VOL 2,025' with no unit.",
+      "userConsequence": "Users cannot predict the ordering, desktop users see phone-only wording, and volume values cannot be interpreted without guessing the unit.",
+      "suggestedChange": "Use explicit labels such as 'Most sessions', 'Name', and 'Most recent' inside a clearly interactive sort control, change 'Tap' to 'Select' at desktop widths, and append lb or another unit to VOL."
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/builder.png"
+      ],
+      "evidence": "Builder's Day 1 shows '0 ex' and only an empty Strength section, yet Save routine is enabled and styled as the primary action with no rest-day explanation. This is the baseline empty-day objection, and the implementation response leaves it open.",
+      "userConsequence": "A user can save a training day with no exercises without knowing whether that is a valid rest day; if it is not, they discover the problem later when they try to train.",
+      "suggestedChange": "Either require an exercise before saving, or add an explicit 'Mark as rest day' state and explain what saving an empty day means. Keep the choice behavior-preserving if rest days are valid."
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/today-empty.png",
+        "mobile-light/prompts.png",
+        "mobile-light/routines.png",
+        "mobile-light/history.png",
+        "mobile-light/library.png",
+        "mobile-light/workspace.png",
+        "desktop-light/prompts.png",
+        "desktop-light/workout.png",
+        "desktop-light/routines.png",
+        "desktop-light/history.png"
+      ],
+      "evidence": "On mobile the top-right screen name repeats the page h1 immediately below it on Today, Prompts, Routines, History, Library and Workspace. On desktop the persistent sidebar still contains a hamburger that opens a modal drawer duplicating the visible navigation.",
+      "userConsequence": "Redundant chrome competes with page content and suggests two navigation modes on desktop; it also makes the top-right slot unavailable for a page action.",
+      "suggestedChange": "Show the top-right label only when it adds context, such as Routines on a routine detail, and hide the sidebar hamburger at desktop widths or repurpose it."
+    },
+    {
+      "id": "F8",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/profile.png",
+        "mobile-light/history.png",
+        "mobile-light/library.png",
+        "mobile-light/routine-detail.png",
+        "mobile-dark/routine-detail.png",
+        "mobile-light/routines.png"
+      ],
+      "evidence": "Profile heatmap weekday labels and streak/average summary, History row metadata, and Library counts use the smallest type in the set. Routine overview puts an unlabeled green dot beside every day while the week tabs use neutral dots and the Routines list labels the routine Not started.",
+      "userConsequence": "Secondary training data takes effort to read in a gym or at arm's length, and green day dots can be read as completed sessions even though none is shown; the status system is not self-explanatory.",
+      "suggestedChange": "Set the smallest metadata to a consistent legible size and add a one-word status or legend for the day dots, or remove the green treatment until it means completed."
+    }
+  ],
+  "strengths": [
+    "Prompts now puts 'Copy prompt · 5,501 chars' and 'Go to Import' at the top in a clear action card; coach prose is collapsed, so the copy and paste AI workflow is obvious.",
+    "Today's onboarding gives each step a visible action and a manual builder alternative; the numbered cards read as a sequence rather than inert status rows.",
+    "Workout logging is much easier to scan: exercise actions have visible words, prescriptions and set values are larger, the saved 6/6 status is clear, and the Finish workout action is stable.",
+    "Routine overview now leads with Start workout and compresses analysis to a grade row with View analysis; the week tabs use Selected and View week labels.",
+    "Import recovery and resolution states are explicit: a bordered error alert makes Copy recovery prompt primary, and Review import stays disabled until the exercise is handled.",
+    "Light and dark captures share the same structure and section language; color is reinforced with text labels, and the four dark screens remain legible.",
+    "History export exposes scope, date range, a summary and a preview with Copy and Download .txt, preserving the offline copy and paste workflow.",
+    "Workspace clearly separates backup, destructive workspace import, snapshots and storage-risk language; Profile charts now show dates and axis values."
+  ],
+  "limitations": [
+    "Only static screenshots were reviewed; hover, focus, keyboard, screen-reader, persistence, touch and real-device behavior were not tested.",
+    "Only 390x844 and 1280x900 were captured; dark evidence covers four screens, and the Workspace theme chips are below the fold, so the reported dark theme-selection fix cannot be verified.",
+    "No contrast ratios were measured; color judgments are visual only.",
+    "The manifest revision is a2f1717. The repository moved during review: a later commit, 40d6c30, adds width:100% to .app-frame and targets the F1 desktop shift, and the working tree contained further edits. None of that is in the frozen images, so scores judge the 27 supplied captures.",
+    "The builder empty-day behavior is treated as an open objection, not proven invalid; no runtime validation was performed.",
+    "Actions below the captured fold may exist; findings concern only visible states.",
+    "Prior objections still open in the frozen evidence: builder empty-day save (F6), import mapping ambiguity (F2), desktop 'Tap' wording (F5), and unexplained day-dot status (F8).",
+    "All 27 manifest images were present and readable; no evidence was missing. Images were opened directly, and source was consulted only after visual review. No current-round reviewer output or parent conversation was consulted."
+  ]
+}

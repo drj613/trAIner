@@ -1,6 +1,9 @@
 ...@style
 # Sources: WorkoutDayClient, ProgramDetailClient, EditClient, DiffPage.
-entry: "Routine or workout\n\nChoose an edit" {class: screen}
+entry: "Routine · choose an edit" {
+  class: screenshot
+  icon: screenshots/mobile-light/routine-detail.png
+}
 manual: "Manual editing\n\nEdit fields, replace or add exercises\nReorder and change structure\nWorkout editing sheets" {class: screen}
 ai: "Modify with AI\n\nCopy day prompt\nPaste returned replacement JSON" {class: screen}
 external: "External AI conversation\n\nRequest changes to this day\nReturn replacement JSON" {class: external}
@@ -8,7 +11,10 @@ invalid: "Replacement is invalid\n\nShow parsing error\nCorrect JSON and retry" 
 preview: "Review impact\n\nChoose edit scope\nReview affected occurrences\nand included exceptions\nManual impact preview or AI diff" {class: screen}
 diff: "AI diff review\n/programs/:id/diff\n\nInspect differences and warnings\nChoose scope before applying" {class: screen}
 stale: "Routine or history changed\n\nRefresh preview\nReview again before applying" {class: recovery}
-applied: "Edit saved\n\nManual edit updates routine/workout\nAI diff returns to Today\nExisting session data is preserved" {class: outcome}
+applied: "Updated workout · existing logs preserved" {
+  class: screenshot
+  icon: screenshots/mobile-light/workout.png
+}
 entry -> manual: Edit
 entry -> ai: Modify with AI from routine or workout
 manual -> preview: Review structural change

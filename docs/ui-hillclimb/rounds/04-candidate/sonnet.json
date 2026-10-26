@@ -1,0 +1,155 @@
+{
+  "model": "claude-sonnet-5-5",
+  "imageInspection": true,
+  "inspectedScreenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/prompts.png",
+    "desktop-light/routines.png",
+    "desktop-light/workout.png",
+    "desktop-light/history.png"
+  ],
+  "scores": {
+    "typography": 8.1,
+    "hierarchy": 8.5,
+    "spacing": 8.2,
+    "contrast": 8.3,
+    "iconography": 8.2,
+    "consistency": 8.5,
+    "clarity": 8.6
+  },
+  "overall": 8.5,
+  "unresolvedMajorIssues": [],
+  "findings": [
+    {
+      "id": "R04-F1",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png"
+      ],
+      "evidence": "The accessory card now shows its title, prescription and the two 40x10 chips. The fixed footer ('saved 6/6 sets', Skip day, Note, Finish workout) still clips the bottom of that card. The Rest/Start/Reset row is hidden. Warm-up and Main lift each keep a header strip plus a full card, so all three exercises still do not fit at 390x844.",
+      "userConsequence": "The user must scroll to reach the third exercise's rest timer and note. The overall session state is clear, but a one-screen view of the day is not achieved. This is better than round 3, where the set chips were hidden too.",
+      "suggestedChange": "Fold the section label into the card's top border or the exercise title row. Alternatively, let the footer collapse to a single Finish button with a Note/Skip overflow, so the third card's rest row clears the fold."
+    },
+    {
+      "id": "R04-F2",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png",
+        "desktop-light/workout.png"
+      ],
+      "evidence": "The accessory prescription reads 'rest 90s' on desktop, and the Main lift reads 'rest 2:00'. Its rest control shows '1:30'. The warm-up shows 'Set rest' with no duration. The response defends this as equivalent notation.",
+      "userConsequence": "Two formats for one value in the same card cost a moment of reconciliation. This is a recurring wording inconsistency, not an error.",
+      "suggestedChange": "Render the control and the prescription chip in one duration format, for example '1:30' in both places. Keep free text and ranges verbatim."
+    },
+    {
+      "id": "R04-F3",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routines.png",
+        "desktop-light/routines.png"
+      ],
+      "evidence": "The header says '1 total · 0 active · 1 draft'. The filter chips offer all/draft/completed/archived but no 'active' chip. The row says 'Plan: Draft' in small grey 12–13px text, and the routine overview shows the same 'Plan: Draft' as plain text. There is no section label for the active routine here, because there is no active routine.",
+      "userConsequence": "'0 active' is counted but cannot be filtered. The draft status that explains why Today has no active program is easy to read past. DeepSeek raised this in round 3 and it is only partly resolved.",
+      "suggestedChange": "Either add the 'active' chip or drop the active count from the header when it is zero. Give 'Plan: Draft' a visible badge or a one-line 'Activate to start' hint on the overview."
+    },
+    {
+      "id": "R04-F4",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routine-detail.png",
+        "mobile-dark/routine-detail.png"
+      ],
+      "evidence": "Week 2 now opens as the selected week and the 'Next: Lower body · Week 2' button agrees with it. Mon carries a blue 'Next workout' text label. Every day row still has an identical outlined 'View day' button, so the next workout's button has no extra weight. The tab sublabels 'Selected' and 'View week' say nothing about progress, such as done or next.",
+      "userConsequence": "The right week is shown, but the next-workout label is a small text cue. A user scanning the buttons sees three equal actions.",
+      "suggestedChange": "Mark the next day's row with a filled or tinted 'Start' button. Replace the 'View week' sublabels with progress such as '3/3 done' and 'Next'."
+    },
+    {
+      "id": "R04-F5",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png"
+      ],
+      "evidence": "Resolve has larger controls (Keep as custom, checkbox, Choose version, search). The imported-strength caption and 'used 4 times' are small, and more than a third of the screen is blank below. The disabled 'Review import →' is faint grey. On Confirm, the sticky Save bar cuts through the third workout card. 'Edit workout →' is tiny inline text inside each day card. The 'Review' button on the review note is easy to confuse with the 'Review import' step.",
+      "userConsequence": "The path works and the validation message is clear. The small captions and the clipped day card read as unfinished compared with the rest of the flow.",
+      "suggestedChange": "Raise the captions to 13px. Add bottom padding or a scroll cue so the sticky bar does not clip a card. Make 'Edit workout' a padded text button and name the note action 'Resolve names'."
+    },
+    {
+      "id": "R04-F6",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/profile.png"
+      ],
+      "evidence": "Edit now has a visible label on the Body card. The avatar header still has only a faint pencil icon. The bodyweight line has point markers and a 168–169 lb range, but it is almost flat with no y-axis values. The Body card's age/height/weight labels are small and faint. Weight sits alone under age, leaving an empty cell.",
+      "userConsequence": "Editing is discoverable on the cards. Bodyweight reads mostly through the text line, and the chart adds little. The faint labels are the least legible tier on the page.",
+      "suggestedChange": "Label the header Edit as well. Add min and max tick labels to the chart. Use a darker label colour and a consistent grid in the Body card."
+    },
+    {
+      "id": "R04-F7",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/library.png",
+        "mobile-dark/library.png",
+        "mobile-light/workspace.png",
+        "mobile-dark/workspace.png"
+      ],
+      "evidence": "Library rows are clear and the 'needs review' row now says 'Confirm names to link exercise history.' Category names are lowercase, previews are truncated, and the filter chips wrap to two rows and use up the first fold. Workspace now shows Theme above the Local-first card, but its theme chips wrap, with 'midnight' alone on a second row. The solid-black 'Download backup file' row and the red-outlined 'Import workspace' row outweigh Snapshot and Theme.",
+      "userConsequence": "Both screens work. Library takes extra scrolling before the list. Workspace puts destructive and backup actions at the same visual weight as ordinary settings.",
+      "suggestedChange": "Use a single scrolling row of chips or a select. Capitalise the category labels. Make Import workspace a quieter outlined row and confirm it only on tap."
+    },
+    {
+      "id": "R04-F8",
+      "severity": "minor",
+      "screenIds": [
+        "desktop-light/routines.png",
+        "desktop-light/prompts.png",
+        "desktop-light/history.png",
+        "mobile-light/builder.png",
+        "mobile-light/routine-map.png"
+      ],
+      "evidence": "Desktop Routines is one row in an otherwise empty page, with Open grouped beside the name and the rest of the pane blank. The builder and routine map leave more than a third of the phone screen empty. The map's tiles are dense 'N sections / N exercises' text with no completion state. The desktop content column is about 840px, with the sidebar at 16–208px.",
+      "userConsequence": "The empty areas reflect sparse data, not a defect. The map does not show which weeks or days are done, so it is less useful than the overview.",
+      "suggestedChange": "Show done/next state on the map tiles. A sparse-state hint on desktop Routines, such as 'Import a routine from Prompts', would help."
+    }
+  ],
+  "strengths": [
+    "Today onboarding is a clear 3-step path with one dark primary action and a manual-build escape hatch.",
+    "Workout set values are large mono chips, and the warm-up bodyweight chip now matches the others.",
+    "Header, prescription and tools are well grouped inside each exercise card. The sticky footer states 'saved 6/6 sets' and Finish workout is the dominant action.",
+    "History rows now have chevrons and separators, which gives a clear action cue. Sort and filter chips are clear.",
+    "Export for AI has a one-column mobile layout, a readable preview and Copy/Download actions.",
+    "Import error recovery offers a 'Copy recovery prompt' action. The offline copy/paste AI workflow stays prominent (Prompts, Import).",
+    "Light and terminal themes keep hierarchy, selection state and semantic accents (green next, amber warning, red destructive) at parity.",
+    "The desktop shell is stable, with the sidebar position unchanged across pages. Desktop workout fits the whole day without scrolling."
+  ],
+  "limitations": [
+    "Review is of the frozen 27 static captures at 390x844 and 1280x900 only. No keyboard, screen-reader, persistence or responsive behavior outside those viewports was checked.",
+    "Contrast was judged by eye only. No ratios were measured. Small grey text at 11–13px is a visual concern, not a measured failure.",
+    "Lower folds of scrolled pages (Today bottom, Prompts, Profile, Library, Workspace) are not visible in the captures.",
+    "Source was not inspected. The comparison to earlier rounds relies on their JSON findings and assessments. Baseline screenshots were not reopened."
+  ]
+}

@@ -1,17 +1,50 @@
 ...@style
 # Source: src/App.tsx, src/components/app/AppShell.tsx
 start: "Open trAIner\n/ → /today" {class: screen}
-today: "Today\n/today\n\nOnboarding or next workout" {class: screen}
-menu: "Navigation menu\nAvailable on every screen" {class: screen}
-routines: "Routines\n/programs\n\nCreate · activate · duplicate\nComplete · delete · open" {class: screen}
-detail: "Routine overview\n/programs/:id\n\nWeeks · days · analysis · goal\nMap · modify day with AI" {class: screen}
-workout: "Workout day\n/programs/:id/days/:dayId\n\nLog sets · finish · skip\nEdit · exercise history" {class: screen}
-prompts: "Prompts\n/prompts\n\nCoach selection · presets\nCopy prompt to external AI" {class: screen}
-import: "Import\n/import\n\nPaste JSON or choose file\nResolve · review · save" {class: screen}
-profile: "Profile\n/profile\n\nRanked goals · equipment\nConstraints · bodyweight · heatmap" {class: screen}
-history: "History\n/history\n\nMovement families · versions\nSession details · history export" {class: screen}
-library: "Library\n/library\n\nSearch · filter · view exercises\nIdentity corrections · aliases" {class: screen}
-workspace: "Workspace\n/settings\n\nBackup · restore · snapshots\nAppearance · install · reset" {class: screen}
+today: "Today · empty workspace" {
+  class: screenshot
+  icon: screenshots/mobile-light/today-empty.png
+}
+menu: "Navigation drawer · available on every screen" {
+  class: screenshot
+  icon: screenshots/mobile-light/navigation.png
+}
+routines: "Routines · active routine" {
+  class: screenshot
+  icon: screenshots/mobile-light/routines.png
+}
+detail: "Routine overview" {
+  class: screenshot
+  icon: screenshots/mobile-light/routine-detail.png
+}
+workout: "Workout · logged sets" {
+  class: screenshot
+  icon: screenshots/mobile-light/workout.png
+}
+prompts: "Prompts · coach editor" {
+  class: screenshot
+  icon: screenshots/mobile-light/prompts.png
+}
+import: "Import · paste or choose JSON" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-paste.png
+}
+profile: "Profile · fictional athlete" {
+  class: screenshot
+  icon: screenshots/mobile-light/profile.png
+}
+history: "History · logged movements" {
+  class: screenshot
+  icon: screenshots/mobile-light/history.png
+}
+library: "Exercise library" {
+  class: screenshot
+  icon: screenshots/mobile-light/library.png
+}
+workspace: "Workspace · local data and appearance" {
+  class: screenshot
+  icon: screenshots/mobile-light/workspace.png
+}
 start -> today
 menu -> today
 menu -> routines
@@ -24,13 +57,18 @@ menu -> workspace
 routines -> detail: Open
 routines -> today: Run
 routines -> builder: New routine
-builder: "Routine builder\n/programs/new" {class: screen}
+builder: "Routine builder · edit day" {
+  class: screenshot
+  icon: screenshots/mobile-light/builder.png
+}
 builder -> detail: Save
 detail -> workout: Start day
 detail -> map: Open map
-map: "Program map\n/programs/:id/map" {class: screen}
+map: "Routine map · four weeks" {
+  class: screenshot
+  icon: screenshots/mobile-light/routine-map.png
+}
 map -> detail: Open day reference with ?day=dayId
 today -> workout: Routine has days
-import -> detail: Save program
 
 legacy: "Direct edit-scope route\n/programs/:id/edit\n\nAdd a first-day title override\nNo menu link to this route" {class: screen}

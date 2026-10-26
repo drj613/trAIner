@@ -1,0 +1,165 @@
+{
+ "files": 37,
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 162,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 165,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 180,
+   "match": "JetBrains Mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 181,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 246,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 333,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/app/globals.css",
+   "line": 419,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/import/ImportClient.tsx",
+   "line": 380,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "numbering",
+   "file": "src/components/workout/BodyweightWidget.tsx",
+   "line": 8,
+   "match": "padStart(2, \"0\")",
+   "message": "Zero-padding in script. Fine for a clock, a date or a price; if it builds 01 / 02 / 03 labels, remove it."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/HistoryExportPanel.tsx",
+   "line": 136,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/ModifyAiModal.tsx",
+   "line": 218,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "numbering",
+   "file": "src/components/workout/RestTimer.tsx",
+   "line": 9,
+   "match": "padStart(2, \"0\")",
+   "message": "Zero-padding in script. Fine for a clock, a date or a price; if it builds 01 / 02 / 03 labels, remove it."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/RoutineBuilderClient.tsx",
+   "line": 157,
+   "match": "font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/workout.css",
+   "line": 28,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/workout.css",
+   "line": 181,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/workout.css",
+   "line": 429,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "shadow",
+   "file": "src/components/workout/workout.css",
+   "line": 599,
+   "match": "box-shadow:",
+   "message": "Shadow. Elements at rest carry none; only real overlays (menu, dialog, sticky bar) may."
+  },
+  {
+   "level": "WARN",
+   "id": "shadow",
+   "file": "src/components/workout/workout.css",
+   "line": 611,
+   "match": "box-shadow:",
+   "message": "Shadow. Elements at rest carry none; only real overlays (menu, dialog, sticky bar) may."
+  },
+  {
+   "level": "WARN",
+   "id": "mono",
+   "file": "src/components/workout/workout.css",
+   "line": 650,
+   "match": "font-family: var(--font-mono",
+   "message": "Monospace type. Only literal code may be monospace."
+  },
+  {
+   "level": "WARN",
+   "id": "em-dash",
+   "file": "(all files)",
+   "line": 0,
+   "match": "54 em dashes",
+   "message": "Em-dash habit. Use a full stop or a comma; keep at most one or two on a page."
+  }
+ ]
+}

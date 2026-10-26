@@ -1,0 +1,147 @@
+{
+  "model": "gpt-6.1-sol",
+  "imageInspection": true,
+  "inspectedScreenshots": [
+    "mobile-light/today-empty.png",
+    "mobile-light/navigation.png",
+    "mobile-light/import-paste.png",
+    "mobile-light/import-error.png",
+    "mobile-light/import-resolve.png",
+    "mobile-light/import-confirm.png",
+    "mobile-light/profile.png",
+    "mobile-light/prompts.png",
+    "mobile-light/routines.png",
+    "mobile-light/routine-detail.png",
+    "mobile-light/routine-map.png",
+    "mobile-light/builder.png",
+    "mobile-light/workout.png",
+    "mobile-light/exercise-history.png",
+    "mobile-light/session-summary.png",
+    "mobile-light/history.png",
+    "mobile-light/history-export.png",
+    "mobile-light/library.png",
+    "mobile-light/workspace.png",
+    "mobile-dark/routine-detail.png",
+    "mobile-dark/workout.png",
+    "mobile-dark/library.png",
+    "mobile-dark/workspace.png",
+    "desktop-light/prompts.png",
+    "desktop-light/routines.png",
+    "desktop-light/workout.png",
+    "desktop-light/history.png"
+  ],
+  "scores": {
+    "typography": 8.2,
+    "hierarchy": 8.5,
+    "spacing": 7.3,
+    "contrast": 8.5,
+    "iconography": 8.3,
+    "consistency": 7.7,
+    "clarity": 7.9
+  },
+  "overall": 8.0,
+  "unresolvedMajorIssues": [],
+  "findings": [
+    {
+      "id": "R01-SOL-01",
+      "severity": "minor",
+      "screenIds": [
+        "desktop-light/prompts.png",
+        "desktop-light/routines.png",
+        "desktop-light/workout.png",
+        "desktop-light/history.png"
+      ],
+      "evidence": "The desktop shell changes position substantially between routes. Prompts places the sidebar at the left edge and begins content around x256. Routines and History place the sidebar around x360 and compress the content into roughly 300 pixels. Workout uses another position and an intermediate content width. History retains phone-width controls despite the large empty canvas.",
+      "userConsequence": "Navigation and page titles move when changing destinations. History stays cramped while Prompts stretches controls across nearly the entire remaining window, weakening the sense of one coherent desktop app.",
+      "suggestedChange": "Keep the desktop sidebar and content origin fixed across routes. Apply route-specific maximum widths inside that stable shell, and give History enough width for a comfortable list."
+    },
+    {
+      "id": "R01-SOL-02",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/workout.png",
+        "mobile-dark/workout.png",
+        "desktop-light/workout.png"
+      ],
+      "evidence": "On mobile, navigation, workout metadata, Format guide, and the bodyweight card occupy the area above the first exercise, which starts around y322. The warmup card then occupies about 250 pixels. The main-lift set fields are cut by the fixed footer in the captured viewport, and the accessory is entirely below it. Desktop also shows only the accessory heading and tool row above the footer.",
+      "userConsequence": "The labels are understandable, but routine logging requires substantial scrolling between exercises. Administrative controls and repeated tools consume space needed for the actual sets.",
+      "suggestedChange": "Reduce the space before the first exercise and compress repeated card chrome. Consider moving occasional Edit and Replace actions into a labeled menu while keeping History and set logging immediately available. Preserve the readable prescription and set sizes."
+    },
+    {
+      "id": "R01-SOL-03",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-resolve.png",
+        "mobile-light/import-confirm.png"
+      ],
+      "evidence": "Resolve exercises explicitly offers choosing a version or keeping a custom name, and its Review import button appears disabled at 0 of 1 handled. However, Confirm import still says '4 exercises mapped to catalog' alongside 'Squat needs a specific version chosen' and an enabled Save program button. This is the unresolved confirmation objection from the prior Sol review.",
+      "userConsequence": "The confirmation does not explain whether saving will retain a custom exercise, preserve an ambiguous mapping, or require a later correction.",
+      "suggestedChange": "Make the confirmation describe the actual saved result. Distinguish mapped exercises from custom or unresolved exercises, and state explicitly whether the remaining review note is optional."
+    },
+    {
+      "id": "R01-SOL-04",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/exercise-history.png"
+      ],
+      "evidence": "Session headers still show compact, letter-spaced labels such as 'VOL 2,025' without a unit. Version names such as BARBELL SQUAT are also rendered in very small uppercase text. This retains part of the previous history-label objection.",
+      "userConsequence": "Users cannot tell what the volume figure measures, and distinguishing exercise versions requires closer reading than the set values themselves.",
+      "suggestedChange": "Use a plain label such as 'Volume 2,025 lb' if that matches the calculation, or explain the calculation when it cannot be represented by a single unit. Increase the version-label size and reduce letter spacing."
+    },
+    {
+      "id": "R01-SOL-05",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/builder.png"
+      ],
+      "evidence": "The builder shows a Strength section with '0 ex' while Save routine is the strongest action. Nothing visible explains whether this is a valid rest day, an incomplete training day, or a routine that can be saved for later editing.",
+      "userConsequence": "A new user cannot confidently predict what saving this empty training day produces. The implementation response acknowledges the ambiguity but the interface does not resolve it.",
+      "suggestedChange": "Keep valid empty days supported, but identify their meaning in the UI. Show 'Rest day' when intentional, or explain that the routine can be saved unfinished and edited later."
+    },
+    {
+      "id": "R01-SOL-06",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/routine-detail.png",
+        "mobile-dark/routine-detail.png"
+      ],
+      "evidence": "Each week repeats three small dots, and each day ends with a green dot. The dots have no visible legend or status label. In the dark capture, the unselected week dots are particularly subdued. The analysis summary also presents 'B 89' and 'partial' without explaining the scale or what is incomplete in the collapsed view.",
+      "userConsequence": "The explicit Start workout and View day actions are clear, but the supporting status and analysis symbols still require interpretation.",
+      "suggestedChange": "Replace redundant dots with concise status text or provide one visible legend. Give the analysis summary a readable description such as '89/100 · partial assessment' if those meanings are accurate."
+    },
+    {
+      "id": "R01-SOL-07",
+      "severity": "minor",
+      "screenIds": [
+        "mobile-light/import-paste.png",
+        "mobile-light/import-error.png",
+        "mobile-light/history-export.png"
+      ],
+      "evidence": "The pasted routine is visible through a textarea only about three lines high despite substantial unused space below. The export preview is larger, but the long metadata preamble consumes almost all of the visible preview before workout records begin.",
+      "userConsequence": "Users can perform the copy/paste workflow, but inspecting the supplied routine or checking the useful part of an export requires scrolling inside small text areas.",
+      "suggestedChange": "Give pasted JSON a larger default editing area. For export, summarize scope and counts outside the preview and make the first workout record visible sooner while preserving the complete exported text."
+    }
+  ],
+  "strengths": [
+    "Every frozen manifest image was opened directly and was readable.",
+    "Today presents explicit setup actions and a clear manual-builder alternative.",
+    "Both Prompts captures expose Copy prompt immediately, explain the external AI workflow, and keep preset saving secondary.",
+    "Workout tools have understandable visible labels, and prescriptions and entered set values are easy to distinguish.",
+    "Routine overview gives Start workout clear priority and keeps detailed analysis collapsed.",
+    "Import error recovery has a clear alert and a prominent action for returning to the external AI conversation.",
+    "Library filters wrap visibly, and category counts are readable in both supplied themes.",
+    "Workspace clearly prioritizes backup, distinguishes destructive restoration, and explains browser-local data risks.",
+    "Profile charts now show useful dates, bodyweight values, and a training-frequency time range.",
+    "The session summary gives concise completion feedback and clear next actions.",
+    "Primary actions and ordinary text are visually legible across the supplied light and dark captures."
+  ],
+  "limitations": [
+    "Reviewed exactly the 27 candidate images. No source inspection, live interaction, app mutation, file edits, installation, commits, pushes, or delegation was performed.",
+    "Prior findings, the baseline assessment, and the implementation response were read. Baseline images were not opened, so no direct screenshot-to-screenshot regression is claimed.",
+    "The desktop layout inconsistency and workout density are current observations. Their regression status is not established.",
+    "The visible Workspace captures end before the theme selector, so they cannot confirm the reported selected-theme fix.",
+    "Static captures cannot prove keyboard behavior, accessible names, touch target bounds, persistence, data safety, sticky behavior while scrolling, or offscreen recovery paths.",
+    "Contrast judgments are visual observations, not measured ratios or accessibility conformance claims.",
+    "No other current-round reviewer output or parent conversation was consulted."
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "mobile-light": ["today-empty", "navigation", "import-paste", "import-error", "import-resolve", "import-confirm", "profile", "prompts", "routines", "routine-detail", "routine-map", "builder", "workout", "exercise-history", "session-summary", "history", "history-export", "library", "workspace"],
+  "mobile-dark": ["workout", "routine-detail", "library", "workspace"],
+  "desktop-light": ["workout", "routines", "history", "prompts"]
+}

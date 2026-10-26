@@ -1,0 +1,250 @@
+{
+  "r00-sonnet": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r00-sonnet-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r00-sol": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r00-sol-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r00-deepseek": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r00-deepseek-v1",
+    "providerInstanceId": "opencode",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "options": [
+      {
+        "id": "variant",
+        "value": "high"
+      }
+    ]
+  },
+  "r01-sonnet": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r01-sonnet-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r01-sol": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r01-sol-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r01-deepseek": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r01-deepseek-v1",
+    "providerInstanceId": "opencode",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "options": [
+      {
+        "id": "variant",
+        "value": "high"
+      }
+    ]
+  },
+  "workoutImpl": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r01-workout-impl-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "routineImpl": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r01-routine-progress-impl-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r02-sonnet": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r02-sonnet-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r02-sol": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r02-sol-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r02-deepseek": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r02-deepseek-v1",
+    "providerInstanceId": "opencode",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "options": [
+      {
+        "id": "variant",
+        "value": "high"
+      }
+    ]
+  },
+  "r03-sonnet": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r03-sonnet-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r03-sol": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r03-sol-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r03-deepseek": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r03-deepseek-v1",
+    "providerInstanceId": "opencode",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "options": [
+      {
+        "id": "variant",
+        "value": "high"
+      }
+    ]
+  },
+  "r04-workspace-profile": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r04-workspace-profile-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r04-routine-week": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r04-routine-week-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r04-sonnet": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r04-sonnet-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  },
+  "r04-sol": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r04-sol-v1",
+    "providerInstanceId": "codex",
+    "model": "gpt-6.1-sol",
+    "options": [
+      {
+        "id": "reasoningEffort",
+        "value": "medium"
+      },
+      {
+        "id": "serviceTier",
+        "value": "default"
+      }
+    ]
+  },
+  "r04-deepseek": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-r04-deepseek-v1",
+    "providerInstanceId": "opencode",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "options": [
+      {
+        "id": "variant",
+        "value": "high"
+      }
+    ]
+  },
+  "trail-audit": {
+    "taskId": "node:delegated-task:command%3Amcp%3A3aa2a749-cf49-41b4-9315-af97bc123b4d%3Adelegate-task%3Atrainer-ui-trail-audit-v1",
+    "providerInstanceId": "claudeAgent",
+    "model": "claude-sonnet-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "high"
+      }
+    ]
+  }
+}

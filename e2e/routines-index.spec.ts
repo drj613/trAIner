@@ -178,7 +178,7 @@ test.describe("Routines index", () => {
   test("draft programs render as compact rows", async () => {
     // RoutineRow subtitle names the plan lifecycle separately from workout logs.
     // Multiple draft rows may be present — assert at least the first one is visible.
-    await expect(sharedPage.getByText(/d\/wk · \d+w · Draft/).first()).toBeVisible();
+    await expect(sharedPage.getByText(/d\/wk · \d+w · Plan: Draft/).first()).toBeVisible();
   });
 
   // 5. Filter chip "archived" hides draft programs and shows only archived ones

@@ -2,18 +2,33 @@
 # Source: src/components/import/ImportClient.tsx
 entry: "Open Import from navigation" {class: screen}
 entry -> input
-input: "Import · source\n/import\n\nPaste routine JSON\nor choose a JSON file\nValidate" {class: screen}
+input: "Import · routine JSON" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-paste.png
+}
 valid: "Valid routine\nJSON?" {class: decision}
 fileError: "File cannot be used\n\nRead failure or file too large\nWorkspace backup belongs in Workspace\nChoose another file or paste JSON" {class: recovery}
-parseError: "Validation failed\n\nRead parser message\nEdit JSON or copy recovery prompt" {class: recovery}
+parseError: "Invalid JSON · correct or copy recovery prompt" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-error.png
+}
 ai: "External AI conversation\n\nPaste recovery prompt\nAsk for clean routine JSON" {class: external}
 matched: "Exercises need\nresolution?" {class: decision}
-resolve: "Resolve exercises\n\nChoose catalog match or custom\nOptionally add to user catalog\nOptionally remember a mapping" {class: screen}
-review: "Confirm import\n\nReview warnings and corrections\nEdit routine structure and fields\nInspect or revise original JSON" {class: screen}
+resolve: "Resolve exercise versions" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-resolve.png
+}
+review: "Confirm import · review before saving" {
+  class: screenshot
+  icon: screenshots/mobile-light/import-confirm.png
+}
 save: "Save program\n\nWrite routine to local storage\nThen store requested aliases" {class: screen}
 failed: "Save failed\n\nShow error on confirmation step\nKeep draft available for retry" {class: recovery}
 notice: "Routine saved · mapping notice\n\nAlias conflicts or alias write failed\nRoutine keeps this import's choices\nOpen program or edit and save again" {class: recovery}
-routine: "Routine overview\n/programs/:id\n\nSaved routine is ready" {class: outcome}
+routine: "Saved routine overview" {
+  class: screenshot
+  icon: screenshots/mobile-light/routine-detail.png
+}
 input -> fileError: File rejected
 fileError -> input: Try again
 input -> valid: Validate

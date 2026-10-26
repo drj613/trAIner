@@ -15,7 +15,7 @@ standalone dataset. See [NOTICE](NOTICE) for details.
 
 ## User flows
 
-[Browse the user flow maps](docs/user-flows/README.md) for navigation, onboarding, import, workouts, editing, progress, and workspace recovery. The diagrams use editable D2 source with generated SVG previews.
+[Browse the user flow maps](docs/user-flows/README.md) for navigation, onboarding, import, workouts, editing, progress, and workspace recovery. The diagrams use editable D2 source with generated SVG previews that embed actual app screenshots. The [UI hillclimb record](docs/ui-hillclimb/README.md) keeps the fixed captures, independent reviews, scores and verification commands.
 
 ## Using the App
 
@@ -28,7 +28,7 @@ standalone dataset. See [NOTICE](NOTICE) for details.
 
 ### Logging a workout
 
-- Go to **Today** to see the routine scheduled for the current day.
+- Go to **Today** to see the next incomplete workout in your active routine.
 - Tap any set to log reps and weight. The app tracks your history across sessions.
 - **History** shows a full log of past workouts. **Profile** shows the training heatmap and bodyweight history.
 
