@@ -6,6 +6,7 @@
   "packageManager": "bun@1.3.12",
   "scripts": {
     "dev": "vite",
+    "docs:flows": "bash scripts/render-user-flows.sh",
     "build": "vite build",
     "catalog:build": "bun scripts/catalog-normalization/compiler/compile.ts --stage complete --write",
     "catalog:check": "bun scripts/catalog-normalization/compiler/check.ts",

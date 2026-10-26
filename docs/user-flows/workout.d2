@@ -1,0 +1,30 @@
+...@style
+# Sources: TodayClient, WorkoutDayClient, SessionSummary, dayResolver.ts.
+today: "Today\n/today\n\nLoad routine and completion counts\nChoose first incomplete day in pass\nIf history read fails, use first day" {class: screen}
+day: "Workout day\n/programs/:id/days/:dayId\n\nHydrate saved session\nCompleted sessions are locked" {class: screen}
+log: "Log sets\n\nEnter reps and weight\nAdd sets, notes, bodyweight\nUse rest timer and exercise history\nAutosave locally" {class: screen}
+resume: "Leave and return\n\nSaved unfinished sets reload\nUntouched days do not create logs" {class: screen}
+finish: "Finish workout\n\nConfirm before locking session" {class: screen}
+summary: "Session summary\n\nCompleted sets and session stats\nReview completed day or continue" {class: outcome}
+skip: "Skip day\n\nOptional reason\nConfirm skip" {class: screen}
+next: "Next incomplete day\n\nFinish and skip count as completion\nWhen all days finish a pass,\nstart next pass at first day" {class: outcome}
+failed: "Write failed\n\nShow save or finish error\nStay on workout and retry" {class: recovery}
+today -> day: Routine has days
+day -> log: Editable session
+day -> blocked: Session history cannot load
+blocked: "Session unavailable\n\nLogging is disabled\nReload to retry reading sessions" {class: recovery}
+blocked -> day: Reload
+day -> log: Start new session from an older completed day
+log -> resume: Navigate away
+resume -> day: Return
+log -> finish: Finish
+finish -> log: Cancel
+finish -> summary: Confirm and save
+finish -> failed: Save fails
+failed -> log: Retry
+summary -> day: Review
+summary -> next: Next workout
+day -> skip: Skip day
+skip -> day: Cancel
+skip -> next: Save skip
+next -> day: Open resolved day

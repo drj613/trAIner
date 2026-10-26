@@ -1,0 +1,28 @@
+...@style
+# Source: src/components/app/SettingsClient.tsx, src/lib/backup/backup.ts
+workspace: "Workspace\n/settings\n\nStorage usage · appearance · install\nBackup · snapshots · reset" {class: screen}
+export: "Export full workspace\n\nDownload local JSON backup\nKeep file outside browser storage" {class: outcome}
+snapshot: "Snapshot current state\n\nSave an in-browser undo point\nListed snapshots can be deleted\nLost if browser data is cleared" {class: screen}
+file: "Import workspace\n\nChoose workspace backup file" {class: screen}
+confirm: "Replace all\nlocal data?" {class: decision}
+safety: "Download safety backup\n\nExport current workspace first\nThen read and validate chosen file" {class: screen}
+restore: "Restore workspace\n\nReplace stored workspace\nRefresh app data and storage stats" {class: outcome}
+failed: "Restore cannot proceed\n\nSafety export failed: nothing changed\nInvalid file: show restore error\nChoose a valid backup to retry" {class: recovery}
+reset: "Reset workspace\n\nOpen destructive action panel\nConfirm Yes, wipe everything\nWait for other tabs if blocked" {class: screen}
+empty: "Workspace cleared\n\nReload app\nReturn to onboarding" {class: outcome}
+workspace -> export: Export full workspace
+workspace -> snapshot: Snapshot
+workspace -> file: Import workspace
+file -> confirm
+confirm -> back: Cancel
+confirm -> safety: Continue
+safety -> failed: Export or validation fails
+failed -> retry: Retry
+safety -> restore: Valid backup
+restore -> back: Refreshed data
+workspace -> reset: Reset workspace
+reset -> back: Cancel
+reset -> empty: Confirm and delete succeeds
+
+back: "Workspace\n/settings\n\nReturn to workspace controls" {class: screen}
+retry: "Import workspace again\n\nChoose a valid backup file\nand repeat confirmation" {class: screen}

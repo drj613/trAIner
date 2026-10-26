@@ -1,0 +1,27 @@
+...@style
+# Sources: TodayClient, ProfileClient, PromptBuilderClient, RoutineBuilderClient.
+open: "Today\n/today\n\nLoading local data" {class: screen}
+hasRoutine: "Routine with\nrenderable days?" {class: decision}
+welcome: "Today · onboarding\n\nProfile → Prompts → Import\nChecklist reflects local progress" {class: screen}
+profile: "Profile\n/profile\n\nRank goals, add equipment\nand training constraints\nSave profile" {class: screen}
+prompts: "Prompts\n/prompts\n\nSelect and combine coaches\nEdit included sections\nSave or load a preset" {class: screen}
+copy: "Copy complete prompt\n\nClipboard failure stays here\nProfile is encouraged, not required" {class: screen}
+ai: "External AI conversation\n\nPaste prompt into your chosen AI\nReceive routine JSON\nReturn to trAIner" {class: external}
+import: "Import\n/import\n\nValidate → resolve if needed\nReview → save program\nSee import flow" {class: screen}
+builder: "New routine\n/programs/new\n\nSetup → days → edit day\nAdd sections and exercises\nSave routine" {class: screen}
+routine: "Routine overview\n/programs/:id\n\nReview weeks and analysis\nStart any training day" {class: outcome}
+workout: "Workout day\n/programs/:id/days/:dayId\n\nNext incomplete day\nActive routine, else first stored\nSee workout flow" {class: outcome}
+open -> hasRoutine
+hasRoutine -> welcome: No
+hasRoutine -> workout: Yes
+welcome -> profile: Suggested step 1
+profile -> prompts: Via menu
+welcome -> prompts: Suggested step 2
+prompts -> copy
+copy -> ai: Copy succeeds
+ai -> import: Paste response or load JSON file
+welcome -> import: Already have JSON
+welcome -> builder: Menu → Routines → New routine
+import -> routine: Saved
+builder -> routine: Saved
+routine -> workout: Start day

@@ -1,0 +1,20 @@
+...@style
+# Sources: HistoryClient, HistoryDrawer, HistoryExportPanel, ProfileClient, LibraryClient.
+menu: "Navigation menu\n\nReview training progress" {class: screen}
+history: "History\n/history\n\nSearch movement families\nFilter recent or stale · sort" {class: screen}
+versions: "Movement and version history\n\nExpand family and version\nInspect recorded sessions" {class: screen}
+workout: "Workout day\n\nOpen exercise history drawer\nCompare previous performance" {class: screen}
+export: "Export workout history\n\nChoose export scope\nPreview text for external AI\nCopy or download export" {class: screen}
+empty: "No matching history\n\nChange search or filters\nLog workouts to add history" {class: recovery}
+profile: "Profile\n/profile\n\nTraining heatmap\nBodyweight history and sparkline\nRanked goals and constraints" {class: screen}
+library: "Library\n/library\n\nSearch and filter catalog\nInspect exercises and variations\nManage identity corrections and aliases" {class: screen}
+external: "External AI conversation\n\nUse exported history as context\nfor training advice" {class: external}
+menu -> history
+history -> versions: Expand
+history -> empty: No matches or no logs
+empty -> history: Adjust filters or return after logging
+history -> export: Export
+export -> external: Copy or download then share
+workout -> versions: Exercise history drawer
+menu -> profile
+menu -> library

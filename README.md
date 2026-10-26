@@ -13,6 +13,10 @@ animations as a standalone library or product, or reselling them. The data is
 included here only so the app can function — it is not offered as a reusable
 standalone dataset. See [NOTICE](NOTICE) for details.
 
+## User flows
+
+[Browse the user flow maps](docs/user-flows/README.md) for navigation, onboarding, import, workouts, editing, progress, and workspace recovery. The diagrams use editable D2 source with generated SVG previews.
+
 ## Using the App
 
 ### Getting started
