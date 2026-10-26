@@ -600,8 +600,8 @@ input.routine-file-picker::file-selector-button { font-size: 14px; color: var(--
 .page-title { margin: 0; color: var(--fg); font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -.025em; }
 .page-description { margin-top: 6px; color: var(--fg-3); font-size: 14px; line-height: 1.5; }
 .page-header-action { flex-shrink: 0; }
-.app-shell { min-height: 100dvh; background: var(--bg); }
-.app-frame { display: grid; grid-template-columns: 224px minmax(0, 1fr); width: 100%; max-width: 1504px; margin: 0 auto; }
+.app-shell { min-height: 100dvh; grid-template-columns: minmax(0, 1fr); background: var(--bg); }
+.app-frame { min-width: 0; display: grid; grid-template-columns: 224px minmax(0, 1fr); width: 100%; max-width: 1504px; margin: 0 auto; }
 .app-main { --app-content-height: calc(100dvh - 64px); min-width: 0; width: 100%; max-width: 904px; padding: 32px; margin: 0 auto; outline: none; }
 .app-sidebar { position: sticky; top: 0; padding: 28px 16px; height: 100dvh; display: flex; flex-direction: column; }
 .app-sidebar-brand { padding: 0 12px 20px; }
