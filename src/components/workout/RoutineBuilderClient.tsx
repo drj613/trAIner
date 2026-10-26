@@ -58,13 +58,13 @@ type Draft = {
 
 // ── Section metadata ──────────────────────────────────────────────────────────
 
-const SECTION_TYPES_META: { kind: SectionType; label: string; glyph: string; hint: string }[] = [
-  { kind: "warmup",      label: "Warm-up",     glyph: "◐", hint: "Mobility / activation" },
-  { kind: "explosive",   label: "Explosive",   glyph: "⚡", hint: "Olympic / jumps / throws" },
-  { kind: "strength",    label: "Strength",    glyph: "■", hint: "Heavy compound work" },
-  { kind: "metcon",      label: "Metcon",      glyph: "◇", hint: "Conditioning / circuits" },
-  { kind: "hypertrophy", label: "Hypertrophy", glyph: "◎", hint: "Pump / accessory" },
-  { kind: "rehab",       label: "Rehab",       glyph: "✚", hint: "Prehab / corrective" },
+const SECTION_TYPES_META: { kind: SectionType; label: string; hint: string }[] = [
+  { kind: "warmup",      label: "Warm-up", hint: "Mobility / activation" },
+  { kind: "explosive",   label: "Explosive", hint: "Olympic / jumps / throws" },
+  { kind: "strength",    label: "Strength", hint: "Heavy compound work" },
+  { kind: "metcon",      label: "Metcon", hint: "Conditioning / circuits" },
+  { kind: "hypertrophy", label: "Hypertrophy", hint: "Pump / accessory" },
+  { kind: "rehab",       label: "Rehab", hint: "Prehab / corrective" },
 ];
 
 const SECTION_COLORS: Partial<Record<SectionType, string>> = {
@@ -319,7 +319,7 @@ function DayEditorStep({
             <div key={section.id} className="panel">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-1 self-stretch rounded-full shrink-0" style={{ background: sectionColor(section.kind), minHeight: 16 }} />
-                <span className="tx-up flex-1">{meta.glyph} {meta.label}</span>
+                <span className="tx-up flex-1">{meta.label}</span>
                 <span className="text-xs muted">{exCount} ex</span>
                 <button type="button" onClick={() => onRemoveSection(section.id)}>
                   <Trash2 size={13} style={{ color: "var(--fg-3)" }} />
@@ -363,7 +363,6 @@ function DayEditorStep({
                   style={{ background: "var(--bg-2)", borderColor: "var(--line)" }}
                   onClick={() => { onAddSection(s.kind); setAddingSection(false); }}
                 >
-                  <span style={{ color: sectionColor(s.kind) }}>{s.glyph}</span>
                   <div>
                     <p className="text-xs font-semibold">{s.label}</p>
                     <p className="text-[10px] muted">{s.hint}</p>

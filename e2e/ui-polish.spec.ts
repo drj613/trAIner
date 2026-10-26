@@ -30,7 +30,9 @@ for (const theme of ["linen", "terminal", "editor", "logbook", "paper", "midnigh
       document.documentElement.setAttribute("data-theme", selectedTheme);
       const style = getComputedStyle(document.documentElement);
       function luminance(hex: string) {
-        const values = hex.trim().replace("#", "").match(/../g)!.map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+        const digits = hex.trim().replace("#", "");
+        const expanded = digits.length === 3 ? [...digits].map(value => value + value).join("") : digits;
+        const values = expanded.match(/../g)!.map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
         return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2];
       }
       function ratio(foreground: string, background: string) {
