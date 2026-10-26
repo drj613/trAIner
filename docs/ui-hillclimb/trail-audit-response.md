@@ -4,7 +4,7 @@ The [raw Sonnet audit](trail-audit.md) is retained without edits. It found evide
 
 | Flag | Disposition and evidence |
 | --- | --- |
-| 1. Uncommitted assertion and artifacts; combined browser runs | Commit the assertion fixes, capture tooling, screenshots and records before the final clean production rerun. The earlier failures remain recorded. Final publication status belongs in the decision log. |
+| 1. Uncommitted assertion and artifacts; combined browser runs | Resolved: commit `a3366dd` includes the assertion fixes, capture tooling, screenshots and records. The [clean production run](verification/final-clean-production.log) passed all 77 selected scenarios in one run on that commit. The earlier failures remain recorded. Publication is verified separately. |
 | 2. Bodyweight digit-leading text could be rewritten while typing | The inferred per-keystroke rewrite is incorrect. `SetCell` keeps a local draft and calls its parent only from `useEditableValue.commit` on blur/Enter. The expanded [edge test](verification/final-bodyweight-edge.log) verifies `10/8` and `12 easy` remain intact while editing and after saving, alongside `pain` and structured reps-only `12`. No runtime change was needed for this concern. The new-record representation change is now explicit in the log. |
 | 3. Reviewer independence | Disclosed in the README and final assessment: fresh task contexts, overlapping implementation model families, prior findings and root responses supplied. All final models report no other current-round output consulted; DeepSeek states that explicitly. This is contextual independence, not blind evaluation. |
 | 4. Missing pivotal decisions | Append-only backfill rows now record review 1, the D2 choice, production-preview capture, rate-limit recovery, round-2 work and test corrections. Existing rows are preserved. |
@@ -15,4 +15,4 @@ The [raw Sonnet audit](trail-audit.md) is retained without edits. It found evide
 
 The raw audit also says round 1 had no major findings left open. Later fixes resolved them, but the frozen round-1 reviews retain their original major findings. Its failed gate is not retroactively changed.
 
-Minor UI follow-ups are filed in [issue 12](https://github.com/drj613/trAIner/issues/12). Round 4 passes the original score/category/major-issue gate. Publication and the clean production rerun are completed separately in the final decision-log rows.
+Minor UI follow-ups are filed in [issue 12](https://github.com/drj613/trAIner/issues/12). Round 4 passes the original score/category/major-issue gate. The clean production rerun is complete. Publication is verified separately in the final decision-log rows and handoff.

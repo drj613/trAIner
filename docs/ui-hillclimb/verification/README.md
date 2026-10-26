@@ -6,7 +6,7 @@ The final candidate’s runtime is recorded in the round 4 manifest. Documentati
 | --- | --- | --- |
 | Whole unit suite | [r04-all-unit.log](r04-all-unit.log) | 133 suites, 1,839 tests passed. |
 | Final Snapshot copy | [r04-settings-copy-unit.log](r04-settings-copy-unit.log) | 16 tests passed. |
-| Production journeys | [r04-production-e2e.log](r04-production-e2e.log), [r04-production-rerun.log](r04-production-rerun.log), [r04-routines-final.log](r04-routines-final.log) | 77 distinct scenarios pass across runs. Initial Active/Draft wording assertions failed; all 10 routine scenarios pass after updating them to Plan labels. |
+| Production journeys | [final-clean-production.log](final-clean-production.log), [run metadata](final-clean-run.json) | All 77 selected scenarios pass in one clean build/run on committed code `a3366dd`. Earlier wording-assertion failures and reruns remain recorded. |
 | Lint | [final-lint.log](final-lint.log) |Passed. |
 | App and test types | [final-types.log](final-types.log) |Passed. |
 | Capture types | [final-capture-types.log](final-capture-types.log) |Passed; clean compiler output is empty. |
@@ -17,3 +17,5 @@ The final candidate’s runtime is recorded in the round 4 manifest. Documentati
 The screenshots use isolated fictional data. Production E2E owns a separate preview server on 4188; capture owns 4173. Neither reuses the development server. The full browser command is `bun run test:e2e:production`; this run selected the 14 changed or related journey files, covering 77 scenarios. The complete repository E2E suite has additional unrelated cases and is not claimed here as fully executed.
 
 Historical failure logs are retained so the sequence remains reviewable. In particular, the baseline Library timeouts were measured as accessible-name query cost in jsdom and fixed in tests without increasing timeouts or changing catalog behavior. The profile goal wording and analysis score assertions were also updated to their actual visible labels. These corrections do not turn historical failed runs into passes.
+
+The final clean production run passed all 77 scenarios with no failures or skips. `catalog:check` also passed. The focused bodyweight edge test verifies that digit-leading free text is preserved until and after commit. The repository’s `bd sync` command is unavailable (`bd: command not found`); follow-up work is tracked in GitHub issue 12 instead.

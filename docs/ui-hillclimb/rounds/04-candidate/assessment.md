@@ -16,6 +16,6 @@ The panel accepted the clearer prompt-copy workflow, accurate import outcome, st
 
 ## Verification and independence
 
-The whole unit run passed 133 suites and 1,839 tests. Focused tests additionally preserve digit-leading bodyweight text through blur, and the production checks cover all 77 selected scenarios across the recorded runs. Lint, app/test types, capture types, build and all three capture variants pass. Every captured state is checked for horizontal overflow. All 57 final PNG hashes/dimensions and all 40 embedded image occurrences in seven generated SVGs were verified.
+The whole unit run passed 133 suites and 1,839 tests. Focused tests additionally preserve digit-leading bodyweight text through blur, and one clean production build/run on committed code `a3366dd` passes all 77 selected scenarios with no failures or skips. Lint, app/test types, capture types, build and all three capture variants pass. Every captured state is checked for horizontal overflow. All 57 final PNG hashes/dimensions and all 40 embedded image occurrences in seven generated SVGs were verified.
 
 The panel reviews 27 of the 57 captures. Each reviewer uses a fresh read-only task context, but its model family also participated in implementation. Prior findings and implementation responses are supplied, as required by the review protocol; the panel is not blind. DeepSeek explicitly reports reading no other current-round output. These limits are disclosed rather than treated as objective proof of design quality.

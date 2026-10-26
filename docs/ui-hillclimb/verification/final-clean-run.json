@@ -1,0 +1,14 @@
+{
+  "sourceRevision": "a3366dd7d6267e821316a1104a0e0f97fed6e052",
+  "recordedAt": "2026-10-26T23:17:52.482127+00:00",
+  "command": "bun run test:e2e:production e2e/analysis-card.spec.ts e2e/exercise-history.spec.ts e2e/goal-gate.spec.ts e2e/history-export.spec.ts e2e/library-layout.spec.ts e2e/navigation.spec.ts e2e/recurring-workout-edit.spec.ts e2e/routine-backup.spec.ts e2e/routine-editing.spec.ts e2e/routines-index.spec.ts e2e/session-persistence.spec.ts e2e/ui-polish.spec.ts e2e/workout-logging.spec.ts e2e/workspace.spec.ts",
+  "tests": {
+    "passed": 77,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": "passed",
+  "catalogCheck": "passed",
+  "runtimeScreenshotRevision": "f98f41cd91c834c56356c862868c4d560fa38b5e",
+  "runtimeDifference": "Only WorkoutDayClient.test.tsx differs under src; no runtime UI changes after capture."
+}
