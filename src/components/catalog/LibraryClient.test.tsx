@@ -509,6 +509,27 @@ describe("LibraryClient — versions nested under their movement", () => {
     expect(within(catalogue).getByText("High Bar Back Squat")).toBeInTheDocument();
   });
 
+  it("previews up to three real group names on a collapsed category and hides them once open", async () => {
+    const user = userEvent.setup();
+    renderLibrary();
+    await screen.findByRole("region", { name: "Needs review" });
+    const catalogue = screen.getByRole("region", { name: "Catalogue" });
+
+    const header = within(catalogue).getByRole("button", { name: /^quads/ });
+    const names = header.querySelectorAll("span > span")[1]?.textContent ?? "";
+    expect(names.split(", ").length).toBeLessThanOrEqual(3);
+    expect(names).not.toBe("");
+
+    await user.click(header);
+    expect(header.textContent).not.toContain(names);
+  });
+
+  it("labels equipment filters with text only", async () => {
+    renderLibrary();
+    await screen.findByRole("region", { name: "Needs review" });
+    expect(screen.getByRole("button", { name: "barbell" })).toHaveTextContent(/^barbell$/);
+  });
+
   it("offers no correction on the family row — only its concrete versions have an identity", async () => {
     const user = userEvent.setup();
     const catalogue = await catalogueAfterSearch(user, "high bar back squat", /^quads/);

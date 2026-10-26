@@ -251,7 +251,7 @@ function ExerciseHeader({
             title="Weight unit — tap to switch"
             type="button"
           >
-            Unit {unit}
+            Unit {unit} → {unit === "lb" ? "kg" : "lb"}
           </button>
         </div>
       )}
@@ -296,6 +296,7 @@ const ExerciseRow = memo(function ExerciseRow({
     .join(" ");
 
   const unit = exercise.unit ?? "lb";
+  const bodyweightOnly = /^(bodyweight|bw)$/i.test(exercise.load?.trim() ?? "");
 
   return (
     <div className="wk-ex">
@@ -308,16 +309,12 @@ const ExerciseRow = memo(function ExerciseRow({
         onReplaceExercise={onReplaceExercise}
         onToggleUnit={onToggleUnit}
       />
-      {prescription && <div className="wk-ex-rx">{prescription}</div>}
-      {exercise.notes && (
-        <div className="wk-ex-note">
-          <b>Prescribed</b>
-          <span>{exercise.notes}</span>
-        </div>
-      )}
+      {(prescription || exercise.notes) && <div className="wk-ex-rx">
+        {prescription}{prescription && exercise.notes ? " · " : ""}{exercise.notes}
+      </div>}
       <div className="wk-sets">
         {cells.map((val, i) => {
-          const prescribedStr = i === 0 ? [
+          const prescribedStr = bodyweightOnly && exercise.reps ? `BWx${exercise.reps}` : i === 0 ? [
             exercise.sets ? `${exercise.sets}×` : "",
             exercise.reps ?? "",
             exercise.load ?? "",
@@ -329,7 +326,10 @@ const ExerciseRow = memo(function ExerciseRow({
               value={val}
               prescribed={prescribedStr}
               readOnly={readOnly}
-              onChange={(v) => onCellChange(i, v)}
+              onChange={(v) => {
+                const reps = v.trim();
+                onCellChange(i, bodyweightOnly && /^\d+$/.test(reps) && Number.isSafeInteger(Number(reps)) && Number(reps) > 0 ? `BWx${reps}` : v);
+              }}
               onNext={() => {
                 const nextEl = document.getElementById(cellId(exercise.id, i + 1));
                 if (nextEl) {
@@ -357,7 +357,7 @@ const ExerciseRow = memo(function ExerciseRow({
           biggest vertical cost on a phone screen. */}
       <div className="wk-ex-foot">
         <RestTimer restText={exercise.rest} notes={exercise.notes} />
-        <details className="disclosure wk-note" style={{ flex: "1 1 140px" }} open={!!note}>
+        <details className="disclosure wk-note" open={!!note}>
           <summary>{note ? "Note" : "Add note"}</summary>
           <textarea
             value={note}
@@ -1358,7 +1358,10 @@ export function WorkoutDayClient() {
             {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
             exercises
           </p>
-          {/* Format guide */}
+          <details className="disclosure wk-options">
+            <summary>Session options</summary>
+            <div className="wk-options-body">
+            <BodyweightWidget />
           <details className="disclosure wk-guide">
             <summary>Format guide</summary>
             <div className="wk-guide-body">
@@ -1377,6 +1380,8 @@ export function WorkoutDayClient() {
               ))}
             </div>
           </details>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -1390,8 +1395,6 @@ export function WorkoutDayClient() {
           ))}
         </div>
       )}
-
-      <BodyweightWidget />
 
       {/* Workout body — keyed by dayId so state resets on navigation */}
       <WorkoutBody

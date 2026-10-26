@@ -8,12 +8,14 @@ test("Workspace shows the saved theme on direct navigation", async ({ page }) =>
 });
 
 test("navigation identifies the current screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("history");
   await page.getByRole("button", { name: "Open menu" }).click();
   await expect(page.getByRole("dialog").getByRole("link", { name: "History", exact: true })).toHaveAttribute("aria-current", "page");
 });
 
 test("Escape closes navigation and returns focus to its trigger", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("today");
   const trigger = page.getByRole("button", { name: "Open menu" });
   await trigger.click();
@@ -21,6 +23,13 @@ test("Escape closes navigation and returns focus to its trigger", async ({ page 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(trigger).toBeFocused();
+});
+
+test("desktop navigation stays visible without a duplicate drawer trigger", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("today");
+  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open menu" })).toHaveCount(0);
 });
 
 for (const theme of ["linen", "terminal", "editor", "logbook", "paper", "midnight"]) {

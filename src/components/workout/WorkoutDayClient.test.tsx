@@ -106,6 +106,29 @@ beforeEach(() => {
 });
 
 describe("WorkoutDayClient header", () => {
+  it("records a reps-only bodyweight entry as reps while preserving arbitrary notes", async () => {
+    const exercise = twoDay.days[0].sections[0].groups[0].exercises[0];
+    const originalLoad = exercise.load;
+    exercise.load = "bodyweight";
+    try {
+      renderOnDay("day-1");
+      await screen.findByRole("heading", { level: 1, name: "Push Day" });
+      const input = document.getElementById("cell-e1-0") as HTMLInputElement;
+      const user = userEvent.setup();
+      await user.click(input);
+      await user.type(input, "12");
+      await user.tab();
+      await waitFor(() => expect(saveMock).toHaveBeenCalled(), { timeout: 3000 });
+      expect(saveMock.mock.calls.at(-1)[0].entries[0].sets[0]).toMatchObject({ reps: 12 });
+      await user.clear(input);
+      await user.type(input, "pain");
+      await user.tab();
+      await waitFor(() => expect(saveMock.mock.calls.at(-1)[0].entries[0].sets[0]).toMatchObject({ rawCell: "pain" }), { timeout: 3000 });
+    } finally {
+      exercise.load = originalLoad;
+    }
+  });
+
   it("shows the day title", async () => {
     renderOnDay("day-1");
     expect(await screen.findByRole("heading", { level: 1, name: "Push Day" })).toBeInTheDocument();
@@ -595,6 +618,14 @@ describe("WorkoutDayClient exercise tools disclosure", () => {
 });
 
 describe("WorkoutDayClient unit toggle", () => {
+  it("keeps occasional bodyweight logging inside session options", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    expect(screen.getByRole("button", { name: "Log bodyweight" })).not.toBeVisible();
+    await userEvent.setup().click(screen.getByText("Session options"));
+    expect(await screen.findByRole("button", { name: "Log bodyweight" })).toBeVisible();
+  });
+
   it("shows the current unit on the exercise row (lb default)", async () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });

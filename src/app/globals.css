@@ -593,6 +593,8 @@ input[type="file"]::file-selector-button {
   background: var(--bg-1); color: var(--fg); border: 1px solid var(--line-2);
   border-radius: var(--r); min-height: 40px; padding: 8px 14px; margin-right: 12px; font: inherit; cursor: pointer;
 }
+input.routine-file-picker { font-size: 0; color: transparent; }
+input.routine-file-picker::file-selector-button { font-size: 14px; color: var(--fg); }
 .page-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
 .page-header-copy { min-width: 0; }
 .page-title { margin: 0; color: var(--fg); font-size: 24px; font-weight: 600; line-height: 1.25; letter-spacing: -.025em; }
@@ -600,7 +602,7 @@ input[type="file"]::file-selector-button {
 .page-header-action { flex-shrink: 0; }
 .app-shell { min-height: 100dvh; background: var(--bg); }
 .app-frame { display: grid; grid-template-columns: 224px minmax(0, 1fr); width: 100%; max-width: 1504px; margin: 0 auto; }
-.app-main { --app-content-height: calc(100dvh - 64px); min-width: 0; width: 100%; max-width: 1120px; padding: 32px; margin: 0 auto; outline: none; }
+.app-main { --app-content-height: calc(100dvh - 64px); min-width: 0; width: 100%; max-width: 904px; padding: 32px; margin: 0 auto; outline: none; }
 .app-sidebar { position: sticky; top: 0; padding: 28px 16px; height: 100dvh; display: flex; flex-direction: column; }
 .app-sidebar-brand { padding: 0 12px 20px; }
 .app-brand { font-size: 20px; font-weight: 600; color: var(--fg); letter-spacing: -.05em; white-space: nowrap; }

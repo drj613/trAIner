@@ -6,10 +6,9 @@ import { clearDb, seedDemoIfNeeded } from "./helpers";
 // ---------------------------------------------------------------------------
 
 // Helper: returns locator for the "Open menu" buttons in program rows.
-// The AppShell navigation also has aria-label="Open menu" (hamburger),
-// so we skip index 0 and start from index 1 for program rows.
+// Scope to main so navigation controls never affect row indexing.
 function rowMenuBtns(page: Page) {
-  return page.getByRole("button", { name: "Open menu" });
+  return page.getByRole("main").getByRole("button", { name: "Open menu", exact: true });
 }
 
 test.describe("Routines index", () => {
@@ -117,16 +116,14 @@ test.describe("Routines index", () => {
 
     // 4. Navigate to /programs and activate the demo program via 3-dot menu
     //    so tests see an active card with stat tiles and WeekStrip.
-    //    AppShell also has aria-label="Open menu" (nav hamburger) at index 0;
-    //    program row menu buttons start at index 1.
     await sharedPage.goto("programs");
     // Wait for rows to render
-    await expect(rowMenuBtns(sharedPage).nth(1)).toBeVisible({ timeout: 8000 });
+    await expect(rowMenuBtns(sharedPage).first()).toBeVisible({ timeout: 8000 });
     // Find the demo program row ("Local First Demo") and activate it
     const menuBtnsSetup = rowMenuBtns(sharedPage);
     const totalSetup = await menuBtnsSetup.count();
     let demoMenuIdx = -1;
-    for (let i = 1; i < totalSetup; i++) {
+    for (let i = 0; i < totalSetup; i++) {
       const rowContainer = menuBtnsSetup.nth(i).locator("..");
       const text = await rowContainer.textContent().catch(() => "");
       if (text?.includes("Local First Demo")) {
@@ -177,11 +174,11 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByRole("button", { name: "Continue", exact: true })).toBeVisible();
   });
 
-  // 4. Draft programs render as compact rows with "not started" subtitle
+  // 4. Draft programs show the stored lifecycle.
   test("draft programs render as compact rows", async () => {
-    // RoutineRow subtitle: "{dpw}d/wk · {lw}w · not started" for draft programs
+    // RoutineRow subtitle names the plan lifecycle separately from workout logs.
     // Multiple draft rows may be present — assert at least the first one is visible.
-    await expect(sharedPage.getByText(/not started/i).first()).toBeVisible();
+    await expect(sharedPage.getByText(/d\/wk · \d+w · Draft/).first()).toBeVisible();
   });
 
   // 5. Filter chip "archived" hides draft programs and shows only archived ones
@@ -210,8 +207,8 @@ test.describe("Routines index", () => {
 
   // 7. 3-dot menu opens and shows action items
   test("3-dot menu opens on trigger click", async () => {
-    // Click the program row menu button (index 1, skipping AppShell hamburger at 0)
-    await rowMenuBtns(sharedPage).nth(1).click();
+    const draftRow = sharedPage.getByRole("main").getByRole("button", { name: /^E2E Test Program/ }).locator("..");
+    await draftRow.getByRole("button", { name: "Open menu", exact: true }).click();
     // Menu items should be visible
     await expect(sharedPage.getByText("Activate")).toBeVisible();
     await expect(sharedPage.getByText("Duplicate")).toBeVisible();
@@ -232,13 +229,12 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
 
     // Find the "Open menu" button for the "E2E Test Program" row specifically.
-    // Row buttons start at index 1 (AppShell hamburger is at index 0).
     const menuBtns = rowMenuBtns(sharedPage);
     const totalMenuBtns = await menuBtns.count();
 
     // Identify the correct button by checking parent row text
     let e2eMenuIdx = -1;
-    for (let i = 1; i < totalMenuBtns; i++) {
+    for (let i = 0; i < totalMenuBtns; i++) {
       const rowContainer = menuBtns.nth(i).locator("..");
       const text = await rowContainer.textContent().catch(() => "");
       if (text?.includes("E2E Test Program")) {
@@ -290,7 +286,7 @@ test.describe("Routines index", () => {
     const menuBtns9 = rowMenuBtns(sharedPage);
     const total9 = await menuBtns9.count();
     let demoIdx9 = -1;
-    for (let i = 1; i < total9; i++) {
+    for (let i = 0; i < total9; i++) {
       const rowContainer = menuBtns9.nth(i).locator("..");
       const text = await rowContainer.textContent().catch(() => "");
       if (text?.includes("Local First Demo")) {
@@ -323,8 +319,8 @@ test.describe("Routines index", () => {
     const menuBtns = rowMenuBtns(sharedPage);
     const totalMenuBtns = await menuBtns.count();
 
-    let copyMenuIdx = totalMenuBtns - 1; // fallback: last
-    for (let i = 1; i < totalMenuBtns; i++) {
+    let copyMenuIdx = -1;
+    for (let i = 0; i < totalMenuBtns; i++) {
       const rowContainer = menuBtns.nth(i).locator("..");
       const text = await rowContainer.textContent().catch(() => "");
       if (/copy of/i.test(text ?? "")) {
@@ -333,6 +329,7 @@ test.describe("Routines index", () => {
       }
     }
 
+    if (copyMenuIdx < 0) throw new Error("Could not find the copied routine menu button");
     await menuBtns.nth(copyMenuIdx).click();
     await expect(sharedPage.getByText("Delete")).toBeVisible();
     await sharedPage.getByRole("button", { name: "Delete" }).click();

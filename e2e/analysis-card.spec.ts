@@ -46,14 +46,11 @@ test.describe("RoutineAnalysisCard", () => {
   // -------------------------------------------------------------------------
 
   test("analysis card renders collapsed with score badge", async () => {
-    // ScoreBadge renders: grade letter (fontSize 16, fontWeight 700) + score number (fontSize 9)
-    // Grade is always one of A–F; score is 0–100.
+    // The badge states both the grade and its numerical scale.
     const gradeLetter = sharedPage.getByText(/^[A-F]$/);
     await expect(gradeLetter).toBeVisible({ timeout: 8000 });
 
-    // Score is a number 0–100 — the small text inside the badge.
-    // We verify it by checking that something numeric is present near the badge.
-    const scoreText = sharedPage.locator("span").filter({ hasText: /^\d{1,3}$/ }).first();
+    const scoreText = sharedPage.getByRole("button", { name: "View analysis" }).getByText(/^\d{1,3}\/100$/);
     await expect(scoreText).toBeVisible();
 
     await expect(sharedPage.getByRole("button", { name: "View analysis" })).toHaveAttribute("aria-expanded", "false");
@@ -142,7 +139,7 @@ test.describe("RoutineAnalysisCard", () => {
     await expect(sharedPage.getByText(/Trained — \d+ muscle groups?/)).toBeVisible({ timeout: 3000 });
   });
   test("starts a workout directly from the overview", async () => {
-    await sharedPage.getByRole("button", { name: "Start workout" }).click();
+    await sharedPage.getByRole("button", { name: /^Next: .+ · Week \d+$/ }).click();
     await expect(sharedPage).toHaveURL(/\/programs\/[^/]+\/days\/[^/]+$/);
   });
 

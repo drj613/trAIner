@@ -25,16 +25,16 @@ export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
   return (
     <div className="panel">
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="tx-up">Training frequency · {cells.length} weeks</span>
+        <span className="tx-up" style={{ fontSize: 13, fontWeight: 500, color: "var(--fg-2)" }}>Training frequency · {cells.length} weeks</span>
         <span className="flex-1" />
-        <span className="text-xs muted">{stats.completionRate}% logged</span>
+        <span style={{ fontSize: 12, color: "var(--fg-2)" }}>{stats.completionRate}% logged</span>
       </div>
 
       <div className="flex gap-1.5 items-start overflow-x-auto">
         {/* Day labels column */}
         <div
           className="flex flex-col gap-0.5 shrink-0"
-          style={{ fontSize: 12, color: "var(--fg-3)" }}
+          style={{ fontSize: 12, color: "var(--fg-2)" }}
         >
           {DAY_LABELS.map((label, i) => (
             <div key={i} style={{ height: 12, lineHeight: 1 }}>
@@ -75,11 +75,11 @@ export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
       {/* Footer stats */}
       <div
         className="flex flex-wrap items-center gap-2 mt-3"
-        style={{ fontSize: 12, color: "var(--fg-3)" }}
+        style={{ fontSize: 12, color: "var(--fg-2)" }}
       >
-        <span>Streak: <span style={{ color: "var(--fg-2)" }}>{stats.streak} days</span></span>
+        <span>Streak: <span style={{ color: "var(--fg)" }}>{stats.streak} days</span></span>
         <span>·</span>
-        <span>Average: <span style={{ color: "var(--fg-2)" }}>{stats.weeklyAvg} days/week</span></span>
+        <span>Average: <span style={{ color: "var(--fg)" }}>{stats.weeklyAvg} days/week</span></span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
         <span>Less</span>
         {([0, 1, 2, 3, 4] as const).map((v) => (

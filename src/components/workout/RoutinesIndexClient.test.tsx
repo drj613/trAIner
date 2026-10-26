@@ -78,3 +78,10 @@ describe("RoutinesIndexClient", () => {
     });
   });
 });
+
+
+it("labels a draft by its stored lifecycle rather than claiming it has no logs", () => {
+  render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
+  expect(screen.getByText(/4d\/wk · 6w · Draft/)).toBeInTheDocument();
+  expect(screen.queryByText(/Not started/)).not.toBeInTheDocument();
+});

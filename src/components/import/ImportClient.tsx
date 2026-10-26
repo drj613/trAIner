@@ -360,6 +360,7 @@ export function ImportClient() {
           <label className="text-sm font-semibold" htmlFor="routine-file">Choose JSON file</label>
           <input
             id="routine-file"
+            className="routine-file-picker"
             type="file"
             accept=".json,application/json"
             onChange={(event) => void handleFileSelection(event)}
@@ -453,8 +454,8 @@ export function ImportClient() {
     const savedPreview = applyResolutions(program, selectedResolutions);
     const savedExercises = getRenderableDays(savedPreview).flatMap((day) => day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises)));
     const catalogIds = new Set(exerciseCatalog.map((exercise) => exercise.id));
-    const resolvedCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && catalogIds.has(exercise.canonicalExerciseId)).length;
-    const libraryCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && !catalogIds.has(exercise.canonicalExerciseId)).length;
+    const resolvedCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && catalogIds.has(exercise.canonicalExerciseId)).length; // Exact concrete metadata lookup; grouping is intentionally not performed here.
+    const libraryCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && !catalogIds.has(exercise.canonicalExerciseId)).length; // Exact concrete metadata lookup; grouping is intentionally not performed here.
     const customCount = savedExercises.filter((exercise) => !exercise.canonicalExerciseId).length;
     const confirmWarnings = draft?.currentWarnings.map((warning) => {
       const choice = resolutions[warning.path];

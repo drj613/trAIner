@@ -18,7 +18,9 @@ import { GroupRail } from "./GroupRail";
 import type { WorkoutLogDocument, ProgramDay, ProgramDocument, ProgramSection, TrainingGoal } from "@/lib/programs/types";
 import { logRepo } from "@/lib/storage/logRepo";
 import { storePendingDiff } from "@/lib/workout/pendingDiff";
-import { sortableStamp } from "@/lib/workout/localDate";
+import { programStatus } from "@/lib/programs/routineMeta";
+import { resolveNextDay } from "@/lib/workout/dayResolver";
+import { localDateString, sortableStamp } from "@/lib/workout/localDate";
 
 // ── WeekTabStrip ──────────────────────────────────────────────────────────────
 
@@ -197,6 +199,7 @@ function ExerciseRowReadOnly({
 function DayCard({
   day,
   badge,
+  isNext,
   expanded,
   onToggle,
   onModifyDay,
@@ -204,6 +207,7 @@ function DayCard({
 }: {
   day: ProgramDay;
   badge: { symbol: string; color: string } | null;
+  isNext: boolean;
   expanded: boolean;
   onToggle: () => void;
   onModifyDay: () => void;
@@ -241,7 +245,8 @@ function DayCard({
           )}
           {isRest && <div style={{ fontSize: 12, color: "var(--fg-3)" }}>rest</div>}
         </div>
-        {badge && <span style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 12, color: badge.color, flexShrink: 0 }}><span aria-hidden>{badge.symbol}</span>{badge.symbol === "●" ? "Done" : badge.symbol === "~" ? "Skipped" : "In progress"}</span>}
+        {isNext && <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent)" }}>Next workout</span>}
+        {badge && <span style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 12, color: badge.color, flexShrink: 0 }}><span aria-hidden>{badge.symbol}</span>{badge.symbol === "●" ? "Logged: Done" : badge.symbol === "~" ? "Logged: Skipped" : "Logged: In progress"}</span>}
         {!isRest && <button className="btn" aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); onToggle(); }}>{expanded ? "Hide day" : "View day"}</button>}
       </div>
 
@@ -298,7 +303,11 @@ export function ProgramDetailClient({ id }: { id: string }) {
   const [dragDX, setDragDX] = useState(0);
   const [aiModalDay, setAiModalDay] = useState<ProgramDay | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
-  const [logs, setLogs] = useState<WorkoutLogDocument[]>([]);
+  const [logState, setLogState] = useState<{
+    programId: string;
+    status: "ready" | "error";
+    logs: WorkoutLogDocument[];
+  } | null>(null);
 
   useEffect(() => {
     programRepo.get(id).then(setProgram).catch(() => undefined);
@@ -307,7 +316,13 @@ export function ProgramDetailClient({ id }: { id: string }) {
   const programId = program?.id;
   useEffect(() => {
     if (!programId) return;
-    logRepo.listForProgram(programId).then(setLogs).catch(() => undefined);
+    let cancelled = false;
+    logRepo.listForProgram(programId).then((logs) => {
+      if (!cancelled) setLogState({ programId, status: "ready", logs });
+    }).catch(() => {
+      if (!cancelled) setLogState({ programId, status: "error", logs: [] });
+    });
+    return () => { cancelled = true; };
   }, [programId]);
 
   async function handleGoalChange(goal: TrainingGoal) {
@@ -332,10 +347,13 @@ export function ProgramDetailClient({ id }: { id: string }) {
     return toDisplayAnalysis(result, durationMs);
   }, [program]);
 
-  const weeks = useMemo(
-    () => (program ? buildWeekGrid(getRenderableDays(program)) : []),
-    [program],
-  );
+  const days = useMemo(() => program ? getRenderableDays(program) : [], [program]);
+  const weeks = useMemo(() => buildWeekGrid(days), [days]);
+  const currentLogs = logState?.programId === programId ? logState : null;
+  const nextDay = currentLogs?.status === "ready"
+    ? resolveNextDay(days, currentLogs.logs, localDateString())
+    : undefined;
+  const status = program ? programStatus(program) : "draft";
 
   // Pointer drag for week pager
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -391,13 +409,20 @@ export function ProgramDetailClient({ id }: { id: string }) {
           </Link>
         </div>
         <PageHeader title={program.title} description={program.description} action={
-          weeks[activeWeek]?.days.find((day) => day.sections.length > 0) && (
-            <button className="button" onClick={() => {
-              const day = weeks[activeWeek].days.find((candidate) => candidate.sections.length > 0);
-              if (day) navigate(`/programs/${id}/days/${day.id}`);
-            }}>Start workout</button>
-          )
+          !currentLogs ? (
+            <button className="button" disabled>Loading workout logs…</button>
+          ) : nextDay ? (
+            <button className="button" onClick={() => navigate(`/programs/${id}/days/${nextDay.id}`)}>
+              Next: {nextDay.title} · Week {nextDay.weekNumber ?? 1}
+            </button>
+          ) : null
         } />
+        <p className="muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+          Plan: {status.charAt(0).toUpperCase() + status.slice(1)}
+        </p>
+        {currentLogs?.status === "error" && (
+          <p role="alert">Could not load workout logs. Reload to find your next workout.</p>
+        )}
         {!!program.progression?.length && (
           <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 6 }}>
             <div style={{ fontSize: 12, marginBottom: 2 }}>
@@ -455,7 +480,8 @@ export function ProgramDetailClient({ id }: { id: string }) {
                 <DayCard
                   key={day.id}
                   day={day}
-                  badge={getDayBadge(day.id, logs)}
+                  badge={getDayBadge(day.id, currentLogs?.logs ?? [])}
+                  isNext={day.id === nextDay?.id}
                   expanded={!!expanded[day.id]}
                   onToggle={() => setExpanded((s) => ({ ...s, [day.id]: !s[day.id] }))}
                   onModifyDay={() => setAiModalDay(day)}

@@ -90,6 +90,14 @@
   color: var(--fg-2);
   min-height: 28px;
 }
+.wk-options > summary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+  min-height: 28px;
+}
+.wk-options[open] { flex-basis: 100%; }
+.wk-options-body { padding: 12px; margin-top: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg-1); }
 .wk-guide[open] {
   flex-basis: 100%;
 }
@@ -312,6 +320,10 @@
   color: var(--fg-3);
   margin-right: 6px;
 }
+@media (min-width: 1101px) {
+  .wk-ex-name { flex: 0 1 auto; }
+  .wk-ex-tools { margin-left: 12px; }
+}
 
 /* ─── Sets ────────────────────────────────────────────────────────────────── */
 
@@ -419,12 +431,14 @@
   font-size: 15px;
   color: var(--fg);
   background: none;
-  border: none;
-  border-bottom: 1px dotted var(--fg-3);
-  border-radius: 0;
-  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--wk-control);
+  padding: 3px 7px;
   min-width: 40px;
-  min-height: 28px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   text-align: left;
   cursor: pointer;
   margin-right: 6px;
@@ -454,6 +468,8 @@
   color: var(--fg-2);
   min-height: 32px;
 }
+.wk-note { flex: 1 1 auto; }
+.wk-note[open] { flex-basis: 100%; }
 .wk-note textarea {
   width: 100%;
   margin-top: 4px;

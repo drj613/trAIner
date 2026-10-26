@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { Clock3, Pencil, Play, Pause, RotateCcw } from "lucide-react";
 import { parseDuration } from "@/lib/workout/parseDuration";
 import "./workout.css";
 
@@ -121,6 +121,7 @@ export function RestTimer({ restText, notes }: Props) {
           disabled={running}
           aria-label={seconds === undefined ? "Set rest duration" : "Edit rest duration"}
         >
+          {seconds === undefined ? <Clock3 size={14} aria-hidden /> : <Pencil size={12} aria-hidden />}
           {display}
         </button>
       )}

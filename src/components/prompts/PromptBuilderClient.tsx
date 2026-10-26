@@ -19,6 +19,8 @@ import { DEFAULT_PERSONAS, type CoachPersona } from "@/lib/prompts/personas";
 import { promptPresetRepo } from "@/lib/storage/promptPresetRepo";
 import type { PromptPresetDocument } from "@/lib/programs/types";
 
+const sectionLabelStyle = { fontSize: 13, fontWeight: 500, color: "var(--fg-2)" } as const;
+
 export function PromptBuilderClient() {
   const { profile, loading } = useLocalData();
 
@@ -208,7 +210,7 @@ export function PromptBuilderClient() {
         </div>
       )}
       <section>
-        <p className="tx-up mb-2">Presets</p>
+        <p className="tx-up mb-2" style={sectionLabelStyle}>Presets</p>
         {presets.length > 0 && (
           <div className="stack" style={{ gap: 4 }}>
             {presets.map((preset) => (
@@ -255,7 +257,7 @@ export function PromptBuilderClient() {
       </section>
 
       <section>
-        <p className="tx-up mb-2">Coach personas · select &amp; combine</p>
+        <p className="tx-up mb-2" style={sectionLabelStyle}>Coach personas · select &amp; combine</p>
         <details className="panel min-w-0">
           <summary className="text-sm cursor-pointer"><span>Choose coaches</span><span className="muted"> · {selectedPersonas.length} selected</span></summary>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0 mt-3">
@@ -273,7 +275,7 @@ export function PromptBuilderClient() {
 
       {selectedPersonas.length > 0 && (
         <section>
-          <p className="tx-up mb-2">Selected coach instructions</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Selected coach instructions</p>
           <p className="text-sm muted mb-2">Open a coach to review its philosophy, methodology, and principles. Save a preset to keep your edits.</p>
           <div className="stack">
             {selectedPersonas.map((p) => (
@@ -310,7 +312,7 @@ export function PromptBuilderClient() {
         </div>
       )}
       <section>
-        <p className="tx-up mb-2">Profile fields</p>
+        <p className="tx-up mb-2" style={sectionLabelStyle}>Profile fields</p>
         <div className="stack">
           {PROFILE_FIELDS.filter((f) => f.group === "profile").map((f) => (
             <section key={f.key} aria-label={`${f.label} prompt section`} className="panel min-w-0">
@@ -328,7 +330,7 @@ export function PromptBuilderClient() {
           ))}
         </div>
 
-        <p className="tx-up mb-2 mt-3">Constraints</p>
+        <p className="tx-up mb-2 mt-3" style={sectionLabelStyle}>Constraints</p>
         <div className="stack">
           {PROFILE_FIELDS.filter((f) => f.group === "constraints").map((f) => (
             <section key={f.key} aria-label={`${f.label} prompt section`} className="panel min-w-0">
@@ -384,7 +386,7 @@ export function PromptBuilderClient() {
           </div>
         </div>
 
-        <p className="tx-up mb-2 mt-3">Coaching preferences</p>
+        <p className="tx-up mb-2 mt-3" style={sectionLabelStyle}>Coaching preferences</p>
         <section aria-label="Coaching instructions" className="panel min-w-0">
         <label className="flex items-center gap-3 cursor-pointer">
           <input

@@ -80,7 +80,7 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
       </header>
       <div className="app-frame">
         <aside className="app-sidebar" aria-hidden={drawerOpen || undefined}>
-          <div className="app-sidebar-brand"><Brand /><button type="button" className="btn ghost app-icon-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen} aria-controls="navigation-menu"><Menu size={19} aria-hidden /></button></div>
+          <div className="app-sidebar-brand"><Brand /></div>
           <p className="app-nav-scope">Your training</p>
           <nav aria-label="Main navigation"><NavLinks pathname={pathname} /></nav>
           <p className="app-sidebar-note">Stored on this device.<br />Back up from Workspace.</p>

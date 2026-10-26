@@ -260,8 +260,8 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
           fontFamily: "inherit",
         }}
       >
-        <span className="tx-up" style={{ flex: 1, textAlign: "left" }}>needs review</span>
-        <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>{items.length}</span>
+        <span style={{ flex: 1, textAlign: "left", fontSize: 14, fontWeight: 600 }}>needs review</span>
+        <span className="tx-mono" style={{ fontSize: 13, color: "var(--fg-2)" }}>{items.length}</span>
         <span style={{ color: "var(--fg-3)" }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
@@ -365,20 +365,6 @@ function countVersions(groups: readonly CatalogGroup[]): number {
   return groups.reduce((total, group) => total + group.versions.length, 0);
 }
 
-// ─── Equipment glyph ─────────────────────────────────────────────────────────
-
-const equipGlyph: Record<string, string> = {
-  barbell: "⊟",
-  dumbbell: "⊜",
-  cable: "⌇",
-  machine: "⊞",
-  bodyweight: "○",
-  band: "≈",
-  kettlebell: "⬡",
-  "med-ball": "●",
-  box: "□",
-};
-
 // ─── Exercise row ─────────────────────────────────────────────────────────────
 
 function correctionTargetForVersion(version: SelectableExercise): CorrectionTarget {
@@ -407,7 +393,6 @@ function ExerciseRow({
   const item = version.catalogItem;
   const [open, setOpen] = useState(false);
   const [correcting, setCorrecting] = useState(false);
-  const glyph = equipGlyph[item?.equipment[0] ?? ""] ?? "·";
 
   return (
     <div>
@@ -419,7 +404,7 @@ function ExerciseRow({
         style={{
           width: "100%",
           display: "grid",
-          gridTemplateColumns: "24px 1fr auto",
+          gridTemplateColumns: "1fr auto",
           gap: 8,
           padding: nested ? "8px 12px 8px 28px" : "9px 12px",
           borderTop: "none",
@@ -435,16 +420,6 @@ function ExerciseRow({
           transition: "background .1s",
         }}
       >
-        <span
-          style={{
-
-            fontSize: 14,
-            color: "var(--fg-3)",
-            textAlign: "center",
-          }}
-        >
-          {glyph}
-        </span>
         <div style={{ minWidth: 0 }}>
           <div
             style={{
@@ -482,7 +457,7 @@ function ExerciseRow({
       {open && (
         <div
           style={{
-            padding: nested ? "8px 12px 12px 60px" : "8px 12px 12px 44px",
+            padding: nested ? "8px 12px 12px 28px" : "8px 12px 12px 12px",
             background: "var(--bg-3)",
             borderBottom: "1px solid var(--line)",
           }}
@@ -663,6 +638,7 @@ function CategorySection({
   defaultOpen: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const previewNames = groups.slice(0, 3).map((group) => toTitleCase(group.name));
 
   return (
     <div
@@ -689,16 +665,27 @@ function CategorySection({
           fontFamily: "inherit",
         }}
       >
-        <span className="tx-up" style={{ flex: 1, textAlign: "left" }}>
-          {muscle}
+        <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+          <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: "var(--fg)" }}>
+            {muscle}
+          </span>
+          {!open && previewNames.length > 0 && (
+            <span
+              style={{
+                display: "block",
+                marginTop: 2,
+                fontSize: 13,
+                color: "var(--fg-2)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {previewNames.join(", ")}
+            </span>
+          )}
         </span>
-        <span
-          style={{
-
-            fontSize: 12,
-            color: "var(--fg-3)",
-          }}
-        >
+        <span style={{ fontSize: 13, color: "var(--fg-2)" }}>
           {countVersions(groups)}
         </span>
         <span style={{ color: "var(--fg-3)" }}>
@@ -809,7 +796,7 @@ export function LibraryClient() {
       <ProgressScreenStyles />
       {/* Header */}
       <PageHeader title="Library" description={`${isFiltered ? `${totalShown.toLocaleString()} of ` : ""}${exerciseCatalog.length.toLocaleString()} exercises`} />
-      <p style={{ fontSize: 14, color: "var(--fg-3)", margin: "0 0 12px" }}>Browse movements, versions and exercise details.</p>
+      <p style={{ fontSize: 14, color: "var(--fg-2)", margin: "0 0 12px" }}>Browse movements, versions and exercise details.</p>
 
       {/* Search */}
       <div
@@ -859,7 +846,7 @@ export function LibraryClient() {
             background: !equipment ? "var(--bg-3)" : "transparent",
             color: !equipment ? "var(--fg)" : "var(--fg-2)",
 
-            fontSize: 12,
+            fontSize: 13,
             cursor: "pointer",
           }}
         >
@@ -877,16 +864,10 @@ export function LibraryClient() {
               background: equipment === eq ? "var(--bg-3)" : "transparent",
               color: equipment === eq ? "var(--fg)" : "var(--fg-2)",
 
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
             }}
           >
-            {equipGlyph[eq] && (
-              <span style={{ fontSize: 12 }}>{equipGlyph[eq]}</span>
-            )}
             {eq}
           </button>
         ))}

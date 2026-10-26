@@ -16,6 +16,8 @@ import { TRAINING_GOALS, type TrainingGoal } from "@/lib/programs/types";
 import { GOAL_LABELS } from "@/lib/programs/routineMeta";
 import { RankedGoalsEditor, RankedGoalsList } from "./RankedGoalsEditor";
 
+const sectionLabelStyle = { fontSize: 13, fontWeight: 500, color: "var(--fg-2)" } as const;
+
 type EditingSection =
   | "name" | "body" | "history" | "goals"
   | "injuries" | "equipment" | "schedule" | "preferences"
@@ -205,7 +207,7 @@ function KVGrid({ data }: { data: Record<string, string | undefined> }) {
             fontSize: 12,
           }}
         >
-          <span style={{ color: "var(--fg-3)" }}>{k}</span>
+          <span style={{ color: "var(--fg-2)" }}>{k}</span>
           <span style={{ color: "var(--fg)" }}>{v}</span>
         </div>
       ))}
@@ -231,7 +233,7 @@ function ProfileCard({
   return (
     <div className="panel">
       <div className="flex items-center gap-2 mb-2">
-        <span className="tx-up flex-1">{label}</span>
+        <span className="tx-up flex-1" style={sectionLabelStyle}>{label}</span>
         {editing ? (
           <div className="flex gap-1">
             <button
@@ -359,7 +361,7 @@ export function ProfileClient() {
         )}
 
         <div className="panel">
-          <p className="tx-up mb-2">Name</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Name</p>
           <input
             className="input w-full"
             style={{ fontSize: 14, padding: "5px 9px" }}
@@ -371,7 +373,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Goals</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Goals</p>
           <PrimaryGoalSelect
             value={draft.primaryGoal}
             onChange={(primaryGoal) => setDraft((d) => d && { ...d, primaryGoal })}
@@ -383,7 +385,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Equipment access</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Equipment access</p>
           <EditableChips
             items={draft.equipment}
             onChange={(equipment) => setDraft((d) => d && { ...d, equipment })}
@@ -391,7 +393,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Exercises I like</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Exercises I like</p>
           <EditableChips
             items={draft.preferences ?? []}
             onChange={(preferences) => setDraft((d) => d && { ...d, preferences })}
@@ -402,7 +404,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Injuries / limitations</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Injuries / limitations</p>
           <EditableChips
             items={draft.injuries ?? []}
             onChange={(injuries) => setDraft((d) => d && { ...d, injuries })}
@@ -410,7 +412,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Training age</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Training age</p>
           <input
             className="input w-full"
             style={{ fontSize: 12, padding: "3px 7px" }}
@@ -421,7 +423,7 @@ export function ProfileClient() {
         </div>
 
         <div className="panel">
-          <p className="tx-up mb-2">Default days / week</p>
+          <p className="tx-up mb-2" style={sectionLabelStyle}>Default days / week</p>
           <input
             type="number"
             min={1}

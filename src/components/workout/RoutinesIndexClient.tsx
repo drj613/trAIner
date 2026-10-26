@@ -338,7 +338,7 @@ function RoutineRow({
           }}
         >
           {dpw}d/wk · {lw}w
-          {status === "draft" ? " · Not started" : status === "completed" ? " · Completed" : status === "archived" ? " · Archived" : ""}
+          {status === "draft" ? " · Draft" : status === "completed" ? " · Completed" : status === "archived" ? " · Archived" : ""}
           {program.lastRunAt && ` · ${program.lastRunAt.slice(0, 10)}`}
         </div>
       </button>
@@ -488,7 +488,7 @@ export function RoutinesIndexClient() {
       <PageHeader title="Routines" description={`${programs.length} total · ${programs.filter((p) => programStatus(p) === "active").length} active · ${programs.filter((p) => programStatus(p) === "draft").length} draft`} action={<Link to="/programs/new" className={active ? "button secondary" : "button"}>New routine</Link>} />
       {actionError && <p role="alert" style={{ color: "var(--bad)", fontSize: 14 }}>{actionError}</p>}
       {active && (
-        <div style={{ padding: "10px 10px 0" }}>
+        <div style={{ padding: "10px 0 0" }}>
           <ActiveCard
             program={active}
             onOpen={() => navigate(`/programs/${active.id}`)}
@@ -499,7 +499,7 @@ export function RoutinesIndexClient() {
 
       <div
         style={{
-          padding: "4px 10px 8px",
+          padding: "4px 0 8px",
           display: "flex",
           alignItems: "center",
           flexWrap: "wrap",
@@ -535,7 +535,7 @@ export function RoutinesIndexClient() {
         })}
       </div>
 
-      <div style={{ padding: 10 }}>
+      <div style={{ padding: "10px 0" }}>
         {filtered.length === 0 ? (
           <div
             style={{

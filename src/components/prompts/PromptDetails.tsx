@@ -202,10 +202,10 @@ function humanize(text: string) {
 }
 
 const headingStyle = { margin: 0, fontSize: 14, fontWeight: 650, color: "var(--fg)" } as const;
-const subheadingStyle = { margin: 0, fontSize: 12, fontWeight: 600, color: "var(--fg-2)" } as const;
+const subheadingStyle = { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--fg-2)" } as const;
 const paragraphStyle = { margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--fg-2)", overflowWrap: "anywhere" as const };
 const listStyle = { margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.5, color: "var(--fg-2)", overflowWrap: "anywhere" as const };
-const fieldStyle = { margin: 0, display: "grid", gridTemplateColumns: "minmax(0, 0.4fr) minmax(0, 1fr)", gap: "4px 8px", fontSize: 13, minWidth: 0 } as const;
+const fieldStyle = { margin: 0, display: "grid", gridTemplateColumns: "minmax(min(7.5rem, 40%), 0.4fr) minmax(0, 1fr)", gap: "4px 8px", fontSize: 13, minWidth: 0 } as const;
 const nestedListStyle = { margin: 0, paddingLeft: 12, fontSize: 13, lineHeight: 1.5, color: "var(--fg-2)", overflowWrap: "anywhere" as const };
-const fieldLabelStyle = { fontWeight: 600, color: "var(--fg-3)", overflowWrap: "anywhere" as const };
+const fieldLabelStyle = { fontWeight: 600, color: "var(--fg-2)", overflowWrap: "anywhere" as const };
 const fieldValueStyle = { margin: 0, color: "var(--fg-2)", minWidth: 0, overflowWrap: "anywhere" as const };

@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { ProgramDetailClient } from "./ProgramDetailClient";
+import { logRepo } from "@/lib/storage/logRepo";
 import { programRepo } from "@/lib/storage/programRepo";
 import type { ProgramDocument, WorkoutLogDocument } from "@/lib/programs/types";
 
@@ -51,18 +52,23 @@ jest.mock("./ModifyAiModal", () => ({
   ),
 }));
 
+function DayRoute() {
+  return <div data-testid="day-route">{useLocation().pathname}</div>;
+}
+
 function renderDetail() {
   return render(
     <MemoryRouter initialEntries={["/programs/p1"]}>
       <Routes>
         <Route path="/programs/:id" element={<ProgramDetailClient id="p1" />} />
-        <Route path="/programs/:id/days/:dayId" element={<div data-testid="day-route" />} />
+        <Route path="/programs/:id/days/:dayId" element={<DayRoute />} />
       </Routes>
     </MemoryRouter>
   );
 }
 
 beforeEach(() => {
+  jest.clearAllMocks();
   mockLogs = [];
 });
 
@@ -250,6 +256,65 @@ describe("ProgramDetailClient goal persistence", () => {
 
 it("opens a workout from the overview before expanding a day", async () => {
   renderDetail();
-  fireEvent.click(await screen.findByRole("button", { name: "Start workout" }));
+  fireEvent.click(await screen.findByRole("button", { name: /next.*push day.*week 1/i }));
   expect(screen.getByTestId("day-route")).toBeInTheDocument();
+});
+
+it("names the next incomplete workout instead of reopening a finished first day", async () => {
+  const next = { ...structuredClone(program.days[0]), id: "day-2", dayNumber: 2, weekNumber: 2, title: "Pull Day" };
+  (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, days: [...program.days, next] });
+  mockLogs = [{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }];
+  renderDetail();
+  expect(await screen.findByRole("button", { name: /next.*pull day.*week 2/i })).toBeInTheDocument();
+});
+
+
+it("routes to the next incomplete day even while an earlier week is selected", async () => {
+  const next = { ...structuredClone(program.days[0]), id: "day-2", dayNumber: 2, weekNumber: 2, title: "Pull Day" };
+  (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, days: [...program.days, next] });
+  mockLogs = [{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }];
+  renderDetail();
+  fireEvent.click(await screen.findByRole("button", { name: /next.*pull day.*week 2/i }));
+  expect(screen.getByTestId("day-route")).toHaveTextContent("/programs/p1/days/day-2");
+});
+
+it("waits for workout logs before offering a next target", async () => {
+  let finish!: (logs: WorkoutLogDocument[]) => void;
+  (logRepo.listForProgram as jest.Mock).mockReturnValueOnce(new Promise<WorkoutLogDocument[]>((resolve) => { finish = resolve; }));
+  renderDetail();
+  await screen.findByText("Push Day");
+  expect(screen.getByRole("button", { name: /loading workout logs/i })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: /next:/i })).not.toBeInTheDocument();
+  await act(async () => { finish([]); });
+  expect(await screen.findByRole("button", { name: /next.*push day/i })).toBeEnabled();
+});
+
+it("reports unavailable logs without offering an assumed first day", async () => {
+  (logRepo.listForProgram as jest.Mock).mockRejectedValueOnce(new Error("unavailable"));
+  renderDetail();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Could not load workout logs");
+  expect(screen.queryByRole("button", { name: /next:/i })).not.toBeInTheDocument();
+});
+
+it("shows the stored draft lifecycle separately from completed workout logs", async () => {
+  (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, active: false, status: "draft" });
+  mockLogs = [{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }];
+  renderDetail();
+  expect(await screen.findByText("Plan: Draft")).toBeInTheDocument();
+  expect(await screen.findByText("Logged: Done")).toBeInTheDocument();
+  expect(programRepo.save).not.toHaveBeenCalled();
+});
+
+it("marks the next day when visible and keeps the selected week after a goal update", async () => {
+  const next = { ...structuredClone(program.days[0]), id: "day-2", dayNumber: 2, weekNumber: 2, title: "Pull Day" };
+  (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, days: [...program.days, next] });
+  renderDetail();
+  await screen.findByRole("button", { name: /next.*push day/i });
+  expect(screen.getByText("Next workout")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "WK 2" }));
+  fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
+  fireEvent.change(screen.getByLabelText(/routine goal/i), { target: { value: "strength" } });
+  await waitFor(() => expect(programRepo.save).toHaveBeenCalled());
+  expect(screen.getByText("Pull Day")).toBeInTheDocument();
+  expect(screen.queryByText("Push Day")).not.toBeInTheDocument();
 });

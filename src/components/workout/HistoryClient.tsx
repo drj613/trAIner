@@ -213,9 +213,9 @@ const FILTERS = ["all", "recent", "stale"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const SORTS = [
-  { id: "workouts", label: "Sessions" },
+  { id: "workouts", label: "Most sessions" },
   { id: "name", label: "Name" },
-  { id: "recent", label: "Recent" },
+  { id: "recent", label: "Most recent" },
 ] as const;
 type Sort = (typeof SORTS)[number]["id"];
 
@@ -413,7 +413,7 @@ export function HistoryClient() {
 
         }}
       >
-        <span>sort</span>
+        <span>Sort by</span>
         {SORTS.map(({ id, label }) => (
           <button
             key={id}

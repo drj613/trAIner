@@ -45,6 +45,7 @@ test.describe("Navigation", () => {
   //    computed color differs from the Today link's when on /history.
   // -------------------------------------------------------------------------
   test("nav drawer shows active state for current route", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("history");
 
     // Open the nav drawer
