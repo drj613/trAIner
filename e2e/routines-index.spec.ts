@@ -137,10 +137,10 @@ test.describe("Routines index", () => {
     await sharedPage.getByRole("button", { name: "Activate" }).click();
     // Wait for the in-page state to flip to ACTIVE — this guarantees the
     // IndexedDB write committed; reloading sooner can abort the transaction.
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible({ timeout: 8000 });
     await sharedPage.reload();
     // Confirm the active state persisted (IDB re-read on mount)
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible({ timeout: 8000 });
   });
 
   test.afterAll(async () => {
@@ -153,7 +153,7 @@ test.describe("Routines index", () => {
 
   // 1. Active program renders with ACTIVE badge
   test("active program renders with ACTIVE badge", async () => {
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible();
   });
 
   // 2. Stat tiles show days/week and length labels
@@ -191,7 +191,7 @@ test.describe("Routines index", () => {
     // The archived program must BE visible
     await expect(sharedPage.getByText("Archived Program")).toBeVisible();
     // The active card (with ACTIVE badge) is always rendered regardless of filter
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible();
   });
 
   // 6. Filter chip "all" restores full list (drafts + archived all visible)
@@ -202,7 +202,7 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("Second Draft Program")).toBeVisible();
     await expect(sharedPage.getByText("Archived Program")).toBeVisible();
     // ACTIVE badge still present
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible();
   });
 
   // 7. 3-dot menu opens and shows action items
@@ -275,7 +275,7 @@ test.describe("Routines index", () => {
       )
       .toBe("E2E Test Program");
     await sharedPage.reload();
-    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Plan: Active", { exact: true })).toBeVisible({ timeout: 8000 });
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
   });
 
