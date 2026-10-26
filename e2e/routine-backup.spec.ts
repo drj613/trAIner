@@ -196,6 +196,7 @@ test("real backup restore keeps routine lineage, workout history, and prompt pre
 
   // The restored lineage remains usable through the actual recurring-edit UI.
   await page.goto(`programs/${programId}/days/${firstDay.id}`);
+  await page.getByRole("button", { name: /more actions for bench press/i }).click();
   await page.getByRole("button", { name: /edit prescription for bench press/i }).click();
   await page.getByLabel("Reps").fill("12");
   await page.getByRole("button", { name: "Save", exact: true }).click();

@@ -128,7 +128,7 @@ describe("ProfileClient — ranked goals (existing profile)", () => {
     expect(items[0]).toHaveTextContent("Fix shoulder pain");
     expect(items[1]).toHaveTextContent("2");
     expect(items[1]).toHaveTextContent("Compete again");
-    expect(screen.getByText(/★.*strength/i)).toBeInTheDocument();
+    expect(screen.getByText(/Primary goal:.*strength/i)).toBeInTheDocument();
   });
 
   it("shows and edits liked exercises when the list is initially empty", async () => {

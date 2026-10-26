@@ -82,6 +82,14 @@ jest.mock("@/lib/import/parser", () => ({
 // function`. The real module is pure and cheap, so there is nothing to fake.
 
 describe("ImportClient confirm step pluralization", () => {
+  it("shows pasted line and character counts without changing the source", () => {
+    render(<ImportClient />);
+    const source = '{\n  "days": []\n}';
+    fireEvent.change(screen.getByLabelText("Routine JSON"), { target: { value: source } });
+    expect(screen.getByText(`3 lines · ${source.length} characters`)).toBeInTheDocument();
+    expect(screen.getByLabelText("Routine JSON")).toHaveValue(source);
+  });
+
   it("does not use (s) suffixes in confirm step", async () => {
     const user = userEvent.setup();
     render(<ImportClient />);
@@ -138,6 +146,7 @@ describe("ImportClient confirm step pluralization", () => {
     fireEvent.change(screen.getByLabelText("Search exercise catalog"), { target: { value: toTitleCase(catalogItem.name) } });
     fireEvent.change(screen.getByLabelText("Choose catalog exercise"), { target: { value: catalogItem.id } });
     await user.click(await screen.findByRole("button", { name: "Apply edit" }));
+    expect(screen.getByText("1 exercise mapped to catalog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Save program/ }));
     const saved = mockSaveProgram.mock.calls[0][0];
     expect(getRenderableDays(saved)[0].sections[0].groups[0].exercises[0].canonicalExerciseId).toBe(catalogItem.id);

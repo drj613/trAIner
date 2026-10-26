@@ -32,6 +32,7 @@ test('recurring manual edit protects an out-of-order completion, deload and ente
  expect(completed.completedAt).toBeTruthy();
  await page.goto(`programs/${initial.id}/days/${initial.days[0].id}`);
  const cells=page.locator('input[id^="cell-"]');await cells.nth(3).fill('90x6');
+ await page.getByRole('button',{name:'More actions for Barbell Squat'}).click();
  await page.getByRole('button',{name:'Edit prescription for Barbell Squat'}).click();
  await page.getByLabel('Sets',{exact:true}).fill('3');
  await page.getByRole('button',{name:'Save',exact:true}).click();

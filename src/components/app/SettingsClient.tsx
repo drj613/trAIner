@@ -55,13 +55,13 @@ function ActionRow({
       style={{
         display: "flex", alignItems: "center", textAlign: "left",
         padding: "14px 16px", background: variant === "primary" ? "var(--fg)" : "var(--bg-1)",
-        border: `1px solid ${variant === "warn" ? "var(--warn)" : "var(--line)"}`, borderRadius: "var(--r-lg)",
+        border: `1px solid ${variant === "danger" ? "var(--bad)" : variant === "warn" ? "var(--warn)" : "var(--line)"}`, borderRadius: "var(--r-lg)",
         cursor: disabled ? "not-allowed" : "pointer", width: "100%", gap: 8,
         opacity: disabled ? 0.6 : 1,
       }}
     >
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: variant === "primary" ? "var(--bg)" : "var(--fg)" }}>{label}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: variant === "primary" ? "var(--bg)" : variant === "danger" ? "var(--bad)" : "var(--fg)" }}>{label}</div>
         <div style={{ fontSize: 12, color: variant === "primary" ? "var(--bg)" : "var(--fg-3)", lineHeight: 1.5 }}>{sub}</div>
       </div>
       <span style={{ fontSize: 12, color, fontFamily: "var(--font-ui)" }}>›</span>
@@ -230,12 +230,12 @@ export function SettingsClient() {
     : "loading…";
 
   return (
-    <div style={{ padding: 12 }}>
+    <div>
       <PageHeader title="Workspace" description="Back up your training and set up this device." />
       {/* Stats panel */}
       <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r, 6px)", padding: 12, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span className="text-sm font-semibold">Storage usage</span>
+          <span className="text-sm font-semibold" style={{ flexShrink: 0 }}>Storage usage</span>
           <span style={{ flex: 1 }} />
           <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
             local · {sizeLabel} ·{" "}
@@ -260,7 +260,7 @@ export function SettingsClient() {
       {/* Actions */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         <ActionRow label="Download backup file" sub={exportSub} variant="primary" onClick={handleExport} />
-        <ActionRow label="Import workspace" sub="Replace all local data — destructive" variant="warn" onClick={() => fileRef.current?.click()}>
+        <ActionRow label="Import workspace" sub="Replace all local data. Requires confirmation." variant="danger" onClick={() => fileRef.current?.click()}>
           <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={(e) => handleImport(e.target.files?.[0])} />
         </ActionRow>
         <ActionRow

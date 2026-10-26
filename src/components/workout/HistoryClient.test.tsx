@@ -234,11 +234,11 @@ describe("HistoryClient — all-time family history", () => {
     await screen.findByRole("button", { name: /^Squat\b/ });
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: "stale" }));
+    await user.click(screen.getByRole("button", { name: "Over 45 days ago" }));
     expect(screen.getByRole("button", { name: /^Bench Press\b/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Squat\b/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "recent" }));
+    await user.click(screen.getByRole("button", { name: "Last 45 days" }));
     expect(screen.getByRole("button", { name: /^Squat\b/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Bench Press\b/ })).not.toBeInTheDocument();
   });

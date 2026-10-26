@@ -26,11 +26,11 @@ export function GroupRail({ type, notes, density = "default", children }: Props)
           display: "flex",
           alignItems: "center",
           gap: 6,
-          fontFamily: "var(--font-mono)",
-          fontSize: density === "compact" ? 9 : 9.5,
-          letterSpacing: "0.14em",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          letterSpacing: "normal",
           color: "var(--fg-3)",
-          textTransform: "uppercase",
+          textTransform: "none",
           padding: density === "compact" ? "4px 10px 2px" : "6px 10px 4px",
         }}
       >

@@ -392,6 +392,7 @@ describe("WorkoutDayClient exercise edit — countsTowardVolume preservation", (
       renderOnDay("day-1");
       await screen.findByRole("heading", { level: 1, name: "Push Day" });
       const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /more actions for bench press/i }));
       await user.click(screen.getByRole("button", { name: /edit prescription for bench press/i }));
       await user.clear(screen.getByLabelText(/sets/i));
       await user.type(screen.getByLabelText(/sets/i), "4");
@@ -519,10 +520,85 @@ describe("WorkoutDayClient not-found", () => {
   });
 });
 
+describe("WorkoutDayClient exercise tools disclosure", () => {
+  const moreName = /^more actions for bench press$/i;
+
+  it("keeps History beside the name and hides Edit, Replace and Unit until More is opened", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    expect(screen.getByRole("button", { name: "History for Bench Press" })).toBeVisible();
+    const more = screen.getByRole("button", { name: moreName });
+    expect(more).toHaveAttribute("aria-expanded", "false");
+    expect(more).toHaveTextContent("More");
+    expect(screen.queryByRole("button", { name: /edit prescription for bench press/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /replace bench press from catalogue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /weight unit/i })).not.toBeInTheDocument();
+  });
+
+  it("opens a labelled panel with text actions and closes it again on a second press", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    const more = screen.getByRole("button", { name: moreName });
+    await user.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /edit prescription for bench press/i })).toHaveTextContent("Edit");
+    expect(screen.getByRole("button", { name: /replace bench press from catalogue/i })).toHaveTextContent("Replace");
+    expect(screen.getByRole("button", { name: /weight unit lb — switch to kg/i })).toHaveTextContent("Unit lb");
+    await user.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /edit prescription for bench press/i })).not.toBeInTheDocument();
+  });
+
+  it("closes on Escape and returns focus to the More button", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    const more = screen.getByRole("button", { name: moreName });
+    await user.click(more);
+    await user.tab();
+    expect(screen.getByRole("button", { name: /edit prescription for bench press/i })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("button", { name: /edit prescription for bench press/i })).not.toBeInTheDocument();
+    expect(more).toHaveFocus();
+  });
+
+  it("closes when the user presses outside the panel", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: moreName }));
+    expect(screen.getByRole("button", { name: /edit prescription for bench press/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("heading", { level: 1, name: "Push Day" }));
+    expect(screen.queryByRole("button", { name: /edit prescription for bench press/i })).not.toBeInTheDocument();
+  });
+
+  it("closes when keyboard focus leaves the panel", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: moreName }));
+    // Tab through Edit, Replace, Unit and out of the panel.
+    await user.tab(); await user.tab(); await user.tab(); await user.tab();
+    expect(screen.queryByRole("button", { name: /edit prescription for bench press/i })).not.toBeInTheDocument();
+  });
+
+  it("closes after an action is chosen and still opens the edit sheet", async () => {
+    renderOnDay("day-1");
+    await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: moreName }));
+    await user.click(screen.getByRole("button", { name: /edit prescription for bench press/i }));
+    expect(await screen.findByLabelText(/sets/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: moreName })).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
 describe("WorkoutDayClient unit toggle", () => {
   it("shows the current unit on the exercise row (lb default)", async () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
+    await userEvent.setup().click(screen.getByRole("button", { name: /more actions for bench press/i }));
     const chip = screen.getByRole("button", { name: /weight unit lb — switch to kg/i });
     expect(chip).toHaveTextContent("lb");
   });
@@ -532,6 +608,7 @@ describe("WorkoutDayClient unit toggle", () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /more actions for bench press/i }));
     await user.click(screen.getByRole("button", { name: /weight unit lb — switch to kg/i }));
     await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
     const savedDoc = saveProgramMock.mock.calls.at(-1)[0];
@@ -557,6 +634,7 @@ describe("WorkoutDayClient unit toggle", () => {
     renderOnDay("day-1");
     await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /more actions for bench press/i }));
     await user.click(screen.getByRole("button", { name: /weight unit kg — switch to lb/i }));
     await waitFor(() => expect(saveProgramMock).toHaveBeenCalled());
     const savedDoc = saveProgramMock.mock.calls.at(-1)[0];

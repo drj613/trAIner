@@ -339,7 +339,7 @@ export function HistoryClient() {
       )}
       {!loading && !loadError && families.length > 0 && <>
       <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
-        Tap a movement to see every version and session.
+        Select a movement to see every version and session.
       </p>
 
       {/* Search */}
@@ -382,6 +382,7 @@ export function HistoryClient() {
           <button
             key={f}
             onClick={() => setFilter(f)}
+            aria-pressed={filter === f}
             style={{
               flexShrink: 0,
               padding: "4px 10px",
@@ -394,7 +395,7 @@ export function HistoryClient() {
               cursor: "pointer",
             }}
           >
-            {f}
+            {f === "recent" ? "Last 45 days" : f === "stale" ? "Over 45 days ago" : "All"}
           </button>
         ))}
       </div>
@@ -417,18 +418,20 @@ export function HistoryClient() {
           <button
             key={id}
             onClick={() => setSort(id as Sort)}
+            aria-pressed={sort === id}
             style={{
-              background: "transparent",
-              border: "none",
+              background: sort === id ? "var(--bg-3)" : "transparent",
+              border: `1px solid ${sort === id ? "var(--fg)" : "var(--line)"}`,
+              borderRadius: 6,
               cursor: "pointer",
-              padding: "2px 4px",
+              padding: "4px 10px",
               fontFamily: "inherit",
               fontSize: 12,
               color: sort === id ? "var(--fg)" : "var(--fg-3)",
 
             }}
           >
-            {sort === id && "·"} {label}
+            {label}
           </button>
         ))}
       </div>

@@ -376,13 +376,19 @@ export function ImportClient() {
         <textarea
           id="routine-json"
           spellCheck={false}
-          className="input min-h-72 font-mono text-sm"
+          className="input font-mono text-sm"
+          rows={12}
+          style={{ minHeight: 220, resize: "vertical" }}
+          aria-describedby="routine-json-count"
           aria-label="Routine JSON"
           value={json}
           placeholder='{ "program_name": "...", "days": [...] }'
           onChange={(e) => setJson(e.target.value)}
           disabled={isReadingFile}
         />
+        <p id="routine-json-count" className="text-xs muted">
+          {json ? json.split("\n").length : 0} {json && !json.includes("\n") ? "line" : "lines"} · {json.length} {json.length === 1 ? "character" : "characters"}
+        </p>
         {parseError && (
           <div className="import-error stack" role="alert" style={{ gap: 10 }}>
             <p className="text-sm" style={{ color: "var(--bad, red)", fontWeight: 600 }}>
@@ -437,18 +443,29 @@ export function ImportClient() {
   }
 
   if (step === "confirm" && review) {
-    // Stored exercises, not occurrence paths: one base-day path can be four
-    // week-clones, and a path in a structurally ambiguous day is none at all.
-    const resolvedCount = storedExerciseCount(
-      review.program,
-      unresolvedItems
-        .filter((i) => resolutions[i.path] && resolutions[i.path] !== CUSTOM_ID)
-        .map((i) => i.path),
-    );
-    const customCount = storedExerciseCount(
-      review.program,
-      unresolvedItems.filter((i) => resolutions[i.path] === CUSTOM_ID).map((i) => i.path),
-    );
+    const program = draft?.program ?? review.program;
+    const selectedResolutions = unresolvedItems
+      .filter((item) => resolutions[item.path] && resolutions[item.path] !== CUSTOM_ID)
+      .map((item) => ({
+        path: resolutionPathForTarget(program, review.warnings.find((warning) => warning.path === item.path)?.targetId, item.path),
+        canonicalId: resolutions[item.path],
+      }));
+    const savedPreview = applyResolutions(program, selectedResolutions);
+    const savedExercises = getRenderableDays(savedPreview).flatMap((day) => day.sections.flatMap((section) => section.groups.flatMap((group) => group.exercises)));
+    const catalogIds = new Set(exerciseCatalog.map((exercise) => exercise.id));
+    const resolvedCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && catalogIds.has(exercise.canonicalExerciseId)).length;
+    const libraryCount = savedExercises.filter((exercise) => exercise.canonicalExerciseId && !catalogIds.has(exercise.canonicalExerciseId)).length;
+    const customCount = savedExercises.filter((exercise) => !exercise.canonicalExerciseId).length;
+    const confirmWarnings = draft?.currentWarnings.map((warning) => {
+      const choice = resolutions[warning.path];
+      if (!choice || !warning.rawName) return warning;
+      if (choice === CUSTOM_ID) return { ...warning, message: `${warning.rawName} will keep its name without a catalog link.` };
+      const path = resolutionPathForTarget(program, warning.targetId, warning.path);
+      const name = exerciseName(choice);
+      return name && storedExerciseCount(program, [path]) > 0
+        ? { ...warning, message: `${warning.rawName} will link to ${name}; its name is kept.` }
+        : warning;
+    }) ?? [];
 
     const weekCount = new Set(getRenderableDays(review.program).map((day) => day.weekNumber ?? 1)).size;
     const templateCount = review.program.editing?.templateDays.length ?? review.program.days.length;
@@ -466,16 +483,20 @@ export function ImportClient() {
               {resolvedCount} {resolvedCount === 1 ? "exercise" : "exercises"} mapped to catalog
             </p>
           )}
+          {libraryCount > 0 && (
+            <p className="text-sm muted">{libraryCount} {libraryCount === 1 ? "exercise" : "exercises"} linked to your exercise library</p>
+          )}
           {customCount > 0 && (
             <p className="text-sm muted">
-              {customCount} {customCount === 1 ? "exercise" : "exercises"} imported as custom (no history tracking)
+              {customCount} {customCount === 1 ? "exercise" : "exercises"} imported as custom (names kept without catalog links)
             </p>
           )}
         </section>
+        <p className="text-sm muted">Further review is optional. Save program keeps the choices shown here. You can edit the routine later.</p>
         {draft && (
           <ImportReviewEditor
             program={draft.program}
-            warnings={draft.currentWarnings}
+            warnings={confirmWarnings}
             corrections={draft.correctionHistory}
             onChange={handleDraftChange}
           />

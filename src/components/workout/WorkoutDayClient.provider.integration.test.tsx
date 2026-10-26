@@ -73,7 +73,10 @@ describe("WorkoutDayClient unit toggle (real provider)", () => {
     const heading = await screen.findByRole("heading", { level: 1, name: "Push Day" });
     const user = userEvent.setup();
 
+    await user.click(screen.getByRole("button", { name: /more actions for bench press/i }));
     await user.click(screen.getByRole("button", { name: /weight unit lb — switch to kg/i }));
+    // The panel closes on choosing; reopen it to read the stored unit back.
+    await user.click(await screen.findByRole("button", { name: /more actions for bench press/i }));
     await screen.findByRole("button", { name: /weight unit kg — switch to lb/i });
 
     // Same DOM node ⇒ the tree never unmounted (no "Loading…" blank-out,
@@ -88,12 +91,14 @@ describe("WorkoutDayClient unit toggle (real provider)", () => {
 });
 it('reviews an edited prescription before committing without remounting the session',async()=>{
  renderDay();const heading=await screen.findByRole('heading',{level:1,name:'Push Day'});const user=userEvent.setup();
+ await user.click(screen.getByRole('button',{name:'More actions for Bench Press'}));
  await user.click(screen.getByRole('button',{name:'Edit prescription for Bench Press'}));
  await user.clear(screen.getByLabelText('Sets'));await user.type(screen.getByLabelText('Sets'),'1');
  await user.click(screen.getByRole('button',{name:'Save'}));
  expect(await screen.findByRole('region',{name:'Edit impact preview'})).toBeInTheDocument();
  expect((await programRepo.get('p1'))?.overrides).toHaveLength(0);
  await user.click(screen.getByRole('button',{name:'Apply reviewed edit'}));
+ await user.click(await screen.findByRole('button',{name:'More actions for Bench Press'}));
  await screen.findByRole('button',{name:'Edit prescription for Bench Press'});
  expect(screen.getByRole('heading',{level:1,name:'Push Day'})).toBe(heading);
  const stored=await programRepo.get('p1');

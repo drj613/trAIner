@@ -233,7 +233,7 @@ export function PromptBuilderClient() {
             ))}
           </div>
         )}
-        <div className="flex gap-1 mt-2">
+        <div className="flex gap-2 mt-2" style={{ maxWidth: 560 }}>
           <input
             className="input flex-1 min-w-0"
             style={{ fontSize: 13, padding: "3px 7px" }}

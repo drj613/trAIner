@@ -36,7 +36,7 @@ function WeekTabStrip({
       style={{
         display: "flex",
         alignItems: "stretch",
-        padding: "0 12px",
+        padding: 0,
         borderBottom: "1px solid var(--line)",
         background: "var(--bg)",
         flexShrink: 0,
@@ -68,24 +68,6 @@ function WeekTabStrip({
             <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em" }}>
               Week {wk.weekNumber}
             </span>
-            <div style={{ display: "flex", gap: 2 }}>
-              {wk.days.map((d) => {
-                const isRest = d.sections.length === 0;
-                return (
-                  <span
-                    key={d.id}
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: 3,
-                      background: isRest ? "transparent" : "var(--line-2)",
-                      border: isRest ? "1px dashed var(--line-2)" : "none",
-                      opacity: isRest ? 0.5 : 1,
-                    }}
-                  />
-                );
-              })}
-            </div>
             <span
               style={{
 
@@ -259,7 +241,7 @@ function DayCard({
           )}
           {isRest && <div style={{ fontSize: 12, color: "var(--fg-3)" }}>rest</div>}
         </div>
-        {badge && <span style={{ fontSize: 14, color: badge.color, flexShrink: 0 }}>{badge.symbol}</span>}
+        {badge && <span style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 12, color: badge.color, flexShrink: 0 }}><span aria-hidden>{badge.symbol}</span>{badge.symbol === "●" ? "Done" : badge.symbol === "~" ? "Skipped" : "In progress"}</span>}
         {!isRest && <button className="btn" aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); onToggle(); }}>{expanded ? "Hide day" : "View day"}</button>}
       </div>
 
@@ -395,7 +377,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
     <div className="progress-screen" style={{ display: "flex", flexDirection: "column" }}>
       <ProgressScreenStyles />
       {/* Header */}
-      <div style={{ padding: "10px 12px 8px", flexShrink: 0 }}>
+      <div style={{ padding: "0 0 8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
           <Link
             to="/programs"
@@ -461,7 +443,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
           {weeks[activeWeek] && (
             <div
               key={weeks[activeWeek].weekNumber}
-              style={{ width: "100%", padding: "10px 12px 14px" }}
+              style={{ width: "100%", padding: "10px 0 14px" }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>Week {weeks[activeWeek].weekNumber}</span>

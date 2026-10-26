@@ -17,7 +17,7 @@ const typeStyle: Record<string, { bg: string; color: string; label: string }> = 
 function ExField({ label, before, after }: { label: string; before?: string | number; after?: string | number }) {
   if (before === after) return null;
   return (
-    <div style={{ display: "flex", gap: 8, fontSize: 11, fontFamily: "var(--font-mono)", marginTop: 2 }}>
+    <div style={{ display: "flex", gap: 8, fontSize: 12, fontFamily: "var(--font-ui)", marginTop: 2 }}>
       <span style={{ color: "var(--fg-4)", minWidth: 40 }}>{label}</span>
       {before !== undefined && <span style={{ color: "var(--bad)", textDecoration: "line-through" }}>{before}</span>}
       {after !== undefined && <span style={{ color: "var(--good)" }}>{after}</span>}
@@ -89,7 +89,7 @@ export function DiffReview({
     <div style={{ display: "flex", flexDirection: "column", gap: 0, height: "100%" }}>
       <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid var(--line)" }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--fg)" }}>Review changes</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
+        <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--fg-3)", fontFamily: "var(--font-ui)" }}>
           {replacement.title}
           {counts.added > 0 && <span style={{ color: "var(--good)", marginLeft: 8 }}>+{counts.added}</span>}
           {counts.removed > 0 && <span style={{ color: "var(--bad)", marginLeft: 8 }}>−{counts.removed}</span>}
@@ -114,7 +114,7 @@ export function DiffReview({
             }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <span style={{ fontWeight: 600, fontSize: 13, color: "var(--fg)" }}>{diff.exerciseName}</span>
-                <span style={{ fontSize: 10, color: s.color, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.label}</span>
+                <span style={{ fontSize: 12, color: s.color, fontFamily: "var(--font-ui)", textTransform: "none", letterSpacing: "normal" }}>{s.label}</span>
               </div>
               {diff.type === "modified" && (
                 <div style={{ marginTop: 4 }}>
@@ -125,7 +125,7 @@ export function DiffReview({
                 </div>
               )}
               {diff.type === "added" && diff.after && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+                <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>
                   {[diff.after.sets && `${diff.after.sets}×`, diff.after.reps, diff.after.load].filter(Boolean).join(" ")}
                 </div>
               )}

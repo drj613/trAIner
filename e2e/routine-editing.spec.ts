@@ -151,12 +151,14 @@ test.describe("Routine import review and editing", () => {
     await expect(page).toHaveURL(/\/programs\/[^/]+$/);
 
     await openWorkout(page, 1, "Lower A");
+    await page.getByRole("button", { name: /more actions for romanian deadlift/i }).click();
     await page.getByRole("button", { name: /edit prescription for romanian deadlift/i }).click();
     await page.getByLabel("Sets", { exact: true }).fill("3");
     await page.getByRole("button", { name: /^Save$/ }).last().click();
     await expect(page.getByRole("dialog", { name: "Review prescription edit" })).toBeVisible();
     await expect(page.getByText(/sets 4 → 3/i)).toBeVisible();
     await page.getByRole("button", { name: "Apply reviewed edit" }).click();
+    await page.getByRole("button", { name: /more actions for romanian deadlift/i }).click();
     await expect(page.getByRole("button", { name: /edit prescription for romanian deadlift/i })).toBeVisible();
   });
 

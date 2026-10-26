@@ -40,7 +40,7 @@ describe("RoutineAnalysisCard", () => {
   it("shows score badge with grade", () => {
     render(<RoutineAnalysisCard analysis={mockAnalysis} goal="general" onGoalChange={() => {}} onOpenPrompt={jest.fn()} />);
     expect(screen.getByText("B")).toBeInTheDocument();
-    expect(screen.getByText("82")).toBeInTheDocument();
+    expect(screen.getByText("82/100")).toBeInTheDocument();
   });
 
   it("shows fingerprint label", () => {

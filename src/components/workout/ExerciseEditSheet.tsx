@@ -139,10 +139,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <label className="block mb-2">
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
           color: "var(--fg-3)",
-          textTransform: "uppercase",
+          textTransform: "none",
         }}
       >
         {label}

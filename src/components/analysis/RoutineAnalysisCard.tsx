@@ -34,12 +34,12 @@ function ScoreBadge({ score, grade }: { score: number; grade: string }) {
   const status = score >= 80 ? "good" : score >= 60 ? "warn" : "bad";
   return (
     <div style={{
-      width: 40, height: 40, borderRadius: 6, flexShrink: 0,
+      width: 64, height: 44, borderRadius: 6, flexShrink: 0,
       border: `2px solid ${sc(status)}`, background: sb(status),
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
     }}>
       <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: sc(status) }}>{grade}</span>
-      <span style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>{score}</span>
+      <span style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>{score}/100</span>
     </div>
   );
 }
@@ -363,11 +363,11 @@ export function RoutineAnalysisCard({
       >
         <ScoreBadge score={analysis.overall.score} grade={analysis.overall.grade} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, fontSize: 12, color: "var(--fg-3)", letterSpacing: "0.06em" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, fontSize: 12, color: "var(--fg-3)", letterSpacing: "normal" }}>
             <span>Analysis</span>
 
             {analysis.goalScope.partial && (
-              <span style={{ color: "var(--warn)" }} title="Partial grade — some dimensions shown for reference only">· partial</span>
+              <span style={{ color: "var(--warn)" }} title="Partial grade — some dimensions shown for reference only">· partial assessment</span>
             )}
           </div>
           <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.3, marginBottom: 3 }}>

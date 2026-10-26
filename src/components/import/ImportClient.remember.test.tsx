@@ -173,6 +173,42 @@ function savedProgram(): ProgramDocument {
 }
 
 describe("ImportClient: import choices are local by default", () => {
+  it("counts catalog matches that did not need a resolution decision", async () => {
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: fourWeekJson.replace("Back Squat", "High Bar Back Squat") } });
+    await user.click(screen.getByRole("button", { name: "Validate →" }));
+    expect(await screen.findByRole("heading", { name: "Confirm import" })).toBeInTheDocument();
+    expect(screen.getByText("4 exercises mapped to catalog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /save program/i }));
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+    expect(collectNamed(savedProgram(), "High Bar Back Squat").map((e) => e.canonicalExerciseId)).toEqual(Array(4).fill("barbell-high-bar-squat"));
+  });
+
+  it("explains the selected version as the saved outcome instead of asking for it again", async () => {
+    const user = await chooseVersion("barbell-high-bar-squat", fourWeekJson);
+    await user.click(screen.getByRole("button", { name: /review import/i }));
+    expect(screen.queryByText("Back Squat needs a specific version chosen.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Back Squat will link to High Bar Back Squat; its name is kept/)).toBeInTheDocument();
+    expect(screen.getByText(/Further review is optional/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /save program/i }));
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+    expect(collectNamed(savedProgram(), "Back Squat").map((e) => e.canonicalExerciseId)).toEqual(Array(4).fill("barbell-high-bar-squat"));
+  });
+
+  it("describes a custom choice as keeping its name without a catalog link", async () => {
+    const user = userEvent.setup();
+    render(<ImportClient />);
+    await pasteAndValidate(user, fourWeekJson);
+    await user.click(screen.getByRole("button", { name: /keep as custom/i }));
+    await user.click(screen.getByRole("button", { name: /review import/i }));
+    expect(screen.getByText(/Back Squat will keep its name without a catalog link/)).toBeInTheDocument();
+    expect(screen.queryByText(/no history tracking/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /save program/i }));
+    await waitFor(() => expect(mockSaveProgram).toHaveBeenCalledTimes(1));
+    expect(collectNamed(savedProgram(), "Back Squat").every((e) => !e.canonicalExerciseId)).toBe(true);
+  });
+
   it("saves the choice into the program and remembers nothing", async () => {
     const user = await chooseVersion("barbell-high-bar-squat");
     await reviewAndSave(user);

@@ -496,11 +496,17 @@ describe("LibraryClient — versions nested under their movement", () => {
     const catalogue = screen.getByRole("region", { name: "Catalogue" });
 
     await user.click(within(catalogue).getByRole("button", { name: /^quads/ }));
-    const family = within(catalogue).getByRole("button", { name: /^Squat movement, \d+ versions$/ });
-    expect(within(catalogue).queryByRole("button", { name: /High Bar Back Squat/ })).toBeNull();
+    // `getByLabelText` reads the same aria-label the role query did, but skips
+    // computing an accessible name for the 279 buttons the open Quads section
+    // mounts; that scan measured 10–19s per query in jsdom, over the 30s budget
+    // once the collapsed and expanded assertions both paid it. The role is
+    // still pinned below so the shortcut does not weaken what this test checks.
+    const family = within(catalogue).getByLabelText(/^Squat movement, \d+ versions$/);
+    expect(family.tagName).toBe("BUTTON");
+    expect(within(catalogue).queryByText("High Bar Back Squat")).toBeNull();
 
     await user.click(family);
-    expect(within(catalogue).getByRole("button", { name: /High Bar Back Squat/ })).toBeInTheDocument();
+    expect(within(catalogue).getByText("High Bar Back Squat")).toBeInTheDocument();
   });
 
   it("offers no correction on the family row — only its concrete versions have an identity", async () => {

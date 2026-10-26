@@ -114,12 +114,17 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
       {fieldError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{fieldError}</p>}
       {deliveryError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{deliveryError}</p>}
       {summary && (
-        <div style={{ fontSize: 11, color: "var(--fg-3)", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 8 }}>
           {summary.sessions} sessions · {summary.entries} entries · {summary.sets} sets · {summary.warnings} warnings
           {summary.excludedUndated > 0 && <> · {summary.excludedUndated} undated sessions excluded</>}
           {summary.warnings > 0 && <p style={{ margin: "4px 0 0" }}>Some stored history could not be fully read. Review the warning markers in the export.</p>}
         </div>
       )}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <button type="button" className="button" disabled={!canDeliver} onClick={copyPreview}>Copy</button>
+        <button type="button" className="btn" disabled={!canDeliver} onClick={downloadPreview}>Download .txt</button>
+        <span role="status" aria-live="polite" style={{ fontSize: 12, color: "var(--accent)" }}>{copied ? "Copied" : ""}</span>
+      </div>
       <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--fg-2)" }}>
         Export preview
         <textarea
@@ -127,15 +132,11 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
           readOnly
           value={preview}
           onFocus={(event) => event.currentTarget.select()}
-          rows={12}
-          style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+          rows={20}
+          style={{ ...inputStyle, minHeight: 360, fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
         />
       </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-        <button type="button" className="button" disabled={!canDeliver} onClick={copyPreview}>Copy</button>
-        <button type="button" className="btn" disabled={!canDeliver} onClick={downloadPreview}>Download .txt</button>
-        <span role="status" aria-live="polite" style={{ fontSize: 12, color: "var(--accent)" }}>{copied ? "Copied" : ""}</span>
-      </div>
+
     </section>
   );
 }

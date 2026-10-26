@@ -69,7 +69,7 @@ export function DiffPage() {
     }
   }, [state, edit, scope, includeExceptionDayIds]);
 
-  if (!state) return <p style={{ color: "var(--fg-3)", padding: 16, fontFamily: "var(--font-mono)", fontSize: 12 }}>{saveError ?? "Loading diff…"}</p>;
+  if (!state) return <p style={{ color: "var(--fg-3)", padding: 16, fontFamily: "var(--font-ui)", fontSize: 12 }}>{saveError ?? "Loading diff…"}</p>;
 
   const diffs = diffDays(state.pending.original, state.pending.replacement);
 
@@ -113,7 +113,7 @@ export function DiffPage() {
 
   return (
     <div style={{ height: "calc(100dvh - 78px)", display: "flex", flexDirection: "column" }}>
-      {saveError && <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "0 16px" }}>{saveError}</p>}
+      {saveError && <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-ui)", padding: "0 16px" }}>{saveError}</p>}
       {previewResult.error && <p role="alert" style={{ color: "var(--bad)", fontSize: 12, padding: "0 16px" }}>{previewResult.error}</p>}
       <DiffReview
         diffs={diffs}

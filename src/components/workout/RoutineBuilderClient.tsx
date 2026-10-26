@@ -140,7 +140,7 @@ function Stepper({ step, trainDayCount }: { step: "setup" | "days" | "edit"; tra
     { id: "edit", label: "Day editor" },
   ];
   return (
-    <div className="flex items-center px-4 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
+    <div className="flex items-center py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
       {steps.map((s, i) => {
         const active = s.id === step;
         const done = (step === "days" && i < 1) || (step === "edit" && i < 2);
@@ -183,7 +183,7 @@ function SetupStep({ draft, onUpdate, onNext }: { draft: Draft; onUpdate: (p: Pa
   }
 
   return (
-    <div className="stack p-4">
+    <div className="stack py-4">
       <div>
         <label className="tx-up block mb-1">Routine name</label>
         <input className="input" placeholder="e.g. Upper / Lower 4-day" value={draft.name} onChange={(e) => onUpdate({ name: e.target.value })} autoFocus />
@@ -229,7 +229,7 @@ function DaysStep({ draft, onUpdateDay, onNext, onBack }: {
 }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 stack">
+      <div className="flex-1 overflow-y-auto py-4 stack">
         {draft.days.map((day) => {
           const exCount = day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0);
           return (
@@ -259,7 +259,7 @@ function DaysStep({ draft, onUpdateDay, onNext, onBack }: {
           );
         })}
       </div>
-      <div className="p-4 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="py-4 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>
         <button type="button" className="button secondary" onClick={onBack}>← Back</button>
         <button type="button" className="button flex-1" onClick={() => {
           const first = draft.days.find((d) => !d.rest);
@@ -293,7 +293,7 @@ function DayEditorStep({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
+      <div className="py-3 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
         <div className="flex items-center gap-1.5">
           <input
             className="font-semibold text-base bg-transparent outline-none flex-1"
@@ -311,7 +311,7 @@ function DayEditorStep({
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 stack">
+      <div className="flex-1 overflow-y-auto py-4 stack">
         {day.sections.map((section) => {
           const meta = sectionMeta(section.kind);
           const exCount = section.groups.reduce((n, g) => n + g.exercises.length, 0);
@@ -330,7 +330,7 @@ function DayEditorStep({
                   <div key={ex.id} className="flex items-center gap-2 py-1.5 border-b" style={{ borderColor: "var(--line)" }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{toTitleCase(ex.name)}</p>
-                      <p className="text-[10px]" style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
+                      <p className="text-xs" style={{ color: "var(--fg-3)" }}>
                         {ex.muscles[0] ?? "—"} · {ex.equipment[0] ?? "—"}
                       </p>
                     </div>
@@ -347,6 +347,9 @@ function DayEditorStep({
           );
         })}
 
+        {!day.sections.some((section) => section.groups.some((group) => group.exercises.length > 0)) && (
+          <p className="text-sm muted">No exercises yet. Save the routine unfinished and add exercises later, or mark rest days on the Days screen.</p>
+        )}
         {!addingSection ? (
           <button type="button" className="panel flex items-center justify-center gap-2 py-3 border-dashed text-sm muted w-full" onClick={() => setAddingSection(true)}>
             <Plus size={14} /> Add section
@@ -365,7 +368,7 @@ function DayEditorStep({
                 >
                   <div>
                     <p className="text-xs font-semibold">{s.label}</p>
-                    <p className="text-[10px] muted">{s.hint}</p>
+                    <p className="text-xs muted">{s.hint}</p>
                   </div>
                 </button>
               ))}
@@ -375,7 +378,7 @@ function DayEditorStep({
         )}
       </div>
 
-      <div className="p-4 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="py-4 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--line)" }}>
         <button type="button" className="button secondary" onClick={onBack}>← Days</button>
         <button type="button" className="button flex-1" disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save routine"}</button>
       </div>
@@ -472,9 +475,9 @@ export function RoutineBuilderClient() {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "100dvh" }}>
-      <div className="flex items-center gap-3 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
-        <button type="button" onClick={() => navigate("/programs")} className="muted text-xl">←</button>
-        <h1 className="font-bold text-base flex-1">{draft.name || "New routine"}</h1>
+      <div className="flex items-center gap-3 py-3 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
+        <button type="button" onClick={() => navigate("/programs")} className="btn ghost" aria-label="Back to Routines">←</button>
+        <h1 className="page-title" style={{ flex: 1 }}>{draft.name || "New routine"}</h1>
       </div>
 
       <Stepper step={step} trainDayCount={trainDayCount} />

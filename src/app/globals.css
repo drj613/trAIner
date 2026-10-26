@@ -652,7 +652,7 @@ input[type="file"]::file-selector-button {
 .onboarding-copy strong { font-size: 15px; font-weight: 600; }
 .onboarding-copy > span { color: var(--fg-3); }
 .onboarding-copy .onboarding-action { align-self: flex-start; margin-top: 8px; background: var(--fg); color: var(--bg); border-radius: var(--r); padding: 8px 12px; font-size: 13px; font-weight: 500; }
-.onboarding-copy .onboarding-next { margin-top: 6px; color: var(--fg); font-size: 13px; font-weight: 500; }
+.onboarding-copy .onboarding-next { align-self: flex-start; margin-top: 8px; padding: 7px 11px; border: 1px solid var(--line-2); border-radius: var(--r); color: var(--fg); font-size: 13px; font-weight: 500; }
 .onboarding-done { margin-left: auto; color: var(--fg-3); font-size: 12px; }
 .onboarding-alternative { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .onboarding-alternative h2 { margin: 0; font-size: 16px; font-weight: 600; }

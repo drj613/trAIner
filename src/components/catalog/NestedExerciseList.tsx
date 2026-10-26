@@ -142,8 +142,8 @@ function VersionRow({
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{toTitleCase(version.name)}</p>
         <p
-          className="text-[10px] truncate"
-          style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}
+          className="text-xs truncate"
+          style={{ color: "var(--fg-3)", fontFamily: "var(--font-ui)" }}
         >
           {item
             ? `${item.muscles.primary.slice(0, 2).join(" · ")}${item.equipment[0] ? ` · ${item.equipment[0]}` : ""}`
@@ -195,14 +195,14 @@ function FamilyRows({
       >
         <span
           className="shrink-0 text-center"
-          style={{ width: 22, color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 13 }}
+          style={{ width: 22, color: "var(--fg-3)", fontFamily: "var(--font-ui)", fontSize: 13 }}
         >
           ⌸
         </span>
         <span className="flex-1 min-w-0 text-sm font-medium truncate">{group.name}</span>
         <span
-          className="shrink-0 text-[10px]"
-          style={{ color: "var(--fg-4)", fontFamily: "var(--font-mono)" }}
+          className="shrink-0 text-xs"
+          style={{ color: "var(--fg-4)", fontFamily: "var(--font-ui)" }}
         >
           {count}
         </span>
@@ -272,8 +272,8 @@ export function NestedExerciseList({
       )}
       {hidden > 0 && (
         <p
-          className="text-[10px] py-2"
-          style={{ color: "var(--fg-4)", fontFamily: "var(--font-mono)" }}
+          className="text-xs py-2"
+          style={{ color: "var(--fg-4)", fontFamily: "var(--font-ui)" }}
         >
           {hidden} more matches — keep typing to narrow
         </p>

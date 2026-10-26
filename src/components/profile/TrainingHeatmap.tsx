@@ -34,10 +34,10 @@ export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
         {/* Day labels column */}
         <div
           className="flex flex-col gap-0.5 shrink-0"
-          style={{ fontSize: 11, color: "var(--fg-3)" }}
+          style={{ fontSize: 12, color: "var(--fg-3)" }}
         >
           {DAY_LABELS.map((label, i) => (
-            <div key={i} style={{ height: 10, lineHeight: 1 }}>
+            <div key={i} style={{ height: 12, lineHeight: 1 }}>
               {i % 2 === 0 ? label : ""}
             </div>
           ))}
@@ -58,7 +58,7 @@ export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
                 <div
                   key={d}
                   style={{
-                    height: 10,
+                    height: 12,
                     borderRadius: 2,
                     background: cellColor(cell),
                   }}

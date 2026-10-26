@@ -71,19 +71,12 @@ function NavDrawer({ open, onClose, pathname }: { open: boolean; onClose: () => 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const screenName = pathname.includes("/days/") ? "Workout"
-    : pathname.endsWith("/map") ? "Routine map"
-    : pathname.endsWith("/diff") ? "Review changes"
-    : pathname === "/programs/new" ? "New routine"
-    : navItems.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`))?.label ?? "trAIner";
-
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="app-toolbar">
         <button type="button" className="btn ghost app-icon-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen} aria-controls="navigation-menu"><Menu size={21} aria-hidden /></button>
         <Brand />
-        <span className="app-toolbar-screen">{screenName}</span>
       </header>
       <div className="app-frame">
         <aside className="app-sidebar" aria-hidden={drawerOpen || undefined}>

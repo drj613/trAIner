@@ -120,11 +120,8 @@ const labelStyle: React.CSSProperties = {
 };
 
 const badgeStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9.5,
-  color: "var(--fg-4)",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
+  fontSize: 12,
+  color: "var(--fg-3)",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -156,18 +153,17 @@ export function HistoryWorkoutList({
             display: "flex", alignItems: "baseline",
             justifyContent: "space-between", marginBottom: 4,
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
               {formatSessionDate(group.performedDate)}
             </span>
             {group.volumeLb > 0 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+              <span style={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
                 <span style={{
-                  color: "var(--fg-4)", textTransform: "uppercase",
-                  letterSpacing: "0.08em", marginRight: 5,
+                  color: "var(--fg-3)", marginRight: 5,
                 }}>
-                  vol
+                  Volume
                 </span>
-                <span style={{ color: "var(--fg-3)" }}>{group.volumeLb.toLocaleString()}</span>
+                <span style={{ color: "var(--fg-3)" }}>{group.volumeLb.toLocaleString()}</span> lb
               </span>
             )}
           </div>
@@ -209,8 +205,8 @@ export function HistoryWorkoutList({
                       onClick={() => onCorrect(correctionTargetForRow(row))}
                       aria-label={`Fix identity for ${performed}`}
                       style={{
-                        marginLeft: "auto", padding: 0, fontSize: 10,
-                        fontFamily: "var(--font-mono)", color: "var(--fg-4)",
+                        marginLeft: "auto", padding: 0, fontSize: 12,
+                        color: "var(--fg-3)",
                       }}
                     >
                       fix
@@ -237,7 +233,7 @@ export function HistoryWorkoutList({
                   // is still recorded.
                   !row.note && (
                     <span style={{
-                      fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-4)",
+                      fontSize: 12, color: "var(--fg-3)",
                       fontStyle: "italic",
                     }}>
                       sets could not be read

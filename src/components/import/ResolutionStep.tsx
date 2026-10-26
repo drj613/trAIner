@@ -507,7 +507,7 @@ function SuggestionRow({
       style={{ background: "var(--bg-2)", borderColor: "var(--line)" }}
       onClick={() => onSelect(suggestion.exerciseId)}
     >
-      <span className="font-mono text-[11px] shrink-0" style={{ color: "var(--fg-3)" }}>
+      <span className="text-xs shrink-0" style={{ color: "var(--fg-3)" }}>
         ○
       </span>
       <span className="flex-1">{toTitleCase(suggestion.name)}</span>

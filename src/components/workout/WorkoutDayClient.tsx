@@ -5,9 +5,9 @@ import { EditImpactPreview } from "./EditImpactPreview";
 import { preserveEditedSession } from "@/lib/workout/editSession";
 import type { ImportWarning } from "@/lib/programs/types";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeftRight, CheckCircle, ChevronLeft, ChevronRight, History, Pencil, Plus, Sparkles } from "lucide-react";
+import { ArrowLeftRight, CheckCircle, ChevronLeft, ChevronRight, Ellipsis, History, Pencil, Plus, Sparkles } from "lucide-react";
 import { logRepo } from "@/lib/storage/logRepo";
 import { programRepo } from "@/lib/storage/programRepo";
 import { trackWorkoutEvent } from "@/lib/analytics/analyticsSeam";
@@ -124,6 +124,141 @@ function cellId(exId: string, i: number) {
   return `cell-${exId}-${i}`;
 }
 
+// ─── ExerciseHeader ────────────────────────────────────────────────────────
+
+/**
+ * Name, History and a "More" disclosure. History stays one tap away beside the
+ * name because it is read mid-set; Edit, Replace and Unit are occasional, so
+ * they live behind More instead of costing every card a full row.
+ *
+ * The panel is a plain disclosure (aria-expanded + aria-controls) of real
+ * buttons, not a role="menu": it has no roving-arrow contract to honour, and
+ * Tab already walks it. It closes on Escape (returning focus to the trigger),
+ * on a press outside, when focus moves to another element, and after an action.
+ * It renders in flow rather than absolutely: `.wk-section` clips overflow, so a
+ * floating panel on the last exercise of a section would be cut off.
+ */
+function ExerciseHeader({
+  name,
+  unit,
+  readOnly,
+  onOpenHistory,
+  onEdit,
+  onReplaceExercise,
+  onToggleUnit,
+}: {
+  name: string;
+  unit: "kg" | "lb";
+  readOnly: boolean;
+  onOpenHistory: () => void;
+  onEdit: () => void;
+  onReplaceExercise: () => void;
+  onToggleUnit: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  function choose(action: () => void) {
+    triggerRef.current?.focus();
+    setOpen(false);
+    action();
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+      onBlur={(e) => {
+        // A null relatedTarget (a click on non-focusable space, or Safari not
+        // focusing buttons) is left to the pointerdown listener: closing here
+        // would unmount a panel button before its click lands.
+        const next = e.relatedTarget as Node | null;
+        if (open && next && !rootRef.current?.contains(next)) setOpen(false);
+      }}
+    >
+      <div className="wk-ex-head">
+        <span className="wk-ex-name">{toTitleCase(name)}</span>
+        <div className="wk-ex-tools">
+          <button
+            className="btn ghost wk-tool"
+            onClick={onOpenHistory}
+            aria-label={`History for ${name}`}
+            title="Past sessions of this exercise"
+            type="button"
+          >
+            <History size={14} aria-hidden />
+            History
+          </button>
+          <button
+            ref={triggerRef}
+            className="btn ghost wk-tool"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={`More actions for ${name}`}
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            title="Edit, replace or change unit"
+            type="button"
+          >
+            <Ellipsis size={14} aria-hidden />
+            More
+          </button>
+        </div>
+      </div>
+      {open && (
+        <div id={panelId} role="group" aria-label={`More actions for ${name}`} className="wk-ex-more">
+          <button
+            className="btn ghost wk-tool"
+            onClick={() => choose(onEdit)}
+            aria-label={`Edit prescription for ${name}`}
+            title="Edit sets, reps, load and rest"
+            type="button"
+          >
+            <Pencil size={14} aria-hidden />
+            Edit
+          </button>
+          <button
+            className="btn ghost wk-tool"
+            onClick={() => choose(onReplaceExercise)}
+            aria-label={`Replace ${name} from catalogue`}
+            title="Swap for another exercise from the catalogue"
+            type="button"
+          >
+            <ArrowLeftRight size={14} aria-hidden />
+            Replace
+          </button>
+          <button
+            className="btn ghost wk-tool"
+            onClick={() => choose(onToggleUnit)}
+            disabled={readOnly}
+            aria-label={`Weight unit ${unit} — switch to ${unit === "lb" ? "kg" : "lb"}`}
+            title="Weight unit — tap to switch"
+            type="button"
+          >
+            Unit {unit}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── ExerciseRow (identical to TodayClient) ────────────────────────────────
 
 const ExerciseRow = memo(function ExerciseRow({
@@ -164,51 +299,15 @@ const ExerciseRow = memo(function ExerciseRow({
 
   return (
     <div className="wk-ex">
-      <div className="wk-ex-head">
-        <span className="wk-ex-name">{toTitleCase(exercise.name)}</span>
-        <div className="wk-ex-tools">
-          <button
-            className="btn ghost wk-tool"
-            onClick={onOpenHistory}
-            aria-label={`History for ${exercise.name}`}
-            title="Past sessions of this exercise"
-            type="button"
-          >
-            <History size={14} aria-hidden />
-            History
-          </button>
-          <button
-            className="btn ghost wk-tool"
-            onClick={onEdit}
-            aria-label={`Edit prescription for ${exercise.name}`}
-            title="Edit sets, reps, load and rest"
-            type="button"
-          >
-            <Pencil size={14} aria-hidden />
-            Edit
-          </button>
-          <button
-            className="btn ghost wk-tool"
-            onClick={onReplaceExercise}
-            aria-label={`Replace ${exercise.name} from catalogue`}
-            title="Swap for another exercise from the catalogue"
-            type="button"
-          >
-            <ArrowLeftRight size={14} aria-hidden />
-            Replace
-          </button>
-          <button
-            className="btn ghost wk-tool"
-            onClick={onToggleUnit}
-            disabled={readOnly}
-            aria-label={`Weight unit ${unit} — switch to ${unit === "lb" ? "kg" : "lb"}`}
-            title="Weight unit — tap to switch"
-            type="button"
-          >
-            Unit {unit}
-          </button>
-        </div>
-      </div>
+      <ExerciseHeader
+        name={exercise.name}
+        unit={unit}
+        readOnly={readOnly}
+        onOpenHistory={onOpenHistory}
+        onEdit={onEdit}
+        onReplaceExercise={onReplaceExercise}
+        onToggleUnit={onToggleUnit}
+      />
       {prescription && <div className="wk-ex-rx">{prescription}</div>}
       {exercise.notes && (
         <div className="wk-ex-note">
@@ -1240,13 +1339,8 @@ export function WorkoutDayClient() {
           </button>
         </div>
 
-        <h1 className="wk-title">{day.title}</h1>
-        <div className="wk-head-sub">
-          <p>
-            {day.sections.length} sections ·{" "}
-            {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
-            exercises
-          </p>
+        <div className="wk-head-title">
+          <h1 className="wk-title">{day.title}</h1>
           <button
             type="button"
             className="btn ghost wk-tool"
@@ -1258,26 +1352,32 @@ export function WorkoutDayClient() {
             <span>Modify</span>
           </button>
         </div>
-
-        {/* Format guide */}
-        <details className="disclosure wk-guide" style={{ marginTop: 6 }}>
-          <summary>Format guide</summary>
-          <div className="wk-guide-body">
-            {[
-              ["70x8", "weight x reps (done)"],
-              ["+70x8", "personal record"],
-              ["bwx15", "bodyweight"],
-              ["70x8!", "failed / missed rep"],
-              ["skip", "skipped set"],
-              ["pain", "pain noted"],
-            ].map(([ex, desc]) => (
-              <span key={ex}>
-                <code>{ex}</code>
-                <span>{desc}</span>
-              </span>
-            ))}
-          </div>
-        </details>
+        <div className="wk-head-sub">
+          <p>
+            {day.sections.length} sections ·{" "}
+            {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
+            exercises
+          </p>
+          {/* Format guide */}
+          <details className="disclosure wk-guide">
+            <summary>Format guide</summary>
+            <div className="wk-guide-body">
+              {[
+                ["70x8", "weight x reps (done)"],
+                ["+70x8", "personal record"],
+                ["bwx15", "bodyweight"],
+                ["70x8!", "failed / missed rep"],
+                ["skip", "skipped set"],
+                ["pain", "pain noted"],
+              ].map(([ex, desc]) => (
+                <span key={ex}>
+                  <code>{ex}</code>
+                  <span>{desc}</span>
+                </span>
+              ))}
+            </div>
+          </details>
+        </div>
       </div>
 
       {!!program.progression?.length && (

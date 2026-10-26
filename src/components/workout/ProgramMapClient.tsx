@@ -37,7 +37,7 @@ function DayCell({ day, programId }: { day: ProgramDay; programId: string }) {
       }}
     >
       <div style={{ fontSize: 12, fontWeight: 600, color: "var(--fg)", lineHeight: 1.3 }}>
-        {day.title}
+        {day.title} <span aria-hidden>→</span>
       </div>
       <div style={{ marginTop: 4, fontSize: 12, color: "var(--fg-3)" }}>
         {day.sections.length} section{day.sections.length !== 1 ? "s" : ""}

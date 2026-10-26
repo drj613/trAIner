@@ -146,8 +146,8 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--line)" }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: 8, gap: 8 }}>
               <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--accent)",
-                textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600,
+                fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--accent)",
+                textTransform: "none", letterSpacing: "normal", fontWeight: 600,
               }}>
                 1 · Copy prompt
               </span>
@@ -160,7 +160,7 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
                   border: `1px solid ${copied ? "var(--good)" : "var(--line)"}`,
                   background: copied ? "rgba(127,199,122,0.1)" : "transparent",
                   color: copied ? "var(--good)" : "var(--fg-2)", cursor: "pointer",
-                  fontFamily: "var(--font-mono)", transition: "all .15s",
+                  fontFamily: "var(--font-ui)", transition: "background-color .15s",
                 }}
                 aria-label="Copy prompt to clipboard"
               >
@@ -194,7 +194,7 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
               })()}
             </pre>
             <p style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.4 }}>
-              <span style={{ color: "var(--warn)", fontWeight: 600, fontFamily: "var(--font-mono)" }}>↑ Replace the highlighted line</span>
+              <span style={{ color: "var(--warn)", fontWeight: 600, fontFamily: "var(--font-ui)" }}>↑ Replace the highlighted line</span>
               {" "}
               <span style={{ color: "var(--fg-3)" }}>with your actual request, then paste into Claude or ChatGPT.</span>
             </p>
@@ -203,8 +203,8 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
           {/* Step 2: JSON paste */}
           <div style={{ padding: "12px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--accent)",
-              textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600,
+              fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--accent)",
+              textTransform: "none", letterSpacing: "normal", fontWeight: 600,
             }}>
               2 · Paste the response
             </span>
@@ -220,7 +220,7 @@ export function ModifyAiModal({ currentDay, onApply, onClose }: Props) {
               }}
             />
             {error && (
-              <p style={{ margin: 0, fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-ui)" }}>
                 {error}
               </p>
             )}
