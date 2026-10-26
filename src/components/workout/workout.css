@@ -32,7 +32,7 @@
 /* ─── Page header ─────────────────────────────────────────────────────────── */
 
 .wk-head {
-  padding: 8px 0 10px;
+  padding: 4px 0 6px;
   border-bottom: 1px solid var(--line);
   margin-bottom: 8px;
 }
@@ -230,14 +230,14 @@
   border-left: 3px solid var(--sec);
   background: var(--bg-1);
   border-radius: var(--wk-card);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   overflow: hidden;
 }
 .wk-section-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 4px 12px;
   border-bottom: 1px solid var(--line);
 }
 .wk-section-glyph {
@@ -256,7 +256,7 @@
 
 .wk-ex {
   scroll-margin-bottom: 96px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-1);
 }
@@ -366,7 +366,9 @@
   border-style: solid;
   font-weight: 600;
 }
-.wk-sets .cell.done {
+.wk-sets .cell.done,
+.wk-sets .cell.bw {
+  color: var(--fg);
   background: var(--bg-3);
   border-color: var(--fg-3);
 }

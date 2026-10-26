@@ -43,7 +43,7 @@ beforeEach(() => {
 describe("RoutinesIndexClient", () => {
   it("shows active routine pinned at top with ACTIVE badge", () => {
     render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
-    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByText("Plan: Active")).toBeInTheDocument();
     expect(screen.getByText("Upper/Lower v3")).toBeInTheDocument();
   });
 
@@ -82,6 +82,17 @@ describe("RoutinesIndexClient", () => {
 
 it("labels a draft by its stored lifecycle rather than claiming it has no logs", () => {
   render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
-  expect(screen.getByText(/4d\/wk · 6w · Draft/)).toBeInTheDocument();
+  expect(screen.getByText(/4d\/wk · 6w · Plan: Draft/)).toBeInTheDocument();
   expect(screen.queryByText(/Not started/)).not.toBeInTheDocument();
+});
+
+
+it("labels the pinned active section and keeps it visible when filtering other routines", () => {
+  render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
+  expect(screen.getByRole("heading", { name: "Active routine" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Other routines" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /^draft/i }));
+  expect(screen.getByText("Upper/Lower v3")).toBeInTheDocument();
+  expect(screen.getByText(/Plan: Draft/)).toBeInTheDocument();
+  expect(screen.queryByText("Old Program")).not.toBeInTheDocument();
 });

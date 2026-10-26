@@ -3,7 +3,7 @@ import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
 import { PageHeader } from "@/components/app/PageHeader";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { useExerciseNormalization } from "@/components/app/ExerciseNormalizationProvider";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { ExerciseCorrectionSheet, type CorrectionTarget } from "@/components/catalog/ExerciseCorrectionSheet";
@@ -120,7 +120,7 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
           <TrendArrow dir={summary.trend} />
         </div>
         <div style={{
-           fontSize: 12, color: "var(--fg-3)",
+           fontSize: 13, color: "var(--fg-3)",
           display: "flex", gap: 8, marginTop: 2,
         }}>
           <span>
@@ -133,9 +133,9 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
         <MiniSpark nums={summary.sessionVolumesLb} />
-        <span style={{ fontSize: 12, color: "var(--fg-2)" }}>Volume · lb × reps / session</span>
+        <span style={{ fontSize: 13, color: "var(--fg-2)" }}>Volume · lb × reps / session</span>
         {summary.bestSetLabel && (
-          <span style={{ fontSize: 12, color: "var(--accent)" }}>
+          <span style={{ fontSize: 13, color: "var(--accent)" }}>
             {summary.bestSetLabel}
           </span>
         )}
@@ -171,7 +171,7 @@ function FamilyDetail({
           {toTitleCase(family.label)}
         </h2>
         <div style={{
-           fontSize: 12, color: "var(--fg-3)",
+           fontSize: 13, color: "var(--fg-3)",
           marginTop: 2, display: "flex", gap: 6,
         }}>
           <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
@@ -338,7 +338,7 @@ export function HistoryClient() {
         </div>
       )}
       {!loading && !loadError && families.length > 0 && <>
-      <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+      <p style={{ fontSize: 13, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
         Select a movement to see every version and session.
       </p>
 
@@ -391,7 +391,7 @@ export function HistoryClient() {
               background: filter === f ? "var(--bg-3)" : "transparent",
               color: filter === f ? "var(--fg)" : "var(--fg-2)",
 
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
             }}
           >
@@ -408,7 +408,7 @@ export function HistoryClient() {
           gap: 8,
           marginBottom: 8,
 
-          fontSize: 12,
+          fontSize: 13,
           color: "var(--fg-3)",
 
         }}
@@ -426,7 +426,7 @@ export function HistoryClient() {
               cursor: "pointer",
               padding: "4px 10px",
               fontFamily: "inherit",
-              fontSize: 12,
+              fontSize: 13,
               color: sort === id ? "var(--fg)" : "var(--fg-3)",
 
             }}
@@ -446,7 +446,7 @@ export function HistoryClient() {
         }}
       >
         {filtered.length === 0 ? (
-          <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: "var(--fg-3)" }}>
+          <div style={{ padding: 20, textAlign: "center", fontSize: 13, color: "var(--fg-3)" }}>
             no matches
           </div>
         ) : (
@@ -457,13 +457,15 @@ export function HistoryClient() {
               style={{
                 width: "100%",
                 textAlign: "left",
-                display: "block",
-                padding: "9px 12px",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                columnGap: 12,
+                alignItems: "center",
+                padding: "10px 12px",
                 borderBottom: i < filtered.length - 1 ? "1px solid var(--line)" : "none",
                 background: "transparent",
                 color: "var(--fg)",
                 cursor: "pointer",
-                border: "none",
                 borderTop: "none",
                 borderLeft: "none",
                 borderRight: "none",
@@ -478,11 +480,12 @@ export function HistoryClient() {
               }}>
                 {toTitleCase(family.label)}
               </div>
+              <ChevronRight size={17} aria-hidden style={{ gridColumn: 2, gridRow: "1 / 3", color: "var(--fg-2)" }} />
               {/* Family-level facts only. Anything comparable — best, PR, trend
                   — belongs to a concrete version and lives one level in. */}
               <div style={{
-                 fontSize: 12, color: "var(--fg-3)",
-                display: "flex", gap: 8,
+                 fontSize: 13, color: "var(--fg-3)",
+                display: "flex", flexWrap: "wrap", gap: "2px 8px", gridColumn: 1,
               }}>
                 <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
                 <span style={{ color: "var(--fg-3)" }}>

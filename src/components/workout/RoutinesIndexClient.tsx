@@ -24,7 +24,7 @@ function StatusBadge({ status }: { status: string }) {
     <span
       style={{
 
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 600,
 
         color,
@@ -34,7 +34,7 @@ function StatusBadge({ status }: { status: string }) {
         background: status === "active" ? "rgba(127,199,122,0.08)" : "transparent",
       }}
     >
-      {label}
+      Plan: {label}
     </span>
   );
 }
@@ -52,7 +52,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       <div
         style={{
 
-          fontSize: 12,
+          fontSize: 13,
 
           color: "var(--fg-3)",
           marginBottom: 1,
@@ -63,7 +63,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       <div
         style={{
 
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 500,
           color: accent ? "var(--accent)" : "var(--fg)",
         }}
@@ -100,7 +100,7 @@ function WeekStrip({ days }: { days: ProgramDocument["days"] }) {
             <span
               style={{
 
-                fontSize: 12,
+                fontSize: 13,
                 color: "var(--fg-3)",
 
               }}
@@ -161,7 +161,7 @@ function ActiveCard({
         <span style={{ flex: 1 }} />
         {program.lastRunAt && (
           <span
-            style={{ fontSize: 12, color: "var(--fg-2)" }}
+            style={{ fontSize: 13, color: "var(--fg-2)" }}
           >
             last run · {program.lastRunAt.slice(0, 10)}
           </span>
@@ -181,7 +181,7 @@ function ActiveCard({
         {program.description && (
           <div
             style={{
-              fontSize: 12,
+              fontSize: 13,
               color: "var(--fg-3)",
               marginBottom: 10,
               lineHeight: 1.4,
@@ -251,7 +251,7 @@ function MenuButton({
         borderBottom: "1px solid var(--line)",
         cursor: "pointer",
         fontFamily: "inherit",
-        fontSize: 12,
+        fontSize: 13,
         color: danger ? "var(--bad, #ef9a9a)" : "var(--fg)",
         textAlign: "left",
       }}
@@ -303,6 +303,7 @@ function RoutineRow({
       }}
     >
 
+      <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", maxWidth: 480, minWidth: 0, position: "relative" }}>
       <button
         type="button"
         onClick={onOpen}
@@ -332,13 +333,13 @@ function RoutineRow({
         <div
           style={{
 
-            fontSize: 12,
+            fontSize: 13,
             color: "var(--fg-3)",
             marginTop: 1,
           }}
         >
           {dpw}d/wk · {lw}w
-          {status === "draft" ? " · Draft" : status === "completed" ? " · Completed" : status === "archived" ? " · Archived" : ""}
+          {` · Plan: ${status.charAt(0).toUpperCase() + status.slice(1)}`}
           {program.lastRunAt && ` · ${program.lastRunAt.slice(0, 10)}`}
         </div>
       </button>
@@ -423,6 +424,7 @@ function RoutineRow({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -488,15 +490,17 @@ export function RoutinesIndexClient() {
       <PageHeader title="Routines" description={`${programs.length} total · ${programs.filter((p) => programStatus(p) === "active").length} active · ${programs.filter((p) => programStatus(p) === "draft").length} draft`} action={<Link to="/programs/new" className={active ? "button secondary" : "button"}>New routine</Link>} />
       {actionError && <p role="alert" style={{ color: "var(--bad)", fontSize: 14 }}>{actionError}</p>}
       {active && (
-        <div style={{ padding: "10px 0 0" }}>
+        <section aria-labelledby="active-routine-heading" style={{ padding: "10px 0 0" }}>
+          <h2 id="active-routine-heading" style={{ fontSize: 14, margin: "0 0 8px" }}>Active routine</h2>
           <ActiveCard
             program={active}
             onOpen={() => navigate(`/programs/${active.id}`)}
             onRun={() => navigate("/today")}
           />
-        </div>
+        </section>
       )}
 
+      <h2 style={{ fontSize: 14, margin: "12px 0 8px" }}>{active ? "Other routines" : "Saved routines"}</h2>
       <div
         style={{
           padding: "4px 0 8px",
@@ -525,7 +529,7 @@ export function RoutinesIndexClient() {
                 border: `1px solid ${isActive ? "var(--fg)" : "var(--line)"}`,
                 color: "var(--fg-2)",
 
-                fontSize: 12,
+                fontSize: 13,
                 cursor: "pointer",
               }}
             >
@@ -542,7 +546,7 @@ export function RoutinesIndexClient() {
               padding: 24,
               textAlign: "center",
               color: "var(--fg-3)",
-              fontSize: 12,
+              fontSize: 13,
               background: "var(--bg-1)",
               border: "1px dashed var(--line)",
               borderRadius: 8,
@@ -553,7 +557,7 @@ export function RoutinesIndexClient() {
             </div>
             <Link
               to="/programs/new"
-              style={{ color: "var(--accent)", fontFamily: "inherit", fontSize: 12 }}
+              style={{ color: "var(--accent)", fontFamily: "inherit", fontSize: 13 }}
             >
               Build a new one
             </Link>

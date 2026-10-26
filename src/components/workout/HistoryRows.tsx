@@ -112,7 +112,7 @@ export function countEntries(groups: readonly WorkoutGroup[]): number {
 }
 
 const labelStyle: React.CSSProperties = {
-  fontSize: 12.5,
+  fontSize: 13,
   color: "var(--fg)",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -120,7 +120,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const badgeStyle: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: 13,
   color: "var(--fg-3)",
   whiteSpace: "nowrap",
   overflow: "hidden",
@@ -153,11 +153,11 @@ export function HistoryWorkoutList({
             display: "flex", alignItems: "baseline",
             justifyContent: "space-between", marginBottom: 4,
           }}>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
+            <span style={{ fontSize: 13, color: "var(--fg-3)" }}>
               {formatSessionDate(group.performedDate)}
             </span>
             {group.volumeLb > 0 && (
-              <span style={{ fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
                 <span style={{
                   color: "var(--fg-3)", marginRight: 5,
                 }}>
@@ -205,7 +205,7 @@ export function HistoryWorkoutList({
                       onClick={() => onCorrect(correctionTargetForRow(row))}
                       aria-label={`Fix identity for ${performed}`}
                       style={{
-                        marginLeft: "auto", padding: 0, fontSize: 12,
+                        marginLeft: "auto", padding: 0, fontSize: 13,
                         color: "var(--fg-3)",
                       }}
                     >
@@ -233,7 +233,7 @@ export function HistoryWorkoutList({
                   // is still recorded.
                   !row.note && (
                     <span style={{
-                      fontSize: 12, color: "var(--fg-3)",
+                      fontSize: 13, color: "var(--fg-3)",
                       fontStyle: "italic",
                     }}>
                       sets could not be read
@@ -241,7 +241,7 @@ export function HistoryWorkoutList({
                   )
                 )}
                 {row.note && (
-                  <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--fg-2)", lineHeight: 1.4 }}>
+                  <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--fg-2)", lineHeight: 1.4 }}>
                     {row.note}
                   </p>
                 )}

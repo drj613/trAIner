@@ -256,11 +256,13 @@ function ProfileCard({
         ) : (
           <button
             type="button"
-            className="p-1 rounded opacity-40 hover:opacity-100 transition-opacity"
+            className="btn ghost"
+            style={{ minHeight: 40, minWidth: 40, padding: "4px 10px", fontSize: 13, color: "var(--fg-2)" }}
             aria-label={`Edit ${label}`}
             onClick={onEdit}
           >
-            <Pencil size={12} />
+            <Pencil size={14} aria-hidden="true" />
+            <span aria-hidden="true">Edit</span>
           </button>
         )}
       </div>

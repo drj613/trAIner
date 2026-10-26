@@ -62,7 +62,7 @@ function ActionRow({
     >
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: variant === "primary" ? "var(--bg)" : variant === "danger" ? "var(--bad)" : "var(--fg)" }}>{label}</div>
-        <div style={{ fontSize: 12, color: variant === "primary" ? "var(--bg)" : "var(--fg-3)", lineHeight: 1.5 }}>{sub}</div>
+        <div style={{ fontSize: 13, color: variant === "primary" ? "var(--bg)" : "var(--fg-3)", lineHeight: 1.5 }}>{sub}</div>
       </div>
       <span style={{ fontSize: 12, color, fontFamily: "var(--font-ui)" }}>›</span>
       {children}
@@ -237,7 +237,7 @@ export function SettingsClient() {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <span className="text-sm font-semibold" style={{ flexShrink: 0 }}>Storage usage</span>
           <span style={{ flex: 1 }} />
-          <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
+          <span className="tx-mono" style={{ fontSize: 13, color: "var(--fg-3)" }}>
             local · {sizeLabel} ·{" "}
             <span style={{ color: persistence === "persisted" ? "var(--good, #7fc77a)" : "var(--warn, #e6b664)" }}>
               {persistence === "persisted" ? "protected"
@@ -247,7 +247,7 @@ export function SettingsClient() {
             </span>
           </span>
         </div>
-        <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" }}>
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" }}>
           {STAT_KEYS.map((k) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px dashed var(--line)" }}>
               <span style={{ color: "var(--fg-3)" }}>{k}</span>
@@ -270,7 +270,7 @@ export function SettingsClient() {
           onClick={handleSnapshot}
         />
         {snapshotList.length > 0 && (
-          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11 }}>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 13 }}>
             {snapshotList.map((s) => {
               const armed = armedDeleteId === s.id;
               return (
@@ -294,8 +294,24 @@ export function SettingsClient() {
 
       <InstallPrompt />
 
+      {/* Appearance: theme first so it stays above the fold; density and font follow the explainer */}
+      <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--fg-2)", margin: "0 0 8px" }}>
+        Appearance
+      </p>
+
+      <section style={{ marginBottom: 16 }}>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--fg-2)", margin: "0 0 8px" }}>Theme</p>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {THEMES.map((t) => (
+            <button key={t} type="button" aria-pressed={theme === t} onClick={() => handleTheme(t)} style={{ padding: "4px 12px", minHeight: 32, borderRadius: 999, border: `1px solid ${theme === t ? "var(--accent)" : "var(--line)"}`, background: theme === t ? "var(--accent-soft)" : "transparent", color: theme === t ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 13, cursor: "pointer" }}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* Local-first blurb */}
-      <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r, 6px)", padding: 10, fontSize: 11.5, color: "var(--fg-2)", lineHeight: 1.55, marginBottom: 20 }}>
+      <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r, 6px)", padding: 12, fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
           <span className="tx-up" style={{ color: "var(--good, #7fc77a)" }}>Local-first</span>
         </div>
@@ -303,15 +319,17 @@ export function SettingsClient() {
         {persistence === "denied" && (
           <div style={{ marginTop: 6, color: "var(--warn, #e6b664)" }}>
             The browser has not granted persistent storage — it may delete this
-            data under disk pressure or inactivity. Export regularly.{" "}
-            <button
-              type="button"
-              className="btn ghost"
-              style={{ fontSize: 12, padding: "2px 8px" }}
-              onClick={() => requestPersistence().then(setPersistence)}
-            >
-              Request protection
-            </button>
+            data under disk pressure or inactivity. Export regularly.
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn"
+                style={{ minHeight: 44, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--fg)", borderColor: "var(--warn, #e6b664)" }}
+                onClick={() => requestPersistence().then(setPersistence)}
+              >
+                Request protection
+              </button>
+            </div>
           </div>
         )}
         {persistence === "unsupported" && (
@@ -322,27 +340,11 @@ export function SettingsClient() {
         )}
       </div>
 
-      {/* Appearance */}
-      <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 12px" }}>
-        Appearance
-      </p>
-
       <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Theme</p>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {THEMES.map((t) => (
-            <button key={t} type="button" aria-pressed={theme === t} onClick={() => handleTheme(t)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${theme === t ? "var(--accent)" : "var(--line)"}`, background: theme === t ? "var(--accent-soft)" : "transparent", color: theme === t ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
-              {t}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Density</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--fg-2)", margin: "0 0 8px" }}>Density</p>
         <div style={{ display: "flex", gap: 6 }}>
           {DENSITIES.map(({ value, label }) => (
-            <button key={value} type="button" aria-pressed={density === value} onClick={() => handleDensity(value)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${density === value ? "var(--accent)" : "var(--line)"}`, background: density === value ? "var(--accent-soft)" : "transparent", color: density === value ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
+            <button key={value} type="button" aria-pressed={density === value} onClick={() => handleDensity(value)} style={{ padding: "4px 12px", minHeight: 32, borderRadius: 999, border: `1px solid ${density === value ? "var(--accent)" : "var(--line)"}`, background: density === value ? "var(--accent-soft)" : "transparent", color: density === value ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 13, cursor: "pointer" }}>
               {label}
             </button>
           ))}
@@ -350,10 +352,10 @@ export function SettingsClient() {
       </section>
 
       <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Monospace Font</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--fg-2)", margin: "0 0 8px" }}>Monospace Font</p>
         <div style={{ display: "flex", gap: 6 }}>
           {(["jetbrains", "system"] as Mono[]).map((m) => (
-            <button key={m} type="button" aria-pressed={mono === m} onClick={() => handleMono(m)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${mono === m ? "var(--accent)" : "var(--line)"}`, background: mono === m ? "var(--accent-soft)" : "transparent", color: mono === m ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
+            <button key={m} type="button" aria-pressed={mono === m} onClick={() => handleMono(m)} style={{ padding: "4px 12px", minHeight: 32, borderRadius: 999, border: `1px solid ${mono === m ? "var(--accent)" : "var(--line)"}`, background: mono === m ? "var(--accent-soft)" : "transparent", color: mono === m ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 13, cursor: "pointer" }}>
               {m === "jetbrains" ? "JetBrains" : "System"}
             </button>
           ))}

@@ -37,11 +37,11 @@ export function BodyweightSparkline({ entries }: Props) {
   const yRange = span + pad * 2;
   const firstDate = Date.parse(plotted[0].id);
   const timeRange = Date.parse(plotted[plotted.length - 1].id) - firstDate || 1;
-  const points = plotted.map((e) => {
-    const x = PAD + ((Date.parse(e.id) - firstDate) / timeRange) * (WIDTH - PAD * 2);
-    const y = HEIGHT - PAD - ((e.value - yMin) / yRange) * (HEIGHT - PAD * 2);
-    return `${x},${y}`;
-  }).join(" ");
+  const coords = plotted.map((e) => ({
+    x: PAD + ((Date.parse(e.id) - firstDate) / timeRange) * (WIDTH - PAD * 2),
+    y: HEIGHT - PAD - ((e.value - yMin) / yRange) * (HEIGHT - PAD * 2),
+  }));
+  const points = coords.map((c) => `${c.x},${c.y}`).join(" ");
 
   const round = (value: number) => Math.round(value * 10) / 10;
   const change = round(plotted[plotted.length - 1].value - plotted[0].value);
@@ -81,6 +81,9 @@ export function BodyweightSparkline({ entries }: Props) {
             stroke="var(--accent)"
             strokeWidth={1.5}
           />
+          {coords.map((c, i) => (
+            <circle key={`${plotted[i].id}-${i}`} cx={c.x} cy={c.y} r={3} fill="var(--bg-1)" stroke="var(--accent)" strokeWidth={1.5} />
+          ))}
         </svg>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: "var(--fg-2)" }}>

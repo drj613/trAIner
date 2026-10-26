@@ -298,7 +298,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
   const navigate = useNavigate();
 
   const [program, setProgram] = useState<ProgramDocument | undefined>();
-  const [activeWeek, setActiveWeek] = useState(0);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dragDX, setDragDX] = useState(0);
   const [aiModalDay, setAiModalDay] = useState<ProgramDay | null>(null);
@@ -353,6 +353,8 @@ export function ProgramDetailClient({ id }: { id: string }) {
   const nextDay = currentLogs?.status === "ready"
     ? resolveNextDay(days, currentLogs.logs, localDateString())
     : undefined;
+  const nextWeek = weeks.findIndex((week) => week.days.some((day) => day.id === nextDay?.id));
+  const activeWeek = Math.max(0, Math.min(weeks.length - 1, selectedWeek ?? Math.max(0, nextWeek)));
   const status = program ? programStatus(program) : "draft";
 
   // Pointer drag for week pager
@@ -383,7 +385,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
     dragRef.current.dragging = false;
     setDragDX(0);
     if (Math.abs(dx) > width * 0.2) {
-      setActiveWeek((w) => Math.max(0, Math.min(weeks.length - 1, w + (dx < 0 ? 1 : -1))));
+      setSelectedWeek(Math.max(0, Math.min(weeks.length - 1, activeWeek + (dx < 0 ? 1 : -1))));
     }
   }
 
@@ -448,7 +450,7 @@ export function ProgramDetailClient({ id }: { id: string }) {
       </div>
 
       {/* Week tabs */}
-      <WeekTabStrip weeks={weeks} activeWeek={activeWeek} onSelect={setActiveWeek} />
+      <WeekTabStrip weeks={weeks} activeWeek={activeWeek} onSelect={setSelectedWeek} />
 
       {/* Week panels */}
       <div

@@ -92,29 +92,29 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
         <button type="button" className="btn ghost" onClick={onClose}>Close</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 10 }}>
-        <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--fg-2)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))", gap: 8, marginBottom: 10 }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 13, color: "var(--fg-2)" }}>
           Routine
           <select aria-label="Routine" value={programId} onChange={(event) => setProgramId(event.target.value)} style={inputStyle}>
             <option value="">All routines</option>
             {routineOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
-        <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--fg-2)" }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 13, color: "var(--fg-2)" }}>
           From
           <input aria-label="From" type="date" value={from} onChange={(event) => setFrom(event.target.value)} style={inputStyle} />
         </label>
-        <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--fg-2)" }}>
+        <label style={{ display: "grid", gap: 4, fontSize: 13, color: "var(--fg-2)" }}>
           Through
           <input aria-label="Through" type="date" value={through} onChange={(event) => setThrough(event.target.value)} style={inputStyle} />
         </label>
       </div>
 
-      <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--fg-2)" }}>Leave dates blank to include all dates.</p>
-      {fieldError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{fieldError}</p>}
-      {deliveryError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{deliveryError}</p>}
+      <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--fg-2)" }}>Leave dates blank to include all dates.</p>
+      {fieldError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 13 }}>{fieldError}</p>}
+      {deliveryError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 13 }}>{deliveryError}</p>}
       {summary && (
-        <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 8 }}>
+        <div style={{ fontSize: 13, color: "var(--fg-3)", marginBottom: 8 }}>
           {summary.sessions} sessions · {summary.entries} entries · {summary.sets} sets · {summary.warnings} warnings
           {summary.excludedUndated > 0 && <> · {summary.excludedUndated} undated sessions excluded</>}
           {summary.warnings > 0 && <p style={{ margin: "4px 0 0" }}>Some stored history could not be fully read. Review the warning markers in the export.</p>}
@@ -123,9 +123,9 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <button type="button" className="button" disabled={!canDeliver} onClick={copyPreview}>Copy</button>
         <button type="button" className="btn" disabled={!canDeliver} onClick={downloadPreview}>Download .txt</button>
-        <span role="status" aria-live="polite" style={{ fontSize: 12, color: "var(--accent)" }}>{copied ? "Copied" : ""}</span>
+        <span role="status" aria-live="polite" style={{ fontSize: 13, color: "var(--accent)" }}>{copied ? "Copied" : ""}</span>
       </div>
-      <label style={{ display: "grid", gap: 4, fontSize: 12, color: "var(--fg-2)" }}>
+      <label style={{ display: "grid", gap: 4, fontSize: 13, color: "var(--fg-2)" }}>
         Export preview
         <textarea
           aria-label="Export preview"
@@ -133,7 +133,7 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
           value={preview}
           onFocus={(event) => event.currentTarget.select()}
           rows={20}
-          style={{ ...inputStyle, minHeight: 360, fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+          style={{ ...inputStyle, minHeight: 360, fontFamily: "var(--font-mono)", fontSize: 13, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
         />
       </label>
 

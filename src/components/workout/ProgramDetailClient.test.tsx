@@ -266,6 +266,11 @@ it("names the next incomplete workout instead of reopening a finished first day"
   mockLogs = [{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }];
   renderDetail();
   expect(await screen.findByRole("button", { name: /next.*pull day.*week 2/i })).toBeInTheDocument();
+  expect(screen.getByText("Pull Day")).toBeInTheDocument();
+  expect(screen.getByText("Next workout")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "WK 1" }));
+  expect(screen.getByText("Push Day")).toBeInTheDocument();
+  expect(screen.queryByText("Pull Day")).not.toBeInTheDocument();
 });
 
 
@@ -274,7 +279,10 @@ it("routes to the next incomplete day even while an earlier week is selected", a
   (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, days: [...program.days, next] });
   mockLogs = [{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }];
   renderDetail();
-  fireEvent.click(await screen.findByRole("button", { name: /next.*pull day.*week 2/i }));
+  await screen.findByRole("button", { name: /next.*pull day.*week 2/i });
+  fireEvent.click(screen.getByRole("button", { name: "WK 1" }));
+  expect(screen.getByText("Push Day")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /next.*pull day.*week 2/i }));
   expect(screen.getByTestId("day-route")).toHaveTextContent("/programs/p1/days/day-2");
 });
 
@@ -317,4 +325,21 @@ it("marks the next day when visible and keeps the selected week after a goal upd
   await waitFor(() => expect(programRepo.save).toHaveBeenCalled());
   expect(screen.getByText("Pull Day")).toBeInTheDocument();
   expect(screen.queryByText("Push Day")).not.toBeInTheDocument();
+});
+
+
+it("keeps an explicit week selection when delayed workout logs reveal a later next day", async () => {
+  const next = { ...structuredClone(program.days[0]), id: "day-2", dayNumber: 2, weekNumber: 2, title: "Pull Day" };
+  (programRepo.get as jest.Mock).mockResolvedValueOnce({ ...program, days: [...program.days, next] });
+  let finish!: (logs: WorkoutLogDocument[]) => void;
+  (logRepo.listForProgram as jest.Mock).mockReturnValueOnce(new Promise<WorkoutLogDocument[]>((resolve) => { finish = resolve; }));
+  renderDetail();
+  await screen.findByText("Push Day");
+  fireEvent.click(screen.getByRole("button", { name: "WK 1" }));
+  await act(async () => {
+    finish([{ id: "done", programId: "p1", dayId: "day-1", performedAt: "2026-01-02T12:00:00Z", completedAt: "2026-01-02T13:00:00Z", entries: [] }]);
+  });
+  expect(screen.getByRole("button", { name: /next.*pull day.*week 2/i })).toBeEnabled();
+  expect(screen.getByText("Push Day")).toBeInTheDocument();
+  expect(screen.queryByText("Pull Day")).not.toBeInTheDocument();
 });

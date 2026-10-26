@@ -260,7 +260,10 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
           fontFamily: "inherit",
         }}
       >
-        <span style={{ flex: 1, textAlign: "left", fontSize: 14, fontWeight: 600 }}>needs review</span>
+        <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+          <span style={{ display: "block", fontSize: 14, fontWeight: 600 }}>needs review</span>
+          <span style={{ display: "block", fontSize: 13, color: "var(--fg-2)", marginTop: 2 }}>Confirm names to link exercise history.</span>
+        </span>
         <span className="tx-mono" style={{ fontSize: 13, color: "var(--fg-2)" }}>{items.length}</span>
         <span style={{ color: "var(--fg-3)" }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}

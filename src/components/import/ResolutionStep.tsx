@@ -306,7 +306,7 @@ function GroupCard({
           <button
             type="button"
             className="button secondary shrink-0"
-            style={{ fontSize: "0.7rem", padding: "2px 8px" }}
+            style={{ fontSize: 13, minHeight: 44, padding: "6px 12px" }}
             onClick={() => fanOut(allCustom ? "" : CUSTOM_ID)}
           >
             {allCustom ? "Map to catalog" : "Keep as custom"}
@@ -355,9 +355,10 @@ function GroupCard({
           )}
 
           <div className="flex items-center justify-between gap-2">
-            <label className="flex items-center gap-1.5 text-xs">
+            <label className="flex items-center gap-2" style={{ minHeight: 44, fontSize: 13 }}>
               <input
                 type="checkbox"
+                style={{ width: 20, height: 20 }}
                 checked={remembered && target !== undefined && unrememberable === undefined}
                 disabled={target === undefined || unrememberable !== undefined}
                 onChange={(e) => onRememberChange(group.groupKey, e.target.checked)}

@@ -98,7 +98,7 @@ export function HistoryDrawer({ exerciseName, rows, activeVersionKey, onClose, o
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "var(--fg)" }}>
             {exerciseName}
           </h2>
-          <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--fg-3)", fontFamily: "var(--font-ui)" }}>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--fg-3)", fontFamily: "var(--font-ui)" }}>
             {/* Workouts and entries are different numbers: one workout can log
                 the same exercise twice, and calling four entries "4 sessions"
                 is a straight mislabel. */}
@@ -112,7 +112,7 @@ export function HistoryDrawer({ exerciseName, rows, activeVersionKey, onClose, o
               <label
                 htmlFor={filterId}
                 className="tx-up"
-                style={{ fontSize: 12, color: "var(--fg-4)" }}
+                style={{ fontSize: 13, color: "var(--fg-4)" }}
               >
                 Filter by version
               </label>
@@ -123,7 +123,7 @@ export function HistoryDrawer({ exerciseName, rows, activeVersionKey, onClose, o
                 style={{
                   flex: 1, minWidth: 0, background: "var(--bg-2)", color: "var(--fg)",
                   border: "1px solid var(--line)", borderRadius: 2, padding: "2px 4px",
-                  fontFamily: "inherit", fontSize: 12,
+                  fontFamily: "inherit", fontSize: 13,
                 }}
               >
                 {/* The family-wide view is the default and stays the default —
