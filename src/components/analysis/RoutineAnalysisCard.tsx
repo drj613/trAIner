@@ -34,12 +34,12 @@ function ScoreBadge({ score, grade }: { score: number; grade: string }) {
   const status = score >= 80 ? "good" : score >= 60 ? "warn" : "bad";
   return (
     <div style={{
-      width: 52, height: 52, borderRadius: 26, flexShrink: 0,
+      width: 40, height: 40, borderRadius: 6, flexShrink: 0,
       border: `2px solid ${sc(status)}`, background: sb(status),
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
     }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, lineHeight: 1, color: sc(status) }}>{grade}</span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", marginTop: 2 }}>{score}</span>
+      <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1, color: sc(status) }}>{grade}</span>
+      <span style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>{score}</span>
     </div>
   );
 }
@@ -60,7 +60,7 @@ function DimChip({
       style={{
         flex: "0 0 auto", minWidth: 64, padding: "6px 8px",
         background: active ? sb(dim.status) : "var(--bg-2)",
-        opacity: dim.graded ? 1 : 0.55,
+        opacity: 1,
         borderTop: `2px solid ${sc(dim.status)}`,
         borderRight: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
         borderBottom: `1px solid ${active ? sc(dim.status) : "var(--line)"}`,
@@ -69,8 +69,8 @@ function DimChip({
         fontFamily: "inherit", color: "var(--fg)", textAlign: "center",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: sc(dim.status), lineHeight: 1 }}>{dim.score}</div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: sc(dim.status), lineHeight: 1 }}>{dim.score}</div>
+      <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>
         {dim.label}{dim.graded ? "" : " ·ref"}
       </div>
     </button>
@@ -101,10 +101,10 @@ function CoverageChip({ muscles, active, onClick }: {
         fontFamily: "inherit", color: "var(--fg)", textAlign: "center",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color, lineHeight: 1 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color, lineHeight: 1 }}>
         {trained}/{total}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-3)", marginTop: 3 }}>Coverage</div>
+      <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>Coverage</div>
     </button>
   );
 }
@@ -114,7 +114,7 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
   const pct = (v: number) => `${(v / max) * 100}%`;
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", marginBottom: 6, paddingLeft: 86, textTransform: "uppercase" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 12, color: "var(--fg-3)", marginBottom: 6, paddingLeft: 0 }}>
         <span>MEV (Minimum Effective Volume)</span>
         <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
           <span style={{ width: 12, height: 5, background: "var(--good)", opacity: 0.22, display: "inline-block" }} /> MAV (Maximum Adaptive Volume)
@@ -123,23 +123,23 @@ function VolumeBars({ muscles }: { muscles: DisplayAnalysis["muscles"] }) {
       </div>
       {muscles.map((m) => (
         <div key={m.group} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-          <span style={{ width: 80, fontSize: 11, color: "var(--fg-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{m.group}</span>
+          <span style={{ width: 80, fontSize: 12, color: "var(--fg-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{m.group}</span>
           <div style={{ flex: 1, height: 14, position: "relative", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 2 }}>
             <div style={{ position: "absolute", top: 0, bottom: 0, left: pct(m.mavLo), width: `calc(${pct(m.mavHi)} - ${pct(m.mavLo)})`, background: "var(--good)", opacity: 0.18 }} />
             <div style={{ position: "absolute", top: -2, bottom: -2, left: pct(m.mev), width: 1.5, background: "var(--fg-4)" }} />
             <div style={{ position: "absolute", top: -2, bottom: -2, left: pct(m.mrv), width: 1.5, background: "var(--bad)" }} />
             <div style={{ position: "absolute", top: 2, bottom: 2, left: 0, width: pct(m.sets), background: sc(m.status), borderRadius: 1 }} />
           </div>
-          <span style={{ width: 30, fontFamily: "var(--font-mono)", fontSize: 10.5, color: sc(m.status), textAlign: "right", fontWeight: 600, flexShrink: 0 }}>{m.sets}</span>
+          <span style={{ width: 30, fontSize: 12, color: sc(m.status), textAlign: "right", fontWeight: 600, flexShrink: 0 }}>{m.sets}</span>
         </div>
       ))}
-      <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", paddingLeft: 86 }}>
+      <div style={{ marginTop: 6, fontSize: 12, color: "var(--fg-3)", paddingLeft: 0 }}>
         weekly effective sets · primary 1.0 · secondary 0.5 · incidental 0.25
       </div>
-      <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 0 }}>
         Ideally your sets land in the MAV band — above MEV to drive growth, below MRV to stay recoverable. Consistently under MEV means not enough stimulus; consistently over MRV risks accumulating fatigue faster than you can adapt.
       </div>
-      <div style={{ marginTop: 6, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 86 }}>
+      <div style={{ marginTop: 6, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5, paddingLeft: 0 }}>
         Working-volume analysis excludes exercises identified as ordinary warmup, activation, mobility, cooldown, rehabilitation, or prehabilitation work. Those exercises still count toward total programmed activity, exercise count, and estimated session duration — they&apos;re just not scored as working sets here.
       </div>
     </div>
@@ -155,24 +155,24 @@ const MOVEMENT_PATTERN_LABELS: Record<string, string> = {
 function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"]; patterns: DisplayAnalysis["patterns"] }) {
   return (
     <div>
-      <div style={{ fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4, marginBottom: 6 }}>
+      <div style={{ fontSize: 12, color: "var(--fg-3)", lineHeight: 1.4, marginBottom: 6 }}>
         Volume-balance heuristics — not injury-risk metrics. Goal-specific programs may diverge intentionally.
       </div>
       {ratios.map((r) => (
         <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 0", borderBottom: "1px solid var(--line)" }}>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: sc(r.verdict), flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11.5, color: "var(--fg)" }}>{r.label}</div>
-            {r.detail && <div style={{ fontSize: 10.5, color: "var(--fg-3)", marginTop: 1, lineHeight: 1.35 }}>{r.detail}</div>}
+            <div style={{ fontSize: 12, color: "var(--fg)" }}>{r.label}</div>
+            {r.detail && <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 1, lineHeight: 1.35 }}>{r.detail}</div>}
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, fontWeight: 600, color: sc(r.verdict) }}>{r.value}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)" }}>tgt {r.target}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: sc(r.verdict) }}>{r.value}</div>
+            <div style={{ fontSize: 12, color: "var(--fg-3)" }}>tgt {r.target}</div>
           </div>
         </div>
       ))}
       <div style={{ marginTop: 10 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>Movement patterns</div>
+        <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 6 }}>Movement patterns</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
           {Object.entries(MOVEMENT_PATTERN_LABELS).map(([id, label]) => {
             const ok = patterns.covered.includes(id);
@@ -183,8 +183,8 @@ function BalancePanel({ ratios, patterns }: { ratios: DisplayAnalysis["ratios"];
                 background: ok ? sb("good") : "var(--bg-2)",
                 border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
+                <span style={{ fontSize: 12, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "+" : "–"}</span>
+                <span style={{ fontSize: 12, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
@@ -205,7 +205,7 @@ function CoveragePanel({ muscles, patterns }: {
     <div>
       {/* Movement patterns */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 6 }}>
           Movement patterns
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
@@ -218,8 +218,8 @@ function CoveragePanel({ muscles, patterns }: {
                 background: ok ? sb("good") : "var(--bg-2)",
                 border: `1px solid ${ok ? sc("good") : "var(--line)"}`,
               }}>
-                <span style={{ fontSize: 10, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "✓" : "–"}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
+                <span style={{ fontSize: 12, color: ok ? sc("good") : "var(--fg-4)" }}>{ok ? "+" : "–"}</span>
+                <span style={{ fontSize: 12, color: ok ? "var(--fg-2)" : "var(--fg-4)" }}>{label}</span>
               </div>
             );
           })}
@@ -228,7 +228,7 @@ function CoveragePanel({ muscles, patterns }: {
 
       {/* Trained muscles */}
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 6 }}>
           Trained — {trained.length} muscle groups
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -239,8 +239,8 @@ function CoveragePanel({ muscles, patterns }: {
               background: sb(m.status), border: `1px solid ${sc(m.status)}`,
             }}>
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc(m.status), flexShrink: 0 }} />
-              <span style={{ fontSize: 10.5, color: "var(--fg-2)" }}>{m.group}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: sc(m.status), marginLeft: 1 }}>{m.sets}</span>
+              <span style={{ fontSize: 12, color: "var(--fg-2)" }}>{m.group}</span>
+              <span style={{ fontSize: 12, color: sc(m.status), marginLeft: 1 }}>{m.sets}</span>
             </div>
           ))}
         </div>
@@ -249,7 +249,7 @@ function CoveragePanel({ muscles, patterns }: {
       {/* Untrained muscles */}
       {untrained.length > 0 && (
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-3)", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 6 }}>
             Not trained — {untrained.length} muscle groups
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -258,11 +258,11 @@ function CoveragePanel({ muscles, patterns }: {
                 padding: "3px 7px", borderRadius: "var(--r-sm, 4px)",
                 background: "var(--bg-2)", border: "1px solid var(--line)",
               }}>
-                <span style={{ fontSize: 10.5, color: "var(--fg-4)" }}>{m.group}</span>
+                <span style={{ fontSize: 12, color: "var(--fg-4)" }}>{m.group}</span>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 8, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 8, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5 }}>
             Untrained muscles don&apos;t affect your score — specialists intentionally skip certain groups.
           </div>
         </div>
@@ -282,10 +282,10 @@ function SessionsPanel({ sessions }: { sessions: DisplayAnalysis["sessions"] }) 
           borderLeft: `2px solid ${sc(s.status)}`, borderRadius: "var(--r-sm, 4px)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 500 }}>{s.day}</div>
-            {s.flag && <div style={{ fontSize: 10, color: "var(--warn)", marginTop: 1, lineHeight: 1.35 }}>{s.flag}</div>}
+            <div style={{ fontSize: 12, fontWeight: 500 }}>{s.day}</div>
+            {s.flag && <div style={{ fontSize: 12, color: "var(--warn)", marginTop: 1, lineHeight: 1.35 }}>{s.flag}</div>}
           </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: "var(--fg-3)", flexShrink: 0 }}>
             {s.exercises}ex · {s.sets} total / {s.workingSets} working sets · {s.durationMin}m
           </span>
         </div>
@@ -305,17 +305,16 @@ function FindingsPanel({ warnings, strengths }: { warnings: DisplayAnalysis["war
           borderRadius: "var(--r-sm, 4px)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 1 }}>{w.area}</div>
-            <div style={{ fontSize: 11.5, color: "var(--fg-2)", lineHeight: 1.4 }}>{w.msg}</div>
+            <div style={{ fontSize: 12, color: "var(--fg-3)", marginBottom: 1 }}>{w.area}</div>
+            <div style={{ fontSize: 12, color: "var(--fg-2)", lineHeight: 1.4 }}>{w.msg}</div>
           </div>
         </div>
       ))}
       {strengths.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--good)", marginBottom: 6 }}>Strengths</div>
+          <div style={{ fontSize: 12, color: "var(--good)", marginBottom: 6 }}>Strengths</div>
           {strengths.map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: 6, padding: "4px 0", fontSize: 11, color: "var(--fg-2)", lineHeight: 1.4 }}>
-              <span style={{ color: "var(--good)", flexShrink: 0, marginTop: 2 }}>✓</span>
+            <div key={i} style={{ display: "flex", gap: 6, padding: "4px 0", fontSize: 12, color: "var(--fg-2)", lineHeight: 1.4 }}>
               <span>{s}</span>
             </div>
           ))}
@@ -346,13 +345,15 @@ export function RoutineAnalysisCard({
     : null;
 
   return (
-    <div style={{
+    <div className="progress-screen routine-analysis" style={{
       background: "var(--bg-1)", border: "1px solid var(--line)",
       borderRadius: "var(--r, 6px)", overflow: "hidden", marginBottom: 12,
     }}>
       {/* Header — click to expand */}
       <button
         type="button"
+        aria-expanded={expanded}
+        aria-label={expanded ? "Hide analysis" : "View analysis"}
         onClick={() => setExpanded((e) => !e)}
         style={{
           width: "100%", display: "flex", alignItems: "center", gap: 12,
@@ -362,9 +363,9 @@ export function RoutineAnalysisCard({
       >
         <ScoreBadge score={analysis.overall.score} grade={analysis.overall.grade} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, fontSize: 12, color: "var(--fg-3)", letterSpacing: "0.06em" }}>
             <span>Analysis</span>
-            <span style={{ color: "var(--fg-4)" }}>· {analysis.durationMs}ms · offline</span>
+
             {analysis.goalScope.partial && (
               <span style={{ color: "var(--warn)" }} title="Partial grade — some dimensions shown for reference only">· partial</span>
             )}
@@ -372,31 +373,19 @@ export function RoutineAnalysisCard({
           <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.3, marginBottom: 3 }}>
             {analysis.fingerprint.label}
           </div>
-          <div style={{ display: "flex", gap: 4, alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 10 }}>
-            <span style={{ padding: "1px 5px", borderRadius: "var(--r-sm, 4px)", border: "1px solid var(--accent)", color: "var(--accent)" }}>
-              {analysis.fingerprint.primary}
-            </span>
-            {analysis.fingerprint.secondary && (
-              <>
-                <span style={{ color: "var(--fg-4)" }}>+</span>
-                <span style={{ padding: "1px 5px", borderRadius: "var(--r-sm, 4px)", border: "1px solid var(--line)", color: "var(--fg-2)" }}>
-                  {analysis.fingerprint.secondary}
-                </span>
-              </>
-            )}
-          </div>
         </div>
-        <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "▲" : "▼"}</span>
+        <span style={{ color: "var(--fg-3)", flexShrink: 0, fontSize: 12 }}>{expanded ? "Hide analysis" : "View analysis"}</span>
       </button>
 
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "0 12px 8px" }}>
+      {expanded && <>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 8, padding: "0 12px 8px" }}>
         <select
           aria-label="Routine goal"
           value={goal}
           onChange={(e) => onGoalChange(e.target.value as TrainingGoal)}
           style={{
-            flexShrink: 0, padding: "3px 6px", fontSize: 10.5,
-            fontFamily: "var(--font-mono)", color: "var(--fg-2)",
+            flexShrink: 0, padding: "3px 6px", fontSize: 12,
+            color: "var(--fg-2)",
             background: "var(--bg-2)", border: "1px solid var(--line)",
             borderRadius: "var(--r-sm, 4px)",
           }}
@@ -405,7 +394,7 @@ export function RoutineAnalysisCard({
             <option key={g} value={g}>{GOAL_LABELS[g]}</option>
           ))}
         </select>
-        <div style={{ flex: 1, fontSize: 10, color: "var(--fg-3)", lineHeight: 1.4 }}>
+        <div style={{ flex: 1, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.4 }}>
           {analysis.goalScope.partial ? (
             <>Graded on {analysis.dimensions.filter((d) => d.graded).map((d) => d.label).join(" + ")} for
             your {GOAL_LABELS[analysis.goalScope.goal]} routine.
@@ -419,7 +408,7 @@ export function RoutineAnalysisCard({
       </div>
 
       {/* Chips row — dimension chips + coverage chip */}
-      <div style={{ display: "flex", gap: 4, padding: "0 10px 10px", overflowX: "auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 6, padding: "0 12px 12px" }}>
         {analysis.dimensions.map((d) => (
           <DimChip
             key={d.id}
@@ -441,11 +430,12 @@ export function RoutineAnalysisCard({
         />
       </div>
 
+      </>}
       {/* Expanded body */}
       {expanded && (
         <div style={{ borderTop: "1px solid var(--line)" }}>
           {activeDim && (
-            <div style={{ padding: "8px 12px", background: "var(--bg-2)", borderBottom: "1px solid var(--line)", fontSize: 11, color: "var(--fg-2)", lineHeight: 1.4 }}>
+            <div style={{ padding: "8px 12px", background: "var(--bg-2)", borderBottom: "1px solid var(--line)", fontSize: 12, color: "var(--fg-2)", lineHeight: 1.4 }}>
               <strong style={{ color: sc(activeDim.status) }}>{activeDim.label}</strong>
               {" — "}
               {!activeDim.graded && "Reference only — not graded for this goal. "}
@@ -467,14 +457,14 @@ export function RoutineAnalysisCard({
             display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
             borderTop: "1px solid var(--line)", background: "var(--bg-2)",
           }}>
-            <div style={{ flex: 1, fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.35 }}>
+            <div style={{ flex: 1, fontSize: 12, color: "var(--fg-3)", lineHeight: 1.35 }}>
               Want a deeper, qualitative review? Use AI for context-aware recommendations.
             </div>
             <button
               type="button"
               className="button secondary"
               onClick={(e) => { e.stopPropagation(); onOpenPrompt(); }}
-              style={{ padding: "5px 10px", fontSize: 11, flexShrink: 0 }}
+              style={{ padding: "5px 10px", fontSize: 12, flexShrink: 0 }}
             >
               AI prompt
             </button>

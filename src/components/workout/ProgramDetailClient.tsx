@@ -1,4 +1,5 @@
 "use client";
+import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,6 +10,7 @@ import { sectionKind } from "@/lib/workout/sectionKind";
 import { programRepo } from "@/lib/storage/programRepo";
 import { analyzeProgram } from "@/lib/analysis/analyze";
 import { toDisplayAnalysis } from "@/lib/analysis/toDisplayAnalysis";
+import { PageHeader } from "@/components/app/PageHeader";
 import { RoutineAnalysisCard } from "@/components/analysis/RoutineAnalysisCard";
 import { LlmAnalysisSheet } from "@/components/analysis/LlmAnalysisSheet";
 import { ModifyAiModal } from "./ModifyAiModal";
@@ -42,7 +44,7 @@ function WeekTabStrip({
     >
       {weeks.map((wk, i) => {
         const isCurrent = i === activeWeek;
-        const allDone = wk.days.every((d) => d.sections.length === 0);
+
         return (
           <button
             key={wk.weekNumber}
@@ -53,8 +55,8 @@ function WeekTabStrip({
               padding: "8px 4px",
               background: "transparent",
               border: "none",
-              borderBottom: `2px solid ${isCurrent ? "var(--accent)" : "transparent"}`,
-              color: isCurrent ? "var(--accent)" : "var(--fg-2)",
+              borderBottom: `2px solid ${isCurrent ? "var(--fg)" : "transparent"}`,
+              color: isCurrent ? "var(--fg)" : "var(--fg-2)",
               cursor: "pointer",
               fontFamily: "inherit",
               display: "flex",
@@ -63,8 +65,8 @@ function WeekTabStrip({
               gap: 4,
             }}
           >
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, letterSpacing: "0.04em" }}>
-              WK {wk.weekNumber}
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em" }}>
+              Week {wk.weekNumber}
             </span>
             <div style={{ display: "flex", gap: 2 }}>
               {wk.days.map((d) => {
@@ -86,13 +88,13 @@ function WeekTabStrip({
             </div>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 8,
-                letterSpacing: "0.08em",
-                color: allDone ? "var(--good)" : isCurrent ? "var(--accent)" : "var(--fg-4)",
+
+                fontSize: 12,
+
+                color: isCurrent ? "var(--fg)" : "var(--fg-4)",
               }}
             >
-              {isCurrent ? "CURRENT" : allDone ? "DONE" : i < activeWeek ? "PAST" : "UPCOMING"}
+              {isCurrent ? "Selected" : "View week"}
             </span>
           </button>
         );
@@ -116,13 +118,12 @@ function SectionHeader({ section }: { section: ProgramSection }) {
         background: "color-mix(in oklab, var(--bg-3) 50%, transparent)",
       }}
     >
-      <span style={{ color: "var(--accent)", fontSize: 11, flexShrink: 0 }}>{glyph}</span>
+      <span style={{ color: "var(--accent)", fontSize: 12, flexShrink: 0 }}>{glyph}</span>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 9.5,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
+
+          fontSize: 12,
+
           flex: 1,
         }}
       >
@@ -161,7 +162,7 @@ function getDayBadge(
   // signal on this page for whether a day is done.
   if (sortableStamp(latest.skippedAt)) return { symbol: "~", color: "var(--warn)" };
   if (sortableStamp(latest.completedAt)) return { symbol: "●", color: "var(--good)" };
-  return { symbol: "·", color: "var(--fg-4)" };
+  return { symbol: "·", color: "var(--fg-3)" };
 }
 
 // ── ExerciseRowReadOnly ───────────────────────────────────────────────────────
@@ -191,17 +192,17 @@ function ExerciseRowReadOnly({
         borderBottom: last ? "none" : "1px solid var(--line)",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--fg-4)", width: 24, flexShrink: 0 }}>
+      <span style={{ fontSize: 12, color: "var(--fg-3)", width: 24, flexShrink: 0 }}>
         {index}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 14, fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {exercise.name}
         </span>
         {prescription && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-3)", marginTop: 1 }}>
+          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 1 }}>
             {prescription}
-            {exercise.rest && <span style={{ color: "var(--fg-4)", marginLeft: 6 }}>rest {exercise.rest}</span>}
+            {exercise.rest && <span style={{ color: "var(--fg-3)", marginLeft: 6 }}>rest {exercise.rest}</span>}
           </div>
         )}
       </div>
@@ -244,22 +245,22 @@ function DayCard({
         onClick={() => !isRest && onToggle()}
         style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", cursor: isRest ? "default" : "pointer" }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", width: 28, flexShrink: 0, letterSpacing: "0.06em" }}>
+        <span style={{ fontSize: 12, color: "var(--fg-3)", width: 28, flexShrink: 0, letterSpacing: "0.06em" }}>
           {label}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 14, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {day.title}
           </div>
           {!isRest && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
               {exCount} ex · {day.sections.length} section{day.sections.length !== 1 ? "s" : ""}
             </div>
           )}
-          {isRest && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-4)" }}>rest</div>}
+          {isRest && <div style={{ fontSize: 12, color: "var(--fg-3)" }}>rest</div>}
         </div>
-        {badge && <span style={{ fontSize: 13, color: badge.color, flexShrink: 0 }}>{badge.symbol}</span>}
-        {!isRest && <span style={{ color: "var(--fg-3)", fontSize: 12 }}>{expanded ? "▾" : "▸"}</span>}
+        {badge && <span style={{ fontSize: 14, color: badge.color, flexShrink: 0 }}>{badge.symbol}</span>}
+        {!isRest && <button className="btn" aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); onToggle(); }}>{expanded ? "Hide day" : "View day"}</button>}
       </div>
 
       {expanded && !isRest && (
@@ -285,17 +286,17 @@ function DayCard({
             <button
               className="btn"
               onClick={onModifyDay}
-              style={{ flex: 1, justifyContent: "center", padding: "6px 8px", fontSize: 11.5 }}
+              style={{ flex: 1, justifyContent: "center", padding: "6px 8px", fontSize: 12 }}
             >
               <Sparkles size={11} aria-hidden /> Modify day
             </button>
             <button
               className="btn primary"
               onClick={onStart}
-              style={{ flex: 1, justifyContent: "center", padding: "6px 8px", fontSize: 11.5 }}
-              aria-label="View →"
+              style={{ flex: 1, justifyContent: "center", padding: "6px 8px", fontSize: 12 }}
+              aria-label="View workout"
             >
-              View →
+              View workout
             </button>
           </div>
         </div>
@@ -391,28 +392,33 @@ export function ProgramDetailClient({ id }: { id: string }) {
   if (!program) return <p className="muted">Loading…</p>;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div className="progress-screen" style={{ display: "flex", flexDirection: "column" }}>
+      <ProgressScreenStyles />
       {/* Header */}
       <div style={{ padding: "10px 12px 8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
           <Link
             to="/programs"
-            style={{ display: "inline-flex", alignItems: "center", gap: 3, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)", textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, color: "var(--fg-3)", textDecoration: "none" }}
           >
             <ChevronLeft size={12} /> Routines
           </Link>
           <span style={{ flex: 1 }} />
-          <Link to={`/programs/${id}/map`} className="btn ghost" style={{ padding: "3px 8px", fontSize: 10.5 }}>
+          <Link to={`/programs/${id}/map`} className="btn ghost" style={{ padding: "3px 8px", fontSize: 12 }}>
             <Map size={11} aria-hidden /> Map
           </Link>
         </div>
-        <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.01em" }}>{program.title}</div>
-        {program.description && (
-          <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 1 }}>{program.description}</div>
-        )}
+        <PageHeader title={program.title} description={program.description} action={
+          weeks[activeWeek]?.days.find((day) => day.sections.length > 0) && (
+            <button className="button" onClick={() => {
+              const day = weeks[activeWeek].days.find((candidate) => candidate.sections.length > 0);
+              if (day) navigate(`/programs/${id}/days/${day.id}`);
+            }}>Start workout</button>
+          )
+        } />
         {!!program.progression?.length && (
-          <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 6 }}>
+            <div style={{ fontSize: 12, marginBottom: 2 }}>
               Progression
             </div>
             {program.progression.map((p, i) => (
@@ -458,8 +464,8 @@ export function ProgramDetailClient({ id }: { id: string }) {
               style={{ width: "100%", padding: "10px 12px 14px" }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>Week {weeks[activeWeek].weekNumber}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Week {weeks[activeWeek].weekNumber}</span>
+                <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
                   {weeks[activeWeek].days.filter((d) => d.sections.length > 0).length} training days
                 </span>
               </div>

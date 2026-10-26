@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { parseDuration } from "@/lib/workout/parseDuration";
+import "./workout.css";
 
 function fmt(s: number): string {
   const m = Math.floor(s / 60);
@@ -89,10 +90,11 @@ export function RestTimer({ restText, notes }: Props) {
     setEditing(false);
   }
 
-  const display = seconds === undefined ? "--:--" : fmt(remaining);
+  const display = seconds === undefined ? "Set rest" : fmt(remaining);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+    <div className="wk-timer">
+      {seconds !== undefined && <span className="wk-timer-label">Rest</span>}
       {editing ? (
         <input
           type="number"
@@ -109,53 +111,45 @@ export function RestTimer({ restText, notes }: Props) {
           }}
           onBlur={commitEdit}
           className="input"
-          style={{ width: 80, fontSize: 12 }}
+          style={{ width: 88 }}
         />
       ) : (
         <button
           type="button"
-          className="tap-target"
+          className={`tap-target wk-timer-time${running ? " running" : ""}${seconds === undefined ? " unset" : ""}`}
           onClick={running ? undefined : startEditing}
           disabled={running}
           aria-label={seconds === undefined ? "Set rest duration" : "Edit rest duration"}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            minWidth: 36,
-            background: "none",
-            border: "none",
-            padding: 0,
-            color: "var(--fg)",
-            cursor: running ? "default" : "pointer",
-            textAlign: "left",
-          }}
         >
           {display}
         </button>
       )}
-      <button
-        type="button"
-        className="btn ghost"
-        aria-label={running ? "Pause" : "Start"}
-        onClick={() => {
-          if (!running) requestNotificationPermission();
-          setRunning((r) => !r);
-        }}
-        disabled={seconds === undefined}
-        style={{ padding: "3px 6px" }}
-      >
-        {running ? <Pause size={12} /> : <Play size={12} />}
-      </button>
-      <button
-        type="button"
-        className="btn ghost"
-        aria-label="Reset"
-        onClick={() => { setRunning(false); if (seconds !== undefined) setRemaining(seconds); }}
-        disabled={seconds === undefined}
-        style={{ padding: "3px 6px" }}
-      >
-        <RotateCcw size={12} />
-      </button>
+      {/* Start/Reset only exist once there is a duration to run. */}
+      {seconds !== undefined && (
+        <>
+          <button
+            type="button"
+            className="btn ghost wk-tool"
+            aria-label={running ? "Pause" : "Start"}
+            onClick={() => {
+              if (!running) requestNotificationPermission();
+              setRunning((r) => !r);
+            }}
+          >
+            {running ? <Pause size={14} aria-hidden /> : <Play size={14} aria-hidden />}
+            {running ? "Pause" : "Start"}
+          </button>
+          <button
+            type="button"
+            className="btn ghost wk-tool"
+            aria-label="Reset"
+            onClick={() => { setRunning(false); setRemaining(seconds); }}
+          >
+            <RotateCcw size={14} aria-hidden />
+            Reset
+          </button>
+        </>
+      )}
     </div>
   );
 }

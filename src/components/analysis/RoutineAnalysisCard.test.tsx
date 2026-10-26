@@ -50,7 +50,8 @@ describe("RoutineAnalysisCard", () => {
 
   it("shows dimension chips", () => {
     render(<RoutineAnalysisCard analysis={mockAnalysis} goal="general" onGoalChange={() => {}} onOpenPrompt={jest.fn()} />);
-    expect(screen.getByText("Volume")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
+    expect(screen.getByRole("button", { name: /91.*Volume/i })).toBeInTheDocument();
     expect(screen.getByText("Balance")).toBeInTheDocument();
   });
 
@@ -62,6 +63,7 @@ describe("RoutineAnalysisCard", () => {
 
   it("switches to balance tab", () => {
     render(<RoutineAnalysisCard analysis={mockAnalysis} goal="general" onGoalChange={() => {}} onOpenPrompt={jest.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
     fireEvent.click(screen.getByText("Balance"));
     expect(screen.getByText("Push : Pull")).toBeInTheDocument();
   });
@@ -77,6 +79,7 @@ describe("RoutineAnalysisCard", () => {
   it("states the grade is calibrated for general/hypertrophy training", () => {
     const analysis = toDisplayAnalysis(analyzeProgram(balancedProgram), 0);
     render(<RoutineAnalysisCard analysis={analysis} goal="general" onGoalChange={() => {}} onOpenPrompt={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
     expect(
       screen.getByText(/calibrated for general .* hypertrophy training/i),
     ).toBeInTheDocument();
@@ -111,12 +114,26 @@ describe("RoutineAnalysisCard goal gate", () => {
   it("goal select fires onGoalChange", () => {
     const onGoalChange = jest.fn();
     render(<RoutineAnalysisCard analysis={generalAnalysis()} goal="general" onGoalChange={onGoalChange} onOpenPrompt={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
     fireEvent.change(screen.getByLabelText(/routine goal/i), { target: { value: "strength" } });
     expect(onGoalChange).toHaveBeenCalledWith("strength");
   });
 
   it("goal-scoped footnote names what was graded", () => {
     render(<RoutineAnalysisCard analysis={strengthAnalysis()} goal="strength" onGoalChange={() => {}} onOpenPrompt={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /view analysis/i }));
     expect(screen.getByText(/graded on/i).textContent).toMatch(/Structure/);
   });
+});
+
+it("keeps analysis controls behind a named disclosure", () => {
+  render(<RoutineAnalysisCard analysis={mockAnalysis} goal="general" onGoalChange={() => {}} onOpenPrompt={() => {}} />);
+  const toggle = screen.getByRole("button", { name: /view analysis/i });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByLabelText("Routine goal")).not.toBeInTheDocument();
+  expect(screen.queryByText(/184ms|offline/i)).not.toBeInTheDocument();
+  fireEvent.click(toggle);
+  expect(screen.getByLabelText("Routine goal")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: /hide analysis/i }));
+  expect(screen.queryByLabelText("Routine goal")).not.toBeInTheDocument();
 });

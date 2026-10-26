@@ -1,0 +1,635 @@
+/* Workout logging screen — scoped to the `.wk` root so it never leaks.
+   Everything reads from the theme tokens (--bg*, --fg*, --line*, --accent…);
+   no palette values live here. Sizes: names 16, prescription / metadata 13,
+   set values 15, nothing below 12. Mono is kept for set figures and counters;
+   labels and explanatory text use the UI face. */
+
+.wk {
+  --wk-control: 6px;
+  --wk-card: 8px;
+  --wk-set-h: 40px;
+  --wk-tool-h: 32px;
+  font-family: var(--font-ui);
+}
+
+/* ─── Shared text ─────────────────────────────────────────────────────────── */
+
+.wk-meta {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+.wk-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+.wk-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Page header ─────────────────────────────────────────────────────────── */
+
+.wk-head {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.wk-head-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.wk-back {
+  color: var(--fg-2);
+  font-size: 13px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+}
+.wk-back:hover {
+  color: var(--fg);
+}
+.wk-daypos {
+  font-size: 13px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.wk-title {
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--fg);
+}
+.wk-head-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.wk-head-sub p {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  color: var(--fg-2);
+}
+.wk-guide > summary {
+  font-size: 13px;
+  color: var(--fg-2);
+  min-height: 28px;
+}
+.wk-guide-body {
+  padding-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-guide-body > span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.wk-guide-body code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg);
+  background: var(--bg-3);
+  padding: 1px 6px;
+  border-radius: var(--wk-control);
+}
+.wk-progression {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--wk-card);
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-progression-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.wk-progression strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+/* Inline notices (viewing banner, blocked alert, save error) */
+.wk-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--wk-card);
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-notice > span {
+  flex: 1;
+}
+.wk-error {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--bad);
+}
+
+/* ─── Bodyweight ──────────────────────────────────────────────────────────── */
+
+.wk-bw {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  min-height: 48px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--wk-card);
+}
+.wk-bw-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--fg);
+}
+.wk-bw .input {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 14px;
+  border-radius: var(--wk-control);
+}
+
+/* ─── Buttons used on this screen ─────────────────────────────────────────── */
+
+.wk .wk-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: var(--wk-control);
+}
+.wk .wk-btn.primary {
+  font-size: 14px;
+  font-weight: 600;
+}
+.wk .wk-tool {
+  min-height: var(--wk-tool-h);
+  padding: 0 8px;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+  border-radius: var(--wk-control);
+}
+.wk .wk-tool:hover:not(:disabled) {
+  color: var(--fg);
+}
+.wk .wk-tool:disabled {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+.wk .wk-tool svg {
+  flex: none;
+}
+
+/* ─── Section card ────────────────────────────────────────────────────────── */
+
+.wk-section {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--sec);
+  background: var(--bg-1);
+  border-radius: var(--wk-card);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.wk-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.wk-section-glyph {
+  color: var(--sec);
+  font-size: 14px;
+  line-height: 1;
+}
+.wk-section-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+/* ─── Exercise row ────────────────────────────────────────────────────────── */
+
+.wk-ex {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+}
+/* Name and tools share a wrapping row: on a wide card the tools sit right
+   beside the name (no far-right orphaning); on a phone they drop under it. */
+.wk-ex-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 2px;
+}
+.wk-ex-name {
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--fg);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wk-ex-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin-left: -8px; /* optical: icon edge aligns with the name's edge */
+}
+.wk-ex-rx {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.wk-ex-note {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+.wk-ex-note b {
+  font-weight: 600;
+  color: var(--fg-3);
+  margin-right: 6px;
+}
+@media (max-width: 600px) {
+  .wk-ex-tools {
+    flex-basis: 100%;
+  }
+}
+
+/* ─── Sets ────────────────────────────────────────────────────────────────── */
+
+.wk-sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.wk-sets .cell {
+  height: var(--wk-set-h);
+  min-width: 72px;
+  padding: 0 6px;
+  font-size: 15px;
+  text-align: center;
+  background: var(--bg-2);
+  border-color: var(--line-2);
+  border-style: dashed;
+  border-radius: var(--wk-control);
+}
+.wk-sets .cell::placeholder {
+  color: var(--fg-3);
+  opacity: 1;
+}
+.wk-sets .cell:focus,
+.wk-sets .cell.editing {
+  background: var(--bg-1);
+}
+/* A logged set is a solid, heavier cell; an unlogged one stays dashed and
+   shows its prescription as placeholder. */
+.wk-sets .cell.done,
+.wk-sets .cell.bw,
+.wk-sets .cell.pr,
+.wk-sets .cell.miss,
+.wk-sets .cell.pain,
+.wk-sets .cell.skip {
+  border-style: solid;
+  font-weight: 600;
+}
+.wk-sets .cell.done {
+  background: var(--bg-3);
+  border-color: var(--fg-3);
+}
+.wk-sets .cell.skip {
+  font-weight: 400;
+}
+.wk-sets .cell:focus {
+  border-color: var(--accent);
+}
+[data-compact-cells="on"] .wk-sets .cell {
+  height: 30px;
+  min-width: 60px;
+  font-size: 14px;
+}
+.wk .wk-addset {
+  height: var(--wk-set-h);
+  padding: 0 12px;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+  background: transparent;
+  border: 1px dashed var(--fg-3);
+  border-radius: var(--wk-control);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.wk .wk-addset:hover {
+  color: var(--fg);
+  border-color: var(--fg-2);
+  background: var(--bg-2);
+}
+[data-compact-cells="on"] .wk .wk-addset {
+  height: 30px;
+}
+
+/* ─── Rest timer + note ───────────────────────────────────────────────────── */
+
+.wk-ex-foot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 8px;
+}
+.wk-timer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+.wk-timer-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+  margin-right: 2px;
+}
+.wk .wk-timer-time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  color: var(--fg);
+  background: none;
+  border: none;
+  border-bottom: 1px dotted var(--fg-3);
+  border-radius: 0;
+  padding: 0;
+  min-width: 40px;
+  min-height: 28px;
+  text-align: left;
+  cursor: pointer;
+  margin-right: 6px;
+}
+.wk .wk-timer-time:disabled {
+  cursor: default;
+  border-bottom-color: transparent;
+}
+.wk .wk-timer-time.running {
+  color: var(--accent);
+  font-weight: 600;
+}
+.wk .wk-timer-time.unset {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-timer .input {
+  height: 32px;
+  padding: 0 8px;
+  font-size: 14px;
+  border-radius: var(--wk-control);
+}
+.wk-note > summary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+  min-height: 32px;
+}
+.wk-note textarea {
+  width: 100%;
+  margin-top: 4px;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--wk-control);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* ─── Bottom bar ──────────────────────────────────────────────────────────── */
+
+.wk-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+}
+.wk-bar-progress {
+  height: 3px;
+  background: var(--bg-3);
+  position: relative;
+  overflow: hidden;
+}
+.wk-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.wk-bar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.wk-bar-extra {
+  padding: 8px 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wk-bar textarea,
+.wk-bar input[type="text"] {
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--wk-control);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
+.wk-bar textarea {
+  width: 100%;
+  resize: vertical;
+}
+.wk-bar input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.wk-telemetry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 1;
+  min-width: 120px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.wk-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.wk-confirm {
+  flex: 1 1 auto;
+  min-width: 140px;
+  font-size: 14px;
+  color: var(--warn);
+}
+
+/* ─── Session summary ─────────────────────────────────────────────────────── */
+
+.wk-summary {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+/* Opaque enough that the sticky Finish bar underneath no longer reads through. */
+.wk-summary-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  animation: fade 0.16s;
+}
+.wk-summary-sheet {
+  position: relative;
+  width: min(100%, 480px);
+  margin: 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg-1);
+  border: 1px solid var(--line-2);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  animation: slideup 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@media (min-width: 601px) {
+  .wk-summary {
+    align-items: center;
+  }
+  .wk-summary-sheet {
+    margin: 12px;
+    padding-bottom: 20px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--wk-card);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+}
+.wk-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.wk-summary-title svg {
+  color: var(--good);
+  flex: none;
+}
+.wk-summary-sub {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.wk-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  padding: 14px 0;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.wk-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 64px;
+}
+.wk-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--fg);
+}
+.wk-stat-value.pr {
+  color: var(--pr);
+}
+.wk-stat-value.bad {
+  color: var(--bad);
+}
+.wk-stat-label {
+  font-size: 13px;
+  color: var(--fg-2);
+}
+.wk-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.wk .wk-summary-actions .wk-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}

@@ -1,4 +1,6 @@
 "use client";
+import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
+import { PageHeader } from "@/components/app/PageHeader";
 
 import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
@@ -130,8 +132,8 @@ function EditableChips({
         />
         <button
           type="button"
-          className="button"
-          style={{ fontSize: 11, padding: "2px 8px" }}
+          className="button secondary"
+          style={{ fontSize: 12, padding: "2px 8px" }}
           aria-label={addButtonAriaLabel}
           onClick={addItem}
         >
@@ -165,10 +167,10 @@ function EditableBody({
         <div key={key}>
           <label
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
+
+              fontSize: 12,
               color: "var(--fg-3)",
-              textTransform: "uppercase",
+
             }}
           >
             {label}
@@ -199,7 +201,7 @@ function KVGrid({ data }: { data: Record<string, string | undefined> }) {
           className="flex justify-between py-0.5 border-b border-dashed"
           style={{
             borderColor: "var(--line)",
-            fontFamily: "var(--font-mono)",
+
             fontSize: 12,
           }}
         >
@@ -235,15 +237,15 @@ function ProfileCard({
             <button
               type="button"
               className="button"
-              style={{ padding: "2px 8px", fontSize: 11 }}
+              style={{ padding: "2px 8px", fontSize: 12 }}
               onClick={onSave}
             >
               Save
             </button>
             <button
               type="button"
-              className="button"
-              style={{ padding: "2px 8px", fontSize: 11, opacity: 0.6 }}
+              className="button secondary"
+              style={{ padding: "2px 8px", fontSize: 12 }}
               onClick={onCancel}
             >
               Cancel
@@ -339,9 +341,9 @@ export function ProfileClient() {
     };
 
     return (
-      <div className="stack">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Set up your Profile</h2>
+      <div className="stack progress-screen">
+      <ProgressScreenStyles />
+        <PageHeader title="Profile" description="Set up your training profile" action={
           <button
             type="button"
             className="button"
@@ -351,7 +353,7 @@ export function ProfileClient() {
           >
             {saving ? "Saving…" : "Save profile"}
           </button>
-        </div>
+        } />
         {saveError && (
           <p style={{ color: "var(--bad)", fontSize: 12, margin: 0 }}>{saveError}</p>
         )}
@@ -360,7 +362,7 @@ export function ProfileClient() {
           <p className="tx-up mb-2">Name</p>
           <input
             className="input w-full"
-            style={{ fontSize: 13, padding: "5px 9px" }}
+            style={{ fontSize: 14, padding: "5px 9px" }}
             placeholder="Your name"
             autoFocus
             value={draft.name}
@@ -442,7 +444,9 @@ export function ProfileClient() {
   const bodyHasData = Object.values(body).some((v) => v && v !== "—");
 
   return (
-    <div className="stack">
+    <div className="stack progress-screen">
+      <ProgressScreenStyles />
+      <PageHeader title="Profile" />
       {/* Avatar header */}
       <div className="flex items-center gap-3">
         <div
@@ -452,7 +456,7 @@ export function ProfileClient() {
             height: 44,
             background: "var(--accent-soft)",
             color: "var(--accent)",
-            fontFamily: "var(--font-mono)",
+
             fontSize: 16,
           }}
         >
@@ -474,7 +478,7 @@ export function ProfileClient() {
               <button
                 type="button"
                 className="button"
-                style={{ padding: "2px 8px", fontSize: 11 }}
+                style={{ padding: "2px 8px", fontSize: 12 }}
                 onClick={() => void saveEdit()}
               >
                 Save
@@ -482,7 +486,7 @@ export function ProfileClient() {
               <button
                 type="button"
                 className="button"
-                style={{ padding: "2px 8px", fontSize: 11, opacity: 0.6 }}
+                style={{ padding: "2px 8px", fontSize: 12, opacity: 0.6 }}
                 onClick={cancelEdit}
               >
                 Cancel
@@ -491,9 +495,7 @@ export function ProfileClient() {
           ) : (
             <>
               <p className="font-semibold text-base">{profile.name}</p>
-              <p className="text-xs muted" style={{ fontFamily: "var(--font-mono)" }}>
-                local · profile.json
-              </p>
+
             </>
           )}
         </div>
@@ -548,10 +550,10 @@ export function ProfileClient() {
             <div>
               <label
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+
+                  fontSize: 12,
                   color: "var(--fg-3)",
-                  textTransform: "uppercase",
+
                 }}
               >
                 Training age
@@ -594,7 +596,7 @@ export function ProfileClient() {
           <>
             {profile.primaryGoal && (
               <p className="text-xs mb-1" style={{ color: "var(--fg-2)" }}>
-                ★ {GOAL_LABELS[profile.primaryGoal]}
+                Primary goal: {GOAL_LABELS[profile.primaryGoal]}
               </p>
             )}
             <RankedGoalsList items={profile.goals} />
@@ -652,10 +654,10 @@ export function ProfileClient() {
             <div>
               <label
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+
+                  fontSize: 12,
                   color: "var(--fg-3)",
-                  textTransform: "uppercase",
+
                 }}
               >
                 Default days/week

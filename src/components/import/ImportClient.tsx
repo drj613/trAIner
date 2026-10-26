@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PageHeader } from "@/components/app/PageHeader";
 import { Link, useNavigate } from "react-router-dom";
 import { Copy, Save } from "lucide-react";
 import { parseProgramJson, ImportError, type ImportReview } from "@/lib/import/parser";
@@ -354,10 +355,7 @@ export function ImportClient() {
   if (step === "paste") {
     return (
       <div className="stack">
-        <div>
-          <h1 className="text-2xl font-bold">Import</h1>
-          <p className="muted">Paste JSON from an AI coach or external source.</p>
-        </div>
+        <PageHeader title="Import" description="Add a routine from your AI chat or a JSON file." />
         <div className="stack" style={{ gap: 8 }}>
           <label className="text-sm font-semibold" htmlFor="routine-file">Choose JSON file</label>
           <input
@@ -374,8 +372,11 @@ export function ImportClient() {
             </p>
           )}
         </div>
+        <label htmlFor="routine-json" className="text-sm font-semibold">Routine JSON</label>
         <textarea
-          className="input min-h-72 font-mono text-xs"
+          id="routine-json"
+          spellCheck={false}
+          className="input min-h-72 font-mono text-sm"
           aria-label="Routine JSON"
           value={json}
           placeholder='{ "program_name": "...", "days": [...] }'
@@ -383,13 +384,13 @@ export function ImportClient() {
           disabled={isReadingFile}
         />
         {parseError && (
-          <div className="stack" style={{ gap: 6 }}>
-            <p className="text-sm" style={{ color: "var(--bad, red)" }}>
+          <div className="import-error stack" role="alert" style={{ gap: 10 }}>
+            <p className="text-sm" style={{ color: "var(--bad, red)", fontWeight: 600 }}>
               {parseError}
             </p>
             <button
               type="button"
-              className="button secondary"
+              className="button"
               onClick={() => {
                 const prompt = buildRecoveryPrompt(recoveryReason, parseError ?? undefined);
                 void navigator.clipboard.writeText(prompt).catch(() => {});
@@ -404,7 +405,7 @@ export function ImportClient() {
         )}
         <button
           type="button"
-          className="button"
+          className={parseError ? "button secondary" : "button"}
           disabled={!json.trim() || isReadingFile}
           onClick={() => void handleValidate()}
         >
@@ -417,7 +418,7 @@ export function ImportClient() {
   if (step === "resolve" && review) {
     return (
       <div className="stack">
-        <h1 className="text-2xl font-bold">Resolve exercises</h1>
+        <PageHeader title="Resolve exercises" description="Choose a version or keep each name as custom. Custom exercises have no linked history." />
         <ResolutionStep
           items={unresolvedItems}
           groups={groups}
@@ -454,7 +455,7 @@ export function ImportClient() {
 
     return (
       <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
-        <h1 className="text-2xl font-bold">Confirm import</h1>
+        <PageHeader title="Confirm import" description="Review the routine and any corrections before saving." />
         <section className="panel stack">
           <h2 className="font-bold">{review.program.title}</h2>
           <p className="muted text-sm">

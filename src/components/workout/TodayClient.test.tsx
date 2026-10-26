@@ -77,21 +77,21 @@ describe("TodayClient", () => {
     };
     render(<MemoryRouter><TodayClient /></MemoryRouter>);
     const step1Link = screen.getByRole("link", { name: /Fill out your Profile/i });
-    expect(step1Link.textContent).toMatch(/✓/);
+    expect(step1Link.textContent).toMatch(/Done/);
   });
 
   it("marks step 2 done once a prompt has been copied", () => {
     localStorage.setItem("trainer-prompt-copied", "1");
     render(<MemoryRouter><TodayClient /></MemoryRouter>);
     const step2Link = screen.getByRole("link", { name: /Choose a coach on Prompts/i });
-    expect(step2Link.textContent).toMatch(/✓/);
+    expect(step2Link.textContent).toMatch(/Done/);
     localStorage.removeItem("trainer-prompt-copied");
   });
 
   it("leaves step 2 unchecked when no prompt has been copied", () => {
     render(<MemoryRouter><TodayClient /></MemoryRouter>);
     const step2Link = screen.getByRole("link", { name: /Choose a coach on Prompts/i });
-    expect(step2Link.textContent).not.toMatch(/✓/);
+    expect(step2Link.textContent).not.toMatch(/Done/);
   });
 });
 
@@ -108,4 +108,9 @@ describe("TodayClient redirector", () => {
     );
     expect(await screen.findByTestId("day-route")).toBeInTheDocument();
   });
+});
+
+test("offers manual routine creation alongside the AI onboarding path", () => {
+  render(<MemoryRouter><TodayClient /></MemoryRouter>);
+  expect(screen.getByRole("link", { name: /build a routine manually/i })).toHaveAttribute("href", "/programs/new");
 });

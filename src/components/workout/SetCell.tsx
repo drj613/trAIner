@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useEditableValue } from "@/lib/workout/useEditableValue";
+import "./workout.css";
 
 export type CellState = "empty" | "done" | "pr" | "miss" | "skip" | "pain" | "bw";
 
@@ -70,7 +71,8 @@ export function SetCell({ id, value, prescribed = "", onChange, onNext, autoFocu
       autoCapitalize="off"
       autoCorrect="off"
       spellCheck={false}
-      style={{ width: 70, fontSize: 13 }}
+      // Grows with the value so a long entry like "225x10 +PR" is not clipped.
+      style={{ width: `max(72px, calc(${Math.max(v.length, 4)}ch + 22px))` }}
       aria-label={`Set value${prescribed ? ` (${prescribed})` : ""}`}
     />
   );

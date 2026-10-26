@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PersonaInstructions } from "./PersonaInstructions";
 import { PromptDetails } from "./PromptDetails";
 import { Link } from "react-router-dom";
+import { PageHeader } from "@/components/app/PageHeader";
 import { ArrowRight, Copy } from "lucide-react";
 import { markPromptCopied } from "@/lib/workspace/onboarding";
 import { useLocalData } from "@/components/app/LocalDataProvider";
@@ -168,10 +169,24 @@ export function PromptBuilderClient() {
 
   return (
     <div className="stack min-w-0" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
-      <header>
-        <h1 className="text-lg font-semibold">Prompt editor</h1>
-        <p className="text-sm muted mt-1">Review what each section adds, then copy the complete prompt at the bottom.</p>
-      </header>
+<PageHeader title="Prompts" description="Choose your coaches and shape the routine you want." />
+      <section aria-label="Copy complete prompt" className="prompt-action-bar">
+        <p className="text-sm muted">Copy your prompt, paste it into your AI chat, then import the routine JSON it returns.</p>
+        <div className="prompt-actions">
+        <button
+          type="button"
+          className="button"
+          disabled={!prompt}
+          onClick={() => void copyPrompt()}
+        >
+          <Copy size={14} /> Copy prompt · {prompt.length.toLocaleString()} chars
+        </button>
+        <Link to="/import" className="button secondary">
+          <ArrowRight size={14} /> Go to Import
+        </Link>
+        </div>
+        {copyStatus && <p role="status" className="text-sm">{copyStatus}</p>}
+      </section>
       {!profile && !loading && (
         <div
           role="alert"
@@ -185,12 +200,11 @@ export function PromptBuilderClient() {
             lineHeight: 1.5,
           }}
         >
-          No profile found. The prompt below won&apos;t include your goals, equipment, or constraints —
-          fill out your{" "}
+          No profile found. Add your goals, equipment, and constraints on{" "}
           <Link to="/profile" style={{ color: "var(--accent)", fontWeight: 600 }}>
             Profile
           </Link>{" "}
-          first for a useful result.
+          to personalize this prompt.
         </div>
       )}
       <section>
@@ -222,7 +236,7 @@ export function PromptBuilderClient() {
         <div className="flex gap-1 mt-2">
           <input
             className="input flex-1 min-w-0"
-            style={{ fontSize: 12, padding: "3px 7px" }}
+            style={{ fontSize: 13, padding: "3px 7px" }}
             value={presetName}
             placeholder="Name this preset…"
             onChange={(e) => setPresetName(e.target.value)}
@@ -230,8 +244,8 @@ export function PromptBuilderClient() {
           />
           <button
             type="button"
-            className="button"
-            style={{ fontSize: 11, padding: "2px 8px" }}
+            className="button secondary"
+            style={{ fontSize: 13, padding: "6px 12px" }}
             disabled={!presetName.trim()}
             onClick={() => void savePreset()}
           >
@@ -263,7 +277,7 @@ export function PromptBuilderClient() {
           <p className="text-sm muted mb-2">Open a coach to review its philosophy, methodology, and principles. Save a preset to keep your edits.</p>
           <div className="stack">
             {selectedPersonas.map((p) => (
-              <details key={p.id} open className="panel min-w-0">
+              <details key={p.id} className="panel min-w-0">
                 <summary className="text-sm font-semibold cursor-pointer">Coach: {p.name}</summary>
                 <PersonaInstructions name={p.name} text={editedBlocks[p.id] ?? p.block} onChange={(text) => setEditedBlocks((prev) => ({ ...prev, [p.id]: text }))} />
               </details>
@@ -358,13 +372,13 @@ export function PromptBuilderClient() {
           <div className="flex gap-1">
             <input
               className="input flex-1 min-w-0"
-              style={{ fontSize: 12, padding: "3px 7px" }}
+              style={{ fontSize: 13, padding: "3px 7px" }}
               value={adhocInput}
               placeholder="Add a temporary injury…"
               onChange={(e) => setAdhocInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addAdhocInjury()}
             />
-            <button type="button" className="button" style={{ fontSize: 11, padding: "2px 8px" }} onClick={addAdhocInjury}>
+            <button type="button" className="button" style={{ fontSize: 13, padding: "2px 8px" }} onClick={addAdhocInjury}>
               Add
             </button>
           </div>
@@ -393,21 +407,7 @@ export function PromptBuilderClient() {
         <details className="mt-2"><summary className="text-sm cursor-pointer">Read the output requirements</summary><PromptDetails text={buildRequiredContract()} paragraphLabels={["Generation trigger", "Response format", "Weeks and weekly changes", "Groups and set counts", "Exercise fields and volume", "Variants and progression", "Using the example"]} /></details>
       </section>
 
-      <section aria-label="Copy complete prompt">
-        <p className="text-sm muted">Copy all included sections together, ready to paste into your chat.</p>
-        <button
-          type="button"
-          className="button mt-2 w-full justify-center"
-          disabled={!prompt}
-          onClick={() => void copyPrompt()}
-        >
-          <Copy size={14} /> Copy prompt · {prompt.length.toLocaleString()} chars
-        </button>
-        {copyStatus && <p role="status" className="text-xs mt-2">{copyStatus}</p>}
-        <Link to="/import" className="button mt-2 w-full justify-center">
-          <ArrowRight size={14} /> Go to Import
-        </Link>
-      </section>
+
     </div>
   );
 }
@@ -428,28 +428,28 @@ function PersonaCard({
       onClick={onToggle}
       className="text-left p-2 rounded border transition-colors"
       style={{
-        background: selected ? "var(--accent-soft)" : "var(--bg-2)",
-        borderColor: selected ? "var(--accent)" : "var(--line)",
+        background: selected ? "var(--bg-3)" : "var(--bg-1)",
+        borderColor: selected ? "var(--fg-3)" : "var(--line)",
         color: "var(--fg)",
       }}
     >
       <div
         className="text-xs font-semibold mb-1 leading-tight"
-        style={{ color: selected ? "var(--accent)" : "var(--fg)" }}
+        style={{ color: "var(--fg)" }}
       >
         {persona.name}
       </div>
-      <div className="tx-mono text-[10px] muted leading-snug mb-1">
+      <div className="tx-mono text-xs muted leading-snug mb-1">
         {persona.style}
       </div>
-      <div className="text-[10px] muted leading-snug mb-2">
+      <div className="text-xs muted leading-snug mb-2">
         {persona.description}
       </div>
       <div className="flex flex-wrap gap-1">
         {persona.tags.map((tag) => (
           <span
             key={tag}
-            className="tx-mono text-[9px] px-1 rounded"
+            className="tx-mono text-xs px-1 rounded"
             style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
           >
             {tag}

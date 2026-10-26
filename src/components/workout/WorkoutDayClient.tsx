@@ -41,6 +41,7 @@ import { RestTimer } from "./RestTimer";
 import { useDebouncedAutoSave } from "@/lib/workout/useDebouncedAutoSave";
 import { BodyweightWidget } from "./BodyweightWidget";
 import { SessionSummary, computeSessionSummary, type SessionSummaryStats } from "./SessionSummary";
+import "./workout.css";
 
 /**
  * A log's timestamp as a sortable string, `""` when it is not text.
@@ -159,99 +160,63 @@ const ExerciseRow = memo(function ExerciseRow({
     .filter(Boolean)
     .join(" ");
 
+  const unit = exercise.unit ?? "lb";
+
   return (
-    <div
-      style={{
-        padding: "10px 12px",
-        borderBottom: "1px solid var(--line)",
-        background: "var(--bg-1)",
-      }}
-    >
-      <div style={{ marginBottom: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
-          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--fg)", flex: 1 }}>
-            {toTitleCase(exercise.name)}
-          </span>
+    <div className="wk-ex">
+      <div className="wk-ex-head">
+        <span className="wk-ex-name">{toTitleCase(exercise.name)}</span>
+        <div className="wk-ex-tools">
           <button
-            className="btn ghost"
+            className="btn ghost wk-tool"
+            onClick={onOpenHistory}
+            aria-label={`History for ${exercise.name}`}
+            title="Past sessions of this exercise"
+            type="button"
+          >
+            <History size={14} aria-hidden />
+            History
+          </button>
+          <button
+            className="btn ghost wk-tool"
+            onClick={onEdit}
+            aria-label={`Edit prescription for ${exercise.name}`}
+            title="Edit sets, reps, load and rest"
+            type="button"
+          >
+            <Pencil size={14} aria-hidden />
+            Edit
+          </button>
+          <button
+            className="btn ghost wk-tool"
+            onClick={onReplaceExercise}
+            aria-label={`Replace ${exercise.name} from catalogue`}
+            title="Swap for another exercise from the catalogue"
+            type="button"
+          >
+            <ArrowLeftRight size={14} aria-hidden />
+            Replace
+          </button>
+          <button
+            className="btn ghost wk-tool"
             onClick={onToggleUnit}
             disabled={readOnly}
-            style={{
-              padding: "3px 6px",
-              flexShrink: 0,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
-              color: "var(--fg-3)",
-              minWidth: 26,
-              justifyContent: "center",
-            }}
-            aria-label={`Weight unit ${exercise.unit ?? "lb"} — switch to ${(exercise.unit ?? "lb") === "lb" ? "kg" : "lb"}`}
+            aria-label={`Weight unit ${unit} — switch to ${unit === "lb" ? "kg" : "lb"}`}
             title="Weight unit — tap to switch"
             type="button"
           >
-            {exercise.unit ?? "lb"}
-          </button>
-          <button
-            className="btn ghost"
-            onClick={onOpenHistory}
-            style={{ padding: "3px 6px", flexShrink: 0 }}
-            aria-label={`History for ${exercise.name}`}
-            title="History"
-            type="button"
-          >
-            <History size={13} aria-hidden />
-          </button>
-          <button
-            className="btn ghost"
-            onClick={onEdit}
-            style={{ padding: "3px 6px", flexShrink: 0 }}
-            aria-label={`Edit prescription for ${exercise.name}`}
-            title="Edit prescription"
-            type="button"
-          >
-            <Pencil size={13} aria-hidden />
-          </button>
-          <button
-            className="btn ghost"
-            onClick={onReplaceExercise}
-            style={{ padding: "3px 6px", flexShrink: 0 }}
-            aria-label={`Replace ${exercise.name} from catalogue`}
-            title="Replace from catalogue"
-            type="button"
-          >
-            <ArrowLeftRight size={13} aria-hidden />
+            Unit {unit}
           </button>
         </div>
-        {prescription && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
-            {prescription}
-          </div>
-        )}
-        {exercise.notes && (
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--fg-2)",
-              fontFamily: "var(--font-mono)",
-              marginTop: 3,
-            }}
-          >
-            <span
-              style={{
-                color: "var(--fg-3)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: 10,
-                marginRight: 4,
-              }}
-            >
-              prescribed
-            </span>
-            <span>{exercise.notes}</span>
-          </div>
-        )}
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      {prescription && <div className="wk-ex-rx">{prescription}</div>}
+      {exercise.notes && (
+        <div className="wk-ex-note">
+          <b>Prescribed</b>
+          <span>{exercise.notes}</span>
+        </div>
+      )}
+      <div className="wk-sets">
         {cells.map((val, i) => {
           const prescribedStr = i === 0 ? [
             exercise.sets ? `${exercise.sets}×` : "",
@@ -278,54 +243,30 @@ const ExerciseRow = memo(function ExerciseRow({
         })}
         {!readOnly && (
           <button
-            className="cell empty tap-target"
+            className="tap-target wk-addset"
             onClick={onAddSet}
-            style={{
-              width: 28,
-              padding: 0,
-              cursor: "pointer",
-              color: "var(--fg-3)",
-              border: "1px dashed var(--line)",
-            }}
-            title="Add set"
+            title="Add another set"
             aria-label="Add set"
+            type="button"
           >
-            <Plus size={12} aria-hidden />
+            <Plus size={14} aria-hidden />
+            Add set
           </button>
         )}
       </div>
       {/* Timer + note share one line — two rows per exercise was the single
           biggest vertical cost on a phone screen. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <div className="wk-ex-foot">
         <RestTimer restText={exercise.rest} notes={exercise.notes} />
-        <details className="disclosure" style={{ flex: 1, minWidth: 140, marginTop: 4 }} open={!!note}>
-          <summary
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--fg-3)",
-            }}
-          >
-            {note ? "note" : "add note"}
-          </summary>
+        <details className="disclosure wk-note" style={{ flex: "1 1 140px" }} open={!!note}>
+          <summary>{note ? "Note" : "Add note"}</summary>
           <textarea
             value={note}
             readOnly={readOnly}
             onChange={(e) => onNoteChange(e.target.value)}
             rows={2}
+            aria-label={`Note for ${exercise.name}`}
             placeholder="Your note about this set (felt good, ouch, etc.)"
-            style={{
-              width: "100%",
-              marginTop: 4,
-              background: "var(--bg-2)",
-              color: "var(--fg)",
-              border: "1px solid var(--line)",
-              borderRadius: 4,
-              padding: "4px 6px",
-              fontFamily: "inherit",
-              fontSize: 12,
-              resize: "vertical",
-            }}
           />
         </details>
       </div>
@@ -362,35 +303,13 @@ function SectionCard({
 }) {
   const { cls, glyph } = sectionKind(section.type);
   return (
-    <div
-      className={cls}
-      style={{
-        borderLeft: "3px solid var(--sec)",
-        marginBottom: 12,
-        background: "var(--bg-1)",
-        borderRadius: "var(--r)",
-        overflow: "hidden",
-      }}
-    >
+    <div className={`${cls} wk-section`}>
       {/* Header stays a hairline-ruled label, not a filled band — filled bands
           plus the boxed section plus the group rule read as three nested boxes
           on the light themes. */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "7px 12px 5px",
-          borderBottom: "1px solid var(--line)",
-        }}
-      >
-        <span style={{ color: "var(--sec)", fontSize: 14, lineHeight: 1 }}>{glyph}</span>
-        <span
-          className="tx-up"
-          style={{ color: "var(--fg-2)", fontWeight: 600, flex: 1 }}
-        >
-          {section.name}
-        </span>
+      <div className="wk-section-head">
+        <span className="wk-section-glyph" aria-hidden>{glyph}</span>
+        <span className="wk-section-name">{section.name}</span>
       </div>
 
       {section.groups.map((group) => (
@@ -469,105 +388,65 @@ function WorkoutBottomBar({
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div style={{ position: "sticky", bottom: 0, zIndex: 4, background: "var(--bg-1)", borderTop: "1px solid var(--line)" }}>
+    <div className="wk-bar">
       {/* Progress strip — animate transform (not width) to avoid layout thrash */}
-      <div style={{ height: 2, background: "var(--bg-3)", position: "relative", overflow: "hidden" }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "var(--accent)",
-            transform: `scaleX(${pct / 100})`,
-            transformOrigin: "left",
-            transition: "transform .3s",
-          }}
-        />
+      <div className="wk-bar-progress">
+        <div className="wk-bar-fill" style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
 
       {/* Day note textarea */}
       {noteExpanded && (
-        <div style={{ padding: "8px 12px 0" }}>
+        <div className="wk-bar-extra">
           <textarea
             value={dayNote}
             onChange={(e) => onDayNoteChange(e.target.value)}
             rows={3}
             placeholder="Session note (optional)"
-            style={{
-              width: "100%",
-              background: "var(--bg-2)",
-              color: "var(--fg)",
-              border: "1px solid var(--line)",
-              borderRadius: 4,
-              padding: "4px 6px",
-              fontFamily: "inherit",
-              fontSize: 12,
-              resize: "vertical",
-              boxSizing: "border-box",
-            }}
           />
         </div>
       )}
 
       {/* Skip reason row */}
       {skipMode && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px 0" }}>
+        <div className="wk-bar-extra">
           <input
             type="text"
             value={skipReason}
             onChange={(e) => setSkipReason(e.target.value)}
             placeholder="Reason (optional)"
-            style={{
-              flex: 1,
-              background: "var(--bg-2)",
-              color: "var(--fg)",
-              border: "1px solid var(--line)",
-              borderRadius: 4,
-              padding: "4px 8px",
-              fontSize: 12,
-              fontFamily: "inherit",
-            }}
           />
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onSkipCancel}
-            style={{ fontSize: 12 }}
-          >
+          <button type="button" className="btn ghost wk-btn" onClick={onSkipCancel}>
             Cancel
           </button>
           <button
             type="button"
-            className="btn"
+            className="btn wk-btn"
             onClick={() => onSkipConfirm(skipReason)}
             aria-label="Skip →"
-            style={{ fontSize: 12 }}
           >
             Skip →
           </button>
         </div>
       )}
 
-      {/* Main action row — one tight line. Telemetry grows to fill and pushes
-          the action cluster right as an intact group, so no button ever orphans
-          onto its own row; on a narrow phone the row wraps telemetry-over-actions. */}
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", padding: "8px 12px", gap: 8 }}>
+      {/* Main action row. Telemetry grows to fill and pushes the action
+          cluster right as an intact group, so no button ever orphans onto its
+          own row; on a narrow phone the row wraps telemetry-over-actions. */}
+      <div className="wk-bar-row">
         {confirmFinish ? (
           // Confirm lands inline (replacing the actions), not as a stacked banner.
           // Finishing locks the day, so we confirm every time — copy adapts to whether work was logged.
           <>
-            <span
-              role="alert"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--warn)", flex: "1 1 auto", minWidth: 140 }}
-            >
+            <span role="alert" className="wk-confirm">
               {done === 0
                 ? "Nothing logged yet — finish anyway?"
                 : "Finish locks this day — you can't reopen it."}
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-              <button type="button" className="btn ghost" onClick={onCancelConfirm} style={{ fontSize: 12 }}>
+            <div className="wk-actions" style={{ marginLeft: 0 }}>
+              <button type="button" className="btn ghost wk-btn" onClick={onCancelConfirm}>
                 Cancel
               </button>
-              <button type="button" className="btn primary" onClick={onFinish} style={{ fontSize: 12 }}>
+              <button type="button" className="btn primary wk-btn" onClick={onFinish}>
                 {done === 0 ? "Finish anyway" : "Finish & lock"}
               </button>
             </div>
@@ -575,21 +454,17 @@ function WorkoutBottomBar({
         ) : (
           <>
             {/* Telemetry group — sits left; the action cluster's auto-margin does the right-push. */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 120 }}>
+            <div className="wk-telemetry">
               <span
                 role="status"
+                className="wk-status"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
                   color:
                     autoSaveStatus === "error"
                       ? "var(--bad)"
                       : autoSaveStatus === "saved"
                       ? "var(--good)"
-                      : "var(--fg-3)",
+                      : "var(--fg-2)",
                 }}
               >
                 {autoSaveStatus === "saving" && "saving…"}
@@ -599,9 +474,9 @@ function WorkoutBottomBar({
                     save failed
                     <button
                       type="button"
-                      className="btn ghost"
+                      className="btn ghost wk-btn"
                       onClick={onRetrySave}
-                      style={{ fontSize: 11, padding: "2px 6px", color: "var(--bad)", borderColor: "var(--bad)" }}
+                      style={{ color: "var(--bad)", borderColor: "var(--bad)" }}
                     >
                       Retry
                     </button>
@@ -609,44 +484,43 @@ function WorkoutBottomBar({
                 )}
               </span>
               {/* Percent is already carried by the progress strip above — no double duty here. */}
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
+              <span className="wk-num">
                 {done}/{total} sets
               </span>
             </div>
             {/* Action cluster — pinned hard-right; only Finish carries the accent. */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
+            <div className="wk-actions">
               {/* Skip is kept away from the primary so a mid-set thumb-slip can't discard the session */}
               <button
                 type="button"
-                className="btn ghost"
+                className="btn ghost wk-btn"
                 onClick={onSkipDay}
                 disabled={locked}
                 aria-label="Skip day"
-                style={{ fontSize: 11, color: "var(--fg-3)" }}
+                style={{ color: "var(--fg-2)" }}
               >
                 Skip day
               </button>
               <button
                 type="button"
-                className="btn ghost"
+                className="btn ghost wk-btn"
                 onClick={onToggleNote}
                 aria-label="Day note"
-                style={{ fontSize: 11, color: "var(--fg-3)" }}
+                style={{ color: "var(--fg-2)" }}
               >
                 Note {noteExpanded ? "▴" : "▾"}
               </button>
               <button
                 type="button"
-                className={`btn ${!locked ? "primary" : ""}`}
+                className={`btn wk-btn ${!locked ? "primary" : ""}`}
                 onClick={onFinish}
                 disabled={locked}
                 aria-label={alreadyComplete === true ? "Completed" : "Finish workout"}
-                style={{ fontSize: 12 }}
               >
                 {alreadyComplete === true ? (
-                  <><CheckCircle size={13} /> Completed</>
+                  <><CheckCircle size={14} aria-hidden /> Completed</>
                 ) : saved ? (
-                  <><CheckCircle size={13} /> Saved</>
+                  <><CheckCircle size={14} aria-hidden /> Saved</>
                 ) : (
                   "Finish workout"
                 )}
@@ -1167,29 +1041,13 @@ function WorkoutBody({
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Historical session banner */}
       {sessionMode === "viewing" && viewedDate && (
-        <div
-          role="status"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 12px",
-            marginBottom: 12,
-            background: "var(--bg-2)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r)",
-            fontSize: 12,
-            color: "var(--fg-2)",
-          }}
-        >
-          <span style={{ flex: 1, fontFamily: "var(--font-mono)" }}>
-            Viewing completed session from {viewedDate}
-          </span>
+        <div role="status" className="wk-notice">
+          <span>Viewing completed session from {viewedDate}</span>
           <button
             type="button"
-            className="btn"
+            className="btn wk-btn"
             onClick={startNewSession}
-            style={{ fontSize: 12, whiteSpace: "nowrap" }}
+            style={{ whiteSpace: "nowrap" }}
           >
             Start new session
           </button>
@@ -1198,19 +1056,7 @@ function WorkoutBody({
 
       {/* Hydration failed: nothing typed here would be saved, so say so. */}
       {sessionMode === "blocked" && (
-        <p
-          role="alert"
-          style={{
-            margin: "0 0 12px",
-            padding: "8px 12px",
-            background: "var(--bg-2)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r)",
-            fontSize: 12,
-            fontFamily: "var(--font-mono)",
-            color: "var(--fg-2)",
-          }}
-        >
+        <p role="alert" className="wk-notice">
           This day&rsquo;s saved sessions could not be loaded, so logging is off
           until it reads. Your stored workouts are untouched — reload to retry.
         </p>
@@ -1263,7 +1109,7 @@ function WorkoutBody({
       )}
 
       {saveError && (
-        <p role="alert" style={{ color: "var(--bad)", fontSize: 12, fontFamily: "var(--font-mono)", padding: "4px 12px", margin: 0 }}>
+        <p role="alert" className="wk-error">
           {saveError}
         </p>
       )}
@@ -1338,7 +1184,7 @@ export function WorkoutDayClient() {
   // not sit on an eternal "Loading…".
   if (loading) {
     return (
-      <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+      <p className="wk wk-meta">
         Loading…
       </p>
     );
@@ -1346,13 +1192,14 @@ export function WorkoutDayClient() {
 
   if (!program || !day) {
     return (
-      <div style={{ padding: "24px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="wk" style={{ padding: "24px 0", display: "flex", flexDirection: "column", gap: 8 }}>
         <p style={{ color: "var(--fg-2)", fontSize: 14, margin: 0 }}>
           {program ? "That day isn't part of this routine." : "That routine no longer exists."}
         </p>
         <Link
           to="/programs"
-          style={{ color: "var(--accent)", fontSize: 13, fontFamily: "var(--font-mono)", textDecoration: "none" }}
+          className="wk-back"
+          style={{ color: "var(--accent)", fontSize: 14 }}
         >
           ← Back to Routines
         </Link>
@@ -1361,92 +1208,61 @@ export function WorkoutDayClient() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div className="wk" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Header */}
-      <div
-        style={{
-          padding: "12px 0 16px",
-          borderBottom: "1px solid var(--line)",
-          marginBottom: 12,
-        }}
-      >
+      <div className="wk-head">
         {/* Back link + prev/next nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          <Link
-            to={`/programs/${program.id}`}
-            style={{ color: "var(--fg-3)", fontSize: 11, fontFamily: "var(--font-mono)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2 }}
-          >
+        <div className="wk-head-nav">
+          <Link to={`/programs/${program.id}`} className="wk-back">
             ← Routines
           </Link>
           <span style={{ flex: 1 }} />
           <button
             type="button"
-            className="btn ghost"
+            className="btn ghost wk-tool"
             aria-label="Previous day"
             disabled={dayIndex === 0}
             onClick={() => navigate(`/programs/${program.id}/days/${days[dayIndex - 1].id}`)}
-            style={{ padding: "3px 6px" }}
           >
-            <ChevronLeft size={14} aria-hidden />
+            <ChevronLeft size={16} aria-hidden />
           </button>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+          <span className="wk-daypos">
             Day {dayIndex + 1} of {days.length}
           </span>
           <button
             type="button"
-            className="btn ghost"
+            className="btn ghost wk-tool"
             aria-label="Next day"
             disabled={dayIndex === days.length - 1}
             onClick={() => navigate(`/programs/${program.id}/days/${days[dayIndex + 1].id}`)}
-            style={{ padding: "3px 6px" }}
           >
-            <ChevronRight size={14} aria-hidden />
+            <ChevronRight size={16} aria-hidden />
           </button>
         </div>
 
-        <h1
-          style={{
-            fontSize: 16,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            margin: 0,
-            color: "var(--fg)",
-          }}
-        >
-          {day.title}
-        </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-          <p style={{ fontSize: 12, color: "var(--fg-3)", margin: 0, fontFamily: "var(--font-mono)", flex: 1 }}>
+        <h1 className="wk-title">{day.title}</h1>
+        <div className="wk-head-sub">
+          <p>
             {day.sections.length} sections ·{" "}
             {day.sections.reduce((n, s) => n + s.groups.reduce((m, g) => m + g.exercises.length, 0), 0)}{" "}
             exercises
           </p>
           <button
             type="button"
-            className="btn ghost"
+            className="btn ghost wk-tool"
             onClick={() => setAiModalOpen(true)}
-            style={{ padding: "4px 8px", gap: 5, display: "flex", alignItems: "center", fontSize: 11, color: "var(--fg-3)" }}
             aria-label="Modify with AI"
             title="Modify this day with an external LLM"
           >
-            <Sparkles size={13} aria-hidden />
+            <Sparkles size={14} aria-hidden />
             <span>Modify</span>
           </button>
         </div>
 
         {/* Format guide */}
-        <details className="disclosure" style={{ marginTop: 6 }}>
-          <summary
-            style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}
-          >
-            format guide
-          </summary>
-          <div
-            style={{
-              paddingTop: 5, fontSize: 11, color: "var(--fg-2)",
-              fontFamily: "var(--font-mono)", lineHeight: 2,
-            }}
-          >
+        <details className="disclosure wk-guide" style={{ marginTop: 6 }}>
+          <summary>Format guide</summary>
+          <div className="wk-guide-body">
             {[
               ["70x8", "weight x reps (done)"],
               ["+70x8", "personal record"],
@@ -1455,9 +1271,9 @@ export function WorkoutDayClient() {
               ["skip", "skipped set"],
               ["pain", "pain noted"],
             ].map(([ex, desc]) => (
-              <span key={ex} style={{ display: "inline-flex", gap: 4, marginRight: 14, alignItems: "baseline" }}>
-                <code style={{ background: "var(--bg-3)", padding: "0 4px", borderRadius: "var(--r-sm)" }}>{ex}</code>
-                <span style={{ color: "var(--fg-3)", fontSize: 10 }}>{desc}</span>
+              <span key={ex}>
+                <code>{ex}</code>
+                <span>{desc}</span>
               </span>
             ))}
           </div>
@@ -1465,23 +1281,11 @@ export function WorkoutDayClient() {
       </div>
 
       {!!program.progression?.length && (
-        <div
-          style={{
-            padding: "8px 10px",
-            marginBottom: 12,
-            background: "var(--bg-2)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r)",
-            fontSize: 11,
-            color: "var(--fg-3)",
-          }}
-        >
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
-            Progression
-          </div>
+        <div className="wk-progression">
+          <div className="wk-progression-title">Progression</div>
           {program.progression.map((p, i) => (
             <div key={i} style={{ marginTop: i === 0 ? 0 : 2 }}>
-              <strong style={{ color: "var(--fg-2)", fontWeight: 500 }}>{p.applies}</strong> → {p.rule}
+              <strong>{p.applies}</strong> → {p.rule}
             </div>
           ))}
         </div>

@@ -43,15 +43,15 @@ beforeEach(() => {
 describe("RoutinesIndexClient", () => {
   it("shows active routine pinned at top with ACTIVE badge", () => {
     render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
-    expect(screen.getByText("ACTIVE")).toBeInTheDocument();
+    expect(screen.getByText("Active")).toBeInTheDocument();
     expect(screen.getByText("Upper/Lower v3")).toBeInTheDocument();
   });
 
   it("shows stat tiles for active routine", () => {
     render(<MemoryRouter><RoutinesIndexClient /></MemoryRouter>);
-    expect(screen.getByText("DAYS/WK")).toBeInTheDocument();
-    expect(screen.getByText("STREAK")).toBeInTheDocument();
-    expect(screen.getByText("DONE")).toBeInTheDocument();
+    expect(screen.getByText("Days / week")).toBeInTheDocument();
+    expect(screen.getByText("Streak")).toBeInTheDocument();
+    expect(screen.getByText("Complete")).toBeInTheDocument();
   });
 
   it("shows compact rows for non-active routines", () => {

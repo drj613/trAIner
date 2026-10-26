@@ -78,7 +78,7 @@ async function openImportReview(page: Page, json: string) {
 async function openWorkout(page: Page, week: number, title: string) {
   await page.getByRole("button", { name: `WK ${week}` }).click();
   await page.getByText(title, { exact: true }).click();
-  await page.getByRole("button", { name: "View →" }).click();
+  await page.getByRole("button", { name: "View workout" }).click();
   await expect(page).toHaveURL(/\/programs\/[^/]+\/days\//);
   await page.locator('input[id^="cell-"]').first().waitFor();
 }
@@ -125,7 +125,7 @@ test.describe("Routine import review and editing", () => {
 
     await page.getByRole("button", { name: /save program/i }).click();
     await expect(page).toHaveURL(/\/programs\/[^/]+$/);
-    await expect(page.getByText("Eight Week Review Fixture")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Eight Week Review Fixture", exact: true })).toBeVisible();
     await expect(page.getByText(/Add 2\.5 kg after all reps are completed/i)).toBeVisible();
     await page.reload();
     await expect(page.getByText("Add 2.5 kg after all reps are completed.")).toBeVisible();

@@ -33,10 +33,10 @@ async function countLogs(page: Page): Promise<number> {
 
 /** SPA round-trip: day page → program detail → back to the day page. */
 async function bounceAwayAndBack(page: Page) {
-  await page.getByRole("link", { name: /routines/i }).click();
+  await page.getByRole("main").getByRole("link", { name: /routines/i }).click();
   // Expand the collapsed day card, then enter the day.
   await page.getByText("Day 1", { exact: true }).click();
-  await page.getByRole("button", { name: "View →" }).first().click();
+  await page.getByRole("button", { name: "View workout" }).first().click();
   await expect(page.locator('input[id^="cell-"]').first()).toBeVisible();
   await waitForIdb(page);
 }

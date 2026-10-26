@@ -140,10 +140,10 @@ test.describe("Routines index", () => {
     await sharedPage.getByRole("button", { name: "Activate" }).click();
     // Wait for the in-page state to flip to ACTIVE — this guarantees the
     // IndexedDB write committed; reloading sooner can abort the transaction.
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
     await sharedPage.reload();
     // Confirm the active state persisted (IDB re-read on mount)
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
   });
 
   test.afterAll(async () => {
@@ -156,15 +156,15 @@ test.describe("Routines index", () => {
 
   // 1. Active program renders with ACTIVE badge
   test("active program renders with ACTIVE badge", async () => {
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
   });
 
   // 2. Stat tiles show days/week and length labels
   test("stat tiles show days/week and length", async () => {
     // StatTile renders the label string directly: <div>{label}</div>
     // Source uses uppercase strings: "DAYS/WK", "LENGTH", "STREAK", "DONE"
-    await expect(sharedPage.getByText("DAYS/WK")).toBeVisible();
-    await expect(sharedPage.getByText("LENGTH")).toBeVisible();
+    await expect(sharedPage.getByText("Days / week")).toBeVisible();
+    await expect(sharedPage.getByText("Length")).toBeVisible();
   });
 
   // 3. WeekStrip renders day labels inside active card
@@ -174,7 +174,7 @@ test.describe("Routines index", () => {
     // DOM text is mixed-case; CSS textTransform:uppercase is visual-only.
     await expect(sharedPage.getByText("Mon")).toBeVisible();
     // Confirm the active card section exists (WeekStrip is inside ActiveCard)
-    await expect(sharedPage.getByText("Open today")).toBeVisible();
+    await expect(sharedPage.getByRole("button", { name: "Continue", exact: true })).toBeVisible();
   });
 
   // 4. Draft programs render as compact rows with "not started" subtitle
@@ -194,7 +194,7 @@ test.describe("Routines index", () => {
     // The archived program must BE visible
     await expect(sharedPage.getByText("Archived Program")).toBeVisible();
     // The active card (with ACTIVE badge) is always rendered regardless of filter
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
   });
 
   // 6. Filter chip "all" restores full list (drafts + archived all visible)
@@ -205,7 +205,7 @@ test.describe("Routines index", () => {
     await expect(sharedPage.getByText("Second Draft Program")).toBeVisible();
     await expect(sharedPage.getByText("Archived Program")).toBeVisible();
     // ACTIVE badge still present
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible();
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible();
   });
 
   // 7. 3-dot menu opens and shows action items
@@ -279,7 +279,7 @@ test.describe("Routines index", () => {
       )
       .toBe("E2E Test Program");
     await sharedPage.reload();
-    await expect(sharedPage.getByText("ACTIVE", { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(sharedPage.getByText("Active", { exact: true })).toBeVisible({ timeout: 8000 });
     await expect(sharedPage.getByText("E2E Test Program")).toBeVisible();
   });
 

@@ -25,6 +25,7 @@ test.describe("Goal gate", () => {
   });
 
   test("defaults to general fitness with no partial tag", async () => {
+    await page.getByRole("button", { name: "View analysis" }).click();
     const select = page.getByLabel(/routine goal/i);
     await expect(select).toBeVisible({ timeout: 8000 });
     await expect(select).toHaveValue("general");
@@ -42,6 +43,7 @@ test.describe("Goal gate", () => {
     await page.waitForTimeout(500);
     await page.reload();
     await page.waitForLoadState("load");
+    await page.getByRole("button", { name: "View analysis" }).click();
     const select = page.getByLabel(/routine goal/i);
     await expect(select).toBeVisible({ timeout: 10000 });
     await expect(select).toHaveValue("strength");

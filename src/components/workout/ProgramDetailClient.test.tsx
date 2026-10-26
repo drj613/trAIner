@@ -188,11 +188,11 @@ describe("ProgramDetailClient badges survive an unreadable stored timestamp", ()
 });
 
 describe("ProgramDetailClient View→ navigation", () => {
-  it("expanded day card shows View → button", async () => {
+  it("expanded day card shows View workout button", async () => {
     renderDetail();
     await screen.findByText("Push Day");
     fireEvent.click(screen.getByText("Push Day"));
-    expect(screen.getByRole("button", { name: /view →/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /view workout/i })).toBeInTheDocument();
   });
 });
 
@@ -224,7 +224,8 @@ describe("ProgramDetailClient progression display", () => {
 describe("ProgramDetailClient goal persistence", () => {
   it("persists a goal change and re-renders partial grading", async () => {
     renderDetail();
-    const select = await screen.findByLabelText(/routine goal/i);
+    fireEvent.click(await screen.findByRole("button", { name: /view analysis/i }));
+    const select = screen.getByLabelText(/routine goal/i);
     fireEvent.change(select, { target: { value: "strength" } });
     await waitFor(() =>
       expect(programRepo.save).toHaveBeenCalledWith(expect.objectContaining({ goal: "strength" })),
@@ -237,11 +238,18 @@ describe("ProgramDetailClient goal persistence", () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     (programRepo.save as jest.Mock).mockRejectedValueOnce(new Error("quota"));
     renderDetail();
-    const select = await screen.findByLabelText(/routine goal/i);
+    fireEvent.click(await screen.findByRole("button", { name: /view analysis/i }));
+    const select = screen.getByLabelText(/routine goal/i);
     fireEvent.change(select, { target: { value: "strength" } });
     await waitFor(() => expect(alertSpy).toHaveBeenCalled());
     expect((select as HTMLSelectElement).value).toBe("general"); // rolled back
     alertSpy.mockRestore();
     errorSpy.mockRestore();
   });
+});
+
+it("opens a workout from the overview before expanding a day", async () => {
+  renderDetail();
+  fireEvent.click(await screen.findByRole("button", { name: "Start workout" }));
+  expect(screen.getByTestId("day-route")).toBeInTheDocument();
 });

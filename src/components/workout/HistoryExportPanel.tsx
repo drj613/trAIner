@@ -110,6 +110,7 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
         </label>
       </div>
 
+      <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--fg-2)" }}>Leave dates blank to include all dates.</p>
       {fieldError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{fieldError}</p>}
       {deliveryError && <p role="alert" style={{ color: "var(--danger, #b42318)", margin: "0 0 8px", fontSize: 12 }}>{deliveryError}</p>}
       {summary && (
@@ -127,11 +128,11 @@ export function HistoryExportPanel({ logs, programs, context, onClose }: Props) 
           value={preview}
           onFocus={(event) => event.currentTarget.select()}
           rows={12}
-          style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11, resize: "vertical", whiteSpace: "pre" }}
+          style={{ ...inputStyle, fontFamily: "var(--font-mono)", fontSize: 11, resize: "vertical", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
         />
       </label>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-        <button type="button" className="btn" disabled={!canDeliver} onClick={copyPreview}>Copy</button>
+        <button type="button" className="button" disabled={!canDeliver} onClick={copyPreview}>Copy</button>
         <button type="button" className="btn" disabled={!canDeliver} onClick={downloadPreview}>Download .txt</button>
         <span role="status" aria-live="polite" style={{ fontSize: 12, color: "var(--accent)" }}>{copied ? "Copied" : ""}</span>
       </div>

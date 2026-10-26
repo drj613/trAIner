@@ -27,5 +27,6 @@ module.exports = {
     "<rootDir>/.worktrees/",
     "<rootDir>/.claude/",
     "<rootDir>/e2e/",
+    "<rootDir>/scripts/capture-user-flows/",
   ],
 };

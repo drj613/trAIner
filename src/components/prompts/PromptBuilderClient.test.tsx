@@ -463,3 +463,11 @@ describe("PromptBuilderClient section review", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Copied");
   });
 });
+
+test("keeps selected coach reference text collapsed initially", async () => {
+  await renderBuilder(false);
+  const section = screen.getByText("Selected coach instructions").closest("section")!;
+  const coaches = section.querySelectorAll("details");
+  expect(coaches.length).toBeGreaterThan(0);
+  for (const coach of coaches) expect(coach).not.toHaveAttribute("open");
+});

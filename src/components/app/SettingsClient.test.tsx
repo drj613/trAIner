@@ -150,17 +150,17 @@ describe("SettingsClient — storage persistence", () => {
     expect(await screen.findByText(/^protected$/)).toBeInTheDocument();
   });
 
-  it("shows evictable state with a Request protection button when denied", async () => {
+  it("shows backup recommendation with a Request protection button when denied", async () => {
     (getPersistenceState as jest.Mock).mockResolvedValueOnce("denied");
     render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
-    expect(await screen.findByText(/^evictable$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^backup recommended$/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /request protection/i })).toBeInTheDocument();
   });
 
-  it("shows unprotected state with no button when unsupported", async () => {
+  it("shows backup requirement with no button when unsupported", async () => {
     (getPersistenceState as jest.Mock).mockResolvedValueOnce("unsupported");
     render(<MemoryRouter><LocalDataProvider><SettingsClient /></LocalDataProvider></MemoryRouter>);
-    expect(await screen.findByText(/^unprotected$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^backup required$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /request protection/i })).not.toBeInTheDocument();
   });
 });

@@ -160,7 +160,7 @@ export function ResolutionStep({
           style={{ background: "var(--bg-3)" }}
         >
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-[width]"
             style={{ width: `${progress}%`, background: "var(--accent)" }}
           />
         </div>
@@ -338,7 +338,7 @@ function GroupCard({
 
           {!isVersionChoice && !decided && (firstItem?.suggestions.length ?? 0) > 0 && (
             <div className="stack">
-              <p className="tx-up text-[10px]">Suggestions</p>
+              <p className="tx-up text-xs">Suggestions</p>
               {firstItem?.suggestions.map((s) => (
                 <SuggestionRow key={s.exerciseId} suggestion={s} onSelect={fanOut} />
               ))}
@@ -390,12 +390,12 @@ function GroupCard({
             </div>
           </div>
           {unrememberable !== undefined && (
-            <p className="text-[10px]" style={{ color: "var(--warn, #e6b664)" }}>
+            <p className="text-xs" style={{ color: "var(--warn, #e6b664)" }}>
               {unrememberable}
             </p>
           )}
           {isSplit && unrememberable === undefined && (
-            <p className="text-[10px] muted">
+            <p className="text-xs muted">
               Different versions chosen — can't be remembered.
             </p>
           )}
@@ -404,7 +404,7 @@ function GroupCard({
 
       {separated && (
         <div className="stack" style={{ gap: 4 }}>
-          <p className="tx-up text-[10px]">Occurrences</p>
+          <p className="tx-up text-xs">Occurrences</p>
           {group.occurrences.map((occurrence) =>
             isVersionChoice ? (
               <div key={occurrence.path} className="flex items-center gap-2">
@@ -512,7 +512,7 @@ function SuggestionRow({
       </span>
       <span className="flex-1">{toTitleCase(suggestion.name)}</span>
       <span
-        className="text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0"
+        className="text-xs px-1.5 py-0.5 rounded shrink-0"
         style={{ background: "var(--bg-3)", color: "var(--fg-3)" }}
       >
         {Math.round(suggestion.score * 100)}%
@@ -576,7 +576,7 @@ function SearchPicker({
               <span className="flex-1">{toTitleCase(r.name)}</span>
               {r.isUser && (
                 <span
-                  className="text-[10px] px-1 rounded font-mono shrink-0"
+                  className="text-xs px-1 rounded shrink-0"
                   style={{
                     background: "var(--accent-soft)",
                     color: "var(--accent)",

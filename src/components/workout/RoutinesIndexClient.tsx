@@ -1,7 +1,9 @@
 "use client";
+import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { PageHeader } from "@/components/app/PageHeader";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 import { programStatus, programDaysPerWeek, programLengthWeeks } from "@/lib/programs/routineMeta";
 import type { ProgramDocument } from "@/lib/programs/types";
@@ -15,34 +17,19 @@ const STATUS_COLOR: Record<string, string> = {
   archived: "var(--fg-3)",
 };
 
-function StatusDot({ status }: { status: string }) {
-  return (
-    <span
-      style={{
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        background: STATUS_COLOR[status] ?? "var(--fg-3)",
-        flexShrink: 0,
-        display: "inline-block",
-      }}
-    />
-  );
-}
-
 function StatusBadge({ status }: { status: string }) {
-  const label = status.toUpperCase();
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
   const color = STATUS_COLOR[status] ?? "var(--fg-3)";
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 9.5,
+
+        fontSize: 12,
         fontWeight: 600,
-        letterSpacing: "0.1em",
+
         color,
         padding: "1px 6px",
-        borderRadius: "var(--r-sm)",
+        borderRadius: 6,
         border: `1px solid ${color}`,
         background: status === "active" ? "rgba(127,199,122,0.08)" : "transparent",
       }}
@@ -58,16 +45,15 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       style={{
         background: "var(--bg-2)",
         border: "1px solid var(--line)",
-        borderRadius: "var(--r-sm)",
+        borderRadius: 6,
         padding: "4px 6px",
       }}
     >
       <div
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
+
+          fontSize: 12,
+
           color: "var(--fg-3)",
           marginBottom: 1,
         }}
@@ -76,7 +62,7 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
       </div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+
           fontSize: 12,
           fontWeight: 500,
           color: accent ? "var(--accent)" : "var(--fg)",
@@ -104,7 +90,7 @@ function WeekStrip({ days }: { days: ProgramDocument["days"] }) {
               height: 28,
               background: isRest ? "transparent" : "var(--bg-2)",
               border: `1px ${isRest ? "dashed" : "solid"} var(--line)`,
-              borderRadius: "var(--r-sm)",
+              borderRadius: 6,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -113,10 +99,10 @@ function WeekStrip({ days }: { days: ProgramDocument["days"] }) {
           >
             <span
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 8.5,
-                color: "var(--fg-4)",
-                textTransform: "uppercase",
+
+                fontSize: 12,
+                color: "var(--fg-3)",
+
               }}
             >
               {DAY_LABELS[i] ?? `D${i + 1}`}
@@ -155,8 +141,8 @@ function ActiveCard({
     <div
       style={{
         background: "var(--bg-1)",
-        border: "1px solid var(--accent)",
-        borderRadius: "var(--r)",
+        border: "1px solid var(--line)",
+        borderRadius: 8,
         overflow: "hidden",
         marginBottom: 10,
       }}
@@ -164,7 +150,7 @@ function ActiveCard({
       <div
         style={{
           padding: "10px 12px 8px",
-          background: "var(--accent-soft)",
+          background: "var(--bg-2)",
           borderBottom: "1px solid var(--line)",
           display: "flex",
           alignItems: "center",
@@ -175,7 +161,7 @@ function ActiveCard({
         <span style={{ flex: 1 }} />
         {program.lastRunAt && (
           <span
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-2)" }}
+            style={{ fontSize: 12, color: "var(--fg-2)" }}
           >
             last run · {program.lastRunAt.slice(0, 10)}
           </span>
@@ -195,7 +181,7 @@ function ActiveCard({
         {program.description && (
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 12,
               color: "var(--fg-3)",
               marginBottom: 10,
               lineHeight: 1.4,
@@ -207,15 +193,15 @@ function ActiveCard({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr",
             gap: 6,
             marginBottom: 10,
           }}
         >
-          <StatTile label="DAYS/WK" value={String(dpw)} />
-          <StatTile label="LENGTH" value={`${lw}w`} />
-          <StatTile label="STREAK" value={`${program.streakWeeks ?? 0}w`} />
-          <StatTile label="DONE" value={`${pct}%`} accent={pct >= 50} />
+          <StatTile label="Days / week" value={String(dpw)} />
+          <StatTile label="Length" value={`${lw}w`} />
+          <StatTile label="Streak" value={`${program.streakWeeks ?? 0}w`} />
+          <StatTile label="Complete" value={`${pct}%`} accent={pct >= 50} />
         </div>
         <WeekStrip days={program.days} />
         <div style={{ display: "flex", gap: 6 }}>
@@ -225,11 +211,11 @@ function ActiveCard({
             onClick={onRun}
             style={{ flex: 1, justifyContent: "center" }}
           >
-            Open today
+            Continue
           </button>
           <button
             type="button"
-            className="button"
+            className="button secondary"
             onClick={onOpen}
             style={{ flex: 1, justifyContent: "center" }}
           >
@@ -316,7 +302,7 @@ function RoutineRow({
         opacity: status === "archived" ? 0.7 : 1,
       }}
     >
-      <StatusDot status={status} />
+
       <button
         type="button"
         onClick={onOpen}
@@ -334,7 +320,7 @@ function RoutineRow({
       >
         <div
           style={{
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 500,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -345,17 +331,18 @@ function RoutineRow({
         </div>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
+
+            fontSize: 12,
             color: "var(--fg-3)",
             marginTop: 1,
           }}
         >
           {dpw}d/wk · {lw}w
-          {status === "draft" ? " · not started" : status === "completed" ? " · done" : ""}
+          {status === "draft" ? " · Not started" : status === "completed" ? " · Completed" : status === "archived" ? " · Archived" : ""}
           {program.lastRunAt && ` · ${program.lastRunAt.slice(0, 10)}`}
         </div>
       </button>
+      <button type="button" className="btn" onClick={onOpen}>Open</button>
       <button
         type="button"
         aria-label="Open menu"
@@ -386,7 +373,7 @@ function RoutineRow({
               marginTop: 2,
               background: "var(--bg-2)",
               border: "1px solid var(--line)",
-              borderRadius: "var(--r)",
+              borderRadius: 8,
               overflow: "hidden",
               zIndex: 10,
               minWidth: 140,
@@ -444,6 +431,7 @@ export function RoutinesIndexClient() {
   const { programs, loading, activateProgram, duplicateProgram, removeProgram, saveProgram } = useLocalData();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("all");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (loading) return <p className="muted">Loading routines…</p>;
 
@@ -453,69 +441,52 @@ export function RoutinesIndexClient() {
     filter === "all" ? others : others.filter((p) => programStatus(p) === filter);
 
   async function handleActivate(id: string) {
+    setActionError(null);
     try {
       await activateProgram(id);
     } catch (err) {
       console.error("Failed to activate routine", err);
+      setActionError("Could not activate routine. Please try again.");
     }
   }
 
   async function handleMarkDone(program: ProgramDocument) {
+    setActionError(null);
     try {
       await saveProgram({ ...program, active: false, status: "completed" });
     } catch (err) {
       console.error("Failed to mark routine done", err);
+      setActionError("Could not mark routine done. Please try again.");
     }
   }
 
   async function handleDuplicate(id: string) {
+    setActionError(null);
     try {
       const copy = await duplicateProgram(id);
       navigate(`/programs/${copy.id}`);
     } catch (err) {
       console.error("Failed to duplicate routine", err);
+      setActionError("Could not duplicate routine. Please try again.");
     }
   }
 
   async function handleDelete(id: string) {
+    setActionError(null);
     if (!confirm("Delete this routine?")) return;
     try {
       await removeProgram(id);
     } catch (err) {
       console.error("Failed to delete routine", err);
+      setActionError("Could not delete routine. Please try again.");
     }
   }
 
   return (
-    <div>
-      <div
-        style={{
-          padding: "10px 12px",
-          borderBottom: "1px solid var(--line)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="tx-up">Routines</span>
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--fg-3)",
-              marginTop: 1,
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            {programs.length} total · {programs.filter((p) => programStatus(p) === "active").length} active ·{" "}
-            {programs.filter((p) => programStatus(p) === "draft").length} draft
-          </div>
-        </div>
-        <Link to="/programs/new" className="button" style={{ padding: "5px 10px", fontSize: 11.5 }}>
-          + New
-        </Link>
-      </div>
-
+    <div className="progress-screen">
+      <ProgressScreenStyles />
+      <PageHeader title="Routines" description={`${programs.length} total · ${programs.filter((p) => programStatus(p) === "active").length} active · ${programs.filter((p) => programStatus(p) === "draft").length} draft`} action={<Link to="/programs/new" className={active ? "button secondary" : "button"}>New routine</Link>} />
+      {actionError && <p role="alert" style={{ color: "var(--bad)", fontSize: 14 }}>{actionError}</p>}
       {active && (
         <div style={{ padding: "10px 10px 0" }}>
           <ActiveCard
@@ -531,13 +502,11 @@ export function RoutinesIndexClient() {
           padding: "4px 10px 8px",
           display: "flex",
           alignItems: "center",
+          flexWrap: "wrap",
           gap: 4,
           borderBottom: "1px solid var(--line)",
         }}
       >
-        <span className="tx-up" style={{ fontSize: 9.5 }}>
-          Other
-        </span>
         {(["all", "draft", "completed", "archived"] as Filter[]).map((k) => {
           const count =
             k === "all"
@@ -551,16 +520,16 @@ export function RoutinesIndexClient() {
               onClick={() => setFilter(k)}
               style={{
                 padding: "2px 7px",
-                borderRadius: "var(--r-sm)",
-                background: isActive ? "var(--accent-soft)" : "transparent",
-                border: `1px solid ${isActive ? "var(--accent)" : "var(--line)"}`,
-                color: isActive ? "var(--accent)" : "var(--fg-2)",
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                borderRadius: 6,
+                background: isActive ? "var(--bg-3)" : "transparent",
+                border: `1px solid ${isActive ? "var(--fg)" : "var(--line)"}`,
+                color: "var(--fg-2)",
+
+                fontSize: 12,
                 cursor: "pointer",
               }}
             >
-              {k} <span style={{ color: "var(--fg-4)" }}>·{count}</span>
+              {k} <span style={{ color: "var(--fg-3)" }}>·{count}</span>
             </button>
           );
         })}
@@ -576,7 +545,7 @@ export function RoutinesIndexClient() {
               fontSize: 12,
               background: "var(--bg-1)",
               border: "1px dashed var(--line)",
-              borderRadius: "var(--r)",
+              borderRadius: 8,
             }}
           >
             <div style={{ marginBottom: 4 }}>
@@ -604,22 +573,6 @@ export function RoutinesIndexClient() {
         )}
       </div>
 
-      <div
-        style={{
-          padding: "10px 12px",
-          borderTop: "1px solid var(--line)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 10.5,
-          color: "var(--fg-3)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span>routines.json · {programs.length} entries</span>
-        <span style={{ flex: 1 }} />
-        <span>local</span>
-      </div>
     </div>
   );
 }

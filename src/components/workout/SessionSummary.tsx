@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { CheckCircle } from "lucide-react";
 import { classifyCell } from "./SetCell";
+import "./workout.css";
 import type { CellMap } from "@/lib/workout/cellMap";
 
 export type SessionSummaryStats = {
@@ -42,25 +43,9 @@ type Props = {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: "pr" | "bad" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 64 }}>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontVariantNumeric: "tabular-nums",
-          fontSize: 22,
-          fontWeight: 600,
-          lineHeight: 1,
-          color: tone === "pr" ? "var(--pr)" : tone === "bad" ? "var(--bad)" : "var(--fg)",
-        }}
-      >
-        {value}
-      </span>
-      <span
-        className="tx-up"
-        style={{ fontSize: 10, color: "var(--fg-3)" }}
-      >
-        {label}
-      </span>
+    <div className="wk-stat">
+      <span className={`wk-stat-value${tone ? ` ${tone}` : ""}`}>{value}</span>
+      <span className="wk-stat-label">{label}</span>
     </div>
   );
 }
@@ -79,47 +64,30 @@ export function SessionSummary({ dayTitle, stats, onNext, onReview }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label={`${dayTitle} complete`}
-      style={{ position: "fixed", inset: 0, zIndex: 60 /* --z-overlay */, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+      className="wk-summary"
     >
-      <div
-        onClick={onReview}
-        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", animation: "fade .16s" }}
-      />
-      <div
-        style={{
-          position: "relative",
-          width: "min(100%, 480px)",
-          margin: 12,
-          background: "var(--bg-1)",
-          border: "1px solid var(--line-2)",
-          borderRadius: "var(--r-lg)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-          padding: 18,
-          animation: "slideup .18s cubic-bezier(.2,.7,.3,1)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <CheckCircle size={18} aria-hidden style={{ color: "var(--good)" }} />
-          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--fg)" }}>
-            {dayTitle} done
-          </span>
-        </div>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-3)", margin: "0 0 16px" }}>
+      <div className="wk-summary-scrim" onClick={onReview} />
+      <div className="wk-summary-sheet">
+        <h2 className="wk-summary-title">
+          <CheckCircle size={20} aria-hidden />
+          <span>{dayTitle} done</span>
+        </h2>
+        <p className="wk-summary-sub">
           {stats.setsDone} of {stats.setsTotal} sets logged · {pct}%
         </p>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginBottom: 18 }}>
+        <div className="wk-summary-stats">
           <Stat label="Exercises" value={stats.exercises} />
           <Stat label="Sets" value={stats.setsDone} />
           {stats.prs > 0 && <Stat label={stats.prs === 1 ? "PR" : "PRs"} value={stats.prs} tone="pr" />}
           {stats.misses > 0 && <Stat label={stats.misses === 1 ? "Miss" : "Misses"} value={stats.misses} tone="bad" />}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" className="btn ghost" onClick={onReview} style={{ fontSize: 12 }}>
+        <div className="wk-summary-actions">
+          <button type="button" className="btn ghost wk-btn" onClick={onReview}>
             Review session
           </button>
-          <button ref={nextRef} type="button" className="btn primary" onClick={onNext} aria-label="Continue to next day" style={{ fontSize: 12 }}>
+          <button ref={nextRef} type="button" className="btn primary wk-btn" onClick={onNext} aria-label="Continue to next day">
             Next day →
           </button>
         </div>

@@ -1,4 +1,6 @@
 "use client";
+import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
+import { PageHeader } from "@/components/app/PageHeader";
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
@@ -73,13 +75,13 @@ function TrendArrow({ dir }: { dir: "up" | "flat" | "down" }) {
   const map = {
     up: { color: "var(--good)", char: "↑" },
     down: { color: "var(--bad)", char: "↓" },
-    flat: { color: "var(--fg-4)", char: "→" },
+    flat: { color: "var(--fg-3)", char: "→" },
   };
   const m = map[dir];
   return (
     <span
       data-testid="trend"
-      style={{ color: m.color, fontFamily: "var(--font-mono)", fontSize: 11 }}
+      style={{ color: m.color, fontSize: 12 }}
     >
       {m.char}
     </span>
@@ -102,7 +104,7 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
       data-testid="version-summary"
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr auto",
+        gridTemplateColumns: "minmax(0, 1fr)",
         gap: 8,
         alignItems: "center",
         padding: "8px 12px",
@@ -111,14 +113,14 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
     >
       <div style={{ minWidth: 0 }}>
         <div style={{
-          display: "flex", alignItems: "baseline", gap: 6, fontSize: 13, fontWeight: 500,
+          display: "flex", alignItems: "baseline", gap: 6, fontSize: 14, fontWeight: 500,
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
           <span>{summary.label}</span>
           <TrendArrow dir={summary.trend} />
         </div>
         <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-3)",
+           fontSize: 12, color: "var(--fg-3)",
           display: "flex", gap: 8, marginTop: 2,
         }}>
           <span>
@@ -126,13 +128,14 @@ function VersionPanel({ summary }: { summary: VersionHistorySummary }) {
             {" · "}
             {summary.entryCount} {summary.entryCount === 1 ? "entry" : "entries"}
           </span>
-          <span style={{ color: "var(--fg-4)" }}>last {formatShortDate(summary.lastDate)}</span>
+          <span style={{ color: "var(--fg-3)" }}>last {formatShortDate(summary.lastDate)}</span>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
         <MiniSpark nums={summary.sessionVolumesLb} />
+        <span style={{ fontSize: 12, color: "var(--fg-2)" }}>Volume · lb × reps / session</span>
         {summary.bestSetLabel && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--accent)" }}>
+          <span style={{ fontSize: 12, color: "var(--accent)" }}>
             {summary.bestSetLabel}
           </span>
         )}
@@ -168,7 +171,7 @@ function FamilyDetail({
           {toTitleCase(family.label)}
         </h2>
         <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)",
+           fontSize: 12, color: "var(--fg-3)",
           marginTop: 2, display: "flex", gap: 6,
         }}>
           <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
@@ -183,7 +186,7 @@ function FamilyDetail({
           across mechanically different versions of one movement is a number
           nobody performed. */}
       <div style={{
-        border: "1px solid var(--line)", borderRadius: "var(--r)",
+        border: "1px solid var(--line)", borderRadius: 8,
         background: "var(--bg-2)", overflow: "hidden", marginBottom: 12,
       }}>
         {versions.map((version) => (
@@ -195,7 +198,7 @@ function FamilyDetail({
         every session
       </span>
       <div style={{
-        border: "1px solid var(--line)", borderRadius: "var(--r)",
+        border: "1px solid var(--line)", borderRadius: 8,
         background: "var(--bg-2)", overflow: "hidden",
       }}>
         <HistoryWorkoutList groups={groups} onCorrect={onCorrect} />
@@ -210,9 +213,9 @@ const FILTERS = ["all", "recent", "stale"] as const;
 type Filter = (typeof FILTERS)[number];
 
 const SORTS = [
-  { id: "workouts", label: "#" },
-  { id: "name", label: "a-z" },
-  { id: "recent", label: "last" },
+  { id: "workouts", label: "Sessions" },
+  { id: "name", label: "Name" },
+  { id: "recent", label: "Recent" },
 ] as const;
 type Sort = (typeof SORTS)[number]["id"];
 
@@ -315,37 +318,21 @@ export function HistoryClient() {
   const exportUnavailable = loading || programsLoading || loadError || !!programsError;
 
   return (
-    <div>
+    <div className="progress-screen">
+      <ProgressScreenStyles />
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--fg)" }}>
-          History
-        </h1>
-        <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-3)" }}>
-          {/* Workouts that produced exercise history, not stored logs: a
-              skipped day with nothing recorded is a log and not a workout the
-              user would count. */}
-          {families.length} movements · {loggedWorkoutCount} workouts
-        </span>
-        <button
-          type="button"
-          className="btn ghost"
-          disabled={exportUnavailable}
-          onClick={() => setExportOpen(true)}
-          style={{ marginLeft: "auto", padding: "4px 8px" }}
-        >
-          Export for AI
-        </button>
-      </div>
+      <PageHeader title="History" description={`${families.length} movements · ${loggedWorkoutCount} workouts`} action={
+        <button type="button" className="button secondary" disabled={exportUnavailable} onClick={() => setExportOpen(true)}>Export for AI</button>
+      } />
       {loadError && <p role="alert" style={{ color: "var(--danger, #b42318)" }}>Could not load history. Export is unavailable until history can be read.</p>}
       {programsError && <p role="alert" style={{ color: "var(--danger, #b42318)" }}>Could not load routines. Export is unavailable until routines can be read.</p>}
-      {loading && <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading history…</p>}
-      {programsLoading && <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading routines…</p>}
+      {loading && <p style={{ color: "var(--fg-3)", fontSize: 12 }}>Loading history…</p>}
+      {programsLoading && <p style={{ color: "var(--fg-3)", fontSize: 12 }}>Loading routines…</p>}
       {exportOpen && !exportUnavailable && (
         <HistoryExportPanel logs={logs} programs={programs} context={context} onClose={() => setExportOpen(false)} />
       )}
       {!loading && !loadError && families.length === 0 && (
-        <div style={{ padding: 24, textAlign: "center", background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r)", color: "var(--fg-3)" }}>
+        <div style={{ padding: 24, textAlign: "center", background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: 8, color: "var(--fg-3)" }}>
           <div style={{ fontSize: 14, color: "var(--fg-2)", marginBottom: 6 }}>No history yet</div>
           <div style={{ fontSize: 12 }}>Log a workout from the Today screen to start tracking.</div>
         </div>
@@ -363,7 +350,7 @@ export function HistoryClient() {
           gap: 6,
           background: "var(--bg-2)",
           border: "1px solid var(--line)",
-          borderRadius: "var(--r)",
+          borderRadius: 8,
           padding: "6px 10px",
           marginBottom: 8,
         }}
@@ -379,7 +366,7 @@ export function HistoryClient() {
             border: "none",
             outline: "none",
             color: "var(--fg)",
-            fontSize: 13,
+            fontSize: 14,
           }}
         />
         {q && (
@@ -398,12 +385,12 @@ export function HistoryClient() {
             style={{
               flexShrink: 0,
               padding: "4px 10px",
-              borderRadius: 999,
-              border: `1px solid ${filter === f ? "var(--accent)" : "var(--line)"}`,
-              background: filter === f ? "var(--accent-soft)" : "transparent",
-              color: filter === f ? "var(--accent)" : "var(--fg-2)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
+              borderRadius: 6,
+              border: `1px solid ${filter === f ? "var(--fg)" : "var(--line)"}`,
+              background: filter === f ? "var(--bg-3)" : "transparent",
+              color: filter === f ? "var(--fg)" : "var(--fg-2)",
+
+              fontSize: 12,
               cursor: "pointer",
             }}
           >
@@ -419,11 +406,10 @@ export function HistoryClient() {
           alignItems: "center",
           gap: 8,
           marginBottom: 8,
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
+
+          fontSize: 12,
           color: "var(--fg-3)",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
+
         }}
       >
         <span>sort</span>
@@ -437,10 +423,9 @@ export function HistoryClient() {
               cursor: "pointer",
               padding: "2px 4px",
               fontFamily: "inherit",
-              fontSize: 10,
-              color: sort === id ? "var(--accent)" : "var(--fg-3)",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
+              fontSize: 12,
+              color: sort === id ? "var(--fg)" : "var(--fg-3)",
+
             }}
           >
             {sort === id && "·"} {label}
@@ -452,7 +437,7 @@ export function HistoryClient() {
       <div
         style={{
           border: "1px solid var(--line)",
-          borderRadius: "var(--r)",
+          borderRadius: 8,
           background: "var(--bg-2)",
           overflow: "hidden",
         }}
@@ -485,7 +470,7 @@ export function HistoryClient() {
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
               <div style={{
-                fontSize: 13, fontWeight: 500, whiteSpace: "nowrap",
+                fontSize: 14, fontWeight: 500, whiteSpace: "nowrap",
                 overflow: "hidden", textOverflow: "ellipsis", marginBottom: 2,
               }}>
                 {toTitleCase(family.label)}
@@ -493,14 +478,14 @@ export function HistoryClient() {
               {/* Family-level facts only. Anything comparable — best, PR, trend
                   — belongs to a concrete version and lives one level in. */}
               <div style={{
-                fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--fg-3)",
+                 fontSize: 12, color: "var(--fg-3)",
                 display: "flex", gap: 8,
               }}>
                 <span>{family.workoutCount} workout{family.workoutCount === 1 ? "" : "s"}</span>
-                <span style={{ color: "var(--fg-4)" }}>
+                <span style={{ color: "var(--fg-3)" }}>
                   {family.versionKeys.length} version{family.versionKeys.length === 1 ? "" : "s"}
                 </span>
-                <span style={{ color: "var(--fg-4)" }}>last {formatShortDate(family.latestDate)}</span>
+                <span style={{ color: "var(--fg-3)" }}>last {formatShortDate(family.latestDate)}</span>
               </div>
             </button>
           ))

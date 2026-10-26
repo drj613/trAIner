@@ -6,6 +6,7 @@ import { exportBackup, restoreBackup, resetWorkspace } from "@/lib/backup/backup
 import { backupRepo } from "@/lib/storage/backupRepo";
 import { loadWorkspaceStats, type WorkspaceStats } from "@/lib/workspace/stats";
 import { getPersistenceState, requestPersistence, type PersistenceState } from "@/lib/storage/persistence";
+import { PageHeader } from "./PageHeader";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useLocalData } from "@/components/app/LocalDataProvider";
 
@@ -20,9 +21,9 @@ const DENSITIES: { value: Density; label: string }[] = [
 ];
 const STAT_KEYS: (keyof WorkspaceStats)[] = ["profile", "programs", "logs", "aliases", "snapshots"];
 
-function readAttr(name: string, fallback: string): string {
+function readAttr(name: string, storageKey: string, fallback: string): string {
   if (typeof document === "undefined") return fallback;
-  return document.documentElement.getAttribute(name) ?? fallback;
+  return localStorage.getItem(storageKey) ?? document.documentElement.getAttribute(name) ?? fallback;
 }
 
 function ActionRow({
@@ -41,7 +42,7 @@ function ActionRow({
   children?: React.ReactNode;
 }) {
   const color =
-    variant === "primary" ? "var(--accent)" :
+    variant === "primary" ? "var(--bg)" :
     variant === "warn" ? "var(--warn, #e6b664)" :
     variant === "danger" ? "var(--bad, #ef9a9a)" :
     "var(--fg-3)";
@@ -53,17 +54,17 @@ function ActionRow({
       disabled={disabled}
       style={{
         display: "flex", alignItems: "center", textAlign: "left",
-        padding: "10px 12px", background: "var(--bg-2)",
-        border: "1px solid var(--line)", borderRadius: "var(--r, 6px)",
+        padding: "14px 16px", background: variant === "primary" ? "var(--fg)" : "var(--bg-1)",
+        border: `1px solid ${variant === "warn" ? "var(--warn)" : "var(--line)"}`, borderRadius: "var(--r-lg)",
         cursor: disabled ? "not-allowed" : "pointer", width: "100%", gap: 8,
         opacity: disabled ? 0.6 : 1,
       }}
     >
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>{label}</div>
-        <div style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>{sub}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: variant === "primary" ? "var(--bg)" : "var(--fg)" }}>{label}</div>
+        <div style={{ fontSize: 12, color: variant === "primary" ? "var(--bg)" : "var(--fg-3)", lineHeight: 1.5 }}>{sub}</div>
       </div>
-      <span style={{ fontSize: 11, color, fontFamily: "var(--font-mono)" }}>›</span>
+      <span style={{ fontSize: 12, color, fontFamily: "var(--font-ui)" }}>›</span>
       {children}
     </button>
   );
@@ -72,12 +73,12 @@ function ActionRow({
 export function SettingsClient() {
   const { refresh: refreshLocalData } = useLocalData();
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
-  const [theme, setThemeState] = useState(() => readAttr("data-theme", "linen"));
+  const [theme, setThemeState] = useState(() => readAttr("data-theme", "trainer-theme", "linen"));
   const [density, setDensityState] = useState<Density>(
-    () => readAttr("data-density", "default") as Density
+    () => readAttr("data-density", "trainer-density", "default") as Density
   );
   const [mono, setMonoState] = useState<Mono>(
-    () => readAttr("data-mono", "jetbrains") as Mono
+    () => readAttr("data-mono", "trainer-mono", "jetbrains") as Mono
   );
   const [snapshotting, setSnapshotting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -230,22 +231,23 @@ export function SettingsClient() {
 
   return (
     <div style={{ padding: 12 }}>
+      <PageHeader title="Workspace" description="Back up your training and set up this device." />
       {/* Stats panel */}
       <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--r, 6px)", padding: 12, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span className="tx-up">Workspace</span>
+          <span className="text-sm font-semibold">Storage usage</span>
           <span style={{ flex: 1 }} />
-          <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-3)" }}>
+          <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
             local · {sizeLabel} ·{" "}
             <span style={{ color: persistence === "persisted" ? "var(--good, #7fc77a)" : "var(--warn, #e6b664)" }}>
               {persistence === "persisted" ? "protected"
-                : persistence === "denied" ? "evictable"
-                : persistence === "unsupported" ? "unprotected"
+                : persistence === "denied" ? "backup recommended"
+                : persistence === "unsupported" ? "backup required"
                 : "…"}
             </span>
           </span>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" }}>
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 14px" }}>
           {STAT_KEYS.map((k) => (
             <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: "1px dashed var(--line)" }}>
               <span style={{ color: "var(--fg-3)" }}>{k}</span>
@@ -268,7 +270,7 @@ export function SettingsClient() {
           onClick={handleSnapshot}
         />
         {snapshotList.length > 0 && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 11 }}>
             {snapshotList.map((s) => {
               const armed = armedDeleteId === s.id;
               return (
@@ -277,7 +279,7 @@ export function SettingsClient() {
                   <button
                     type="button"
                     className="btn ghost"
-                    style={{ fontSize: 10, padding: "1px 6px", color: armed ? "var(--bad, #ef9a9a)" : undefined }}
+                    style={{ fontSize: 12, padding: "1px 6px", color: armed ? "var(--bad, #ef9a9a)" : undefined }}
                     aria-label={`${armed ? "confirm delete" : "delete"} snapshot ${s.id}`}
                     onClick={() => handleDeleteClick(s.id)}
                   >
@@ -305,7 +307,7 @@ export function SettingsClient() {
             <button
               type="button"
               className="btn ghost"
-              style={{ fontSize: 11, padding: "2px 8px" }}
+              style={{ fontSize: 12, padding: "2px 8px" }}
               onClick={() => requestPersistence().then(setPersistence)}
             >
               Request protection
@@ -321,15 +323,15 @@ export function SettingsClient() {
       </div>
 
       {/* Appearance */}
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 12px" }}>
+      <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 12px" }}>
         Appearance
       </p>
 
       <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Theme</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Theme</p>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {THEMES.map((t) => (
-            <button key={t} type="button" aria-pressed={theme === t} onClick={() => handleTheme(t)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${theme === t ? "var(--accent)" : "var(--line)"}`, background: theme === t ? "var(--accent-soft)" : "transparent", color: theme === t ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer" }}>
+            <button key={t} type="button" aria-pressed={theme === t} onClick={() => handleTheme(t)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${theme === t ? "var(--accent)" : "var(--line)"}`, background: theme === t ? "var(--accent-soft)" : "transparent", color: theme === t ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
               {t}
             </button>
           ))}
@@ -337,10 +339,10 @@ export function SettingsClient() {
       </section>
 
       <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Density</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Density</p>
         <div style={{ display: "flex", gap: 6 }}>
           {DENSITIES.map(({ value, label }) => (
-            <button key={value} type="button" aria-pressed={density === value} onClick={() => handleDensity(value)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${density === value ? "var(--accent)" : "var(--line)"}`, background: density === value ? "var(--accent-soft)" : "transparent", color: density === value ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer" }}>
+            <button key={value} type="button" aria-pressed={density === value} onClick={() => handleDensity(value)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${density === value ? "var(--accent)" : "var(--line)"}`, background: density === value ? "var(--accent-soft)" : "transparent", color: density === value ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
               {label}
             </button>
           ))}
@@ -348,10 +350,10 @@ export function SettingsClient() {
       </section>
 
       <section style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 8px" }}>Monospace Font</p>
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--fg-3)",  margin: "0 0 8px" }}>Monospace Font</p>
         <div style={{ display: "flex", gap: 6 }}>
           {(["jetbrains", "system"] as Mono[]).map((m) => (
-            <button key={m} type="button" aria-pressed={mono === m} onClick={() => handleMono(m)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${mono === m ? "var(--accent)" : "var(--line)"}`, background: mono === m ? "var(--accent-soft)" : "transparent", color: mono === m ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer" }}>
+            <button key={m} type="button" aria-pressed={mono === m} onClick={() => handleMono(m)} style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${mono === m ? "var(--accent)" : "var(--line)"}`, background: mono === m ? "var(--accent-soft)" : "transparent", color: mono === m ? "var(--accent)" : "var(--fg-2)", fontFamily: "var(--font-ui)", fontSize: 12, cursor: "pointer" }}>
               {m === "jetbrains" ? "JetBrains" : "System"}
             </button>
           ))}
@@ -362,8 +364,8 @@ export function SettingsClient() {
       <div style={{ marginTop: 32 }}>
         <p
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontFamily: "var(--font-ui)",
+            fontSize: 12,
             color: "var(--bad, #ef9a9a)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
@@ -450,12 +452,12 @@ export function SettingsClient() {
               </button>
             </div>
             {resetBlocked && (
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--warn, #e6b664)", fontFamily: "var(--font-mono)" }}>
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--warn, #e6b664)", fontFamily: "var(--font-ui)" }}>
                 Waiting for other trAIner tabs to close — the reset will finish automatically.
               </p>
             )}
             {resetError && (
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-mono)" }}>
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "var(--bad)", fontFamily: "var(--font-ui)" }}>
                 {resetError}
               </p>
             )}

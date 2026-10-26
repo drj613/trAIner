@@ -1,19 +1,9 @@
 "use client";
 
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
-import {
-  CalendarDays,
-  Dumbbell,
-  FileInput,
-  History,
-  Library,
-  Menu,
-  Settings,
-  UserRound,
-  Wand2,
-  X,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, Dumbbell, FileInput, History, Library, Menu, Settings, UserRound, Wand2, X } from "lucide-react";
+import { useFocusTrap } from "@/lib/workout/useFocusTrap";
 
 const navItems = [
   { href: "/today", label: "Today", icon: CalendarDays },
@@ -26,180 +16,85 @@ const navItems = [
   { href: "/settings", label: "Workspace", icon: Settings },
 ];
 
-function NavDrawer({
-  open,
-  onClose,
-  pathname,
-}: {
-  open: boolean;
-  onClose: () => void;
-  pathname: string;
-}) {
-  if (!open) return null;
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 60 }}
-      aria-modal
-      role="dialog"
-    >
-      {/* backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(0,0,0,0.45)",
-        }}
-      />
-      {/* drawer */}
-      <nav
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: 0,
-          width: 256,
-          background: "var(--bg-1)",
-          borderRight: "1px solid var(--line-2)",
-          display: "flex",
-          flexDirection: "column",
-          animation: "slideright .16s cubic-bezier(.2,.7,.3,1)",
-        }}
-      >
-        {/* header */}
-        <div
-          style={{
-            padding: "14px 14px 10px",
-            borderBottom: "1px solid var(--line)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>
-              <span style={{ color: "var(--accent)" }}>tr</span>AI
-              <span style={{ color: "var(--accent)" }}>ner</span>
-            </div>
-          </div>
-          <button
-            className="btn ghost"
-            onClick={onClose}
-            style={{ padding: "4px 6px" }}
-            aria-label="Close menu"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* nav items */}
-        <div style={{ flex: 1, overflow: "auto", padding: 6 }}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={onClose}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "9px 10px",
-                  borderRadius: "var(--r)",
-                  background: active ? "var(--accent-soft)" : "transparent",
-                  color: active ? "var(--accent)" : "var(--fg)",
-                  fontSize: 13,
-                  fontWeight: active ? 600 : 400,
-                  marginBottom: 2,
-                  transition: "background .1s",
-                }}
-              >
-                <Icon size={15} aria-hidden />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-      </nav>
-    </div>
-  );
+function Brand() {
+  return <span className="app-brand">tr<span>AI</span>ner</span>;
 }
 
-function Toolbar({ onOpenNav }: { onOpenNav: () => void }) {
-  return (
-    <header
-      style={{
-        height: 46,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "0 10px",
-        background: "var(--bg-1)",
-        borderBottom: "1px solid var(--line)",
-        flexShrink: 0,
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-      }}
-    >
-      <button
-        className="btn ghost"
-        onClick={onOpenNav}
-        style={{ padding: "4px 6px" }}
-        aria-label="Open menu"
+function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return <>
+    {navItems.map(({ href, label, icon: Icon }) => (
+      <Link
+        key={href}
+        to={href}
+        onClick={onNavigate}
+        className="app-nav-link"
+        aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined}
       >
-        <Menu size={16} aria-hidden />
-      </button>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            lineHeight: 1,
-          }}
-        >
-          <span style={{ color: "var(--accent)" }}>tr</span>AI
-          <span style={{ color: "var(--accent)" }}>ner</span>
+        <Icon size={18} strokeWidth={1.6} aria-hidden />
+        <span>{label}</span>
+      </Link>
+    ))}
+  </>;
+}
+
+function NavDrawer({ open, onClose, pathname }: { open: boolean; onClose: () => void; pathname: string }) {
+  const focusRef = useFocusTrap(open);
+  useEffect(() => {
+    if (!open) return;
+    function dismiss(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", dismiss);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", dismiss);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="app-drawer-overlay">
+      <div className="app-drawer-backdrop" onClick={onClose} aria-hidden />
+      <section ref={focusRef} className="app-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu" id="navigation-menu">
+        <div className="app-drawer-heading">
+          <Brand />
+          <button type="button" className="btn ghost app-icon-button" onClick={onClose} aria-label="Close menu"><X size={20} aria-hidden /></button>
         </div>
-      </div>
-    </header>
+        <p className="app-nav-scope">Your training, on this device</p>
+        <nav aria-label="Main navigation"><NavLinks pathname={pathname} onNavigate={onClose} /></nav>
+      </section>
+    </div>
   );
 }
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const screenName = pathname.includes("/days/") ? "Workout"
+    : pathname.endsWith("/map") ? "Routine map"
+    : pathname.endsWith("/diff") ? "Review changes"
+    : pathname === "/programs/new" ? "New routine"
+    : navItems.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`))?.label ?? "trAIner";
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        background: "var(--bg)",
-      }}
-    >
-      <Toolbar onOpenNav={() => setDrawerOpen(true)} />
-      <NavDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        pathname={pathname}
-      />
-      <main
-        style={{
-          flex: 1,
-          width: "min(100%, 960px)",
-          margin: "0 auto",
-          padding: "16px",
-        }}
-      >
-        {children}
-      </main>
+    <div className="app-shell">
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <header className="app-toolbar">
+        <button type="button" className="btn ghost app-icon-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen} aria-controls="navigation-menu"><Menu size={21} aria-hidden /></button>
+        <Brand />
+        <span className="app-toolbar-screen">{screenName}</span>
+      </header>
+      <div className="app-frame">
+        <aside className="app-sidebar" aria-hidden={drawerOpen || undefined}>
+          <div className="app-sidebar-brand"><Brand /><button type="button" className="btn ghost app-icon-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen} aria-controls="navigation-menu"><Menu size={19} aria-hidden /></button></div>
+          <p className="app-nav-scope">Your training</p>
+          <nav aria-label="Main navigation"><NavLinks pathname={pathname} /></nav>
+          <p className="app-sidebar-note">Stored on this device.<br />Back up from Workspace.</p>
+        </aside>
+        <main className="app-main" id="main-content" tabIndex={-1}>{children}</main>
+      </div>
+      <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} pathname={pathname} />
     </div>
   );
 }

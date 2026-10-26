@@ -56,6 +56,9 @@ test.describe("RoutineAnalysisCard", () => {
     const scoreText = sharedPage.locator("span").filter({ hasText: /^\d{1,3}$/ }).first();
     await expect(scoreText).toBeVisible();
 
+    await expect(sharedPage.getByRole("button", { name: "View analysis" })).toHaveAttribute("aria-expanded", "false");
+    await expect(sharedPage.getByLabel("Routine goal")).not.toBeVisible();
+
     // Card is collapsed by default — expanded body must NOT be visible yet.
     // The "MEV" header label only appears inside the expanded VolumeBars panel.
     await expect(sharedPage.getByText("MEV")).not.toBeVisible();
@@ -138,4 +141,9 @@ test.describe("RoutineAnalysisCard", () => {
     await expect(sharedPage.getByText("Movement patterns")).toBeVisible({ timeout: 5000 });
     await expect(sharedPage.getByText(/Trained — \d+ muscle groups?/)).toBeVisible({ timeout: 3000 });
   });
+  test("starts a workout directly from the overview", async () => {
+    await sharedPage.getByRole("button", { name: "Start workout" }).click();
+    await expect(sharedPage).toHaveURL(/\/programs\/[^/]+\/days\/[^/]+$/);
+  });
+
 });

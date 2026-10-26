@@ -15,20 +15,26 @@ function cellColor(cell: HeatmapCell): string {
 
 export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
   const stats = computeHeatmapStats(cells);
+  const end = new Date();
+  const monday = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+  monday.setUTCDate(monday.getUTCDate() - (monday.getUTCDay() || 7) + 1);
+  const start = new Date(monday);
+  start.setUTCDate(start.getUTCDate() - (cells.length - 1) * 7);
+  const dateLabel = (date: Date) => date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
   return (
     <div className="panel">
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="tx-up">Training frequency · 26 wks</span>
+        <span className="tx-up">Training frequency · {cells.length} weeks</span>
         <span className="flex-1" />
-        <span className="tx-mono text-[10px] muted">{stats.completionRate}% logged</span>
+        <span className="text-xs muted">{stats.completionRate}% logged</span>
       </div>
 
       <div className="flex gap-1.5 items-start overflow-x-auto">
         {/* Day labels column */}
         <div
-          className="flex flex-col gap-0.5 shrink-0 pt-3"
-          style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--fg-3)" }}
+          className="flex flex-col gap-0.5 shrink-0"
+          style={{ fontSize: 11, color: "var(--fg-3)" }}
         >
           {DAY_LABELS.map((label, i) => (
             <div key={i} style={{ height: 10, lineHeight: 1 }}>
@@ -63,23 +69,27 @@ export function TrainingHeatmap({ cells }: { cells: HeatmapCell[][] }) {
         </div>
       </div>
 
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "var(--fg-2)" }}>
+        <span>{dateLabel(start)}</span><span>{dateLabel(end)}</span>
+      </div>
       {/* Footer stats */}
       <div
-        className="flex items-center gap-3 mt-3"
-        style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}
+        className="flex flex-wrap items-center gap-2 mt-3"
+        style={{ fontSize: 12, color: "var(--fg-3)" }}
       >
-        <span>streak: <span style={{ color: "var(--accent)" }}>{stats.streak}</span></span>
+        <span>Streak: <span style={{ color: "var(--fg-2)" }}>{stats.streak} days</span></span>
         <span>·</span>
-        <span>avg: <span style={{ color: "var(--fg-2)" }}>{stats.weeklyAvg}/wk</span></span>
-        <span className="flex-1" />
-        <span>less</span>
+        <span>Average: <span style={{ color: "var(--fg-2)" }}>{stats.weeklyAvg} days/week</span></span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
+        <span>Less</span>
         {([0, 1, 2, 3, 4] as const).map((v) => (
-          <div
+          <span
             key={v}
             style={{ width: 10, height: 10, borderRadius: 2, background: cellColor({ intensity: v, future: false }) }}
           />
         ))}
-        <span>more</span>
+        <span>More</span>
+        </span>
       </div>
     </div>
   );

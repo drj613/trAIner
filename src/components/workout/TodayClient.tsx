@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
+import { PageHeader } from "@/components/app/PageHeader";
 import { Link, Navigate } from "react-router-dom";
 import { logRepo } from "@/lib/storage/logRepo";
 import { useLocalData } from "@/components/app/LocalDataProvider";
@@ -67,7 +69,7 @@ export function TodayClient() {
     return (
       <>
         {banner}
-        <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}>Loading…</p>
+        <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-ui)", fontSize: 12 }}>Loading…</p>
       </>
     );
   }
@@ -80,49 +82,42 @@ export function TodayClient() {
   const profileDone = !!profile;
   const steps: Array<{ label: string; to: string; done: boolean }> = [
     { label: "Fill out your Profile", to: "/profile", done: profileDone },
-    { label: "Choose a coach on Prompts — copy the generated prompt", to: "/prompts", done: hasCopiedPrompt() },
-    { label: "Paste the AI's JSON response on Import", to: "/import", done: programs.length > 0 },
+    { label: "Choose a coach on Prompts", to: "/prompts", done: hasCopiedPrompt() },
+    { label: "Paste the AI's routine on Import", to: "/import", done: programs.length > 0 },
+  ];
+
+  const firstPending = steps.findIndex(step => !step.done);
+  const descriptions = [
+    profileDone ? "Your goals, equipment, and constraints are saved." : "Set up your Profile with your goals, equipment, and constraints.",
+    "Copy a coach prompt into your AI chat to plan your training.",
+    "Validate the JSON and review it before saving.",
   ];
 
   return (
-    <>
-      {banner}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 6px", color: "var(--fg)" }}>Today</h1>
-          <p style={{ color: "var(--fg-3)", fontSize: 13, margin: 0 }}>No active program yet. Follow these steps to get started:</p>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {steps.map(({ label, to, done }, i) => (
-            <Link
-              key={to}
-              to={to}
-              style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                background: done ? "var(--bg-2)" : "var(--bg-1)",
-                border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
-                borderRadius: "var(--r)", textDecoration: "none", color: "var(--fg)",
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: 22, height: 22, borderRadius: 11, flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: done ? 12 : 11, fontFamily: "var(--font-mono)", fontWeight: 700,
-                  background: done ? "var(--good)" : "var(--bg-3)",
-                  color: done ? "var(--accent-fg)" : "var(--fg-3)",
-                  border: `1px solid ${done ? "var(--good)" : "var(--line)"}`,
-                }}
-              >
-                {done ? "✓" : i + 1}
+    <div className="today-onboarding">
+      <PageHeader title="Today" description="No active program yet. Create a routine to start training." />
+      <ol className="onboarding-steps">
+        {steps.map(({ label, to, done }, index) => (
+          <li key={to}>
+            <Link to={to} className="onboarding-step" data-current={index === firstPending || undefined}>
+              <span className="onboarding-marker" aria-hidden>{done ? <Check size={17} /> : index + 1}</span>
+              <span className="onboarding-copy">
+                <strong>{label}</strong>
+                <span>{descriptions[index]}</span>
+                <span className={index === firstPending ? "onboarding-action" : "onboarding-next"}>
+                  {index === 0 ? "Go to Profile" : index === 1 ? "Open Prompts" : "Open Import"} <span aria-hidden>→</span>
+                </span>
               </span>
-              <span style={{ flex: 1, fontSize: 13, lineHeight: 1.35 }}>{label}</span>
-              <span aria-hidden style={{ color: "var(--fg-4)", fontSize: 11 }}>→</span>
+              {done && <span className="onboarding-done">Done</span>}
             </Link>
-          ))}
-        </div>
+          </li>
+        ))}
+      </ol>
+      <div className="onboarding-alternative">
+        <h2>Already know your routine?</h2>
+        <p>Build your days and exercises directly, without an AI chat.</p>
+        <Link to="/programs/new" className="button secondary">Build a routine manually</Link>
       </div>
-    </>
+    </div>
   );
 }

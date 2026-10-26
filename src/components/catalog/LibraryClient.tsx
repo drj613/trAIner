@@ -1,4 +1,6 @@
 "use client";
+import { ProgressScreenStyles } from "../analysis/ProgressScreenStyles";
+import { PageHeader } from "@/components/app/PageHeader";
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
@@ -236,7 +238,7 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
       style={{
         marginBottom: 10,
         border: "1px solid var(--line)",
-        borderRadius: "var(--r)",
+        borderRadius: 8,
         background: "var(--bg-2)",
         overflow: "hidden",
       }}
@@ -259,8 +261,8 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
         }}
       >
         <span className="tx-up" style={{ flex: 1, textAlign: "left" }}>needs review</span>
-        <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>{items.length}</span>
-        <span style={{ color: "var(--fg-4)" }}>
+        <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>{items.length}</span>
+        <span style={{ color: "var(--fg-3)" }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
@@ -287,7 +289,7 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
           >
             <span
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 minWidth: 0,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -296,10 +298,10 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
             >
               {item.label}
             </span>
-            <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>
+            <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
               {item.origins.join(" · ")}
             </span>
-            <span className="tx-mono" style={{ fontSize: 10.5, color: "var(--fg-3)" }}>
+            <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>
               {item.occurrences}
             </span>
           </button>
@@ -323,8 +325,8 @@ function NeedsReviewSection({ items }: { items: NeedsReviewItem[] }) {
             background: "transparent",
             color: "var(--fg-3)",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
+
+            fontSize: 12,
             textAlign: "left",
           }}
         >
@@ -435,8 +437,8 @@ function ExerciseRow({
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
+
+            fontSize: 14,
             color: "var(--fg-3)",
             textAlign: "center",
           }}
@@ -446,7 +448,7 @@ function ExerciseRow({
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -457,22 +459,22 @@ function ExerciseRow({
           </div>
           <div
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
+
+              fontSize: 12,
               color: "var(--fg-3)",
               marginTop: 1,
             }}
           >
             {item ? item.muscles.primary.join(", ") : "your exercise"}
             {item && item.muscles.secondary.length > 0 && (
-              <span style={{ color: "var(--fg-4)" }}>
+              <span style={{ color: "var(--fg-3)" }}>
                 {" "}
                 +{item.muscles.secondary.slice(0, 2).join(", ")}
               </span>
             )}
           </div>
         </div>
-        <span style={{ color: "var(--fg-4)", flexShrink: 0 }}>
+        <span style={{ color: "var(--fg-3)", flexShrink: 0 }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
@@ -493,8 +495,8 @@ function ExerciseRow({
                   <span
                     key={j}
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10.5,
+
+                      fontSize: 12,
                       padding: "2px 6px",
                       background: "var(--bg-2)",
                       border: "1px solid var(--line)",
@@ -508,9 +510,9 @@ function ExerciseRow({
                 {item.aliases.length > 6 && (
                   <span
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10.5,
-                      color: "var(--fg-4)",
+
+                      fontSize: 12,
+                      color: "var(--fg-3)",
                       alignSelf: "center",
                     }}
                   >
@@ -526,8 +528,8 @@ function ExerciseRow({
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
               gap: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
+
+              fontSize: 12,
             }}
           >
             {[
@@ -614,12 +616,12 @@ function FamilyRow({ group }: { group: CatalogGroup }) {
           alignItems: "center",
         }}
       >
-        <span className="tx-mono" style={{ fontSize: 13, color: "var(--fg-3)", textAlign: "center" }}>
+        <span className="tx-mono" style={{ fontSize: 14, color: "var(--fg-3)", textAlign: "center" }}>
           ⌸
         </span>
-        <span style={{ fontSize: 13, fontWeight: 500, minWidth: 0 }}>{group.name}</span>
-        <span className="tx-mono" style={{ fontSize: 10, color: "var(--fg-4)" }}>{count}</span>
-        <span style={{ color: "var(--fg-4)" }}>
+        <span style={{ fontSize: 14, fontWeight: 500, minWidth: 0 }}>{group.name}</span>
+        <span className="tx-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>{count}</span>
+        <span style={{ color: "var(--fg-3)" }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
@@ -667,7 +669,7 @@ function CategorySection({
       style={{
         marginBottom: 10,
         border: "1px solid var(--line)",
-        borderRadius: "var(--r)",
+        borderRadius: 8,
         background: "var(--bg-2)",
         overflow: "hidden",
       }}
@@ -692,14 +694,14 @@ function CategorySection({
         </span>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--fg-4)",
+
+            fontSize: 12,
+            color: "var(--fg-3)",
           }}
         >
           {countVersions(groups)}
         </span>
-        <span style={{ color: "var(--fg-4)" }}>
+        <span style={{ color: "var(--fg-3)" }}>
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
@@ -803,28 +805,11 @@ export function LibraryClient() {
   const isFiltered = Boolean(q.trim() || equipment);
 
   return (
-    <div>
+    <div className="progress-screen">
+      <ProgressScreenStyles />
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 20,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            color: "var(--fg)",
-          }}
-        >
-          Library
-        </h1>
-        <span className="tx-mono" style={{ fontSize: 11, color: "var(--fg-3)" }}>
-          {isFiltered ? `${totalShown} / ` : ""}
-          {exerciseCatalog.length} exercises
-        </span>
-      </div>
-      <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
-        Full exercise catalog. Movements hold their versions; click a row to expand aliases and details.
-      </p>
+      <PageHeader title="Library" description={`${isFiltered ? `${totalShown.toLocaleString()} of ` : ""}${exerciseCatalog.length.toLocaleString()} exercises`} />
+      <p style={{ fontSize: 14, color: "var(--fg-3)", margin: "0 0 12px" }}>Browse movements, versions and exercise details.</p>
 
       {/* Search */}
       <div
@@ -834,7 +819,7 @@ export function LibraryClient() {
           gap: 6,
           background: "var(--bg-2)",
           border: "1px solid var(--line)",
-          borderRadius: "var(--r)",
+          borderRadius: 8,
           padding: "6px 10px",
           marginBottom: 8,
         }}
@@ -850,7 +835,7 @@ export function LibraryClient() {
             border: "none",
             outline: "none",
             color: "var(--fg)",
-            fontSize: 13,
+            fontSize: 14,
           }}
         />
         {q && (
@@ -862,19 +847,19 @@ export function LibraryClient() {
 
       {/* Equipment filter chips */}
       <div
-        style={{ display: "flex", gap: 4, marginBottom: 12, overflowX: "auto", paddingBottom: 2 }}
+        style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}
       >
         <button
           onClick={() => setEquipment(null)}
           style={{
             flexShrink: 0,
             padding: "4px 10px",
-            borderRadius: 999,
-            border: `1px solid ${!equipment ? "var(--accent)" : "var(--line)"}`,
-            background: !equipment ? "var(--accent-soft)" : "transparent",
-            color: !equipment ? "var(--accent)" : "var(--fg-2)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
+            borderRadius: 6,
+            border: `1px solid ${!equipment ? "var(--fg)" : "var(--line)"}`,
+            background: !equipment ? "var(--bg-3)" : "transparent",
+            color: !equipment ? "var(--fg)" : "var(--fg-2)",
+
+            fontSize: 12,
             cursor: "pointer",
           }}
         >
@@ -887,12 +872,12 @@ export function LibraryClient() {
             style={{
               flexShrink: 0,
               padding: "4px 10px",
-              borderRadius: 999,
-              border: `1px solid ${equipment === eq ? "var(--accent)" : "var(--line)"}`,
-              background: equipment === eq ? "var(--accent-soft)" : "transparent",
-              color: equipment === eq ? "var(--accent)" : "var(--fg-2)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
+              borderRadius: 6,
+              border: `1px solid ${equipment === eq ? "var(--fg)" : "var(--line)"}`,
+              background: equipment === eq ? "var(--bg-3)" : "transparent",
+              color: equipment === eq ? "var(--fg)" : "var(--fg-2)",
+
+              fontSize: 12,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
@@ -920,7 +905,7 @@ export function LibraryClient() {
               color: "var(--fg-3)",
               background: "var(--bg-2)",
               border: "1px solid var(--line)",
-              borderRadius: "var(--r)",
+              borderRadius: 8,
             }}
           >
             no matches
@@ -944,9 +929,9 @@ export function LibraryClient() {
           padding: 10,
           background: "var(--bg-2)",
           border: "1px solid var(--line)",
-          borderRadius: "var(--r)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          borderRadius: 8,
+
+          fontSize: 12,
           color: "var(--fg-3)",
           display: "flex",
           alignItems: "center",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { bodyweightRepo } from "@/lib/storage/bodyweightRepo";
 import type { BodyweightEntry } from "@/lib/programs/types";
+import "./workout.css";
 
 function todayString(): string {
   const d = new Date();
@@ -44,49 +45,26 @@ export function BodyweightWidget({ today }: { today?: string } = {}) {
   }
 
   return (
-    <div
-      style={{
-        background: "var(--bg-1)",
-        border: "1px solid var(--line)",
-        borderRadius: "var(--r)",
-        padding: "8px 10px",
-        marginBottom: 10,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          color: "var(--fg-3)",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-        }}
-      >
-        BW
-      </span>
+    <div className="wk-bw">
+      <span className="wk-label">Bodyweight</span>
       {entry && !editing ? (
         <>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg)" }}>
+          <span className="wk-bw-value">
             {entry.value} {entry.unit}
           </span>
           <button
             type="button"
-            className="btn ghost"
+            className="btn ghost wk-btn"
             onClick={() => setEditing(true)}
-            style={{ padding: "2px 6px", fontSize: 10 }}
           >
-            update
+            Update
           </button>
         </>
       ) : !editing ? (
         <button
           type="button"
-          className="btn ghost"
+          className="btn wk-btn"
           onClick={() => setEditing(true)}
-          style={{ padding: "2px 6px", fontSize: 11 }}
         >
           Log bodyweight
         </button>
@@ -96,21 +74,23 @@ export function BodyweightWidget({ today }: { today?: string } = {}) {
             type="number"
             value={value}
             placeholder="weight"
+            aria-label="Bodyweight"
             onChange={(e) => setValue(e.target.value)}
             className="input"
-            style={{ width: 70, fontSize: 12 }}
+            style={{ width: 88 }}
             autoFocus
           />
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value as "kg" | "lb")}
             className="input"
-            style={{ width: 56, fontSize: 12 }}
+            aria-label="Bodyweight unit"
+            style={{ width: 68 }}
           >
             <option value="kg">kg</option>
             <option value="lb">lb</option>
           </select>
-          <button type="button" className="btn primary" onClick={save} style={{ fontSize: 11 }}>
+          <button type="button" className="btn primary wk-btn" onClick={save}>
             Save
           </button>
         </>

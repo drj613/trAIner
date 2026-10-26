@@ -53,8 +53,8 @@ export function PersonaInstructions({ name, text, onChange }: { name: string; te
       <section><h3 className="text-sm font-semibold">Programming principles</h3><ul className="list-disc pl-5 space-y-2 mt-2 text-sm leading-relaxed muted">{fields.filter((field) => field.label.startsWith("Principle ")).map((field) => <li key={field.label} className="whitespace-pre-wrap">{field.value}</li>)}</ul></section>
     </> : <PromptDetails text={text} />}
     <div className="flex flex-wrap gap-2">
-      <button type="button" className="button text-xs" onClick={() => { setEditing(!editing); setCustom(false); }}>{editing ? "Done editing" : "Edit coach details"}</button>
-      {fields && <button type="button" className="button text-xs" onClick={() => { setEditing(true); setCustom(true); }}>Write custom instructions</button>}
+      <button type="button" className="button secondary text-xs" onClick={() => { setEditing(!editing); setCustom(false); }}>{editing ? "Done editing" : "Edit coach details"}</button>
+      {fields && <button type="button" className="button secondary text-xs" onClick={() => { setEditing(true); setCustom(true); }}>Write custom instructions</button>}
     </div>
   </div>;
 }
