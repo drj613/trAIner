@@ -76,6 +76,21 @@ export type CatalogExercise = {
   tags: string[];
 };
 
+export type ReviewedAddition = {
+  exercise: CatalogExercise;
+  review: { status: "approved"; reviewer: string; rationale: string; comparedIds: string[] };
+  provenance: { kind: "independently-authored"; generator: string; references: string[] };
+};
+
+export type ReviewedAliasAddition = {
+  exerciseId: string;
+  aliases: string[];
+  status: "approved";
+  reviewer: string;
+  rationale: string;
+  references: string[];
+};
+
 export type NormalizedCatalogExercise = CatalogExercise & {
   movementId: string | null;
   movementModifierIds: string[];
@@ -140,6 +155,8 @@ export type CatalogBuildReport = {
   inputCount: number;
   survivingCount: number;
   generatedVariantCount: number;
+  additionCount: number;
+  aliasAdditionCount: number;
   stageCounts: Record<string, number>;
   inputSchemaVersions: Record<string, number>;
   inputHashes: Record<string, string>;

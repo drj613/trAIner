@@ -497,3 +497,144 @@ test("does not execute an imported entrypoint when its importer has the CLI file
     expect(result.stderr).toBe("");
   }
 });
+
+const reviewedAddition = {
+  exercise: { id: "new-lift", name: "New Lift", aliases: ["Novel Lift"], equipment: ["band"], movementPatterns: ["pull"], muscles: { primary: ["back"], secondary: [] }, tags: [] },
+  review: { status: "approved", reviewer: "Reviewer", rationale: "Different movement", comparedIds: ["fixture-0"] },
+  provenance: { kind: "independently-authored", generator: "Author", references: ["https://example.com"] },
+};
+
+async function compileWithAdditions(records: unknown[]) {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  const manifest = `${JSON.stringify({ schemaVersion: 1, records })}\n`;
+  await writeFile(join(rootDir, "scripts/catalog-normalization/additions.json"), manifest);
+  const outputDir = join(rootDir, "addition-output");
+  const report = await compileCatalog({ rootDir, catalogOutputDir: outputDir, reportOutputPath: join(outputDir, "report.json"), stage: "complete" });
+  return { report, outputDir, manifest };
+}
+
+test("complete builds append approved independent additions and record their input", async () => {
+  const { report, outputDir, manifest } = await compileWithAdditions([reviewedAddition]);
+  const exercises = JSON.parse(await readFile(join(outputDir, "exercises.generated.json"), "utf8"));
+  expect(exercises).toContainEqual({ ...reviewedAddition.exercise, movementId: null, movementModifierIds: [] });
+  expect(report.additionCount).toBe(1);
+  expect(report.inputHashes["scripts/catalog-normalization/additions.json"]).toBe(createHash("sha256").update(manifest).digest("hex"));
+});
+
+test.each([
+  ["unapproved", { ...reviewedAddition, review: { ...reviewedAddition.review, status: "candidate" } }],
+  ["unexpected field", { ...reviewedAddition, extra: true }],
+  ["empty reference", { ...reviewedAddition, provenance: { ...reviewedAddition.provenance, references: [] } }],
+  ["unknown comparison", { ...reviewedAddition, review: { ...reviewedAddition.review, comparedIds: ["missing"] } }],
+  ["duplicate ID", { ...reviewedAddition, exercise: { ...reviewedAddition.exercise, id: "fixture-0" } }],
+  ["normalized name collision", { ...reviewedAddition, exercise: { ...reviewedAddition.exercise, name: "Fixture-0" } }],
+  ["normalized alias collision", { ...reviewedAddition, exercise: { ...reviewedAddition.exercise, aliases: ["Fixture 0"] } }],
+])("rejects an addition with %s", async (_description, record) => {
+  await expect(compileWithAdditions([record])).rejects.toThrow();
+});
+
+test("rejects collisions between additions", async () => {
+  await expect(compileWithAdditions([reviewedAddition, { ...reviewedAddition, exercise: { ...reviewedAddition.exercise, id: "other", name: "Other Lift", aliases: ["novel-lift"] } }])).rejects.toThrow();
+});
+
+test("rejects reordered and abbreviated names that match an existing exercise", async () => {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 1 });
+  const catalogRoot = join(rootDir, "scripts/catalog-normalization");
+  const snapshot = `${JSON.stringify([{ ...reviewedAddition.exercise, id: "fixture-0", name: "Dumbbell Incline Press", aliases: [] }])}\n`;
+  await writeFile(join(catalogRoot, "catalog-v1.snapshot.json"), snapshot);
+  await writeFile(join(catalogRoot, "catalog-v1.sha256"), `${createHash("sha256").update(snapshot).digest("hex")}\n`);
+  await writeFile(join(catalogRoot, "additions.json"), JSON.stringify({ schemaVersion: 1, records: [{ ...reviewedAddition, exercise: { ...reviewedAddition.exercise, name: "Incline DB Presses", aliases: [] } }] }));
+  await expect(compileCatalog({ rootDir, catalogOutputDir: join(rootDir, "output"), reportOutputPath: join(rootDir, "report.json"), stage: "complete" })).rejects.toThrow(/duplicate/i);
+});
+
+test("rejects duplicate name and alias tokens within an addition", async () => {
+  await expect(compileWithAdditions([{ ...reviewedAddition, exercise: { ...reviewedAddition.exercise, aliases: ["New-Lift"] } }])).rejects.toThrow(/duplicate/i);
+});
+
+test("keeps a reordered name as an alias on the same exercise", async () => {
+  const { outputDir } = await compileWithAdditions([{ ...reviewedAddition, exercise: { ...reviewedAddition.exercise, aliases: ["Lift New"] } }]);
+  const exercises = JSON.parse(await readFile(join(outputDir, "exercises.generated.json"), "utf8"));
+  expect(exercises.find((exercise: { id: string }) => exercise.id === "new-lift").aliases).toEqual(["Lift New"]);
+});
+
+const reviewedAliasAddition = {
+  exerciseId: "fixture-0", aliases: ["Alternate Fixture"], status: "approved", reviewer: "Reviewer",
+  rationale: "Common name for the same movement", references: ["https://example.com/exercise"],
+};
+
+async function compileWithAliasAdditions(records: unknown[], stage: "existing" | "complete" = "complete", additions: unknown[] = []) {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 2 });
+  const manifest = `${JSON.stringify({ schemaVersion: 1, records })}\n`;
+  await writeFile(join(rootDir, "scripts/catalog-normalization/alias-additions.json"), manifest);
+  await writeFile(join(rootDir, "scripts/catalog-normalization/additions.json"), JSON.stringify({ schemaVersion: 1, records: additions }));
+  const outputDir = join(rootDir, "alias-output");
+  const report = await compileCatalog({ rootDir, catalogOutputDir: outputDir, reportOutputPath: join(outputDir, "report.json"), stage });
+  const exercises = JSON.parse(await readFile(join(outputDir, "exercises.generated.json"), "utf8"));
+  const snapshot = JSON.parse(await readFile(join(rootDir, "scripts/catalog-normalization/catalog-v1.snapshot.json"), "utf8"));
+  return { report, exercises, snapshot, manifest };
+}
+
+test("reviewed alias additions preserve existing metadata and record input hashes", async () => {
+  const { report, exercises, snapshot, manifest } = await compileWithAliasAdditions([reviewedAliasAddition]);
+  expect(exercises[0]).toEqual({ ...snapshot[0], aliases: [...snapshot[0].aliases, "Alternate Fixture"] });
+  expect(exercises[1]).toEqual(snapshot[1]);
+  expect(report).toMatchObject({ aliasAdditionCount: 1 });
+  expect(report.inputHashes["scripts/catalog-normalization/alias-additions.json"]).toBe(createHash("sha256").update(manifest).digest("hex"));
+});
+
+test("alias additions apply only at complete stage", async () => {
+  const { report, exercises, snapshot } = await compileWithAliasAdditions([reviewedAliasAddition], "existing");
+  expect(exercises).toEqual(snapshot);
+  expect(report).toMatchObject({ aliasAdditionCount: 0 });
+});
+
+test("alias additions can target approved new exercises and keep reordered same-record aliases", async () => {
+  const { report, exercises } = await compileWithAliasAdditions([
+    { ...reviewedAliasAddition, exerciseId: "new-lift", aliases: ["Lift New", "Lift Novel"] },
+  ], "complete", [reviewedAddition]);
+  expect(exercises.find((exercise: { id: string }) => exercise.id === "new-lift").aliases).toEqual(["Novel Lift", "Lift New", "Lift Novel"]);
+  expect(report).toMatchObject({ aliasAdditionCount: 2 });
+});
+
+test.each([
+  ["unapproved", { ...reviewedAliasAddition, status: "candidate" }],
+  ["unexpected field", { ...reviewedAliasAddition, extra: true }],
+  ["empty reference", { ...reviewedAliasAddition, references: [] }],
+  ["empty alias", { ...reviewedAliasAddition, aliases: [""] }],
+  ["missing target", { ...reviewedAliasAddition, exerciseId: "missing" }],
+  ["name collision", { ...reviewedAliasAddition, aliases: ["Fixture-1"] }],
+  ["reordered collision", { ...reviewedAliasAddition, aliases: ["1 Fixture"] }],
+])("rejects reviewed alias additions with %s", async (_description, record) => {
+  await expect(compileWithAliasAdditions([record])).rejects.toThrow();
+});
+
+test("rejects alias additions assigned to two different records", async () => {
+  await expect(compileWithAliasAdditions([
+    reviewedAliasAddition,
+    { ...reviewedAliasAddition, exerciseId: "fixture-1", aliases: ["alternate-fixture"] },
+  ])).rejects.toThrow(/collision/i);
+});
+
+test("alias additions do not duplicate an existing alias on the same record", async () => {
+  const { report, exercises } = await compileWithAliasAdditions([reviewedAliasAddition, reviewedAliasAddition]);
+  expect(exercises[0].aliases.filter((alias: string) => alias === "Alternate Fixture")).toHaveLength(1);
+  expect(report).toMatchObject({ aliasAdditionCount: 1 });
+});
+
+test.each([
+  ["alias shadowed by an underspecified rule", "alias", "Fixture Choice", { id: "choice", kind: "underspecified-name", normalizedName: "fixture choice", movementId: "fixture-movement", candidateExerciseIds: ["fixture-0", "fixture-1"], matchedModifierIds: [] }],
+  ["new name shadowed by an underspecified rule", "name", "Fixture Choice", { id: "choice", kind: "underspecified-name", normalizedName: "fixture choice", movementId: "fixture-movement", candidateExerciseIds: ["fixture-0", "fixture-1"], matchedModifierIds: [] }],
+  ["new alias changed by a phrase rule", "addition-alias", "New Lift With Pause", { id: "pause", kind: "non-identity-phrase", normalizedPhrase: "with pause", annotation: "pause", behavior: "strip" }],
+  ["alias rejected by an alternative phrase rule", "alias", "Fixture Or Other", { id: "or", kind: "non-identity-phrase", normalizedPhrase: "or", annotation: "alternative", behavior: "reject-alternative" }],
+])("rejects %s", async (_description, target, label, rule) => {
+  const rootDir = await createCompilerFixtureRoot({ snapshotRecords: 2 });
+  const catalogRoot = join(rootDir, "scripts/catalog-normalization");
+  await writeFile(join(catalogRoot, "disambiguations.json"), JSON.stringify({ schemaVersion: 1, records: [rule] }));
+  if (target === "alias") {
+    await writeFile(join(catalogRoot, "alias-additions.json"), JSON.stringify({ schemaVersion: 1, records: [{ ...reviewedAliasAddition, aliases: [label] }] }));
+  } else {
+    const exercise = target === "name" ? { ...reviewedAddition.exercise, name: label } : { ...reviewedAddition.exercise, aliases: [label] };
+    await writeFile(join(catalogRoot, "additions.json"), JSON.stringify({ schemaVersion: 1, records: [{ ...reviewedAddition, exercise }] }));
+  }
+  await expect(compileCatalog({ rootDir, catalogOutputDir: join(rootDir, "output"), reportOutputPath: join(rootDir, "report.json"), stage: "complete" })).rejects.toThrow(/shadowed|unreachable/i);
+});
