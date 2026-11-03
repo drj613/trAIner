@@ -10,6 +10,7 @@ test("prompt editor fits a narrow preview, including long edited text", async ({
   await page.getByPlaceholder(/name this preset/i).fill("VeryLongPresetName".repeat(12));
   await page.getByPlaceholder(/temporary injury/i).fill("AnUnbrokenInjuryDescription".repeat(12));
   await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByText("Coach: Hypertrophy Methodologist", { exact: true }).click();
   await expect(page.getByRole("heading", { name: "Programming principles", exact: true })).toBeVisible();
   await expect(page.locator("textarea")).toHaveCount(0);
   await page.getByRole("button", { name: "Write custom instructions" }).click();
@@ -47,6 +48,7 @@ test("field previews match the complete copied prompt", async ({ page, context }
   await expect(goals).toContainText("Stronger squats");
   await page.getByLabel("Goals", { exact: true }).uncheck();
   await expect(goals).toContainText("Excluded from the copied prompt");
+  await page.getByText("Coach: Hypertrophy Methodologist", { exact: true }).click();
   await expect(page.getByRole("heading", { name: "Programming principles", exact: true })).toBeVisible();
   await expect(page.locator("textarea")).toHaveCount(0);
   await page.getByRole("button", { name: "Write custom instructions" }).click();
