@@ -7,6 +7,8 @@ import type {
   Assignment,
   CatalogBuildReport,
   CatalogExercise,
+  ReviewedAddition,
+  ReviewedAliasAddition,
   CompileOptions,
   CompilerCliResult,
   Merge,
@@ -24,6 +26,8 @@ import type {
 // token is only reachable if it is byte-identical to what `prepareImportName`
 // produces, so a second implementation here would rebuild the bug it guards.
 import { normalizeExerciseName } from "../../../src/lib/catalog/normalize";
+import { prepareImportName } from "../../../src/lib/catalog/identity";
+import { searchTerms } from "../../catalog-expansion/search";
 import {
   aliasCandidates,
   countUnclassifiedAliasCollisions,
@@ -54,6 +58,8 @@ export const OUTPUT_FILES = [
 export const REPORT_FILE = "reports/catalog-normalization-report.json" as const;
 
 const SNAPSHOT_FILE = "scripts/catalog-normalization/catalog-v1.snapshot.json";
+const ADDITIONS_FILE = "scripts/catalog-normalization/additions.json";
+const ALIAS_ADDITIONS_FILE = "scripts/catalog-normalization/alias-additions.json";
 const DIGEST_FILE = "scripts/catalog-normalization/catalog-v1.sha256";
 const CURATION_MANIFESTS = [
   "scripts/catalog-normalization/movements.json",
@@ -152,6 +158,118 @@ function manifestRecords(artifact: VersionedArtifact<unknown>, kind: string): Ma
     if (!isPlainObject(record)) invalidManifestRecord(kind);
     return record;
   });
+}
+
+function decodeAdditions(artifact: unknown): ReviewedAddition[] {
+  const kind = "addition";
+  if (!isPlainObject(artifact)) invalidManifestRecord(kind);
+  assertOnlyKeys(artifact, ["schemaVersion", "records"], kind);
+  if (artifact.schemaVersion !== 1 || !Array.isArray(artifact.records)) invalidManifestRecord(kind);
+  return artifact.records.map((record: unknown) => {
+    if (!isPlainObject(record)) invalidManifestRecord(kind);
+    assertOnlyKeys(record, ["exercise", "review", "provenance"], kind);
+    const { exercise, review, provenance } = record;
+    if (!isPlainObject(exercise) || !isPlainObject(review) || !isPlainObject(provenance)) invalidManifestRecord(kind);
+    assertOnlyKeys(exercise, ["id", "name", "aliases", "equipment", "movementPatterns", "muscles", "tags"], kind);
+    assertOnlyKeys(review, ["status", "reviewer", "rationale", "comparedIds"], kind);
+    assertOnlyKeys(provenance, ["kind", "generator", "references"], kind);
+    if (review.status !== "approved" || provenance.kind !== "independently-authored") invalidManifestRecord(kind);
+    const muscles = exercise.muscles;
+    if (!isPlainObject(muscles)) invalidManifestRecord(kind);
+    assertOnlyKeys(muscles, ["primary", "secondary"], kind);
+    const id = nonEmptyString(exercise.id, kind);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) invalidManifestRecord(kind);
+    return {
+      exercise: { id, name: nonEmptyString(exercise.name, kind), aliases: stringArray(exercise.aliases, kind),
+        equipment: stringArray(exercise.equipment, kind), movementPatterns: stringArray(exercise.movementPatterns, kind),
+        muscles: { primary: stringArray(muscles.primary, kind), secondary: stringArray(muscles.secondary, kind) },
+        tags: stringArray(exercise.tags, kind) },
+      review: { status: "approved" as const, reviewer: nonEmptyString(review.reviewer, kind),
+        rationale: nonEmptyString(review.rationale, kind), comparedIds: nonEmptyStringArray(review.comparedIds, kind) },
+      provenance: { kind: "independently-authored" as const, generator: nonEmptyString(provenance.generator, kind),
+        references: nonEmptyStringArray(provenance.references, kind) },
+    };
+  });
+}
+
+function decodeAliasAdditions(artifact: unknown): ReviewedAliasAddition[] {
+  const kind = "alias addition";
+  if (!isPlainObject(artifact)) invalidManifestRecord(kind);
+  assertOnlyKeys(artifact, ["schemaVersion", "records"], kind);
+  if (artifact.schemaVersion !== 1 || !Array.isArray(artifact.records)) invalidManifestRecord(kind);
+  return artifact.records.map((record: unknown) => {
+    if (!isPlainObject(record)) invalidManifestRecord(kind);
+    assertOnlyKeys(record, ["exerciseId", "aliases", "status", "reviewer", "rationale", "references"], kind);
+    if (record.status !== "approved") invalidManifestRecord(kind);
+    return {
+      exerciseId: nonEmptyString(record.exerciseId, kind),
+      aliases: nonEmptyStringArray(record.aliases, kind),
+      status: "approved" as const,
+      reviewer: nonEmptyString(record.reviewer, kind),
+      rationale: nonEmptyString(record.rationale, kind),
+      references: nonEmptyStringArray(record.references, kind),
+    };
+  });
+}
+
+function appendAliases(exercises: CatalogExercise[], additions: ReviewedAliasAddition[]) {
+  const result = exercises.map((exercise) => ({ ...exercise, aliases: [...exercise.aliases] }));
+  const byId = new Map(result.map((exercise) => [exercise.id, exercise]));
+  const owners = new Map<string, Set<string>>();
+  const keys = (label: string) => [`name:${normalizeExerciseName(label)}`, `terms:${searchTerms(label).join(" ")}`];
+  const register = (label: string, id: string) => {
+    for (const key of keys(label)) {
+      const ids = owners.get(key) ?? new Set<string>();
+      ids.add(id);
+      owners.set(key, ids);
+    }
+  };
+  for (const exercise of exercises) {
+    for (const label of [exercise.name, ...exercise.aliases]) register(label, exercise.id);
+  }
+  let count = 0;
+  for (const addition of additions) {
+    const exercise = byId.get(addition.exerciseId);
+    if (!exercise) throw new Error(`alias addition references unknown exercise: ${addition.exerciseId}`);
+    for (const alias of addition.aliases) {
+      const token = normalizeExerciseName(alias);
+      if (!token || !searchTerms(alias).length) throw new Error(`alias addition has empty normalized label: ${alias}`);
+      if (keys(alias).some((key) => [...(owners.get(key) ?? [])].some((id) => id !== exercise.id))) {
+        throw new Error(`alias addition collision for ${exercise.id}: ${alias}`);
+      }
+      if ([exercise.name, ...exercise.aliases].some((label) => normalizeExerciseName(label) === token)) continue;
+      exercise.aliases.push(alias);
+      register(alias, exercise.id);
+      count += 1;
+    }
+  }
+  return { exercises: result, count };
+}
+
+function appendAdditions(exercises: CatalogExercise[], additions: ReviewedAddition[]): CatalogExercise[] {
+  const ids = new Set(exercises.map((exercise) => exercise.id));
+  const names = new Set(exercises.flatMap((exercise) => [exercise.name, ...exercise.aliases].map(normalizeExerciseName)));
+  const termKeys = new Set(exercises.flatMap((exercise) => [exercise.name, ...exercise.aliases].map((name) => searchTerms(name).join(" "))));
+  const result = [...exercises];
+  for (const addition of additions) {
+    const { exercise, review } = addition;
+    if (ids.has(exercise.id)) throw new Error(`addition duplicate ID: ${exercise.id}`);
+    for (const id of review.comparedIds) {
+      if (!ids.has(id)) throw new Error(`addition ${exercise.id} references unknown comparison: ${id}`);
+    }
+    const additionTermKeys = new Set<string>();
+    for (const name of [exercise.name, ...exercise.aliases]) {
+      const token = normalizeExerciseName(name);
+      const key = searchTerms(name).join(" ");
+      if (!token || !key || names.has(token) || termKeys.has(key)) throw new Error(`addition ${exercise.id} has duplicate name or alias: ${name}`);
+      names.add(token);
+      additionTermKeys.add(key);
+    }
+    for (const key of additionTermKeys) termKeys.add(key);
+    ids.add(exercise.id);
+    result.push({ ...exercise, movementId: null, movementModifierIds: [] } as NormalizedCatalogExercise);
+  }
+  return result;
 }
 
 function decodeMovements(artifact: VersionedArtifact<unknown>): MovementDefinition[] {
@@ -732,6 +850,42 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   const manifests = await loadCurationManifests(options.rootDir);
   Object.assign(inputHashes, manifests.hashes);
   Object.assign(inputSchemaVersions, manifests.schemaVersions);
+  let additions: ReviewedAddition[] = [];
+  try {
+    const contents = await readFile(join(options.rootDir, ADDITIONS_FILE), "utf8");
+    additions = decodeAdditions(JSON.parse(contents) as unknown);
+    inputHashes[ADDITIONS_FILE] = sha256(contents);
+    inputSchemaVersions[ADDITIONS_FILE] = 1;
+  } catch (error) {
+    if (!(isPlainObject(error) && error.code === "ENOENT")) throw error;
+  }
+  let aliasAdditions: ReviewedAliasAddition[] = [];
+  try {
+    const contents = await readFile(join(options.rootDir, ALIAS_ADDITIONS_FILE), "utf8");
+    aliasAdditions = decodeAliasAdditions(JSON.parse(contents) as unknown);
+    inputHashes[ALIAS_ADDITIONS_FILE] = sha256(contents);
+    inputSchemaVersions[ALIAS_ADDITIONS_FILE] = 1;
+  } catch (error) {
+    if (!(isPlainObject(error) && error.code === "ENOENT")) throw error;
+  }
+  if (options.stage === "complete") {
+    const disambiguations = new Map(manifests.disambiguations.map((rule) => [
+      rule.kind === "underspecified-name" ? rule.normalizedName : rule.normalizedPhrase, rule,
+    ]));
+    const assertReachable = (label: string) => {
+      const prepared = prepareImportName(label, disambiguations);
+      const rule = disambiguations.get(prepared.normalizedName);
+      if (prepared.hasAlternative || prepared.normalizedName !== normalizeExerciseName(label) || rule?.kind === "underspecified-name") {
+        throw new Error(`addition label shadowed by import disambiguation: ${label}`);
+      }
+    };
+    for (const addition of additions) {
+      for (const label of [addition.exercise.name, ...addition.exercise.aliases]) assertReachable(label);
+    }
+    for (const addition of aliasAdditions) {
+      for (const label of addition.aliases) assertReachable(label);
+    }
+  }
   const normalized = validateNormalizedCatalogue(records as CatalogExercise[], manifests);
   const nearDuplicateCandidates = findNearDuplicateCandidates(normalized.exercises);
   const reviewed = reviewedVariants(normalized, manifests, options.stage);
@@ -756,9 +910,11 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
   // Empty fixture manifests intentionally exercise the compiler shell without
   // changing the frozen snapshot bytes. A real complete build always has the
   // reviewed candidate artifact and therefore emits normalized metadata.
-  const completeExercises = manifests.candidates.length === 0
+  const appendedExercises = appendAdditions(manifests.candidates.length === 0
     ? (records as CatalogExercise[])
-    : reviewed.exercises;
+    : reviewed.exercises, isComplete ? additions : []);
+  const aliases = appendAliases(appendedExercises, isComplete ? aliasAdditions : []);
+  const completeExercises = aliases.exercises;
   const hasReviewedCandidates = manifests.candidates.length > 0;
   // A disambiguation rule pointing at a nonexistent target is worse than no
   // rule, so real complete builds refuse to ship dangling references.
@@ -781,7 +937,7 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
       }
     }
   }
-  const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = isComplete && hasReviewedCandidates
+  const outputContents: Record<(typeof OUTPUT_FILES)[number], string> = isComplete && (hasReviewedCandidates || additions.length > 0 || aliases.count > 0)
     ? {
       "exercises.generated.json": `${JSON.stringify(completeExercises, null, 2)}\n`,
       "movements.generated.json": versionedArtifact(
@@ -814,6 +970,8 @@ export async function compileCatalog(options: CompileOptions): Promise<CatalogBu
     inputCount: records.length,
     survivingCount: normalized.exercises.length,
     generatedVariantCount: isComplete ? reviewed.generatedCount : 0,
+    additionCount: isComplete ? additions.length : 0,
+    aliasAdditionCount: aliases.count,
     stageCounts: {
       existing: normalized.exercises.length,
       complete: isComplete ? completeExercises.length : 0,

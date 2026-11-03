@@ -5,6 +5,8 @@
   "inputCount": 3072,
   "survivingCount": 3072,
   "generatedVariantCount": 103,
+  "additionCount": 0,
+  "aliasAdditionCount": 0,
   "stageCounts": {
     "existing": 3072,
     "complete": 3175,
