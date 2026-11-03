@@ -29,7 +29,7 @@ jobs:
 
   e2e:
     name: e2e (playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # Playwright 1.59 cannot install Chromium on 26.04
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
