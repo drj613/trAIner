@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "exerciseId": "bent-knee-lying-twist",
+      "aliases": [
+        "Supine Bent Knee Rolls",
+        "Knee Rolls"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6-luna",
+      "rationale": "Equivalent supine knees-together trunk rotation, stored under the existing identity.",
+      "references": [
+        "https://www.cuh.nhs.uk/patient-information/back-mobility-exercises/"
+      ]
+    },
+    {
+      "exerciseId": "v-sit-on-floor",
+      "aliases": [
+        "Boat Pose",
+        "Navasana"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6-luna",
+      "rationale": "Navasana is a seated V balance with the torso leaning back and legs lifted; the catalogue already has the same bodyweight V-sit hold. The proposal supplies no distinct movement that warrants a second record.",
+      "references": [
+        "https://en.wikipedia.org/wiki/List_of_asanas"
+      ]
+    },
+    {
+      "exerciseId": "frog-stand",
+      "aliases": [
+        "Crow Pose",
+        "Kakasana"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6-luna",
+      "rationale": "The described bent-arm arm balance with knees on the upper arms and feet off the floor is the existing Frog Stand, a common synonym for Crow Pose/Kakasana. The proposal does not describe straight-arm Crane as a separate movement.",
+      "references": [
+        "https://en.wikipedia.org/wiki/List_of_asanas"
+      ]
+    },
+    {
+      "exerciseId": "middle-back-shrug",
+      "aliases": [
+        "Kelso shrug"
+      ],
+      "rationale": "Both cited forms describe a chest-supported incline dumbbell scapular retraction.",
+      "references": [
+        "https://www.onnit.com/blogs/the-edge/do-chest-supported-rows-to-build-back-strength",
+        "https://www.getascend.club/exercises/middle-back-shrug"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6.1-terra"
+    },
+    {
+      "exerciseId": "suspended-crossess",
+      "aliases": [
+        "suspension chest fly",
+        "suspended chest fly"
+      ],
+      "rationale": "The source identifies the existing movement as a suspension chest isolation exercise; use apparatus-neutral names until its exact execution is confirmed.",
+      "references": [
+        "https://exercisecompare.com/exercises/suspended-crossess"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6.1-terra"
+    },
+    {
+      "exerciseId": "carioca-quick-step",
+      "aliases": [
+        "grapevine drill",
+        "carioca grapevine"
+      ],
+      "rationale": "Grapevine and carioca commonly name the alternating front-and-behind crossover pattern. Some simplified grapevine steps use a different sequence.",
+      "references": [
+        "https://files.eric.ed.gov/fulltext/ED429050.pdf"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; peer:gpt-6.1-terra"
+    },
+    {
+      "exerciseId": "cross-body-hammer-curl",
+      "aliases": [
+        "Pinwheel Curl"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; proposal:claude-sonnet",
+      "rationale": "Same neutral-grip dumbbell curl moving across the body toward the opposite shoulder; pinwheel is the common gym name.",
+      "references": [
+        "https://www.hevyapp.com/exercises/how-to-pinwheel-curl-dumbbell/",
+        "https://www.muscleandstrength.com/exercises/hammer-curl-across-the-body.html"
+      ]
+    },
+    {
+      "exerciseId": "svend-press",
+      "aliases": [
+        "Plate Squeeze Press"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; proposal:claude-sonnet",
+      "rationale": "Both squeeze plates together in front of the chest and press them out; the same movement under two names.",
+      "references": [
+        "https://barbend.com/svend-press/"
+      ]
+    },
+    {
+      "exerciseId": "dumbbell-hex-press",
+      "aliases": [
+        "Dumbbell Squeeze Press"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; proposal:claude-sonnet",
+      "rationale": "Dumbbells are pressed together while pressing up from the chest, which is the hex press under another common name.",
+      "references": [
+        "https://barbend.com/hex-press/"
+      ]
+    },
+    {
+      "exerciseId": "pause-squat-barbell",
+      "aliases": [
+        "Pause Back Squat"
+      ],
+      "status": "approved",
+      "reviewer": "codex:gpt-6-astra; proposal:claude-sonnet",
+      "rationale": "A barbell back squat with a hold at the bottom; Catalyst Athletics lists it under this name.",
+      "references": [
+        "https://www.catalystathletics.com/exercise/317/Pause-Back-Squat/"
+      ]
+    }
+  ]
+}
