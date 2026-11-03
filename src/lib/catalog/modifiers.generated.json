@@ -378,6 +378,60 @@
       "category": "execution",
       "identity": true,
       "sortOrder": 39
+    },
+    {
+      "id": "chest-pass",
+      "name": "Chest Pass",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 40
+    },
+    {
+      "id": "scoop-throw",
+      "name": "Scoop Throw",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 41
+    },
+    {
+      "id": "rotational-throw",
+      "name": "Rotational Throw",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 42
+    },
+    {
+      "id": "backward-throw",
+      "name": "Backward Throw",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 43
+    },
+    {
+      "id": "catch-overhead-throw",
+      "name": "Catch and Overhead Throw",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 44
+    },
+    {
+      "id": "supine-chest-throw",
+      "name": "Supine Chest Throw",
+      "aliases": [],
+      "category": "execution",
+      "exclusiveGroup": "medicine-ball-throw-style",
+      "identity": true,
+      "sortOrder": 45
     }
   ]
 }

@@ -210,6 +210,66 @@
       "normalizedPhrase": "or",
       "annotation": "alternative prescription",
       "behavior": "reject-alternative"
+    },
+    {
+      "id": "med-ball-throw-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "med ball throw",
+      "movementId": "medicine-ball-throw",
+      "candidateExerciseIds": [
+        "medicine-ball-chest-pass",
+        "medicine-ball-scoop-throw",
+        "rotational-throw-medicine-ball",
+        "backward-medicine-ball-throw",
+        "medicine-ball-catch-and-overhead-throw",
+        "medicine-ball-supine-chest-throw"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "medicine-ball-throw-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "medicine ball throw",
+      "movementId": "medicine-ball-throw",
+      "candidateExerciseIds": [
+        "medicine-ball-chest-pass",
+        "medicine-ball-scoop-throw",
+        "rotational-throw-medicine-ball",
+        "backward-medicine-ball-throw",
+        "medicine-ball-catch-and-overhead-throw",
+        "medicine-ball-supine-chest-throw"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "med-ball-throws-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "med ball throws",
+      "movementId": "medicine-ball-throw",
+      "candidateExerciseIds": [
+        "medicine-ball-chest-pass",
+        "medicine-ball-scoop-throw",
+        "rotational-throw-medicine-ball",
+        "backward-medicine-ball-throw",
+        "medicine-ball-catch-and-overhead-throw",
+        "medicine-ball-supine-chest-throw"
+      ],
+      "matchedModifierIds": []
+    },
+    {
+      "id": "medicine-ball-throws-choice",
+      "kind": "underspecified-name",
+      "normalizedName": "medicine ball throws",
+      "movementId": "medicine-ball-throw",
+      "candidateExerciseIds": [
+        "medicine-ball-chest-pass",
+        "medicine-ball-scoop-throw",
+        "rotational-throw-medicine-ball",
+        "backward-medicine-ball-throw",
+        "medicine-ball-catch-and-overhead-throw",
+        "medicine-ball-supine-chest-throw"
+      ],
+      "matchedModifierIds": []
     }
   ]
 }

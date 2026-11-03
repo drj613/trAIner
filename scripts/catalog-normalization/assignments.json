@@ -39,6 +39,12 @@
     { "exerciseId": "dumbbell-biceps-curl", "movementId": "curl", "movementModifierIds": ["dumbbell"] },
     { "exerciseId": "triceps-pushdown", "movementId": "triceps-extension-pushdown", "movementModifierIds": ["cable"] },
     { "exerciseId": "lateral-raise-dumbbell", "movementId": "raise-fly", "movementModifierIds": ["dumbbell"] },
-    { "exerciseId": "farmer-carry", "movementId": "loaded-carry", "movementModifierIds": ["dumbbell"] }
+    { "exerciseId": "farmer-carry", "movementId": "loaded-carry", "movementModifierIds": ["dumbbell"] },
+    {"exerciseId": "medicine-ball-chest-pass", "movementId": "medicine-ball-throw", "movementModifierIds": ["chest-pass"]},
+    {"exerciseId": "medicine-ball-scoop-throw", "movementId": "medicine-ball-throw", "movementModifierIds": ["scoop-throw"]},
+    {"exerciseId": "rotational-throw-medicine-ball", "movementId": "medicine-ball-throw", "movementModifierIds": ["rotational-throw"]},
+    {"exerciseId": "backward-medicine-ball-throw", "movementId": "medicine-ball-throw", "movementModifierIds": ["backward-throw"]},
+    {"exerciseId": "medicine-ball-catch-and-overhead-throw", "movementId": "medicine-ball-throw", "movementModifierIds": ["catch-overhead-throw"]},
+    {"exerciseId": "medicine-ball-supine-chest-throw", "movementId": "medicine-ball-throw", "movementModifierIds": ["supine-chest-throw"]}
   ]
 }

@@ -342,6 +342,25 @@
       ],
       "maxIdentityModifiers": 3,
       "displayTemplate": "{modifiers} {movement}"
+    },
+    {
+      "id": "medicine-ball-throw",
+      "name": "Medicine Ball Throw",
+      "aliases": [],
+      "sortOrder": 13,
+      "allowedModifierCategories": [
+        "execution"
+      ],
+      "allowedModifierIds": [
+        "chest-pass",
+        "scoop-throw",
+        "rotational-throw",
+        "backward-throw",
+        "catch-overhead-throw",
+        "supine-chest-throw"
+      ],
+      "maxIdentityModifiers": 1,
+      "displayTemplate": "{modifiers} {movement}"
     }
   ]
 }
